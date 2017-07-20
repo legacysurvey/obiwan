@@ -1,0 +1,5 @@
+CREATE INDEX q3c_obiwan_idx ON obiwan (q3c_ang2ipix(ra, dec));
+CREATE INDEX obiwan_idx ON obiwan (id);
+CLUSTER q3c_obiwan_idx ON obiwan;
+ANALYZE obiwan;
+CREATE INDEX obiwan_bricks_idx ON obiwan_bricks (brickname);

@@ -1,0 +1,19 @@
+#%Module1.0
+#
+proc ModulesHelp { } {
+    global product version
+    puts stderr "This module adds $product/$version to your environment."
+}
+#
+# Define variables
+#
+set product decals_sim_dir
+set version elg
+conflict $product
+
+#
+# module-whatis
+#
+module-whatis "Sets up $product/$version in your environment."
+set PRODUCT_DIR /global/cscratch1/sd/kaylanb/test/obiwan_legacypipe/py/junk
+setenv DECALS_SIM_DIR $PRODUCT_DIR
