@@ -1,0 +1,36 @@
+# Compiled files
+*.py[cod]
+__pycache__
+
+# Other generated files
+htmlcov
+.coverage
+py/desitemplate/.cache
+
+# Sphinx
+doc/api
+doc/_build
+
+# iPython
+doc/nb/.ipynb_checkpoints
+
+# Packages/installer info
+*.egg
+*.egg-info
+dist
+build
+eggs
+parts
+var
+sdist
+develop-eggs
+.installed.cfg
+distribute-*.tar.gz
+MANIFEST
+
+# Other
+.*.swp
+*~
+
+# Mac OSX
+.DS_Store

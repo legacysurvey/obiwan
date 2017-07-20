@@ -1,0 +1,28 @@
+[run]
+source = py/desitemplate
+omit =
+   py/desitemplate/_version.py
+   py/desitemplate/conftest*
+   py/desitemplate/cython_version*
+   py/desitemplate/setup_package*
+   py/desitemplate/*/setup_package*
+   py/desitemplate/*/*/setup_package*
+   py/desitemplate/sphinx/*
+   py/desitemplate/test/*
+   py/desitemplate/*/test/*
+   py/desitemplate/*/*/test/*
+
+[report]
+exclude_lines =
+   # Have to re-enable the standard pragma
+   pragma: no cover
+
+   # Don't complain about packages we have installed
+   except ImportError
+
+   # Don't complain if tests don't hit assertions
+   raise AssertionError
+   raise NotImplementedError
+
+   # Don't complain about script hooks
+   def main\(.*\):
