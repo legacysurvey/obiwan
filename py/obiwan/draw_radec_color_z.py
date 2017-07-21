@@ -7,10 +7,10 @@ obiwan.draw_radec_color_z
 =========================
 
 mpi4py to draw N random ra,dec with grzW1,Re,redshift info from KDEs
-    These N ra,dec rows are written to N/n_tasks fits files
+These N ra,dec rows are written to N/n_tasks fits files
 fits2db to load those N/n_tasks fits files into the PostgresQL DB
-Add bricks table to DB and index on that 
-    func(brick) -- returns all ra,dec in a given brick
+Add bricks table to DB and index on that
+func(brick) -- returns all ra,dec in a given brick
 Write n_bricks fits files containing these various ra,dec
 """
 
@@ -40,13 +40,8 @@ from contextlib import contextmanager
 
 @contextmanager
 def stdouterr_redirected(to=os.devnull, comm=None):
-    '''
-    Based on http://stackoverflow.com/questions/5081657
-    import os
-    with stdouterr_redirected(to=filename):
-        print("from Python")
-        os.system("echo non-Python applications are also supported")
-    '''
+    """Based on http://stackoverflow.com/questions/5081657
+    """
     sys.stdout.flush()
     sys.stderr.flush()
     fd = sys.stdout.fileno()
