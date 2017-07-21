@@ -8,4 +8,3 @@ pandas
 psycopg2
 scikit-image
 scikit-learn
-git+https://github.com/legacysurvey/legacypipe.git#egg=legacypipe
