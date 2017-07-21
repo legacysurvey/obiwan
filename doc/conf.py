@@ -72,7 +72,7 @@ source_suffix = '.rst'
 master_doc = 'index'
 
 # General information about the project.
-project = u'desitemplate'
+project = u'obiwan'
 copyright = u'2014-2017, DESI Collaboration'
 
 # The version info for the project you're documenting, acts as replacement for

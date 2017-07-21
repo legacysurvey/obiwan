@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """
 ============
-desitemplate
+obiwan
 ============
 
 This package is a template for other DESI_ Python_ packages.
