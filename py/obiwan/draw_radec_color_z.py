@@ -1,6 +1,11 @@
 #!/usr/bin/env python
-
+# See LICENSE.rst for BSD 3-clause license info
+# -*- coding: utf-8 -*-
 """
+=========================
+obiwan.draw_radec_color_z
+=========================
+
 mpi4py to draw N random ra,dec with grzW1,Re,redshift info from KDEs
     These N ra,dec rows are written to N/n_tasks fits files
 fits2db to load those N/n_tasks fits files into the PostgresQL DB

@@ -5,14 +5,7 @@
 obiwan
 ============
 
-This package is a template for other DESI_ Python_ packages.
-
-You should use ``python setup.py version`` to set the version.  This requires
-the desiutil_ package.
-
-.. _DESI: http://desi.lbl.gov
-.. _Python: http://python.org
-.. _desiutil: https://github.com/desihub/desiutil
+A package for injecting artificial stars and galaxy-targets (ELGs, LRGs, and QSOs) into the individual images of the DESI Legacy Surveys, DECALS, MzLS, and BASS. The legacypipe/Tractor pipeline is rerun on the modified image data, and the resulting *simulated* Tractor catalogues form a Data Release (DR) resembling a DR of real objects. 
 """
 #
 from __future__ import (absolute_import, division, print_function,

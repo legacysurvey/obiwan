@@ -11,10 +11,8 @@ from __future__ import (absolute_import, division, print_function,
 def main():
     """Entry-point for command-line scripts.
 
-    Returns
-    -------
-    :class:`int`
-        Exit status that will be passed to :func:`sys.exit`.
+    Returns:
+		Exit status that will be passed to sys.exit.
     """
     from sys import argv
     from os.path import basename

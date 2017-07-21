@@ -10,16 +10,29 @@ This is the documentation for obiwan.
 Contents
 ========
 
-The ``toctree`` directive can be used to link to other files in this
-directory and even display their sections.  See `the toctree documentation`_.
-
 .. _`the toctree documentation`: http://sphinx-doc.org/markup/toctree.html
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
 
-   api.rst
+   priors.rst
+   draw_radec_color_z.rst
    changes.rst
+
+The obiwan package/API
+=========================
+
+.. automodule:: obiwan
+    :members:
+
+.. automodule:: obiwan.main
+    :members:
+
+.. automodule:: obiwan.priors
+    :members:
+
+.. automodule:: obiwan.draw_radec_color_z
+    :members:
 
 Indices and tables
 ==================

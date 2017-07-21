@@ -1,8 +1,14 @@
+# See LICENSE.rst for BSD 3-clause license info
+# -*- coding: utf-8 -*-
 """
+====================
+obiwan.priors
+====================
+
 Uses intrinsic (dust removed) AB fluxes/mags to select ELGs,LRGs,QSOs,STARs
 Makes color-color plots that reproduce the FDR
-Single band, mag distributions, plotted using "as observed" AB fluxes/mags,
-    since these are what one adds into a CP image
+Single band, mag distributions, plotted using 'as observed' AB fluxes/mags,
+since these are what one adds into a CP image
 """
 
 if __name__ == '__main__':
