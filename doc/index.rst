@@ -1,5 +1,5 @@
 =========================================
-Welcome to desitemplates's documentation!
+Welcome to obiwan's documentation!
 =========================================
 
 Introduction
