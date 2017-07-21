@@ -1,13 +1,11 @@
-astropy
-cython
-h5py
 matplotlib
 numpy
+scipy
+cython
+astropy
+h5py
 pandas
 psycopg2
 scikit-image
 scikit-learn
-scipy
 git+https://github.com/legacysurvey/legacypipe.git#egg=legacypipe
-git+https://github.com/dstndstn/tractor.git@dr5.2#egg=tractor
-git+https://github.com/dstndstn/astrometry.net.git@0.72##egg=astrometry
