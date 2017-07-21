@@ -1,9 +1,9 @@
-'''
+"""
 Uses intrinsic (dust removed) AB fluxes/mags to select ELGs,LRGs,QSOs,STARs
 Makes color-color plots that reproduce the FDR
 Single band, mag distributions, plotted using "as observed" AB fluxes/mags,
     since these are what one adds into a CP image
-'''
+"""
 
 if __name__ == '__main__':
     import matplotlib
@@ -33,16 +33,22 @@ class EmptyClass(object):
     pass
 
 class KernelOfTruth(object):
-    '''Approximate color distributions with a Gaussian Kernel Density Estimator
-    See: http://scikit-learn.org/stable/auto_examples/neighbors/plot_kde_1d.html
-    '''
+    """Kernel Density Estimate for galaxy sample
+    
+    Following http://scikit-learn.org/stable/auto_examples/neighbors/
+    plot_kde_1d.html
+
+    Attributes:
+        X: Data to fit KDE to
+        kde: KernelDensity() object
+    """
     def __init__(self,data_list,labels,lims,\
                  bandwidth=0.05,kernel='gaussian',\
                  kdefn='kde.pickle',loadkde=False):
-        '''
+        """
         array_list -- list of length nfeatures, each element is a numpy array of nsamples
         lims -- list of tuples giving low,hi limits
-        '''
+        """
         self.kdefn= kdefn
         self.loadkde= loadkde
         self.kernel= kernel
@@ -181,7 +187,7 @@ class KernelOfTruth(object):
 
 
     def plot_1band_and_color(self, ndraws=1000,xylims=None,prefix=''):
-        '''xylims -- dict of x1,y1,x2,y2,... where x1 is tuple of low,hi for first plot xaxis'''
+        """xylims -- dict of x1,y1,x2,y2,... where x1 is tuple of low,hi for first plot xaxis"""
         fig,ax= plt.subplots(2,2,figsize=(15,10))
         plt.subplots_adjust(wspace=0.2,hspace=0.2)
         # Data
@@ -220,7 +226,7 @@ class KernelOfTruth(object):
             plt.close()
 
     def plot_1band_color_and_redshift(self, ndraws=1000,xylims=None,prefix=''):
-        '''xylims -- dict of x1,y1,x2,y2,... where x1 is tuple of low,hi for first plot xaxis'''
+        """xylims -- dict of x1,y1,x2,y2,... where x1 is tuple of low,hi for first plot xaxis"""
         fig,ax= plt.subplots(2,3,figsize=(20,10))
         plt.subplots_adjust(wspace=0.2,hspace=0.2)
         # Colormap the color-color plot by redshift
@@ -283,7 +289,7 @@ class KernelOfTruth(object):
             print('Wrote %s' % sname)
 
     def plot_galaxy_shapes(self, ndraws=1000,xylims=None,name='kde.png'):
-        '''xylims -- dict of x1,y1,x2,y2,... where x1 is tuple of low,hi for first plot xaxis'''
+        """xylims -- dict of x1,y1,x2,y2,... where x1 is tuple of low,hi for first plot xaxis"""
         fig,ax= plt.subplots(2,4,figsize=(20,10))
         plt.subplots_adjust(wspace=0.2,hspace=0.2)
         samp= self.kde.sample(n_samples=ndraws)
@@ -337,7 +343,7 @@ class _GaussianMixtureModel(object):
     
     @staticmethod
     def save(model, filename,index=None):
-        '''index: optional nddex array for subset of compenents to save'''
+        """index: optional nddex array for subset of compenents to save"""
         hdus = fits.HDUList()
         hdr = fits.Header()
         hdr['covtype'] = model.covariance_type
@@ -385,8 +391,8 @@ class _GaussianMixtureModel(object):
         return X
     
     def sample_full_pdf(self, n_samples=1, random_state=None):
-        ''''sample() uses the component datum x is closest too, sample_full_pdf() uses sum of components at datum x
-        this is more time consuming than sample() and difference is negligible'''
+        """'sample() uses the component datum x is closest too, sample_full_pdf() uses sum of components at datum x
+        this is more time consuming than sample() and difference is negligible"""
         if self.covtype != 'full':
             return NotImplementedError(
                 'covariance type "{0}" not implemented yet.'.format(self.covtype))
@@ -400,9 +406,9 @@ class _GaussianMixtureModel(object):
                 
         def prob_map(means_,covars_,weights_,\
                      xrng=(0.,1.),yrng=(0.,1.),npts=2**10):
-            '''returns 
+            """returns 
             -pmap: 2d probability map, with requirement that integral(pdf d2x) within 1% of 1
-            -xvec,yvec: vectors where x[ix] and y[ix] data points have probability pmap[ix,iy]'''
+            -xvec,yvec: vectors where x[ix] and y[ix] data points have probability pmap[ix,iy]"""
             assert(xrng[1] > xrng[0] and yrng[1] > yrng[0])
             xstep= (xrng[1]-xrng[0])/float(npts-1)
             ystep= (yrng[1]-yrng[0])/float(npts-1)
@@ -455,7 +461,7 @@ class _GaussianMixtureModel(object):
 
 
 def add_MoG_curves(ax, means_, covars_, weights_):
-    '''plot 2-sigma ellipses for each multivariate component'''
+    """plot 2-sigma ellipses for each multivariate component"""
     ax.scatter(means_[:, 0], means_[:, 1], c='w')
     scale=2.
     for cnt, mu, C, w in zip(range(means_.shape[0]),means_, covars_, weights_):
@@ -504,7 +510,7 @@ xyrange=dict(x_star=[-0.5,2.2],\
              y2_qso= [-2.5,3.5])
 
 def rm_last_ticklabel(ax):
-    '''for multiplot'''
+    """for multiplot"""
     labels=ax.get_xticks().tolist()
     labels=np.array(labels).astype(float) #prevent from making float
     labels=list(labels)
@@ -514,13 +520,13 @@ def rm_last_ticklabel(ax):
 
 
 class TSBox(object):
-    '''functions to add Target Selection box to ELG, LRG, etc plot
-    add_ts_box -- main functino to call'''
+    """functions to add Target Selection box to ELG, LRG, etc plot
+    add_ts_box -- main functino to call"""
     def __init__(self,src='ELG'):
         self.src=src
 
     def add_ts_box(self, ax, xlim=None,ylim=None):
-        '''draw color selection box'''
+        """draw color selection box"""
         assert(xlim is not None and ylim is not None)
         if self.src == 'ELG':
             #g-r vs. r-z
@@ -577,7 +583,7 @@ class TSBox(object):
 
 
 #def elg_data():
-#    '''Use DEEP2 ELGs whose SEDs have been modeled.'''
+#    """Use DEEP2 ELGs whose SEDs have been modeled."""
 #    elgs = fits.getdata('/project/projectdirs/desi/spectro/templates/basis_templates/v2.2/elg_templates_v2.0.fits', 1)
 #    # Colors
 #    gg = elgs['DECAM_G']
@@ -631,7 +637,7 @@ class CommonInit(ReadWrite):
         self.outdir= kwargs.get('outdir','./')
 
     def imaging_cut(self,data):
-        '''data is a fits_table object with Tractor Catalogue columns'''
+        """data is a fits_table object with Tractor Catalogue columns"""
         cut=np.ones(len(data)).astype(bool)
         # Brick Primary
         if data.get('brick_primary').dtype == 'bool':
@@ -649,9 +655,9 @@ class CommonInit(ReadWrite):
         return cut
 
     def std_star_cut(self,data):
-        '''See: https://desi.lbl.gov/trac/wiki/TargetSelectionWG/TargetSelection#SpectrophotometricStandardStarsFSTD
+        """See: https://desi.lbl.gov/trac/wiki/TargetSelectionWG/TargetSelection#SpectrophotometricStandardStarsFSTD
            data is a fits_table object with Tractor Catalogue columns
-        '''
+        """
         RFLUX_obs = data.get('decam_flux')[:,2]
         GFLUX = data.get('decam_flux_nodust')[:,1]
         RFLUX = data.get('decam_flux_nodust')[:,2]
@@ -671,14 +677,14 @@ class CommonInit(ReadWrite):
 
 class CrossValidator():
 	def kfold_indices(k,n_train):
-		'''returns array of indices of shape (k,n_train/k) to grab the k bins of training data'''
+		"""returns array of indices of shape (k,n_train/k) to grab the k bins of training data"""
 		bucket_sz=int(n_train/float(k))
 		ind= np.arange(k*bucket_sz) #robust for any k, even if does not divide evenly!
 		np.random.shuffle(ind) 
 		return np.reshape(ind,(k,bucket_sz))
 
 	def kfold_cross_val(C=1.,kfolds=10,):
-		'''C is parameter varying'''
+		"""C is parameter varying"""
 		nsamples= self.X.shape[0]
 		ind= kfold_indices(kfolds,nsamples)
 		err=np.zeros(kfolds)-1
@@ -791,8 +797,8 @@ class ELG(CommonInit):
             setattr(self,attr, os.path.join(self.outdir,getattr(self,attr)) )
 
     def get_dr3_deep2(self):
-        '''version 3.0 of data discussed in
-        https://desi.lbl.gov/DocDB/cgi-bin/private/RetrieveFile?docid=912'''
+        """version 3.0 of data discussed in
+        https://desi.lbl.gov/DocDB/cgi-bin/private/RetrieveFile?docid=912"""
         # Cut on DR3 rmag < self.rlimit
         if self.DR == 2:
             zcat = self.read_fits(os.path.join(self.truth_dir,'../deep2/v3.0/','deep2-field1-oii.fits.gz'))
@@ -1451,7 +1457,7 @@ class LRG(CommonInit):
 
     def fit_kde(self,use_acs=False,
                 loadkde=False,savekde=False):
-        '''No Targeting cuts on g band, but need to fit it so can insert in grz image'''
+        """No Targeting cuts on g band, but need to fit it so can insert in grz image"""
         # Load Data
         if use_acs:
             print('Matching acs to dr3,cosmos')
@@ -1755,7 +1761,7 @@ class LRG(CommonInit):
 
 
     def get_vipers(self):
-        '''LRGs from VIPERS in CFHTLS W4 field (12 deg2)'''
+        """LRGs from VIPERS in CFHTLS W4 field (12 deg2)"""
         # DR2 matched
         if self.DR == 2:
             decals = self.read_fits(os.path.join(self.truth_dir,'decals-dr2-vipers-w4.fits.gz'))
@@ -1825,7 +1831,7 @@ class LRG(CommonInit):
         #color_color_plot(self.Xall[b,:],src='LRG') #,extra=True)
 
     def plot_kde(self,loadkde=False,savekde=False):
-        '''No Targeting cuts on g band, but need to fit it so can insert in grz image'''
+        """No Targeting cuts on g band, but need to fit it so can insert in grz image"""
         rz,rW1,r_nodust,r_wdust,z_nodust,z_wdust,g_wdust,redshift= self.get_lrgs_FDR_cuts()
         x= z_wdust['red_galaxy']
         y= rz['red_galaxy']
@@ -1886,7 +1892,7 @@ class STAR(CommonInit):
             setattr(self,attr, os.path.join(self.outdir,getattr(self,attr)) )
     
     def get_sweepstars(self):
-        '''Model the g-r, r-z color-color sequence for stars'''
+        """Model the g-r, r-z color-color sequence for stars"""
         # Build a sample of stars with good photometry from a single sweep.
         rbright = 18
         rfaint = 19.5
