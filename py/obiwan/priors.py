@@ -29,7 +29,6 @@ from scipy.optimize import newton
 from sklearn.neighbors import KernelDensity
 import pickle
 
-from theValidator.catalogues import CatalogueFuncs 
 from sklearn.svm import SVC
 from sklearn.neighbors import KNeighborsClassifier
 
