@@ -279,8 +279,32 @@ class KDEshapes(object):
         
         return re,n,ba,pa
 
-def get_sample_dir(outdir=None):
-    return os.path.join(outdir,'input_sample')
+def get_sample_dir(outdir,obj):
+    return os.path.join(outdir,'%s_randoms' % obj)
+
+def mkdir_needed(d):
+    """make each needed directory 
+    d= dictionary, vars(args)
+    """
+    dirs=[d['outdir']]
+    dirs.append( get_sample_dir(d['outdir'],d['obj']) )
+    for dr in dirs:
+        if not os.path.exists(dr):
+            os.makedirs(dr)
+
+def write_calling_seq(d):
+    """each *_randoms/ directory should have a file listing how randoms were created
+    d= dictionary, vars(args)
+    """
+    dr= get_sample_dir(d['outdir'],d['obj'])
+    fn=os.path.join(dr,'README.txt')
+    if os.path.exists(fn):
+        os.remove(fn)
+    with open(fn,'w') as foo:
+        for key in d.keys():
+            foo.write('%s %s\n' % (key,str(d[key])))
+    print('Wrote %s' % fn)
+
 
 def get_bybrick_dir(outdir='.'): 
     dr= get_sample_dir(outdir=outdir)
@@ -334,7 +358,7 @@ def survey_bricks_cut2radec(radec):
     print('%d bricks, cutting to radec' % len(tab))
     return tab
             
-def draw_points(radec,unique_ids,seed=1,outdir='./',prefix=''):
+def draw_points(radec,unique_ids,obj='star',seed=1,outdir='./',prefix=''):
     '''unique_ids -- ids assigned to this mpi task
     writes ra,dec,grz qso,lrg,elg,star to fits file
     for given seed'''
@@ -345,37 +369,39 @@ def draw_points(radec,unique_ids,seed=1,outdir='./',prefix=''):
     # Joint Sample
     mags={}
     print('KdeSample')
-    for typ in ['lrg','elg']: #,'stars','qso']:
-        #kde_obj= KDEColors(objtype=typ,pickle_dir=outdir)
-        kde_obj= KdeSample(objtype=typ,pickle_dir=outdir)
-        if typ == 'star':
-            mags['%s_g'%typ],mags['%s_r'%typ],mags['%s_z'%typ]= \
-                        kde_obj.get_colors(ndraws=ndraws,random_state=random_state)
-        elif typ == 'elg':
-            mags['%s_g'%typ],mags['%s_r'%typ],mags['%s_z'%typ],\
-            mags['%s_redshift'%typ], mags['%s_rhalf'%typ]= \
-                        kde_obj.get_sample(ndraws=ndraws,random_state=random_state)
-        elif typ == 'lrg':
-            mags['%s_g'%typ],mags['%s_r'%typ],mags['%s_z'%typ],mags['%s_w1'%typ],\
-            mags['%s_redshift'%typ], mags['%s_rhalf'%typ]= \
-                        kde_obj.get_sample(ndraws=ndraws,random_state=random_state)
-        else:
-            mags['%s_g'%typ],mags['%s_r'%typ],mags['%s_z'%typ],mags['%s_redshift'%typ]= \
-                        kde_obj.get_colors(ndraws=ndraws,random_state=random_state)
+    kde_obj= KdeSample(objtype=obj, pickle_dir=outdir)
+    if obj == 'star':
+        mags['%s_g'%obj],mags['%s_r'%obj],mags['%s_z'%obj]= \
+                    kde_obj.get_colors(ndraws=ndraws,random_state=random_state)
+    elif obj == 'elg':
+        mags['%s_g'%obj],mags['%s_r'%obj],mags['%s_z'%obj],\
+        mags['%s_redshift'%obj], mags['%s_rhalf'%obj]= \
+                    kde_obj.get_sample(ndraws=ndraws,random_state=random_state)
+    elif obj == 'lrg':
+        mags['%s_g'%obj],mags['%s_r'%obj],mags['%s_z'%obj],mags['%s_w1'%obj],\
+        mags['%s_redshift'%obj], mags['%s_rhalf'%obj]= \
+                    kde_obj.get_sample(ndraws=ndraws,random_state=random_state)
+    elif obj == 'qso':
+        mags['%s_g'%obj],mags['%s_r'%obj],mags['%s_z'%obj],mags['%s_redshift'%obj]= \
+                    kde_obj.get_colors(ndraws=ndraws,random_state=random_state)
     # Add n,ba,pa to sample
-    mags['%s_n'%typ] = np.ones(ndraws)
-    mags['%s_ba'%typ] = np.random.uniform(0.2,1.,size=ndraws)
-    mags['%s_pa'%typ] = np.random.uniform(0.,180.,size=ndraws)
+    if obj in ['elg','lrg']:
+        mags['%s_n'%obj] = np.ones(ndraws)
+        mags['%s_ba'%obj] = np.random.uniform(0.2,1.,size=ndraws)
+        mags['%s_pa'%obj] = np.random.uniform(0.,180.,size=ndraws)
     # Shapes
     #gfit={}
-    #for typ in ['lrg','elg']:
-    #    kde_obj= KDEshapes(objtype=typ,pickle_dir=outdir)
-    #    gfit['%s_re'%typ],gfit['%s_n'%typ],gfit['%s_ba'%typ],gfit['%s_pa'%typ]= \
+    #for obj in ['lrg','elg']:
+    #    kde_obj= KDEshapes(objobje=obj,pickle_dir=outdir)
+    #    gfit['%s_re'%obj],gfit['%s_n'%obj],gfit['%s_ba'%obj],gfit['%s_pa'%obj]= \
     #                kde_obj.get_shapes(ndraws=ndraws,random_state=random_state)
     # Create Sample table
     T=fits_table()
     T.set('id',unique_ids)
     T.set('seed',np.zeros(ndraws).astype(int)+seed)
+    # PSQL "integer" is 4 bytes
+    for key in ['id','seed']:
+        T.set(key, T.get(key).astype(np.int32))
     T.set('ra',ra)
     T.set('dec',dec)
     for key in mags.keys():
@@ -383,7 +409,7 @@ def draw_points(radec,unique_ids,seed=1,outdir='./',prefix=''):
     #for key in gfit.keys():
     #    T.set(key,gfit[key])
     # Save table
-    fn= os.path.join(get_sample_dir(outdir),get_sample_fn(seed,prefix=prefix) )
+    fn= os.path.join(get_sample_dir(outdir,obj),get_sample_fn(seed,prefix=prefix) )
     if os.path.exists(fn):
         os.remove(fn)
         print('Overwriting %s' % fn)
@@ -709,14 +735,14 @@ def combine(fns):
 
 def get_parser():
     parser = argparse.ArgumentParser(description='Generate a legacypipe-compatible CCDs file from a set of reduced imaging.')
-    parser.add_argument('--dowhat',choices=['sample','bybrick','merge','cleanup','check'],action='store',help='slurm jobid',default='001',required=True)
+    parser.add_argument('--dowhat',choices=['sample','bybrick','merge','cleanup','check'],action='store',default='001',required=True)
+    parser.add_argument('--obj', type=str, choices=['star','elg', 'lrg', 'qso'], default=None, required=True) 
     parser.add_argument('--ra1',type=float,action='store',help='bigbox',required=True)
     parser.add_argument('--ra2',type=float,action='store',help='bigbox',required=True)
     parser.add_argument('--dec1',type=float,action='store',help='bigbox',required=True)
     parser.add_argument('--dec2',type=float,action='store',help='bigbox',required=True)
     parser.add_argument('--spacing',type=float,action='store',default=10.,help='choosing N radec pionts so points have spacingxspacing arcsec spacing',required=False)
     parser.add_argument('--ndraws',type=int,action='store',help='default space by 10x10 arcsec, number of draws for all mpi tasks',required=False)
-    parser.add_argument('--jobid',action='store',help='slurm jobid',default='001',required=False)
     parser.add_argument('--prefix', type=str, default='', help='Prefix to prepend to the output files.')
     parser.add_argument('--outdir', type=str, default='./radec_points_dir', help='Output directory.')
     parser.add_argument('--nproc', type=int, default=1, help='Number of CPUs to use.')
@@ -730,7 +756,18 @@ if __name__ == "__main__":
     parser= get_parser()
     args = parser.parse_args()
     print('TIMING:after argparse',datetime.datetime.now())
-    
+
+    # Before mpi, make needed dirs
+    mkdir_needed( vars(args) )
+
+    # Write calling sequence to file
+    if args.nproc > 1:
+        from mpi4py.MPI import COMM_WORLD as comm
+        if comm.rank == 0:
+            write_calling_seq( vars(args) )
+    else:
+        write_calling_seq( vars(args) )
+         
     radec={}
     radec['ra1']=args.ra1
     radec['ra2']=args.ra2
@@ -746,7 +783,6 @@ if __name__ == "__main__":
 
     # Draws per mpi task
     if args.nproc > 1:
-        from mpi4py.MPI import COMM_WORLD as comm
         unique_ids= np.array_split(unique_ids,comm.size)[comm.rank] 
         #nper= len(unique_ids) #int(ndraws/float(comm.size))
     #else: 
@@ -778,7 +814,7 @@ if __name__ == "__main__":
             # Bcast the dir
             #comm.bcast(data, root=0)
             #print('rank=%d, data["dr"]= ' % comm.rank,data['dr'])
-            draw_points(radec,unique_ids, seed=seed,outdir=args.outdir,prefix=args.prefix)
+            draw_points(radec,unique_ids,obj=args.obj, seed=seed,outdir=args.outdir,prefix=args.prefix)
         elif args.dowhat == 'bybrick':
             # Write {outdir}/input_sample/bybrick/{prefix}sample_{brick}_{seed}.fits files
             # Root 0 reads survey bricks, makes dirs
@@ -865,10 +901,10 @@ if __name__ == "__main__":
         #    seed= cnt
         if args.dowhat == 'sample':
             # Write {outdir}/input_sample/{prefix}sample_{seed}.fits files
-            dr= get_sample_dir(outdir=args.outdir)
+            dr= get_sample_dir(outdir=args.outdir,obj=args.obj)
             if not os.path.exists(dr):
                 os.makedirs(dr)
-            draw_points(radec,unique_ids, seed=seed,outdir=args.outdir,prefix=args.prefix)
+            draw_points(radec,unique_ids,obj=args.obj, seed=seed,outdir=args.outdir,prefix=args.prefix)
         elif args.dowhat == 'bybrick':
             # Assign list of samples to each worker
             sample_fns= get_sample_fns(outdir=args.outdir,prefix=args.prefix)

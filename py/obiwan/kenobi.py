@@ -1,122 +1,9 @@
-#!/usr/bin/env python
-
+# Licensed under a 3-clause BSD style license - see LICENSE.rst
+# -*- coding: utf-8 -*-
+"""This is obiwan.kenobi
+...it runs the legacypipe/Tractor pipeline on images containing artificial sources
 """
-Running eBOSS NGC, SGC
-kaylan Edison scratch
-LEGACY_SURVEY_DIR=/scratch2/scratchdirs/kaylanb/dr3-obiwan/legacypipe-dir
-DECALS_SIM_DIR=/scratch2/scratchdirs/kaylanb/obiwan-eboss-ngc
 
-
-python legacypipe/queue-calibs.py --ignore_cuts --touching --save_to_fits --name eboss-sgc --region eboss-sgc --bricks /global/project/projectdirs/cosmo/data/legacysurvey/dr3//survey-bricks-dr3.fits.gz --ccds /scratch1/scratchdirs/desiproc/DRs/dr4-bootes/legacypipe-dir/survey-ccds-decals-extra-nondecals.fits.gz
-
-ngc=fits_table('bricks-eboss-ngc-cut.fits')
-with open('bricks-eboss-ngc.txt','w') as foo:
-    for brick in ngc.brickname:
-        foo.write('%s\n' % brick)
-foo.close()
-
-ccds=fits_table('ccds-eboss-ngc-cut.fits')
-ccds.writeto('survey-ccds-dr3-eboss-ngc.fits.gz')
-ccds.image_filename= np.char.replace(ccds.image_filename,'decam/','')
-fns=np.array( list( set(ccds.image_filename) ) )
-with open('fns-eboss-ngc.txt','w') as foo:
-   for fn in fns:
-       foo.write('%s\n' % fn)
-foo.close()
-
-for fn in `cat fns-eboss-ngc.txt`;do find /project/projectdirs/cosmo/staging/decam -type f -name $(basename $fn) >> full-fns-eboss-ngc.txt ;done
-
-cp full-fns-eboss-ngc.txt full-fns-eboss-ngc_wild.txt
-sed -i s/_ooi_/_*_/g full-fns-eboss-ngc_wild.txt
-sed -i s/_oki_/_*_/g full-fns-eboss-ngc_wild.txt
-
-for fn in `cat full-fns-eboss-ngc_wild.txt`; do rsync -Riv -rlpgoD --size-only $fn /scratch1/scratchdirs/desiproc/DRs/cp-images/decam/;done
-# divide filelist into N files each having the next 1000 lines
-i=0,j=1;for cnt in `seq 0 8`;do let i=1+$cnt*1000; let j=$i+1000;sed -n ${i},${j}p fns-eboss-sgc_wildcard.txt > fns-eboss-sgc_wildcard_${cnt}.txt;done
-
-LEGACY_SURVEY_DIR
-mkdir -p images/decam
-cd images/decam
-for fullnm in `find /scratch1/scratchdirs/desiproc/DRs/cp-images/decam/project/projectdirs/cosmo/staging/decam/DECam_CP -maxdepth 1 -type d`;do ln -s $fullnm $(basename $fullnm);done
-
-Untar DR3 calibs:
-a=fits_table('/scratch1/scratchdirs/desiproc/DRs/dr3-obiwan/legacypipe-dir/survey-ccds-dr3-eboss-ngc.fits.gz')
-b=fits_table('/scratch1/scratchdirs/desiproc/DRs/dr3-obiwan/legacypipe-dir/survey-ccds-dr3-eboss-sgc.fits.gz')
-a=np.array([num[:3] for num in a.expnum.astype(str)])
-b=np.array([num[:3] for num in b.expnum.astype(str)])
-c=set(a).union(set(b))
-with open('calibs_2untar_eboss.txt','w') as foo:
-    for num in list(set(c)):
-        foo.write('%s\n' % num)         
-foo.close()
-
-dir=/global/project/projectdirs/cosmo/data/legacysurvey/dr3/calibs
-for i in `head ../../../calibs_2untar_eboss.txt`;do echo $i; rsync -Lav ${dir}/psfex/legacysurvey_dr3_calib_decam_psfex_00${i}.tgz ./;done
-
-MAKE 5 row survey-bricks table for decals_radeccolors.py
-ngc=fits_table('survey-bricks-eboss-ngc.fits.gz')
-b=fits_table('survey-bricks.fits.gz')
-
-
-TEST before and after merge with master
-In [6]: a.brickname[(a.nexp_g == 1)*(a.nexp_r == 1)*(a.nexp_z == 1)]
-Out[6]: 
-array(['1220p282', '1220p287', '1220p237', ..., '1723p260', '1724p202',
-       '1724p200'],
-Choose to test with brick 1220p282 
-1) python obiwan/decals_sim_radeccolors.py --ra1 121.5 --ra2 122.5 --dec1 27.5 --dec2 28.7 --prefix finaltest --outdir /scratch2/scratchdirs/kaylanb/finaltest
-2) for obj in star qso elg lrg;do sbatch submit_obiwan.sh $obj;done
-e.g. 
-export DECALS_SIM_DIR=/scratch2/scratchdirs/kaylanb/finaltest
-python obiwan/decals_sim.py \
-        --objtype $objtype --brick $brick --rowstart $rowstart \
-        --add_sim_noise --prefix $prefix --threads $OMP_NUM_THREADS 
-3) star,qso finished fine but elg,lrg ran out of memory
-4) 
-
-On desiproc:
-export LEGACY_SURVEY_DIR=/scratch1/scratchdirs/desiproc/DRs/dr3-obiwan/legacypipe-dir
-export DECALS_SIM_DIR=/scratch1/scratchdirs/desiproc/DRs/data-releases/dr3-obiwan/finaltest
-python obiwan/decals_sim_radeccolors.py --ra1 121.5 --ra2 122.5 --dec1 27.5 --dec2 28.7 --prefix finaltest --outdir /scratch1/scratchdirs/desiproc/DRs/data-releases/dr3-obiwan/finaltest
-python obiwan/decals_sim.py --objtype star --brick 1220p282 --rowstart 0 --add_sim_noise --prefix finaltest
-
-TEST dr4:
-export LEGACY_SURVEY_DIR=/scratch1/scratchdirs/desiproc/DRs/dr4-bootes/legacypipe-dir
-python legacypipe/runbrick.py --run dr4v2 --brick 1554p360 --skip --outdir test --nsigma 6
-
-Tr yto hack decals_sim so we don't have to make copies of the data.
-
-decals_sim -b 2428p117 -n 2000 --chunksize 500 -o STAR --seed 7618 --threads 15 > ~/2428p117.log 2>&1 & 
-
-2428p117
-3216p000
-1315p240
-
-nohup python ${LEGACYPIPE}/py/legacyanalysis/decals_sim.py -n 32 -c 10 -b 2428p117 -o STAR --zoom 500 1400 600 1300 > log2 2>&1 &
-nohup python ${LEGACYPIPE}/py/legacyanalysis/decals_sim.py -n 5000 -c 500 -b 3216p000 -o STAR > & 3216p000.log &
-
-import numpy as np
-from legacypipe.survey import Decals, DecamImage, wcs_for_brick, ccds_touching_wcs
-
-brickname = '2428p117'
-decals = Decals()
-brickinfo = decals.get_brick_by_name(brickname)
-brickwcs = wcs_for_brick(brickinfo)
-ccdinfo = decals.ccds_touching_wcs(brickwcs)
-im = DecamImage(decals,ccdinfo[19])
-targetrd = np.array([[ 242.98072831,   11.61900584],
-                     [ 242.71332268,   11.61900584],
-                     [ 242.71319548,   11.88093189],
-                     [ 242.98085551,   11.88093189],
-                     [ 242.98072831,   11.61900584]])
-tim = im.get_tractor_image(const2psf=True, radecpoly=targetrd)
-
-~1 target per square arcminute in DESI, so the random should have ~50 sources
-per square arcminute: 
-
-IDL> print, 50*3600.0*0.25^2
-      11250.0 ; sources over a whole brick
-"""
 from __future__ import division, print_function
 
 if __name__ == '__main__':
@@ -214,11 +101,11 @@ def get_fnsuffix(**kwargs):
                                    'rowstart%d' % kwargs['rowst'])
 
 class SimDecals(LegacySurveyData):
-    def __init__(self, run=None, survey_dir=None, metacat=None, simcat=None, output_dir=None,\
+    def __init__(self, DR=None, survey_dir=None, metacat=None, simcat=None, output_dir=None,\
                        add_sim_noise=False, folding_threshold=1.e-5, image_eq_model=False):
         '''folding_threshold -- make smaller to increase stamp_flux/input_flux'''
         super(SimDecals, self).__init__(survey_dir=survey_dir, output_dir=output_dir)
-        self.run= run #None, eboss-ngc, eboss-sgc, etc
+        self.DR= DR # Data-Release 
         self.metacat = metacat
         self.simcat = simcat
         # Additional options from command line
@@ -230,20 +117,32 @@ class SimDecals(LegacySurveyData):
     def get_image_object(self, t):
         return SimImage(self, t)
 
-    def ccds_for_fitting(survey, brick, ccds):
-        return np.flatnonzero(ccds.camera == 'decam')
-
+    #######
+    # see legacypipe/runs.py
     def filter_ccds_files(self, fns):
-        if self.run is None:
-            return super(SimDecals,self).filter_ccds_files(fns)
-        elif self.run == 'eboss-ngc':
+        if self.DR == 3:
             return [fn for fn in fns if
-                 ('survey-ccds-dr3-eboss-ngc.fits.gz' in fn)]
-        elif self.run == 'eboss-sgc':
+                    ('survey-ccds-decals.fits.gz' in fn  or
+                     'survey-ccds-nondecals.fits.gz' in fn or
+                     'survey-ccds-extra.fits.gz' in fn)]
+        elif self.DR == 4:
             return [fn for fn in fns if
-                 ('survey-ccds-dr3-eboss-sgc.fits.gz' in fn)]
-        else:
-            raise ValueError('run=%s not supported' % self.run)
+                    ('survey-ccds-dr4-90prime.fits.gz' in fn or
+                    'survey-ccds-dr4-mzlsv2.fits.gz' in fn)]
+        elif self.DR == 5:
+            return fns
+
+    def ccds_for_fitting(self, brick, ccds):
+        if self.DR in [3,5]:
+            return np.flatnonzero(ccds.camera == 'decam')
+        elif self.DR == 4:
+            return np.flatnonzero(np.logical_or(ccds.camera == 'mosaic',
+                                  ccds.camera == '90prime'))
+
+    def filter_ccd_kd_files(self, fns):
+        """introduced in DR5"""
+        return []
+    #######
 
 def get_srcimg_invvar(stamp_ivar,img_ivar):
     '''stamp_ivar, img_ivar -- galsim Image objects'''
@@ -817,17 +716,15 @@ def get_parser():
     parser = argparse.ArgumentParser(formatter_class=argparse.
                                      ArgumentDefaultsHelpFormatter,
                                      description='DECaLS simulations.')
-    parser.add_argument('-o', '--objtype', type=str, choices=['star','elg', 'lrg', 'qso'], default='star', metavar='', help='insert these into images') 
-    parser.add_argument('-b', '--brick', type=str, default='2428p117', metavar='', 
-                        help='simulate objects in this brick')
-    parser.add_argument('-rs', '--rowstart', type=int, default=0, metavar='', 
-                        help='zero indexed, row of ra,dec,mags table, after it is cut to brick, to start on')
-    parser.add_argument('--run', type=str, default=None, metavar='', 
-                        help='tells which survey-ccds to read')
-    parser.add_argument('--prefix', type=str, default='', metavar='', 
-                        help='tells which input sample to use')
+    parser.add_argument('-o', '--objtype', type=str, choices=['star','elg', 'lrg', 'qso'], default='star', required=True) 
+    parser.add_argument('-b', '--brick', type=str, default='2428p117', required=True)
+    parser.add_argument('--DR', type=int, choices=[3,4,5], default=None,required=True)
     parser.add_argument('-n', '--nobj', type=int, default=500, metavar='', 
                         help='number of objects to simulate (required input)')
+    parser.add_argument('-rs', '--rowstart', type=int, default=0, metavar='', 
+                        help='zero indexed, row of ra,dec,mags table, after it is cut to brick, to start on')
+    parser.add_argument('--prefix', type=str, default='', metavar='', 
+                        help='tells which input sample to use')
     #parser.add_argument('-ic', '--ith_chunk', type=long, default=None, metavar='', 
     #                    help='run the ith chunk, 0-999')
     #parser.add_argument('-c', '--nchunk', type=long, default=1, metavar='', 
@@ -848,8 +745,8 @@ def get_parser():
     parser.add_argument('--all-blobs', action='store_true', 
                         help='Process all the blobs, not just those that contain simulated sources.')
     parser.add_argument('--stage', choices=['tims', 'image_coadds', 'srcs', 'fitblobs', 'coadds'],
-                        type=str, default='writecat', metavar='', help='Run up to the given stage')
-    parser.add_argument('--early_coadds', action='store_true',
+                        type=str, default=None, metavar='', help='Run up to the given stage')
+    parser.add_argument('--early_coadds', action='store_true',default=False,
                         help='add this option to make the JPGs before detection/model fitting')
     parser.add_argument('--cutouts', action='store_true',
                         help='Stop after stage tims and save .npy cutouts of every simulated source')
@@ -944,12 +841,44 @@ def create_ith_simcat(d=None):
     d['simcat']= simcat
     d['simcat_dir']= simcat_dir
 
+def get_runbrick_setup(**kwargs):
+    DR= kwargs['DR']
+    assert(DR in [3,4,5])
+    from legacypipe.runbrick import get_runbrick_kwargs
+    from legacypipe.runbrick import get_parser as get_runbrick_parser
+    zm= kwargs['zoom']
+    cmd_line= ['--no-write', '--skip','--force-all',
+               '--zoom','%d' % zm[0],'%d' % zm[1],'%d' % zm[2],'%d' % zm[3],
+               '--no-wise', '--threads','%d' % kwargs['threads']]
+    if kwargs['early_coadds']:
+        cmd_line += ['--early-coadds']
+    if kwargs['stage']:
+        cmd_line += ['--stage', '%s' % kwargs['stage']]
+    # Data-Release specific
+    if DR == 3:
+        cmd_line += ['--run', 'dr3', '--hybrid-psf','--nsigma', '6']
+    elif DR == 4:
+        cmd_line += ['--run', 'dr4v2', '--hybrid-psf','--nsigma', '6']
+    elif DR == 5:
+        # defaults: rex (use --simp), nsigma 6 ,hybrid-psf (--no-hybrid-psf otherwise)
+        # depth cut already done (use --depth-cut to do depth cut anyway)
+        cmd_line += ['--run', 'dr5'] 
+
+    rb_parser= get_runbrick_parser()
+    rb_opt = rb_parser.parse_args(args=cmd_line)
+    rb_optdict = vars(rb_opt)
+    # remove keys as Dustin' does
+    _= rb_optdict.pop('ps', None)
+    _= rb_optdict.pop('verbose',None)
+    _, rb_kwargs= get_runbrick_kwargs(**rb_optdict)
+    return rb_kwargs
+
 def do_one_chunk(d=None):
     '''Run tractor
     Can be run as 1) a loop over nchunks or 2) for one chunk
     d -- dict returned by get_metadata_others() AND added to by get_ith_simcat()'''
     assert(d is not None)
-    simdecals = SimDecals(run=d['run'],\
+    simdecals = SimDecals(DR=d['args'].DR,\
                           metacat=d['metacat'], simcat=d['simcat'], output_dir=d['simcat_dir'], \
                           add_sim_noise=d['args'].add_sim_noise, folding_threshold=d['args'].folding_threshold,\
                           image_eq_model=d['args'].image_eq_model)
@@ -959,12 +888,18 @@ def do_one_chunk(d=None):
     else:
         blobxy = zip(d['simcat'].get('x'), d['simcat'].get('y'))
 
-    # Format: run_brick(brick, survey obj, **kwargs)
-    run_brick(d['brickname'], simdecals, threads=d['args'].threads, zoom=d['args'].zoom,
-              wise=False, forceAll=True, hybridPsf=True, writePickles=False, do_calibs=True,
-              write_metrics=False, pixPsf=True, blobxy=blobxy, early_coadds=d['args'].early_coadds,
-              splinesky=True, ceres=False, stages=[ d['args'].stage ], plots=False,
-              plotbase='sim',allbands='ugrizY')
+    # Default runbrick call sequence
+    obiwan_kwargs= vars(d['args']) 
+    runbrick_kwargs= get_runbrick_setup(**obiwan_kwargs)
+    # Obiwan modifications
+    runbrick_kwargs.update(blobxy=blobxy)
+    #plotbase='obiwan')
+    print('Calling run_brick with: ')
+    print('brickname= %s' % d['brickname'])
+    print('simdecals= ',simdecals)
+    print('runbrick_kwards= ',runbrick_kwargs)
+    # Run it: run_brick(brick, survey obj, **kwargs)
+    run_brick(d['brickname'], simdecals, **runbrick_kwargs)
 
 def do_ith_cleanup(d=None):
     '''for each chunk that finishes running, 
@@ -1002,7 +937,9 @@ def main(args=None):
     else:
         # args is already a argparse.Namespace obj
         pass 
-    
+    # Print calling sequence
+    print('Args:', args)   
+ 
     if args.cutouts:
         args.stage = 'tims'
     # Setup loggers
@@ -1083,6 +1020,9 @@ def main(args=None):
     else:
         Samp= getSrcsInBrick(brickname,objtype) 
     print('%d samples, for brick %s' % (len(Samp),brickname))
+    print('First 2 sources have: ')
+    for sam in Samp[:2]:
+        print('ra=%f, dec=%f' % (sam.ra,sam.dec))
     # Already did these cuts in decals_sim_radeccolors 
     #r0,r1,d0,d1= brickwcs.radec_bounds()
     #Samp.cut( (Samp.ra >= r0)*(Samp.ra <= r1)*\
@@ -1156,7 +1096,6 @@ def main(args=None):
     create_ith_simcat(d=kwargs)
     t0= ptime('create_ith_simcat',t0)
     # Run tractor
-    kwargs.update( dict(run=args.run) )
     do_one_chunk(d=kwargs)
     t0= ptime('do_one_chunk',t0)
     # Clean up output
@@ -1164,6 +1103,7 @@ def main(args=None):
         do_ith_cleanup(d=kwargs)
         t0= ptime('do_ith_cleanup',t0)
     log.info('All done!')
+    return 0
      
 if __name__ == '__main__':
     main()
