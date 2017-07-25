@@ -15,5 +15,5 @@ conflict $product
 # module-whatis
 #
 module-whatis "Sets up $product/$version in your environment."
-set PRODUCT_DIR /global/cscratch1/sd/kaylanb/test/obiwan_legacypipe/py/junk
+set PRODUCT_DIR /global/cscratch1/sd/kaylanb/test/obiwan/py/obiwan/junk
 setenv DECALS_SIM_DIR $PRODUCT_DIR

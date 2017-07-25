@@ -94,11 +94,11 @@ def ptime(text,t0):
 def get_savedir(**kwargs):
     return os.path.join(kwargs['decals_sim_dir'],kwargs['objtype'],\
                         kwargs['brickname'][:3], kwargs['brickname'],\
-                        "rowstart%d" % kwargs['rowst'])    
+                        "rs%d" % kwargs['rowst'])    
 
 def get_fnsuffix(**kwargs):
-    return '-{}-{}-{}.fits'.format(kwargs['objtype'], kwargs['brickname'],\
-                                   'rowstart%d' % kwargs['rowst'])
+    return '-{}-{}.fits'.format(kwargs['objtype'], kwargs['brickname'])
+                                   #'rs%d' % kwargs['rowst'])
 
 class SimDecals(LegacySurveyData):
     def __init__(self, DR=None, survey_dir=None, metacat=None, simcat=None, output_dir=None,\
@@ -901,6 +901,10 @@ def do_one_chunk(d=None):
     # Run it: run_brick(brick, survey obj, **kwargs)
     run_brick(d['brickname'], simdecals, **runbrick_kwargs)
 
+def dobash(cmd):
+    print('UNIX cmd: %s' % cmd)
+    if os.system(cmd): raise ValueError
+
 def do_ith_cleanup(d=None):
     '''for each chunk that finishes running, 
     Remove unecessary files and give unique names to all others
@@ -908,18 +912,37 @@ def do_ith_cleanup(d=None):
     assert(d is not None) 
     log = logging.getLogger('decals_sim')
     log.info('Cleaning up...')
-    brickname= d['brickname']
-    output_dir= d['simcat_dir']
-    shutil.copy(os.path.join(output_dir, 'tractor', brickname[:3],
-                             'tractor-{}.fits'.format(brickname)),
-                os.path.join(output_dir, 'tractor'+get_fnsuffix(**d)))
-    for suffix in ('image', 'model', 'resid', 'simscoadd'):
-        shutil.copy(os.path.join(output_dir,'coadd', brickname[:3], brickname,
-                                 'legacysurvey-{}-{}.jpg'.format(brickname, suffix)),
-                    os.path.join(output_dir, 'qa-'+suffix+ get_fnsuffix(**d).replace('.fits','.jpg')))
-    shutil.rmtree(os.path.join(output_dir, 'coadd'))
-    shutil.rmtree(os.path.join(output_dir, 'tractor'))
-    log.info("Finished %s" % get_savedir(**d))
+    brick= d['brickname']
+    bri= brick[:3]
+    outdir= d['simcat_dir']
+    # coadd/123/1238p245/* -> coadd/
+    # metrics/123/* -> metrics/
+    # tractor/123/* -> tractor/
+    # tractor-i/123/* -> tractor-i/
+    # *.fits -> obiwan/
+    try:
+        dobash('rsync -av %s/coadd/%s/%s/* %s/coadd/' % 
+                (outdir,bri,brick, outdir))
+        for name in ['metrics','tractor','tractor-i']:
+            dobash('rsync -av %s/%s/%s/* %s/%s/' % 
+                    (outdir,name,bri, outdir,name))
+        dobash('mkdir -p %s/obiwan' % outdir)
+        dobash('rsync -av %s/*.fits %s/obiwan/' % 
+                (outdir,outdir))
+    except:
+        raise ValueError('issue repackaging %s' % output_dir)
+
+    # If here, then safe to remove originals
+    dobash('rm -r %s/coadd/%s' % (outdir,bri))
+    for name in ['metrics','tractor','tractor-i']:
+        dobash('rm -r %s/%s/%s' % (outdir,name,bri))
+    dobash('rm %s/*.fits' % outdir)
+    # Only "rowstars 0" keeps its coadds
+    if d['rowst'] != 0:
+        dobash('rm %s/coadd/*.fits.fz' % outdir)
+        dobash('rm %s/coadd/*.fits' % outdir)
+        
+
 
 def get_sample_fn(brick,decals_sim_dir,prefix=''):
     fn= os.path.join(decals_sim_dir,'input_sample','bybrick','%ssample_%s.fits' % (prefix,brick))
@@ -971,7 +994,7 @@ def main(args=None):
             log.warning('{} objtype not yet supported!'.format(objtype))
             return 0
 
-    # Deal with the paths.
+    # Output dir
     if 'DECALS_SIM_DIR' in os.environ:
         decals_sim_dir = os.getenv('DECALS_SIM_DIR')
     else:
