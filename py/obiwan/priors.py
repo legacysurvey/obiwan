@@ -685,6 +685,8 @@ class CommonInit(ReadWrite):
 		self.savekde= kwargs.get('savekde',False)
 		# 
 		self.outdir= kwargs.get('outdir','./')
+        # Running from jupyter notebook?
+        self.nb= kwargs.get('nb',False)
 
 	def imaging_cut(self,data):
 		"""data is a fits_table object with Tractor Catalogue columns"""
@@ -968,7 +970,8 @@ class ELG(CommonInit):
 		tab.cut(keep)
 		print('dr3_deep2, after cut bad vals %d' % len(tab))
 		# Sanity plots
-		plot_tractor_shapes(tab,prefix='ELG_dr3deep2_expdev',outdir=self.outdir)
+		plot_tractor_shapes(tab,prefix='ELG_dr3deep2_expdev',outdir=self.outdir,nb=self.nb)
+		raise ValueError
 		print('size %d %d' % (len(tab),len(tab[tab.tractor_re > 0.])))
 		tab.cut( tab.tractor_re > 0. )
 		xy_names= [('tractor_re','zhelio'),
@@ -1394,7 +1397,7 @@ def get_tractor_shapes(cat):
     d['pa']= np.random.uniform(0.,180.,size=len(cat))
     return d
 
-def plot_tractor_shapes(cat,prefix='',outdir=None):
+def plot_tractor_shapes(cat,prefix='',outdir=None,nb=False):
     for name,rng in zip(['tractor_re','tractor_n'],
                         [(0,2),(1,4)]):
         fig,ax= plt.subplots()
@@ -1408,9 +1411,10 @@ def plot_tractor_shapes(cat,prefix='',outdir=None):
         savenm= 'tractor_%s_%s.png' % (prefix,name)
         if outdir:
             savenm= os.path.join(outdir,savenm)
-        plt.savefig(savenm,bbox_extra_artists=[xlab,ylab], bbox_inches='tight',dpi=150)
-        plt.close()
-        print('Wrote %s' % savenm)
+        if not nb:
+            plt.savefig(savenm,bbox_extra_artists=[xlab,ylab], bbox_inches='tight',dpi=150)
+            plt.close()
+            print('Wrote %s' % savenm)
 
 
 def plot_tractor_galfit_shapes(cat,prefix=''):
