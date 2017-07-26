@@ -17,6 +17,7 @@ Contents
 
    priors.rst
    draw_radec_color_z.rst
+   kenobi.rst
    changes.rst
 
 The obiwan package/API
@@ -25,7 +26,7 @@ The obiwan package/API
 .. automodule:: obiwan
     :members:
 
-.. automodule:: obiwan.main
+.. automodule:: obiwan.kenobi
     :members:
 
 .. automodule:: obiwan.priors
