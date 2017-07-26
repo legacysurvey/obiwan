@@ -930,116 +930,116 @@ def create_metadata(kwargs=None):
 
 
 def create_ith_simcat(d=None):
-	"""Write 'simcat' and 'skipped_ids' tables for a given sample of sources
+    """Write 'simcat' and 'skipped_ids' tables for a given sample of sources
 
-	Args:
-		d: dict with keys
-			Samp: fits_table for the properties of sources in the brick
-				usually a subset of all sources in the brick determined by
-				rowstart (rs)
-			brickwcs: WCS object for the brick
-			metacat: fits_table with configuration-like params for the 
-				simulated sources
+    Args:
+        d: dict with keys
+            Samp: fits_table for the properties of sources in the brick
+                usually a subset of all sources in the brick determined by
+                rowstart (rs)
+            brickwcs: WCS object for the brick
+            metacat: fits_table with configuration-like params for the 
+                simulated sources
 
-	Returns:
-		Nothing, saves the 'simcat' and 'skipped_ids' tables
-		Adds 'simcat' table to dict 'd'
-	"""
-	assert(d is not None)
-	log = logging.getLogger('decals_sim')
-	#chunksuffix = '{:02d}'.format(ith_chunk)
-	# Build and write out the simulated object catalog.
-	#seed= d['seeds'][ith_chunk]
-	#simcat = build_simcat(d['nobj'], d['brickname'], d['brickwcs'], d['metacat'], seed)
-	simcat, skipped_ids = build_simcat(Samp=d['Samp'],brickwcs=d['brickwcs'],meta=d['metacat'])
-	# Simcat 
-	simcat_dir = get_savedir(**d) #os.path.join(d['metacat_dir'],'row%d-%d' % (rowstart,rowend)) #'%3.3d' % ith_chunk)    
-	if not os.path.exists(simcat_dir): 
-		os.makedirs(simcat_dir)
-	#simcatfile = os.path.join(simcat_dir, 'simcat-{}-{}-row{}-{}.fits'.format(d['brickname'], d['objtype'],rowstart,rowend)) # chunksuffix))
-	simcatfile = os.path.join(simcat_dir, 'simcat'+get_fnsuffix(**d))
-	if os.path.isfile(simcatfile):
-		os.remove(simcatfile)
-	simcat.writeto(simcatfile)
-	log.info('Wrote {}'.format(simcatfile))
-	# Skipped Ids
-	if len(skipped_ids) > 0:
-		skip_table= fits_table()
-		skip_table.set('ids',skipped_ids)
-		name= os.path.join(simcat_dir,'skippedids'+get_fnsuffix(**d))
-		if os.path.exists(name):
-			os.remove(name)
-			log.info('Removed %s' % name)
-		skip_table.writeto(name)
-		log.info('Wrote {}'.format(name))
-	# add to dict
-	d['simcat']= simcat
-	d['simcat_dir']= simcat_dir
+    Returns:
+        Nothing, saves the 'simcat' and 'skipped_ids' tables
+        Adds 'simcat' table to dict 'd'
+    """
+    assert(d is not None)
+    log = logging.getLogger('decals_sim')
+    #chunksuffix = '{:02d}'.format(ith_chunk)
+    # Build and write out the simulated object catalog.
+    #seed= d['seeds'][ith_chunk]
+    #simcat = build_simcat(d['nobj'], d['brickname'], d['brickwcs'], d['metacat'], seed)
+    simcat, skipped_ids = build_simcat(Samp=d['Samp'],brickwcs=d['brickwcs'],meta=d['metacat'])
+    # Simcat 
+    simcat_dir = get_savedir(**d) #os.path.join(d['metacat_dir'],'row%d-%d' % (rowstart,rowend)) #'%3.3d' % ith_chunk)    
+    if not os.path.exists(simcat_dir): 
+        os.makedirs(simcat_dir)
+    #simcatfile = os.path.join(simcat_dir, 'simcat-{}-{}-row{}-{}.fits'.format(d['brickname'], d['objtype'],rowstart,rowend)) # chunksuffix))
+    simcatfile = os.path.join(simcat_dir, 'simcat'+get_fnsuffix(**d))
+    if os.path.isfile(simcatfile):
+        os.remove(simcatfile)
+    simcat.writeto(simcatfile)
+    log.info('Wrote {}'.format(simcatfile))
+    # Skipped Ids
+    if len(skipped_ids) > 0:
+        skip_table= fits_table()
+        skip_table.set('ids',skipped_ids)
+        name= os.path.join(simcat_dir,'skippedids'+get_fnsuffix(**d))
+        if os.path.exists(name):
+            os.remove(name)
+            log.info('Removed %s' % name)
+        skip_table.writeto(name)
+        log.info('Wrote {}'.format(name))
+    # add to dict
+    d['simcat']= simcat
+    d['simcat_dir']= simcat_dir
 
 def get_runbrick_setup(**kwargs):
-	"""Convert runbrick.py cmd line options into **kwargs for run_brick()
+    """Convert runbrick.py cmd line options into **kwargs for run_brick()
 
-	The command line options depend on the Data Release (e.g. the
-		legacypipe code version. The cmd line options associated with 
-		each DR get modified and repackaged into a dict in 
-		legacypipe.runbrick so this converter is required to call run_brick
-		appropriately
+    The command line options depend on the Data Release (e.g. the
+        legacypipe code version. The cmd line options associated with 
+        each DR get modified and repackaged into a dict in 
+        legacypipe.runbrick so this converter is required to call run_brick
+        appropriately
 
-	Args:
-		**kwargs: dict of the cmd line options to obiwan.kenobi.py
+    Args:
+        **kwargs: dict of the cmd line options to obiwan.kenobi.py
 
-	Returns:
-		dict to use when calling legacypipe.runbrick.run_brick like
-			run_brick(brickname, survey, **dict)		
-	"""
-	DR= kwargs['DR']
-	assert(DR in [3,4,5])
-	from legacypipe.runbrick import get_runbrick_kwargs
-	from legacypipe.runbrick import get_parser as get_runbrick_parser
-	zm= kwargs['zoom']
-	cmd_line= ['--no-write', '--skip','--force-all',
-			   '--zoom','%d' % zm[0],'%d' % zm[1],'%d' % zm[2],'%d' % zm[3],
-			   '--no-wise', '--threads','%d' % kwargs['threads']]
-	if kwargs['early_coadds']:
-		cmd_line += ['--early-coadds']
-	if kwargs['stage']:
-		cmd_line += ['--stage', '%s' % kwargs['stage']]
-	# Data-Release specific
-	if DR == 3:
-		cmd_line += ['--run', 'dr3', '--hybrid-psf','--nsigma', '6']
-	elif DR == 4:
-		cmd_line += ['--run', 'dr4v2', '--hybrid-psf','--nsigma', '6']
-	elif DR == 5:
-		# defaults: rex (use --simp), nsigma 6 ,hybrid-psf (--no-hybrid-psf otherwise)
-		# depth cut already done (use --depth-cut to do depth cut anyway)
-		cmd_line += ['--run', 'dr5'] 
+    Returns:
+        dict to use when calling legacypipe.runbrick.run_brick like
+            run_brick(brickname, survey, **dict)		
+    """
+    DR= kwargs['DR']
+    assert(DR in [3,4,5])
+    from legacypipe.runbrick import get_runbrick_kwargs
+    from legacypipe.runbrick import get_parser as get_runbrick_parser
+    zm= kwargs['zoom']
+    cmd_line= ['--no-write', '--skip','--force-all',
+               '--zoom','%d' % zm[0],'%d' % zm[1],'%d' % zm[2],'%d' % zm[3],
+               '--no-wise', '--threads','%d' % kwargs['threads']]
+    if kwargs['early_coadds']:
+        cmd_line += ['--early-coadds']
+    if kwargs['stage']:
+        cmd_line += ['--stage', '%s' % kwargs['stage']]
+    # Data-Release specific
+    if DR == 3:
+        cmd_line += ['--run', 'dr3', '--hybrid-psf','--nsigma', '6']
+    elif DR == 4:
+        cmd_line += ['--run', 'dr4v2', '--hybrid-psf','--nsigma', '6']
+    elif DR == 5:
+        # defaults: rex (use --simp), nsigma 6 ,hybrid-psf (--no-hybrid-psf otherwise)
+        # depth cut already done (use --depth-cut to do depth cut anyway)
+        cmd_line += ['--run', 'dr5'] 
 
-	rb_parser= get_runbrick_parser()
-	rb_opt = rb_parser.parse_args(args=cmd_line)
-	rb_optdict = vars(rb_opt)
-	# remove keys as Dustin' does
-	_= rb_optdict.pop('ps', None)
-	_= rb_optdict.pop('verbose',None)
-	_, rb_kwargs= get_runbrick_kwargs(**rb_optdict)
-	return rb_kwargs
+    rb_parser= get_runbrick_parser()
+    rb_opt = rb_parser.parse_args(args=cmd_line)
+    rb_optdict = vars(rb_opt)
+    # remove keys as Dustin' does
+    _= rb_optdict.pop('ps', None)
+    _= rb_optdict.pop('verbose',None)
+    _, rb_kwargs= get_runbrick_kwargs(**rb_optdict)
+    return rb_kwargs
 
 def do_one_chunk(d=None):
     """Runs the legacypipe/Tractor pipeline on images with simulated sources
 
-	Args:
-		d: dict containing
-			args: obiwan.kenobi.py cmd line argparse.Namespace object
-			brickname: chunk of sky
-			metacat: fits_table 
-				configuration-like params for the simulated sources
-			simcat: fits_table
-				simulated source catalog for a given brick (not CCD).
+    Args:
+        d: dict containing
+            args: obiwan.kenobi.py cmd line argparse.Namespace object
+            brickname: chunk of sky
+            metacat: fits_table 
+                configuration-like params for the simulated sources
+            simcat: fits_table
+                simulated source catalog for a given brick (not CCD).
 
-	Note:
-		runb_brick() is 'main' for the legacypipe/Tractor pipeline
+    Note:
+        runb_brick() is 'main' for the legacypipe/Tractor pipeline
 
-	Returns:
-		Nothing, but this func end ups writing out all the obiwan results 
+    Returns:
+        Nothing, but this func end ups writing out all the obiwan results 
     """
     assert(d is not None)
     simdecals = SimDecals(DR=d['args'].DR,\
@@ -1072,12 +1072,12 @@ def dobash(cmd):
 def do_ith_cleanup(d=None):
     """Moves all obiwan+legacypipe outputs to a new directory stucture
 
-	Uses rsync to move everthing, if all the rsync's succeed then all the 
-		original files and directories are removed 
+    Uses rsync to move everthing, if all the rsync's succeed then all the 
+        original files and directories are removed 
 
-	Args:
-		d: dict with keys brickname, simcat_dir
-	"""
+    Args:
+        d: dict with keys brickname, simcat_dir
+    """
     assert(d is not None) 
     log = logging.getLogger('decals_sim')
     log.info('Cleaning up...')
