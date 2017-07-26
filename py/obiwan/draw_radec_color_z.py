@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 # See LICENSE.rst for BSD 3-clause license info
 # -*- coding: utf-8 -*-
 """
@@ -138,7 +137,21 @@ def get_area(radec):
 
 def get_radec(radec,\
               ndraws=1,random_state=np.random.RandomState()):
-    '''https://github.com/desihub/imaginglss/blob/master/scripts/imglss-mpi-make-random.py#L55'''
+    """Draws ndraws samples of Ra,Dec from the unit sphere.
+
+	Args:
+		radec: dict with keys ra1,ra2,dec1,dec2
+			the ra,dec limits for the sample
+		ndraws: number of samples
+		randome_state: numpy random number generator
+
+	Returns:
+		ra,dec: tuple of arrays having length ndraws
+
+	Note: 
+		Taken from 
+		https://github.com/desihub/imaginglss/blob/master/scripts/imglss-mpi-make-random.py#L55
+	"""
     ramin,ramax= radec['ra1'],radec['ra2']
     dcmin,dcmax= radec['dec1'],radec['dec2']
     u1,u2= random_state.uniform(size=(2, ndraws) )
@@ -151,133 +164,176 @@ def get_radec(radec,\
     return RA,DEC
 
 class KdeSample(object):
-    def __init__(self,objtype='star',pickle_dir='./'):
-        self.objtype= objtype
-        self.kdefn=os.path.join(pickle_dir,'%s-kde.pickle' % self.objtype)
-        self.kde= self.get_kde()
+	"""Sample color + redshift + morphology from each galaxy KDE
 
-    def get_kde(self):
-        fout=open(self.kdefn,'r')
-        kde= pickle.load(fout)
-        fout.close()
-        return kde
+	Note: 
+		uses saved KDE from obiwan.priors.KernelOfTruth()	
 
-    def get_sample(self,ndraws=1,random_state=np.random.RandomState()):
-        samp= self.kde.sample(n_samples=ndraws,random_state=random_state)
-        if self.objtype == 'star':
-            #labels=['r wdust','r-z','g-r']
-            r= samp[:,0]
-            z= r- samp[:,1]
-            g= r+ samp[:,2]
-            return g,r,z
-        elif self.objtype == 'qso':
-            #labels=['r wdust','r-z','g-r']
-            r= samp[:,0]
-            z= r- samp[:,1]
-            g= r+ samp[:,2]
-            redshift= samp[:,3]
-            return g,r,z,redshift
-        elif self.objtype == 'elg':
-            #labels=['r wdust','r-z','g-r'] 
-            r= samp[:,0]
-            z= r- samp[:,1]
-            g= r+ samp[:,2]
-            redshift= samp[:,3]
-            rhalf= samp[:,4]
-            return g,r,z,redshift,rhalf
-        elif self.objtype == 'lrg':
-            #labels=['z wdust','r-z','r-W1','g wdust']
-            z= samp[:,0]
-            r= z+ samp[:,1]
-            w1= r - samp[:,2]
-            redshift= samp[:,3]
-            g= samp[:,4]
-            rhalf= samp[:,5]
-            return g,r,z,w1,redshift,rhalf
-        else: 
-            raise ValueError('objecttype= %s, not supported' % self.objtype)
+	Args:
+		objtype: star,elg,lrg,qso
+		pickle_dir: where the fit KDE was written
+
+	Attributes:
+		objtype: star,elg,lrg,qso
+		pickle_dir: where the fit KDE was written
+		kde: fit KDE
+	"""
+		
+	def __init__(self,objtype='star',pickle_dir='./'):
+		self.objtype= objtype
+		self.kdefn=os.path.join(pickle_dir,'%s-kde.pickle' % self.objtype)
+		self.kde= self.get_kde()
+
+	def get_kde(self):
+		fout=open(self.kdefn,'r')
+		kde= pickle.load(fout)
+		fout.close()
+		return kde
+
+	def get_sample(self,ndraws=1,random_state=np.random.RandomState()):
+		samp= self.kde.sample(n_samples=ndraws,random_state=random_state)
+		if self.objtype == 'star':
+			#labels=['r wdust','r-z','g-r']
+			r= samp[:,0]
+			z= r- samp[:,1]
+			g= r+ samp[:,2]
+			return g,r,z
+		elif self.objtype == 'qso':
+			#labels=['r wdust','r-z','g-r']
+			r= samp[:,0]
+			z= r- samp[:,1]
+			g= r+ samp[:,2]
+			redshift= samp[:,3]
+			return g,r,z,redshift
+		elif self.objtype == 'elg':
+			#labels=['r wdust','r-z','g-r'] 
+			r= samp[:,0]
+			z= r- samp[:,1]
+			g= r+ samp[:,2]
+			redshift= samp[:,3]
+			rhalf= samp[:,4]
+			return g,r,z,redshift,rhalf
+		elif self.objtype == 'lrg':
+			#labels=['z wdust','r-z','r-W1','g wdust']
+			z= samp[:,0]
+			r= z+ samp[:,1]
+			w1= r - samp[:,2]
+			redshift= samp[:,3]
+			g= samp[:,4]
+			rhalf= samp[:,5]
+			return g,r,z,w1,redshift,rhalf
+		else: 
+			raise ValueError('objecttype= %s, not supported' % self.objtype)
 
 
 
 class KDEColors(object):
-    def __init__(self,objtype='star',pickle_dir='./'):
-        self.objtype= objtype
-        self.kdefn=os.path.join(pickle_dir,'%s-kde.pickle' % self.objtype)
-        self.kde= self.get_kde()
+	"""Sample color + redshift from each galaxy KDE
 
-    def get_kde(self):
-        fout=open(self.kdefn,'r')
-        kde= pickle.load(fout)
-        fout.close()
-        return kde
+	Note: 
+		uses saved KDE from obiwan.priors.KernelOfTruth()	
 
-    def get_colors(self,ndraws=1,random_state=np.random.RandomState()):
-        samp= self.kde.sample(n_samples=ndraws,random_state=random_state)
-        if self.objtype == 'star':
-            #labels=['r wdust','r-z','g-r']
-            r= samp[:,0]
-            z= r- samp[:,1]
-            g= r+ samp[:,2]
-            return g,r,z
-        elif self.objtype == 'qso':
-            #labels=['r wdust','r-z','g-r']
-            r= samp[:,0]
-            z= r- samp[:,1]
-            g= r+ samp[:,2]
-            redshift= samp[:,3]
-            return g,r,z,redshift
-        elif self.objtype == 'elg':
-            #labels=['r wdust','r-z','g-r'] 
-            r= samp[:,0]
-            z= r- samp[:,1]
-            g= r+ samp[:,2]
-            redshift= samp[:,3]
-            return g,r,z,redshift
-        elif self.objtype == 'lrg':
-            #labels=['z wdust','r-z','r-W1','g wdust']
-            z= samp[:,0]
-            r= z+ samp[:,1]
-            redshift= samp[:,3]
-            g= samp[:,4]
-            return g,r,z,redshift
-        else: 
-            raise ValueError('objecttype= %s, not supported' % self.objtype)
+	Args:
+		objtype: star,elg,lrg,qso
+		pickle_dir: where the fit KDE was written
+
+	Attributes:
+		objtype: star,elg,lrg,qso
+		pickle_dir: where the fit KDE was written
+		kde: fit KDE
+	"""
+	def __init__(self,objtype='star',pickle_dir='./'):
+		self.objtype= objtype
+		self.kdefn=os.path.join(pickle_dir,'%s-kde.pickle' % self.objtype)
+		self.kde= self.get_kde()
+
+	def get_kde(self):
+		fout=open(self.kdefn,'r')
+		kde= pickle.load(fout)
+		fout.close()
+		return kde
+
+	def get_colors(self,ndraws=1,random_state=np.random.RandomState()):
+		samp= self.kde.sample(n_samples=ndraws,random_state=random_state)
+		if self.objtype == 'star':
+			#labels=['r wdust','r-z','g-r']
+			r= samp[:,0]
+			z= r- samp[:,1]
+			g= r+ samp[:,2]
+			return g,r,z
+		elif self.objtype == 'qso':
+			#labels=['r wdust','r-z','g-r']
+			r= samp[:,0]
+			z= r- samp[:,1]
+			g= r+ samp[:,2]
+			redshift= samp[:,3]
+			return g,r,z,redshift
+		elif self.objtype == 'elg':
+			#labels=['r wdust','r-z','g-r'] 
+			r= samp[:,0]
+			z= r- samp[:,1]
+			g= r+ samp[:,2]
+			redshift= samp[:,3]
+			return g,r,z,redshift
+		elif self.objtype == 'lrg':
+			#labels=['z wdust','r-z','r-W1','g wdust']
+			z= samp[:,0]
+			r= z+ samp[:,1]
+			redshift= samp[:,3]
+			g= samp[:,4]
+			return g,r,z,redshift
+		else: 
+			raise ValueError('objecttype= %s, not supported' % self.objtype)
 
 class KDEshapes(object):
-    def __init__(self,objtype='elg',pickle_dir='./'):
-        assert(objtype in ['lrg','elg'])
-        self.objtype= objtype
-        self.kdefn=os.path.join(pickle_dir,'%s-kde.pickle' % self.objtype)
-        self.kde= self.get_kde()
+	"""Sample morphology from each galaxy KDE
 
-    def get_kde(self):
-        fout=open(self.kdefn,'r')
-        kde= pickle.load(fout)
-        fout.close()
-        return kde
+	Note: 
+		uses saved KDE from obiwan.priors.KernelOfTruth()	
 
-    def get_shapes(self,ndraws=1,random_state=np.random.RandomState()):
-        samp= self.kde.sample(n_samples=ndraws,random_state=random_state)
-        # Same for elg,lrg
-        re= samp[:,0]
-        n=  samp[:,1]
-        ba= samp[:,2]
-        pa= samp[:,3]
-        # pa ~ flat PDF
-        pa=  random_state.uniform(0., 180., ndraws)
-        # ba can be [1,1.2] due to KDE algorithm, make these 1
-        ba[ ba < 0.1 ]= 0.1
-        ba[ ba > 1 ]= 1.
-        # Sanity Check
-        assert(np.all(re > 0))
-        assert(np.all((n > 0)*\
-                      (n < 10)))
-        assert(np.all((ba > 0)*\
-                      (ba <= 1.)))
-        assert(np.all((pa >= 0)*\
-                      (pa <= 180)))
-        
-        return re,n,ba,pa
+	Args:
+		objtype: star,elg,lrg,qso
+		pickle_dir: where the fit KDE was written
+
+	Attributes:
+		objtype: star,elg,lrg,qso
+		pickle_dir: where the fit KDE was written
+		kde: fit KDE
+	"""
+	def __init__(self,objtype='elg',pickle_dir='./'):
+		assert(objtype in ['lrg','elg'])
+		self.objtype= objtype
+		self.kdefn=os.path.join(pickle_dir,'%s-kde.pickle' % self.objtype)
+		self.kde= self.get_kde()
+
+	def get_kde(self):
+		fout=open(self.kdefn,'r')
+		kde= pickle.load(fout)
+		fout.close()
+		return kde
+
+	def get_shapes(self,ndraws=1,random_state=np.random.RandomState()):
+		samp= self.kde.sample(n_samples=ndraws,random_state=random_state)
+		# Same for elg,lrg
+		re= samp[:,0]
+		n=  samp[:,1]
+		ba= samp[:,2]
+		pa= samp[:,3]
+		# pa ~ flat PDF
+		pa=  random_state.uniform(0., 180., ndraws)
+		# ba can be [1,1.2] due to KDE algorithm, make these 1
+		ba[ ba < 0.1 ]= 0.1
+		ba[ ba > 1 ]= 1.
+		# Sanity Check
+		assert(np.all(re > 0))
+		assert(np.all((n > 0)*\
+					  (n < 10)))
+		assert(np.all((ba > 0)*\
+					  (ba <= 1.)))
+		assert(np.all((pa >= 0)*\
+					  (pa <= 180)))
+		
+		return re,n,ba,pa
 
 def get_sample_dir(outdir,obj):
     return os.path.join(outdir,'%s_randoms' % obj)
@@ -359,9 +415,19 @@ def survey_bricks_cut2radec(radec):
     return tab
             
 def draw_points(radec,unique_ids,obj='star',seed=1,outdir='./',prefix=''):
-    '''unique_ids -- ids assigned to this mpi task
-    writes ra,dec,grz qso,lrg,elg,star to fits file
-    for given seed'''
+    """
+	Args:
+		radec: dict with keys ra1,ra2,dec1,dec2
+			the ra,dec limits for the sample
+		unique_ids: list of unique integers for each draw
+		obj: star,elg,lrg,qso
+		seed: to initialize random number generator
+		outdir: where the fit KDE files are
+
+	Returns:
+		Nothing, but write a fits_table containing the unique id, ra, dec
+			and color + redshift + morphology info for each source
+	"""
     print('entered draw_points')
     ndraws= len(unique_ids)
     random_state= np.random.RandomState(seed)

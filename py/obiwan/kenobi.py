@@ -101,11 +101,50 @@ def get_fnsuffix(**kwargs):
                                    #'rs%d' % kwargs['rowst'])
 
 class SimDecals(LegacySurveyData):
+	"""Top level object that specifying which data to run through pipeline
+
+	Same behavior as legacypipe.runs.Dr3DecalsSurvey which chooses which
+		CCDs to include. But this also stores all the relevant obiwan
+		objects
+
+	Args:
+		DR: which Data-Release to consider. e.g. if DR=3, then only 
+			images included in DR3 will be considered 
+		survey_dir: as used by legacypipe.runbrick.run_brick()
+            Defaults to $LEGACY_SURVEY_DIR environment variable.  Where to look for
+            files including calibration files, tables of CCDs and bricks, image data
+		metacat: fits_table 
+			configuration-like params for the simulated sources
+		simcat: fits_table
+			simulated source catalog for a given brick (not CCD).
+		output_dir: legacypipe's outdir
+		add_sim_noise: add Poisson noise from the simulated source to the image 
+		folding_threshold: how close the simulated source flux is to the requested flux
+			make smaller to increase simulated source flux/requested flux
+		image_eq_model: referred to as 'testA'
+			wherever add a simulated source, replace both image and invvar of the image
+			with that of the simulated source only
+
+	Attributes:
+		DR: which Data-Release to consider. e.g. if DR=3, then only 
+			images included in DR3 will be considered 
+		metacat: fits_table 
+			configuration-like params for the simulated sources
+		simcat: fits_table
+			simulated source catalog for a given brick (not CCD).
+		output_dir: legacypipe's outdir
+		add_sim_noise: add Poisson noise from the simulated source to the image 
+		folding_threshold: how close the simulated source flux is to the requested flux
+			make smaller to increase simulated source flux/requested flux
+		image_eq_model: referred to as 'testA'
+			wherever add a simulated source, replace both image and invvar of the image
+			with that of the simulated source only
+	"""
+	
     def __init__(self, DR=None, survey_dir=None, metacat=None, simcat=None, output_dir=None,\
                        add_sim_noise=False, folding_threshold=1.e-5, image_eq_model=False):
-        '''folding_threshold -- make smaller to increase stamp_flux/input_flux'''
         super(SimDecals, self).__init__(survey_dir=survey_dir, output_dir=output_dir)
-        self.DR= DR # Data-Release 
+        self.DR= DR
         self.metacat = metacat
         self.simcat = simcat
         # Additional options from command line
@@ -180,6 +219,23 @@ def ivar_to_var(ivar,nano2e=None,camera='decam'):
 	return var 
 
 class SimImage(DecamImage):
+	"""Adds simulated sources to a single exposure
+
+	Similar behavior as legacypipe.decam.DecamImage. Instead of 
+		loading images specifically from DECam, this  loads images
+		with simulated sources added in 
+	
+	Args:
+		survey: SimDecals() object
+		t: as used by DecamImage
+			a single row fits_table for a specific CCD
+
+	Attributes:
+		inherits: DecamImage
+		t: as used by DecamImage
+			a single row fits_table for a specific CCD
+	"""
+	
     def __init__(self, survey, t):
         super(SimImage, self).__init__(survey, t)
         self.t = t
@@ -398,9 +454,28 @@ class SimImage(DecamImage):
         return tim
 
 class BuildStamp():
+	"""Does the drawing of simulated sources on a single exposure
+
+	Args: 
+		tim: Tractor Image Object for a specific CCD
+		gain: gain of the CCD
+		folding_threshold: how close the simulated source flux is to the requested flux
+			make smaller to increase simulated source flux/requested flux
+		stamp_size: pixels, width and height of simulated images
+
+	Attributes:
+		band: g,r,z
+		stamp_size: pixels, width and height of simulated images
+		gsparams: galsim object that configures how accurate simulated source will be
+		gsdeviate: galsim object that configures its random number generator
+		wcs: WCS from tim
+		psf: psf from tim
+		galsim_wcs: wcs repackaged into galsim compatible object
+		zpscale: conversion factor 'nanomaggies' to 'ADU'
+        nano2e: conversion factor 'nanomaggies' to 'e-'
+	"""
+	
     def __init__(self,tim, gain=4.0, folding_threshold=1.e-5, stamp_size=None):
-        """Initialize the BuildStamp object with the CCD-level properties we need.
-        stamp_size -- pixels, automatically set if None """
         self.band = tim.band.strip()
         self.stamp_size = stamp_size
         # GSParams should be used when galsim object is initialized
@@ -613,8 +688,21 @@ class BuildStamp():
 
 #def no_overlapping_radec(ra,dec, bounds, random_state=None, dist=5.0/3600):
 def no_overlapping_radec(Samp, dist=5./3600):
-    '''Samp -- table containing id,ra,dec,colors
-	returns bool indices to cut so not overlapping
+    '''Returns indices of sources that are too close
+
+	We do not inject sources if they are too close to another
+		simulated source. They are skipped and injected in a 
+		later 
+
+	Args:
+		Samp: fits_table for the properties of sources in the brick
+			usually a subset of all sources in the brick determined by
+			rowstart (rs)
+		dist: arcsec, minimum separation simulated sources are allowed 
+			to have
+
+	Returns:
+		bool array, indices of simulated sources that are too close
     '''
     log = logging.getLogger('decals_sim')
     ra,dec= Samp.get('ra'),Samp.get('dec')
@@ -649,7 +737,24 @@ def no_overlapping_radec(Samp, dist=5./3600):
 
 #def build_simcat(nobj=None, brickname=None, brickwcs=None, meta=None, seed=None, noOverlap=True):
 def build_simcat(Samp=None,brickwcs=None, meta=None):
-    """Build the simulated object catalog, which depends on OBJTYPE."""
+    """Creates the simulated source catalog for a given brick (not CCD).
+
+	The WCS for the brick (not CCD) is used to convert ra,dec of source
+		to x,y pixel location in brickspace
+
+	Args:
+		Samp: fits_table for the properties of sources in the brick
+			usually a subset of all sources in the brick determined by
+			rowstart (rs)
+		brickwcs: WCS object for the brick
+		meta: 'metacat' table 
+			fits_table with configuration-like params for the simulated sources
+
+	Returns: 
+		tuple of
+		cat:
+		skipping_ids:
+	"""
     log = logging.getLogger('decals_sim')
 
     #rand = np.random.RandomState(seed)
@@ -762,8 +867,26 @@ def get_parser():
     return parser
  
 def create_metadata(kwargs=None):
-    '''Parses input and returns dict containing 
-    metatable,seeds,brickwcs, other goodies'''
+	"""fits_table with configuration-like params for the simulated sources
+
+	Args:
+		kwargs: dict containing the configuration-like params for the simulated sources
+
+	Returns:
+		Nothing, but writes the 'metacat' fits_table 
+			brickname: which chunk of sky
+			objtype: star,elg,lrg,qso
+			nobj: number of simulated sources for this run
+			stamp_size: pixels, width and height of simulated images
+			cutouts: whether .npy cutouts of every simulated source were written
+			bright_galaxies: whether bright_galaxies flag is set
+		Also stores the fits_table in the kwargs dict
+
+	TODO:
+		Should metacat table have a rowstart column? 
+		Should there only be one metacat table per brick? Instead
+			of one per 'rs*' directory?
+	"""
     assert(kwargs is not None)
     log = logging.getLogger('decals_sim')
     # Pack the input parameters into a meta-data table and write out.
