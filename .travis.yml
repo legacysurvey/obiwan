@@ -8,68 +8,18 @@ python:
 os:
     - linux
     # - osx
-# Default environment is Ubuntu 12.04.5 LTS "precise"
 dist: trusty
 #dist: precise
-# "sudo-less" which is "container-based"
 sudo: false
 #sudo: required
 
-
-#env:
-#    global:
-#        # The following versions are the 'default' for tests, unless
-#        # overidden underneath. They are defined here in order to save having
-#        # to repeat them for all configurations.
-#        - MAIN_CMD='python setup.py'
-#    matrix:
-#        - SETUP_CMD='egg_info'
-#        - SETUP_CMD='bdist_egg'
-#        - SETUP_CMD='test'
-#
-#matrix:
-#    # Don't wait for allowed failures.
-#    fast_finish: true
-#
-#    # OS X support is still experimental, so don't penalize failures.
-#    allow_failures:
-#        - os: osx
-#        - os: linux
-#          python: 3.5
-#          env: MAIN_CMD='pycodestyle' SETUP_CMD='--count py/desitemplate'
-#
-#    include:
-#        # Check for sphinx doc build warnings - we do this first because it
-#        # runs for a long time
-#        - os: linux
-#          python: 3.5
-#          env: SETUP_CMD='build_sphinx --warning-is-error'
-#
-#        # Coverage test, pass the results to coveralls.
-#        - os: linux
-#          python: 3.5
-#          env: SETUP_CMD='test --coverage'
-#
-#        # Experimental OS X test.
-#        # As of March 2017, Python builds on OS X are not available.
-#        # See https://docs.travis-ci.com/user/languages/python/
-#        # - os: osx
-#        #   python: 3.5
-#        #   env: SETUP_CMD='test'
-#
-#        # PEP 8 compliance.
-#        - os: linux
-#          python: 3.5
-#          env: MAIN_CMD='pycodestyle' SETUP_CMD='--count py/desitemplate'
-
-
-# packages no longer installed with sudo apt-get
+# Additonal apt-get installs
 addons:
   apt:
     packages:
 		# sphinx builds 
-		- graphviz
-		- texlive-latex-extra
+		#- graphviz
+		#- texlive-latex-extra
 		# legacypipe 
 		- dvipng
 		- libnetpbm10
@@ -87,9 +37,6 @@ cache:
   - $HOME/astrometry.net
   - $HOME/dust
 
-#before_install:
-#    - curl ipinfo.io
-
 install:
     #- if [[ $MAIN_CMD == 'pycodestyle' ]]; then pip install pycodestyle; fi
     #- if [[ $SETUP_CMD == build_sphinx* ]]; then pip install Sphinx; fi
@@ -105,6 +52,7 @@ install:
     - pip install numpydoc
     - pip install astropy #==2.0rc1
     - pip install photutils
+	# https://github.com/coveralls-clients/coveralls-python
     - pip install coveralls
     # fitsio master version
     - pip install --no-deps --upgrade git+https://github.com/esheldon/fitsio.git#egg=fitsio
@@ -115,39 +63,19 @@ before_script:
     - (cd $HOME/astrometry.net && git pull) || (rm -Rf $HOME/astrometry.net && cd $HOME && git clone https://github.com/dstndstn/astrometry.net.git);
     - (cd $HOME/astrometry.net && make && make py)
 
-    # - if [ ! -d "$HOME/tractor-git" ]; then (cd $HOME; git clone https://github.com/dstndstn/tractor.git tractor-git); fi
-    # - (cd $HOME/tractor-git && git pull) || (rm -Rf $HOME/tractor-git && cd $HOME && git clone https://github.com/dstndstn/tractor.git tractor-git);
-    # - (cd $HOME/tractor-git && make)
-    # - ln -s $HOME/tractor-git/tractor .
-    # - ln -s $HOME/tractor-git/wise .
-
-    # pip install fitsio instead
-    #- if [ ! -d "$HOME/fitsio-git" ]; then (cd $HOME; git clone https://github.com/esheldon/fitsio.git fitsio-git); fi
-    #- (cd $HOME/fitsio-git && git pull) || (rm -Rf $HOME/fitsio-git && cd $HOME && git clone https://github.com/esheldon/fitsio.git fitsio-git);
-    #- (rm -Rf $HOME/fitsio-git && cd $HOME && git clone https://github.com/esheldon/fitsio.git fitsio-git);
-    #- (cd $HOME/fitsio-git && python setup.py install --home $HOME/fitsio)
-    #- ln -s $HOME/fitsio/lib/python/fitsio .
-
     - mkdir -p $HOME/dust/maps
     - (cd $HOME/dust/maps && wget -c http://portal.nersc.gov/project/cosmo/temp/dstn/travis-ci/maps/SFD_dust_4096_ngp.fits)
     - (cd $HOME/dust/maps && wget -c http://portal.nersc.gov/project/cosmo/temp/dstn/travis-ci/maps/SFD_dust_4096_sgp.fits)
     - export DUST_DIR=$HOME/dust
 
 script:
-    #- $MAIN_CMD $SETUP_CMD
     - export PYTHONPATH=${PYTHONPATH}:$(pwd)/py:$HOME/astrometry.net
-    - ls $HOME
-    - ls $HOME/astrometry.net
-    - (cd doc && make)
-    # - echo $PYTHONPATH
-    # - python -c "import numpy; print(numpy.__file__)"
-    # - python -c "import matplotlib; print(matplotlib.__file__)"
-    # - python -c "import fitsio; print(fitsio.__file__)"
-    # - python -c "import tractor.emfit"
+    #- ls $HOME
+    #- ls $HOME/astrometry.net
+    # Run tests with coverage, results to file named travis
     - (cd py && coverage run test/runbrick_test.py travis)
 
 after_success:
-    #- if [[ $SETUP_CMD == 'test --coverage' ]]; then coveralls; fi
     - (cd py && coveralls debug)
     - (cd py && coveralls)
 
