@@ -685,8 +685,8 @@ class CommonInit(ReadWrite):
 		self.savekde= kwargs.get('savekde',False)
 		# 
 		self.outdir= kwargs.get('outdir','./')
-        # Running from jupyter notebook?
-        self.nb= kwargs.get('nb',False)
+		# Running from jupyter nb?
+		self.nb= kwargs.get('nb',False)
 
 	def imaging_cut(self,data):
 		"""data is a fits_table object with Tractor Catalogue columns"""
