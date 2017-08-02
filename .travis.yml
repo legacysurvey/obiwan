@@ -1,17 +1,19 @@
 # Travis-CI.org build script
-# WARNING: env: and matrix: missing here, but in desitemplate
+
+dist: trusty
+# dist: precise
+
+sudo: false
+# sudo: required
+
 language: python
 python:
   - "2.7"
-#  - "3.6"
+# 3.6
 
 os:
     - linux
 # - osx
-dist: trusty
-#dist: precise
-sudo: false
-#sudo: required
 
 # Additonal apt-get installs
 addons:
