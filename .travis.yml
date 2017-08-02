@@ -19,16 +19,16 @@ os:
 addons:
   apt:
     packages:
-		- dvipng
-		- libnetpbm10
-		- libnetpbm10-dev
-		- netpbm
-		- wcslib-dev
-		- libcfitsio3
-		- libcfitsio3-dev
-		- swig
-		- gsl-bin
-		- libgsl0-dev
+	- dvipng
+	- libnetpbm10
+	- libnetpbm10-dev
+	- netpbm
+	- wcslib-dev
+	- libcfitsio3
+	- libcfitsio3-dev
+	- swig
+	- gsl-bin
+	- libgsl0-dev
 
 cache:
   directories:
