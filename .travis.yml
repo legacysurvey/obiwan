@@ -19,20 +19,20 @@ os:
 addons:
   apt:
     packages:
-		# sphinx builds 
-		- graphviz
-		- texlive-latex-extra
-		# legacypipe 
-		- dvipng
-		- libnetpbm10
-		- libnetpbm10-dev
-		- netpbm
-		- wcslib-dev
-		- libcfitsio3
-		- libcfitsio3-dev
-		- swig
-		- gsl-bin
-		- libgsl0-dev
+    # sphinx builds 
+    - graphviz
+    - texlive-latex-extra
+    # legacypipe 
+    - dvipng
+    - libnetpbm10
+    - libnetpbm10-dev
+    - netpbm
+    - wcslib-dev
+    - libcfitsio3
+    - libcfitsio3-dev
+    - swig
+    - gsl-bin
+    - libgsl0-dev
 
 cache:
   directories:
@@ -43,7 +43,7 @@ install:
     - export WCSLIB_INC="-I/usr/include/wcslib-4.20"
     - export WCSLIB_LIB="-lwcs"
 
-	- pip install -r requirements.txt
+  - pip install -r requirements.txt
     - pip install coveralls
     - pip install --no-deps --upgrade git+https://github.com/esheldon/fitsio.git#egg=fitsio
     - pip install -v --no-deps --upgrade git+https://github.com/dstndstn/tractor.git
@@ -60,8 +60,8 @@ before_script:
 
 script:
     - export PYTHONPATH=${PYTHONPATH}:$(pwd)/py:$HOME/astrometry.net
-	- cd py
-	- coverage run obiwan/test/obiwan_test_suite.py test
+  - cd py
+  - coverage run obiwan/test/obiwan_test_suite.py test
 
 after_success:
     - (cd py && coveralls debug)
