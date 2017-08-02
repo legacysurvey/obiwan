@@ -1,8 +1,13 @@
-matplotlib
+Sphinx==1.5.4
+# Legacypipe
 numpy
 scipy
+matplotlib
+numpydoc
+astropy 
+photutils
+# Obiwan
 cython
-astropy
 h5py
 pandas
 psycopg2

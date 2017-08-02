@@ -1,16 +1,16 @@
 [run]
-source = py/desitemplate
+source = py/obiwan
 omit =
-   py/desitemplate/_version.py
-   py/desitemplate/conftest*
-   py/desitemplate/cython_version*
-   py/desitemplate/setup_package*
-   py/desitemplate/*/setup_package*
-   py/desitemplate/*/*/setup_package*
-   py/desitemplate/sphinx/*
-   py/desitemplate/test/*
-   py/desitemplate/*/test/*
-   py/desitemplate/*/*/test/*
+   py/obiwan/_version.py
+   py/obiwan/conftest*
+   py/obiwan/cython_version*
+   py/obiwan/setup_package*
+   py/obiwan/*/setup_package*
+   py/obiwan/*/*/setup_package*
+   py/obiwan/sphinx/*
+   py/obiwan/test/*
+   py/obiwan/*/test/*
+   py/obiwan/*/*/test/*
 
 [report]
 exclude_lines =

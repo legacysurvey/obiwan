@@ -2,4 +2,4 @@
 # -*- coding: utf-8 -*-
 from __future__ import absolute_import
 
-from .desitemplate_test_suite import runtests
+from .obiwan_test_suite import runtests
