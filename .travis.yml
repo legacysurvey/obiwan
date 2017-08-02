@@ -7,7 +7,7 @@ python:
 
 os:
     - linux
-    # - osx
+# - osx
 dist: trusty
 #dist: precise
 sudo: false
@@ -38,24 +38,7 @@ install:
     - export WCSLIB_LIB="-lwcs"
 
 	- pip install -r requirements.txt
-	# Legacypipe
-    #- pip install Sphinx==1.5.4   # 1.5.6?
-    #- pip install numpy
-    #- pip install scipy
-    #- pip install matplotlib
-    #- pip install numpydoc
-    #- pip install astropy #==2.0rc1
-    #- pip install photutils
-	## Obiwan
-    #- pip install cython
-    #- pip install h5py
-    #- pip install pandas
-    #- pip install psycopg2
-    #- pip install scikit-image
-    #- pip install scikit-learn
-	# https://github.com/coveralls-clients/coveralls-python
     - pip install coveralls
-    # Legacypipe
     - pip install --no-deps --upgrade git+https://github.com/esheldon/fitsio.git#egg=fitsio
     - pip install -v --no-deps --upgrade git+https://github.com/dstndstn/tractor.git
 
@@ -71,9 +54,6 @@ before_script:
 
 script:
     - export PYTHONPATH=${PYTHONPATH}:$(pwd)/py:$HOME/astrometry.net
-    #- ls $HOME
-    #- ls $HOME/astrometry.net
-    # Run tests with coverage, results to file named test
 	- cd py
 	- coverage run obiwan/test/obiwan_test_suite.py test
 
