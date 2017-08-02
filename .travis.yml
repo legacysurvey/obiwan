@@ -19,16 +19,20 @@ os:
 addons:
   apt:
     packages:
-	- dvipng
-	- libnetpbm10
-	- libnetpbm10-dev
-	- netpbm
-	- wcslib-dev
-	- libcfitsio3
-	- libcfitsio3-dev
-	- swig
-	- gsl-bin
-	- libgsl0-dev
+		# sphinx builds 
+		- graphviz
+		- texlive-latex-extra
+		# legacypipe 
+		- dvipng
+		- libnetpbm10
+		- libnetpbm10-dev
+		- netpbm
+		- wcslib-dev
+		- libcfitsio3
+		- libcfitsio3-dev
+		- swig
+		- gsl-bin
+		- libgsl0-dev
 
 cache:
   directories:
