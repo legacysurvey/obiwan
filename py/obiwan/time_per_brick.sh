@@ -20,7 +20,7 @@ getWAll() {
 	if inFile $log "Resources for stage $stage"; then
 		local a=`grep -e "Resources for stage $stage" -A 13 $log|grep "Grand total Wall:"|awk '{print $4,$5}'`
 	else
-		local a=NotExist
+		local a="NaN sec"
 	fi
 	# return
 	echo $a

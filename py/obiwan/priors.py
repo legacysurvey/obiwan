@@ -1411,10 +1411,10 @@ def plot_tractor_shapes(cat,prefix='',outdir=None,nb=False):
         savenm= 'tractor_%s_%s.png' % (prefix,name)
         if outdir:
             savenm= os.path.join(outdir,savenm)
+        plt.savefig(savenm,bbox_extra_artists=[xlab,ylab], bbox_inches='tight',dpi=150)
+        print('Wrote %s' % savenm)
         if not nb:
-            plt.savefig(savenm,bbox_extra_artists=[xlab,ylab], bbox_inches='tight',dpi=150)
             plt.close()
-            print('Wrote %s' % savenm)
 
 
 def plot_tractor_galfit_shapes(cat,prefix=''):
