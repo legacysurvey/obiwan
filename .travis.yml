@@ -1,62 +1,77 @@
-# Travis-CI.org build script
-# WARNING: env: and matrix: missing here, but in desitemplate
 language: python
 python:
-  - "2.7"
-#  - "3.6"
+- "2.7"
 
 os:
-    - linux
-    # - osx
-dist: trusty
-#dist: precise
-sudo: false
-#sudo: required
+- linux
 
-# Additonal apt-get installs
-addons:
-  apt:
-    packages:
-		# sphinx builds 
-		#- graphviz
-		#- texlive-latex-extra
-		# legacypipe 
-		- dvipng
-		- libnetpbm10
-		- libnetpbm10-dev
-		- netpbm
-		- wcslib-dev
-		- libcfitsio3
-		- libcfitsio3-dev
-		- swig
-		- gsl-bin
-		- libgsl0-dev
+# Default environment is Ubuntu 12.04.5 LTS "precise"
+# which is pretty old.
+# "trusty" is Ubuntu 14.04.5 LTS
+dist: trusty
+
+# use the newer container-based infrastructure
+sudo: false
+
+# python versions to test against...
+# - osx
 
 cache:
   directories:
   - $HOME/astrometry.net
   - $HOME/dust
 
-install:
-    #- if [[ $MAIN_CMD == 'pycodestyle' ]]; then pip install pycodestyle; fi
-    #- if [[ $SETUP_CMD == build_sphinx* ]]; then pip install Sphinx; fi
-    #- if [[ $SETUP_CMD == 'test --coverage' ]]; then pip install coverage coveralls; fi
-    - export WCSLIB_INC="-I/usr/include/wcslib-4.20"
-    - export WCSLIB_LIB="-lwcs"
+# Additonal apt-get installs
+addons:
+  apt:
+    packages:
+    - graphviz
+    - texlive-latex-extra
+    - dvipng
+    - libnetpbm10
+    - libnetpbm10-dev
+    - netpbm
+    - wcslib-dev
+    - libcfitsio3
+    - libcfitsio3-dev
+    - swig
+    - gsl-bin
+    - libgsl0-dev
 
-	#- pip install -r requirements.txt
-    - pip install Sphinx==1.5.4   # 1.5.6?
-    - pip install numpy
-    - pip install scipy
-    - pip install matplotlib
-    - pip install numpydoc
-    - pip install astropy #==2.0rc1
-    - pip install photutils
-	# https://github.com/coveralls-clients/coveralls-python
-    - pip install coveralls
-    # fitsio master version
-    - pip install --no-deps --upgrade git+https://github.com/esheldon/fitsio.git#egg=fitsio
-    - pip install -v --no-deps --upgrade git+https://github.com/dstndstn/tractor.git
+#before install:
+#  - sudo apt-get install -y graphviz
+#  - sudo apt-get install -y texlive-latex-extra
+#  - sudo apt-get install -y dvipng
+#  - sudo apt-get install -y libnetpbm10
+#  - sudo apt-get install -y libnetpbm10-dev
+#  - sudo apt-get install -y netpbm
+#  - sudo apt-get install -y wcslib-dev
+#  - sudo apt-get install -y libcfitsio3
+#  - sudo apt-get install -y libcfitsio3-dev
+#  - sudo apt-get install -y swig
+#  - sudo apt-get install -y gsl-bin
+#  - sudo apt-get install -y libgsl0-dev
+
+install:
+  - export WCSLIB_INC="-I/usr/include/wcslib-4.20"
+  - export WCSLIB_LIB="-lwcs"
+  #- pip install -r requirements.txt
+  - pip install Sphinx==1.5.4
+  - pip install numpy
+  - pip install scipy
+  - pip install matplotlib 
+  - pip install numpydoc
+  - pip install astropy
+  - pip install photutils
+  - pip install cython
+  - pip install h5py
+  - pip install pandas
+  - pip install psycopg2
+  - pip install scikit-image
+  - pip install scikit-learn
+  - pip install coveralls
+  - pip install --no-deps --upgrade git+https://github.com/esheldon/fitsio.git#egg=fitsio
+  - pip install -v --no-deps --upgrade git+https://github.com/dstndstn/tractor.git
 
 before_script:
     - if [ ! -d "$HOME/astrometry.net" ]; then (cd $HOME; git clone https://github.com/dstndstn/astrometry.net.git); fi
@@ -68,16 +83,18 @@ before_script:
     - (cd $HOME/dust/maps && wget -c http://portal.nersc.gov/project/cosmo/temp/dstn/travis-ci/maps/SFD_dust_4096_sgp.fits)
     - export DUST_DIR=$HOME/dust
 
-script:
-    - export PYTHONPATH=${PYTHONPATH}:$(pwd)/py:$HOME/astrometry.net
-    #- ls $HOME
-    #- ls $HOME/astrometry.net
-    # Run tests with coverage, results to file named travis
-    - (cd py && coverage run test/runbrick_test.py travis)
+script: 
+  - echo foo
+  - cd py
+  - coverage run obiwan/test/print_test.py test
+#  - export PYTHONPATH=${PYTHONPATH}:$(pwd)/py:$HOME/astrometry.net
+#  - cd py
+#  - coverage run obiwan/test/obiwan_test_suite.py test
 
-after_success:
-    - (cd py && coveralls debug)
-    - (cd py && coveralls)
+after_success: echo yay
+#- (cd py && coveralls debug)
+#    - (cd py && coveralls)
+
 
 
 
