@@ -1,50 +1,76 @@
- language: python
- python:
-  - "2.7"
+language: python
+python:
+- "2.7"
 
- os:
-    - linux
+os:
+- linux
 
 # Default environment is Ubuntu 12.04.5 LTS "precise"
 # which is pretty old.
 # "trusty" is Ubuntu 14.04.5 LTS
- dist: trusty
+dist: trusty
 
 # use the newer container-based infrastructure
- sudo: false
+sudo: false
 
 # python versions to test against...
 # - osx
-
-# Additonal apt-get installs
-addons:
-  apt:
-    packages:
-    # sphinx builds 
-    - graphviz
-    - texlive-latex-extra
-    # legacypipe 
-    - dvipng
-    - libnetpbm10
-    - libnetpbm10-dev
-    - netpbm
-    - wcslib-dev
-    - libcfitsio3
-    - libcfitsio3-dev
-    - swig
-    - gsl-bin
-    - libgsl0-dev
 
 cache:
   directories:
   - $HOME/astrometry.net
   - $HOME/dust
 
+# Additonal apt-get installs
+#addons:
+#  apt:
+#    packages:
+#    # sphinx builds 
+#    - graphviz
+#    - texlive-latex-extra
+#    # legacypipe 
+#    - dvipng
+#    - libnetpbm10
+#    - libnetpbm10-dev
+#    - netpbm
+#    - wcslib-dev
+#    - libcfitsio3
+#    - libcfitsio3-dev
+#    - swig
+#    - gsl-bin
+#    - libgsl0-dev
+
+before install:
+  - sudo apt-get install -y graphviz
+  - sudo apt-get install -y texlive-latex-extra
+  - sudo apt-get install -y dvipng
+  - sudo apt-get install -y libnetpbm10
+  - sudo apt-get install -y libnetpbm10-dev
+  - sudo apt-get install -y netpbm
+  - sudo apt-get install -y wcslib-dev
+  - sudo apt-get install -y libcfitsio3
+  - sudo apt-get install -y libcfitsio3-dev
+  - sudo apt-get install -y swig
+  - sudo apt-get install -y gsl-bin
+  - sudo apt-get install -y libgsl0-dev
+
 install:
   - export WCSLIB_INC="-I/usr/include/wcslib-4.20"
   - export WCSLIB_LIB="-lwcs"
-
-  - pip install -r requirements.txt
+  #- pip install -r requirements.txt
+  - pip install Sphinx==1.5.4
+  - pip install numpy
+  - pip install scipy
+  - pip install matplotlib 
+  - pip install numpydoc
+  - pip install astropy
+  - pip install photutils
+  - pip install cython
+  - pip install h5py
+  - pip install pandas
+  - pip install psycopg2
+  - pip install scikit-image
+  - pip install scikit-learn
   - pip install coveralls
   - pip install --no-deps --upgrade git+https://github.com/esheldon/fitsio.git#egg=fitsio
   - pip install -v --no-deps --upgrade git+https://github.com/dstndstn/tractor.git
