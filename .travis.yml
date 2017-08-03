@@ -60,7 +60,7 @@ before_script:
     - export DUST_DIR=$HOME/dust
 
 script:
-    - export PYTHONPATH=${PYTHONPATH}:$(pwd)/py:$HOME/astrometry.net
+  - export PYTHONPATH=${PYTHONPATH}:$(pwd)/py:$HOME/astrometry.net
   - cd py
   - coverage run obiwan/test/obiwan_test_suite.py test
 
