@@ -1,18 +1,19 @@
-# Travis-CI.org build script
-
-dist: trusty
-# dist: precise
-
-sudo: false
-# sudo: required
-
-language: python
-python:
+ language: python
+ python:
   - "2.7"
-# 3.6
 
-os:
+ os:
     - linux
+
+# Default environment is Ubuntu 12.04.5 LTS "precise"
+# which is pretty old.
+# "trusty" is Ubuntu 14.04.5 LTS
+ dist: trusty
+
+# use the newer container-based infrastructure
+ sudo: false
+
+# python versions to test against...
 # - osx
 
 # Additonal apt-get installs
@@ -66,6 +67,7 @@ script:
 after_success:
     - (cd py && coveralls debug)
     - (cd py && coveralls)
+
 
 
 
