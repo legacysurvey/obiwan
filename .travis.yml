@@ -83,8 +83,10 @@ before_script:
     - (cd $HOME/dust/maps && wget -c http://portal.nersc.gov/project/cosmo/temp/dstn/travis-ci/maps/SFD_dust_4096_sgp.fits)
     - export DUST_DIR=$HOME/dust
 
-script: echo foo 
-#coverage run obiwan/test/obiwan_test_suite.py test
+script: 
+  - echo foo
+  - cd py
+  - coverage run obiwan/test/print_test.py test
 #  - export PYTHONPATH=${PYTHONPATH}:$(pwd)/py:$HOME/astrometry.net
 #  - cd py
 #  - coverage run obiwan/test/obiwan_test_suite.py test
