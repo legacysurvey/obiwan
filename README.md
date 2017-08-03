@@ -3,7 +3,7 @@ An extension of the legacypipe/Tractor pipeline for the [DECALS, MzLS, and BASS 
 
 [![Docs](https://readthedocs.org/projects/obiwan/badge/?version=latest)](http://obiwan.readthedocs.org/en/latest/)
 [![Build Status](https://travis-ci.org/legacysurvey/obiwan.png)](https://travis-ci.org/legacysurvey/obiwan)
-[![Coverage Status](https://coveralls.io/repos/github/legacysurvey/obiwan/badge.svg?branch=master)](https://coveralls.io/github/legacysurvey/obiwan?branch=master)
+[![Coverage Status](https://coveralls.io/repos/github/legacysurvey/obiwan/badge.svg?branch=master)](https://coveralls.io/github/legacysurvey/obiwan)
 
 # Documentation
 ------------------
