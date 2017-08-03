@@ -22,37 +22,35 @@ cache:
   - $HOME/dust
 
 # Additonal apt-get installs
-#addons:
-#  apt:
-#    packages:
-#    # sphinx builds 
-#    - graphviz
-#    - texlive-latex-extra
-#    # legacypipe 
-#    - dvipng
-#    - libnetpbm10
-#    - libnetpbm10-dev
-#    - netpbm
-#    - wcslib-dev
-#    - libcfitsio3
-#    - libcfitsio3-dev
-#    - swig
-#    - gsl-bin
-#    - libgsl0-dev
+addons:
+  apt:
+    packages:
+    - graphviz
+    - texlive-latex-extra
+    - dvipng
+    - libnetpbm10
+    - libnetpbm10-dev
+    - netpbm
+    - wcslib-dev
+    - libcfitsio3
+    - libcfitsio3-dev
+    - swig
+    - gsl-bin
+    - libgsl0-dev
 
-before install:
-  - sudo apt-get install -y graphviz
-  - sudo apt-get install -y texlive-latex-extra
-  - sudo apt-get install -y dvipng
-  - sudo apt-get install -y libnetpbm10
-  - sudo apt-get install -y libnetpbm10-dev
-  - sudo apt-get install -y netpbm
-  - sudo apt-get install -y wcslib-dev
-  - sudo apt-get install -y libcfitsio3
-  - sudo apt-get install -y libcfitsio3-dev
-  - sudo apt-get install -y swig
-  - sudo apt-get install -y gsl-bin
-  - sudo apt-get install -y libgsl0-dev
+#before install:
+#  - sudo apt-get install -y graphviz
+#  - sudo apt-get install -y texlive-latex-extra
+#  - sudo apt-get install -y dvipng
+#  - sudo apt-get install -y libnetpbm10
+#  - sudo apt-get install -y libnetpbm10-dev
+#  - sudo apt-get install -y netpbm
+#  - sudo apt-get install -y wcslib-dev
+#  - sudo apt-get install -y libcfitsio3
+#  - sudo apt-get install -y libcfitsio3-dev
+#  - sudo apt-get install -y swig
+#  - sudo apt-get install -y gsl-bin
+#  - sudo apt-get install -y libgsl0-dev
 
 install:
   - export WCSLIB_INC="-I/usr/include/wcslib-4.20"
