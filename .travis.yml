@@ -41,13 +41,13 @@ cache:
   - $HOME/dust
 
 install:
-    - export WCSLIB_INC="-I/usr/include/wcslib-4.20"
-    - export WCSLIB_LIB="-lwcs"
+  - export WCSLIB_INC="-I/usr/include/wcslib-4.20"
+  - export WCSLIB_LIB="-lwcs"
 
   - pip install -r requirements.txt
-    - pip install coveralls
-    - pip install --no-deps --upgrade git+https://github.com/esheldon/fitsio.git#egg=fitsio
-    - pip install -v --no-deps --upgrade git+https://github.com/dstndstn/tractor.git
+  - pip install coveralls
+  - pip install --no-deps --upgrade git+https://github.com/esheldon/fitsio.git#egg=fitsio
+  - pip install -v --no-deps --upgrade git+https://github.com/dstndstn/tractor.git
 
 before_script:
     - if [ ! -d "$HOME/astrometry.net" ]; then (cd $HOME; git clone https://github.com/dstndstn/astrometry.net.git); fi
@@ -59,10 +59,10 @@ before_script:
     - (cd $HOME/dust/maps && wget -c http://portal.nersc.gov/project/cosmo/temp/dstn/travis-ci/maps/SFD_dust_4096_sgp.fits)
     - export DUST_DIR=$HOME/dust
 
-script:
-  - export PYTHONPATH=${PYTHONPATH}:$(pwd)/py:$HOME/astrometry.net
-  - cd py
-  - coverage run obiwan/test/obiwan_test_suite.py test
+script: coverage run obiwan/test/obiwan_test_suite.py test
+#  - export PYTHONPATH=${PYTHONPATH}:$(pwd)/py:$HOME/astrometry.net
+#  - cd py
+#  - coverage run obiwan/test/obiwan_test_suite.py test
 
 after_success:
     - (cd py && coveralls debug)
