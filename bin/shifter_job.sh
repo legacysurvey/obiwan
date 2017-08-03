@@ -13,6 +13,11 @@ module use /global/cscratch1/sd/kaylanb/test/obiwan/etc/modulefiles
 for name in obiwan dust  legacysurvey  unwise_coadds  unwise_coadds_timeresolved; do
     module load $name
 done  
+
+# docker python packages
+
+
+
 export PYTHONPATH=/global/cscratch1/sd/kaylanb/test/legacypipe/py:${PYTHONPATH}
 export PYTHONPATH=/global/cscratch1/sd/kaylanb/test/theValidator:${PYTHONPATH}
 
@@ -24,6 +29,7 @@ export MKL_NUM_THREADS=1
 mkdir logs
 log="logs/$brick.log"
 
+echo logging to $log
 srun -n 1 -c 32 shifter python python obiwan/kenobi.py -b 1238p245 \
     -n 2 --DR 5 -o elg --add_sim_noise --zoom 1550 1650 1550 1650 \
     >> $log 2>&1
