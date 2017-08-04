@@ -1180,6 +1180,7 @@ def main(args=None):
     # Optionally zoom into a portion of the brick
     survey = LegacySurveyData()
     brickinfo = survey.get_brick_by_name(brickname)
+    print(brickname)
     brickwcs = wcs_for_brick(brickinfo)
     W, H, pixscale = brickwcs.get_width(), brickwcs.get_height(), brickwcs.pixel_scale()
 

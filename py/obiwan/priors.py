@@ -119,7 +119,8 @@ class KernelOfTruth(object):
             print('Wrote %s' % savenm)
 
     # 2D scatterplot of selected dims of KDE
-    def plot_indiv_2d(self,xy_names,xy_lims=None, ndraws=1000,prefix='',outdir=None):
+    def plot_indiv_2d(self,xy_names,xy_lims=None, ndraws=1000,prefix='',outdir=None,
+                      nb=False):
         samp= self.kde.sample(n_samples=ndraws)
         for i,_ in enumerate(xy_names):
             xname= xy_names[i][0]
@@ -145,10 +146,11 @@ class KernelOfTruth(object):
             if outdir:
                 savenm= os.path.join(outdir,savenm)
             plt.savefig(savenm,bbox_extra_artists=[xlab,ylab], bbox_inches='tight',dpi=150)
-            plt.close()
             print('Wrote %s' % savenm)
+            if not nb:
+                plt.close()
 
-    def plot_FDR_using_kde(self,obj='LRG',ndraws=1000,prefix='',outdir=None):
+    def plot_FDR_using_kde(self,obj='LRG',ndraws=1000,prefix='',outdir=None,nb=False):
         assert(obj in ['LRG','ELG'])
         for use_data in [True,False]:
             fig,ax = plt.subplots()
@@ -194,8 +196,9 @@ class KernelOfTruth(object):
             if outdir:
                 savenm= os.path.join(outdir,savenm)
             plt.savefig(savenm,bbox_extra_artists=[xlab,ylab], bbox_inches='tight',dpi=150)
-            plt.close()
             print('Wrote %s' % savenm)
+            if not nb:
+                plt.close()
 
 
     def plot_1band_and_color(self, ndraws=1000,xylims=None,prefix=''):
@@ -971,7 +974,6 @@ class ELG(CommonInit):
 		print('dr3_deep2, after cut bad vals %d' % len(tab))
 		# Sanity plots
 		plot_tractor_shapes(tab,prefix='ELG_dr3deep2_expdev',outdir=self.outdir,nb=self.nb)
-		raise ValueError
 		print('size %d %d' % (len(tab),len(tab[tab.tractor_re > 0.])))
 		tab.cut( tab.tractor_re > 0. )
 		xy_names= [('tractor_re','zhelio'),
@@ -985,7 +987,7 @@ class ELG(CommonInit):
 		#           ('tractor_re','r_wdust'),
 		#           ('tractor_re','g_wdust'),
 		#           ('tractor_re','z_wdust')]
-		plot_indiv_2d(tab,xy_names=xy_names,xy_lims=None, ndraws=1000,prefix='ELG_dr3deep2',outdir=self.outdir)
+		plot_indiv_2d(tab,xy_names=xy_names,xy_lims=None, ndraws=1000,prefix='ELG_dr3deep2',outdir=self.outdir,nb=self.nb)
 		# KDE
 		labels=['r_wdust','rz','gr','zhelio','tractor_re']
 				#'re','n','ba','pa']
@@ -1014,8 +1016,8 @@ class ELG(CommonInit):
 				  ([0.6,1.6],[20.5,25]),  
 				  ([0.6,1.6],[0,2]),  
 				 ]
-		kde_obj.plot_indiv_2d(xy_names,xy_lims=xy_lims, ndraws=10000,prefix='ELG_dr3deep2',outdir=self.outdir)
-		kde_obj.plot_FDR_using_kde(obj='ELG',ndraws=10000,prefix='dr3deep2',outdir=self.outdir)
+		kde_obj.plot_indiv_2d(xy_names,xy_lims=xy_lims, ndraws=10000,prefix='ELG_dr3deep2',outdir=self.outdir,nb=self.nb)
+		kde_obj.plot_FDR_using_kde(obj='ELG',ndraws=10000,prefix='dr3deep2',outdir=self.outdir,nb=self.nb)
 	#        xylims=dict(x1=(20.5,25.5),y1=(0,0.8),\
 	#                    x2=xyrange['x_elg'],y2=xyrange['y_elg'],\
 	#                    x3=(0.6,1.6),y3=(0.,1.0),
@@ -1431,7 +1433,7 @@ def plot_tractor_galfit_shapes(cat,prefix=''):
         print('Wrote %s' % savenm)
  
 # 2D plots
-def plot_indiv_2d(tab,xy_names=None,xy_lims=None, ndraws=1000,prefix='',outdir=None):
+def plot_indiv_2d(tab,xy_names=None,xy_lims=None, ndraws=1000,prefix='',outdir=None,nb=False):
     assert(xy_names)
     for i,_ in enumerate(xy_names):
         xname= xy_names[i][0]
@@ -1449,8 +1451,9 @@ def plot_indiv_2d(tab,xy_names=None,xy_lims=None, ndraws=1000,prefix='',outdir=N
         if outdir:
             savenm= os.path.join(outdir,savenm)
         plt.savefig(savenm,bbox_extra_artists=[xlab,ylab], bbox_inches='tight',dpi=150)
-        plt.close()
         print('Wrote %s' % savenm)
+        if not nb:
+            plt.close()
 
 
 class LRG(CommonInit):
@@ -1576,7 +1579,7 @@ class LRG(CommonInit):
 		tab.cut(tab.zp_gal - bandwidth >= 0.)
 		print('dr3_cosmos after redshift > %f: %d' % (bandwidth,len(tab)))
 		# Sanity plot
-		plot_tractor_shapes(tab,prefix='LRG_dr3cosmos_expdev',outdir=self.outdir)
+		plot_tractor_shapes(tab,prefix='LRG_dr3cosmos_expdev',outdir=self.outdir,nb=self.nb)
 		print('size %d %d' % (len(tab),len(tab[tab.tractor_re > 0.])))
 		#plot_tractor_galfit_shapes(tab,prefix='LRG_dr3cosmosacs')
 		tab.cut(tab.tractor_re > 0.)
@@ -1584,7 +1587,7 @@ class LRG(CommonInit):
 				   ('tractor_re','g_wdust'),
 				   ('tractor_re','r_wdust'),
 				   ('tractor_re','z_wdust')]
-		plot_indiv_2d(tab,xy_names=xy_names, ndraws=1000,prefix='LRG',outdir=self.outdir)
+		plot_indiv_2d(tab,xy_names=xy_names, ndraws=1000,prefix='LRG',outdir=self.outdir,nb=self.nb)
 		# KDE
 		names= ['z_wdust','rz','rw1','zp_gal','g_wdust','tractor_re']
 				#'re','n','ba','pa']
@@ -1618,8 +1621,8 @@ class LRG(CommonInit):
 				  ([0.,2.],[17,22]),  
 				  ([0.,2.],[-2,5]) 
 				 ]
-		kde_obj.plot_indiv_2d(xy_names,xy_lims=xy_lims, ndraws=10000,prefix='lrg_dr3cosmosacs',outdir=self.outdir)
-		kde_obj.plot_FDR_using_kde(obj='LRG',ndraws=10000,prefix='dr3cosmos',outdir=self.outdir)
+		kde_obj.plot_indiv_2d(xy_names,xy_lims=xy_lims, ndraws=10000,prefix='lrg_dr3cosmosacs',outdir=self.outdir,nb=self.nb)
+		kde_obj.plot_FDR_using_kde(obj='LRG',ndraws=10000,prefix='dr3cosmos',outdir=self.outdir,nb=self.nb)
 		#plotlims= [(17.,22.),(0,2.5),(-2,5.),(0.,1.6),(17.,29),(-0.5,2.)] #,(-2,10.),(-0.2,1.2),(-20,200)]
 		#kde_obj.plot_1band_and_color(ndraws=1000,xylims=xylims,prefix='lrg_')
 		#kde_obj.plot_1band_color_and_redshift(ndraws=1000,xylims=xylims,prefix='lrg_')
