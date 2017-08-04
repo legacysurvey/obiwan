@@ -16,6 +16,9 @@ sudo: false
 # python versions to test against...
 # - osx
 
+compiler:
+  - g++
+
 cache:
   directories:
   - $HOME/astrometry.net
@@ -37,6 +40,11 @@ addons:
     - swig
     - gsl-bin
     - libgsl0-dev
+    - libboost-all-dev
+    - gfortran
+    - liblapack-dev
+    - libfftw3-dev
+    - scons
 
 #before install:
 #  - sudo apt-get install -y graphviz
@@ -69,6 +77,7 @@ install:
   - pip install psycopg2
   - pip install scikit-image
   - pip install scikit-learn
+  - pip install nose future pyyaml
   - pip install coveralls
   - pip install --no-deps --upgrade git+https://github.com/esheldon/fitsio.git#egg=fitsio
   - pip install -v --no-deps --upgrade git+https://github.com/dstndstn/tractor.git
@@ -82,6 +91,13 @@ before_script:
     - (cd $HOME/dust/maps && wget -c http://portal.nersc.gov/project/cosmo/temp/dstn/travis-ci/maps/SFD_dust_4096_ngp.fits)
     - (cd $HOME/dust/maps && wget -c http://portal.nersc.gov/project/cosmo/temp/dstn/travis-ci/maps/SFD_dust_4096_sgp.fits)
     - export DUST_DIR=$HOME/dust
+    - if ! test -d tmv-0.73 || ! test -f tmv-0.73/Sconstruct; then wget https://github.com/rmjarvis/tmv/archive/v0.73.tar.gz && tar -xf v0.73.tar.gz ; else echo Using cached TMV; fi
+    - cd tmv-0.73 
+    - sudo scons install DEBUG=True FLAGS="-O0"
+    - if [ ! -d "$HOME/GalSim" ]; then (cd $HOME; wget https://github.com/GalSim-developers/GalSim/archive/v1.4.2.tar.gz -O GalSim.tar.gz; gunzip GalSim.tar.gz; mkdir GalSim; tar xf GalSim.tar -C GalSim --strip-components 1); fi
+    - cd GalSim
+    - sudo scons 
+    - sudo scons install
 
 script: 
   - echo foo
