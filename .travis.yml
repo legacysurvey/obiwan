@@ -11,7 +11,8 @@ os:
 dist: trusty
 
 # use the newer container-based infrastructure
-sudo: false
+#sudo: false
+sudo: required
 
 # python versions to test against...
 # - osx
@@ -93,12 +94,12 @@ before_script:
     - export DUST_DIR=$HOME/dust
     - if ! test -d tmv-0.73 || ! test -f tmv-0.73/Sconstruct; then wget https://github.com/rmjarvis/tmv/archive/v0.73.tar.gz && tar -xf v0.73.tar.gz ; else echo Using cached TMV; fi
     - cd tmv-0.73 
-    - scons DEBUG=True FLAGS="-O0"
-    - scons install 
+    - sudo scons DEBUG=True FLAGS="-O0"
+    - sudo scons install 
     - if [ ! -d "$HOME/GalSim" ]; then (cd $HOME; wget https://github.com/GalSim-developers/GalSim/archive/v1.4.2.tar.gz -O GalSim.tar.gz; gunzip GalSim.tar.gz; mkdir GalSim; tar xf GalSim.tar -C GalSim --strip-components 1); fi
     - cd GalSim
-    - scons 
-    - scons install
+    - sudo scons 
+    - sudo cons install
 
 script: 
   - echo foo
