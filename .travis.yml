@@ -46,6 +46,7 @@ addons:
     - liblapack-dev
     - libfftw3-dev
     - scons
+    - curl
 
 #before install:
 #  - sudo apt-get install -y graphviz
@@ -83,13 +84,18 @@ install:
   - pip install nose future pyyaml
   - pip install coveralls
   - pip install --no-deps --upgrade git+https://github.com/esheldon/fitsio.git#egg=fitsio
-  - pip install -v --no-deps --upgrade git+https://github.com/dstndstn/tractor.git
+  #- pip install -v --no-deps --upgrade git+https://github.com/dstndstn/tractor.git
 
 before_script:
-    - if [ ! -d "$HOME/astrometry.net" ]; then (cd $HOME && git clone https://github.com/dstndstn/astrometry.net.git); fi
-    - (cd $HOME/astrometry.net && git pull) || (rm -Rf $HOME/astrometry.net && cd $HOME && git clone https://github.com/dstndstn/astrometry.net.git);
-    - (cd $HOME/astrometry.net && make && make py)
-
+    - export MYCODE=$HOME/mycode
+    - if [ ! -d "$HOME/astrometry.net" ]; then (cd $HOME && curl -SL https://github.com/dstndstn/astrometry.net/releases/download/0.72/astrometry.net-0.72.tar.gz -o astrometry.net.tar.gz && tar -xzf astrometry.net.tar.gz && mv astrometry.net-0.72 astrometry.net); fi
+    - (cd $HOME/astrometry.net && mkdir -p $MYCODE/astrometry && make install INSTALL_DIR=$MYCODE/astrometry)
+    - export PYTHONPATH=$MYCODE/astrometry/lib/python:$PYTHONPATH
+    - export PATH=$MYCODE/astrometry/lib/python/astrometry/util:$PATH
+    - export PATH=$MYCODE/astrometry/lib/python/astrometry/blind:$PATH
+    - if [ ! -d "$HOME/tractor" ]; then (cd $HOME && curl -SL https://github.com/dstndstn/tractor/archive/dr5.2.tar.gz -o tractor.tar.gz && tar -xzf tractor.tar.gz && mv tractor-dr5.2 tractor); fi
+    - (cd tractor && make && mkdir -p $MYCODE/tractor && python setup.py install --prefix=$MYCODE/tractor)
+    - export PYTHONPATH=$MYCODE/tractor/lib/python2.7/site-packages:$PYTHONPATH
     - mkdir -p $HOME/dust/maps
     - (cd $HOME/dust/maps && wget -c http://portal.nersc.gov/project/cosmo/temp/dstn/travis-ci/maps/SFD_dust_4096_ngp.fits)
     - (cd $HOME/dust/maps && wget -c http://portal.nersc.gov/project/cosmo/temp/dstn/travis-ci/maps/SFD_dust_4096_sgp.fits)
