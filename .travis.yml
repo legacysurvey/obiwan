@@ -99,7 +99,7 @@ before_script:
     - export PATH=$MYCODE/astrometry/lib/python/astrometry/util:$PATH
     - export PATH=$MYCODE/astrometry/lib/python/astrometry/blind:$PATH
     - if [ ! -d "$HOME/tractor" ]; then (cd $HOME && curl -SL https://github.com/dstndstn/tractor/archive/dr5.2.tar.gz -o tractor.tar.gz && tar -xzf tractor.tar.gz && mv tractor-dr5.2 tractor); fi
-    - cd tractor 
+    - cd $HOME/tractor 
     - make 
     - python setup.py install --prefix=$MYCODE/tractor
     - export PYTHONPATH=$MYCODE/tractor/lib/python2.7/site-packages:$PYTHONPATH
