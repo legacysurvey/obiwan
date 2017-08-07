@@ -91,8 +91,6 @@ install:
 
 before_script:
     - export MYCODE=$HOME/mycode
-    - if [ ! -d "$MYCODE/astrometry" ]; then mkdir -p $MYCODE/astrometry; fi
-    - if [ ! -d "$MYCODE/tractor" ]; then mkdir -p $MYCODE/tractor; fi
     - if [ ! -d "$HOME/astrometry.net" ]; then (cd $HOME && curl -SL https://github.com/dstndstn/astrometry.net/releases/download/0.72/astrometry.net-0.72.tar.gz -o astrometry.net.tar.gz && tar -xzf astrometry.net.tar.gz && mv astrometry.net-0.72 astrometry.net); fi
     - (cd $HOME/astrometry.net && make install INSTALL_DIR=$MYCODE/astrometry)
     - export PYTHONPATH=$MYCODE/astrometry/lib/python:$PYTHONPATH
