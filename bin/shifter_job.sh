@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --image=docker:tskisner/desiconda:1.1.9-imaging
+#SBATCH --image=docker:tskisner/desiconda:1.1.9-imaging-py27
 #SBATCH --nodes=1
 #SBATCH --partition=debug
 #SBATCH -t 00:05:00
@@ -22,6 +22,7 @@ done
 
 export PYTHONPATH=/global/cscratch1/sd/kaylanb/test/legacypipe/py:${PYTHONPATH}
 export PYTHONPATH=/global/cscratch1/sd/kaylanb/test/theValidator:${PYTHONPATH}
+export PYTHONPATH=.:${PYTHONPATH}
 
 # Force MKL single-threaded
 # https://software.intel.com/en-us/articles/using-threaded-intel-mkl-in-multi-thread-application

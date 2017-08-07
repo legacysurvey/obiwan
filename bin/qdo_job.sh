@@ -1,6 +1,9 @@
 #! /bin/bash
 
 export brick="$1"
+echo HOST=$NERSC_HOST
+echo ls /global/cscratch1/sd/kaylanb/test/obiwan/etc/modulefiles/
+ls /global/cscratch1/sd/kaylanb/test/obiwan/etc/modulefiles/
 source ~/.bashrc_desiconda_orig
 
 # Force MKL single-threaded
