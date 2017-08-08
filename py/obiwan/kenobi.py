@@ -1206,12 +1206,17 @@ def main(args=None):
     #chunk_list= [ int((args.rowstart)/maxobjs) ]
 
     # Ra,dec,mag table
-    if False:
+    print('before PSQL')
+    if True:
         # Non PSQL way
-        fn= get_sample_fn(brickname,decals_sim_dir,prefix=args.prefix)
+        #fn= get_sample_fn(brickname,decals_sim_dir,prefix=args.prefix)
+        fn=os.path.join(os.environ['DECALS_SIM_DIR'],
+                        'elg_randoms/rank_1_seed_1.fits') 
         Samp= fits_table(fn)
+        Samp.rename('%s_rhalf' % objtype,'%s_re' % objtype)
     else:
-        Samp= getSrcsInBrick(brickname,objtype) 
+        Samp= getSrcsInBrick(brickname,objtype)
+    print('after PSQL') 
     print('%d samples, for brick %s' % (len(Samp),brickname))
     print('First 2 sources have: ')
     for sam in Samp[:2]:
