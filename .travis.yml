@@ -77,7 +77,7 @@ install:
   - pip install matplotlib 
   - pip install numpydoc
   - pip install astropy
-  - pip install photutils
+  - pip install --no-deps photutils
   - pip install cython
   - pip install h5py
   - pip install pandas
