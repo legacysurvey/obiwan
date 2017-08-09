@@ -7,7 +7,7 @@ SPHINXOPTS    =
 SPHINXBUILD   = sphinx-build
 # SPHINXBUILD   = sphinx-build-2.7
 PAPER         =
-BUILDDIR      = /home/kaylan/myrepo/obiwandocs
+BUILDDIR      = ../../obiwandocs
 # BUILDDIR      = _build
 
 # User-friendly check for sphinx-build
