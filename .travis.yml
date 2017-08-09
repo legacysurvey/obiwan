@@ -79,7 +79,8 @@ install:
   - pip install scikit-image
   - pip install scikit-learn
   - pip install nose future pyyaml
-  - pip install coveralls
+  - pip install -U pytest
+  - pip install pytest-dov coveralls
   - pip install --no-deps --upgrade git+https://github.com/esheldon/fitsio.git#egg=fitsio
   #- pip install -v --no-deps --upgrade git+https://github.com/dstndstn/tractor.git
 
@@ -114,15 +115,20 @@ before_script:
     - cd $HOME/GalSim
     - sudo scons PYTHON=/home/travis/virtualenv/python2.7.13/bin/python 
     - sudo scons install
+    - cd $HOME && git clone https://github.com/legacysurvey/obiwan.git
+    - export PYTHONPATH=$HOME/obiwan/py:$PYTHONPATH
 
-script: 
-  - python -c "import galsim; print(galsim.__file__)"
+script:
+  - cd $HOME/obiwan
+  - pytest --cov
+  #- python -c "import galsim; print(galsim.__file__)"
   #- coverage run obiwan/test/print_test.py test
 #  - export PYTHONPATH=${PYTHONPATH}:$(pwd)/py:$HOME/astrometry.net
 #  - cd py
 #  - coverage run obiwan/test/obiwan_test_suite.py test
 
-after_success: echo yay
+after_success:
+  - coveralls
 #- (cd py && coveralls debug)
 #    - (cd py && coveralls)
 

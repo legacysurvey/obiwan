@@ -54,6 +54,10 @@ pip install nose
 pip install future 
 pip install pyyaml
 #pip install coveralls
+pip install -U pytest
+pip install pytest-cov coveralls
+pip install ipython
+pip install jupyter
 pip install --no-deps --upgrade git+https://github.com/esheldon/fitsio.git#egg=fitsio
 #- pip install -v --no-deps --upgrade git+https://github.com/dstndstn/tractor.git
 
