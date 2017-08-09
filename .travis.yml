@@ -39,6 +39,7 @@ addons:
     - libnetpbm10-dev
     - netpbm
     - wcslib-dev
+    - libz-dev
     - libcfitsio3
     - libcfitsio3-dev
     - swig
@@ -50,35 +51,28 @@ addons:
     - libfftw3-dev
     - scons
     - curl
-
-#before install:
-#  - sudo apt-get install -y graphviz
-#  - sudo apt-get install -y texlive-latex-extra
-#  - sudo apt-get install -y dvipng
-#  - sudo apt-get install -y libnetpbm10
-#  - sudo apt-get install -y libnetpbm10-dev
-#  - sudo apt-get install -y netpbm
-#  - sudo apt-get install -y wcslib-dev
-#  - sudo apt-get install -y libcfitsio3
-#  - sudo apt-get install -y libcfitsio3-dev
-#  - sudo apt-get install -y swig
-#  - sudo apt-get install -y gsl-bin
-#  - sudo apt-get install -y libgsl0-dev
+    - python-tk
+    - libcairo2-dev
+    - libpng12-dev
+    - libjpeg-dev
+    - zlib1g-dev
+    - libbz2-dev
 
 install:
-  - export WCSLIB_INC="-I/usr/include/wcslib-4.20"
+  - export WCSLIB_INC="-I/usr/include/wcslib"
   - export WCSLIB_LIB="-lwcs"
   #- pip install -r requirements.txt
-  - which python
+  - export python_exe=`which python`
+  - echo python_exe=$python_exe
   - which pip
-  - pip install Sphinx==1.5.4
+  - pip install Sphinx
   - pip install numpy
   - pip install scipy
-  - pip install matplotlib 
+  - pip install matplotlib
+  - pip install cython
   - pip install numpydoc
   - pip install astropy
-  - pip install --no-deps photutils
-  - pip install cython
+  - pip install --no-deps git+https://github.com/astropy/photutils.git
   - pip install h5py
   - pip install pandas
   - pip install psycopg2
@@ -97,14 +91,14 @@ before_script:
     - export PYTHONPATH=$MYCODE/astrometry/lib/python:$PYTHONPATH
     - export PATH=$MYCODE/astrometry/lib/python/astrometry/util:$PATH
     - export PATH=$MYCODE/astrometry/lib/python/astrometry/blind:$PATH
-    - python -c "import astrometry; print(astrometry.__file__)"
+    - cd $HOME && python -c "import astrometry; print(astrometry.__file__)"
     - sudo rm -rf $HOME/tractor
     - if [ ! -d "$HOME/tractor" ]; then (cd $HOME && curl -SL https://github.com/dstndstn/tractor/archive/dr5.2.tar.gz -o tractor.tar.gz && tar -xzf tractor.tar.gz && mv tractor-dr5.2 tractor); fi
     - cd $HOME/tractor 
     - make 
     - python setup.py install --prefix=$MYCODE/tractor
     - export PYTHONPATH=$MYCODE/tractor/lib/python2.7/site-packages:$PYTHONPATH
-    - python -c "import tractor; print(tractor.__file__)"
+    - cd $HOME && python -c "import tractor; print(tractor.__file__)"
     - mkdir -p $HOME/dust/maps
     - (cd $HOME/dust/maps && wget -c http://portal.nersc.gov/project/cosmo/temp/dstn/travis-ci/maps/SFD_dust_4096_ngp.fits)
     - (cd $HOME/dust/maps && wget -c http://portal.nersc.gov/project/cosmo/temp/dstn/travis-ci/maps/SFD_dust_4096_sgp.fits)
