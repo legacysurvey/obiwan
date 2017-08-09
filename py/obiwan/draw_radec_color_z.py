@@ -349,8 +349,10 @@ def mkdir_needed(d):
             os.makedirs(dr)
 
 def write_calling_seq(d):
-    """each *_randoms/ directory should have a file listing how randoms were created
-    d= dictionary, vars(args)
+    """each `*_randoms/` directory should have a file listing how randoms were created
+
+    Args:
+      d: dict, vars(args)
     """
     dr= get_sample_dir(d['outdir'],d['obj'])
     fn=os.path.join(dr,'README.txt')

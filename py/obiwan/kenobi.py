@@ -532,11 +532,13 @@ class BuildStamp():
 												 gsparams=self.gsparams)
 
 	def addGaussNoise(self, stamp):
-		"""
-		1) Adds gaussian noise to perfect source (in place)
-		2) return invvar for the stamp
-		Remember that STAMP and IVARSTAMP
-		are in units of nanomaggies and 1/nanomaggies**2, respectively.
+		"""Adds gaussian noise to perfect source (in place)
+
+                STAMP and IVARSTAMP are in units of nanomaggies and 
+                  1/nanomaggies**2, respectively.
+		
+                Returns:
+                  invvar for the stamp
 		"""
 		#stamp= stamp_backup.copy()
 		#ivarstamp= ivarstamp_backup.copy()
@@ -867,42 +869,42 @@ def get_parser():
     return parser
  
 def create_metadata(kwargs=None):
-	"""fits_table with configuration-like params for the simulated sources
-
-	Args:
-		kwargs: dict containing the configuration-like params for the simulated sources
-
-	Returns:
-		Nothing, but writes the 'metacat' fits_table 
-			brickname: which chunk of sky
-			objtype: star,elg,lrg,qso
-			nobj: number of simulated sources for this run
-			stamp_size: pixels, width and height of simulated images
-			cutouts: whether .npy cutouts of every simulated source were written
-			bright_galaxies: whether bright_galaxies flag is set
-		Also stores the fits_table in the kwargs dict
-
-	TODO:
-		Should metacat table have a rowstart column? 
-		Should there only be one metacat table per brick? Instead
-			of one per 'rs*' directory?
-	"""
-	assert(kwargs is not None)
-	log = logging.getLogger('decals_sim')
-	# Pack the input parameters into a meta-data table and write out.
-	#metacols = [
-	#    ('BRICKNAME', 'S10'),
-	#    ('OBJTYPE', 'S10'),
-	#    ('NOBJ', 'i4'),
-	#    ('CHUNKSIZE', 'i2'),
-	#    ('NCHUNK', 'i2'),
-	#    ('ZOOM', 'i4', (4,)),
-	#    ('SEED', 'S20'),
-	#    ('RMAG_RANGE', 'f4', (2,))]
-	#metacat = Table(np.zeros(1, dtype=metacols))
-	metacat = fits_table()
-	for key in ['brickname','objtype']: #,'nchunk']:
-		metacat.set(key, np.array( [kwargs[key]] ))
+    """fits_table with configuration-like params for the simulated sources
+    
+    TODO: Should metacat table have a rowstart column?
+    TODO: One metacat table per brick, instead of one per `rs*` directory?
+    
+    Args:
+      kwargs: configuration-like params for the simulated sources
+        {'brickname': which chunk of sky
+        'objtype': star,elg,lrg,qso
+        'nobj': number of simulated sources for this run
+        'stamp_size': pixels, width and height of simulated images
+        'cutouts': whether .npy cutouts of every simulated source were written
+        'bright_galaxies': whether bright_galaxies flag is set
+        }
+    
+    Returns:
+      Nothing
+      writes the 'metacat' fits_table to disk and stores it
+      in the kwargs input arg
+    """
+    assert(kwargs is not None)
+    log = logging.getLogger('decals_sim')
+    # Pack the input parameters into a meta-data table and write out.
+    #metacols = [
+    #    ('BRICKNAME', 'S10'),
+    #    ('OBJTYPE', 'S10'),
+    #    ('NOBJ', 'i4'),
+    #    ('CHUNKSIZE', 'i2'),
+    #    ('NCHUNK', 'i2'),
+    #    ('ZOOM', 'i4', (4,)),
+    #    ('SEED', 'S20'),
+    #    ('RMAG_RANGE', 'f4', (2,))]
+    #metacat = Table(np.zeros(1, dtype=metacols))
+    metacat = fits_table()
+    for key in ['brickname','objtype']: #,'nchunk']:
+	metacat.set(key, np.array( [kwargs[key]] ))
 	metacat.set('nobj', np.array( [kwargs['args'].nobj] ))
 	metacat.set('zoom', np.array( [kwargs['args'].zoom] ))
 	metacat.set('cutouts', np.array( [kwargs['args'].cutouts] ))
@@ -912,38 +914,34 @@ def create_metadata(kwargs=None):
 	#if not kwargs['args'].seed:
 	#    log.info('Random seed = {}'.format(kwargs['args'].seed))
 	#    metacat['SEED'] = kwargs['args'].seed
-
-	#metacat_dir = os.path.join(kwargs['decals_sim_dir'], kwargs['objtype'],kwargs['brickname'][:3],kwargs['brickname'])    
-	metacat_dir = get_savedir(**kwargs)
-	if not os.path.exists(metacat_dir): 
-		os.makedirs(metacat_dir)
-
-	metafile = os.path.join(metacat_dir, 'metacat'+get_fnsuffix(**kwargs))
-	log.info('Writing {}'.format(metafile))
-	if os.path.isfile(metafile):
-		os.remove(metafile)
-	metacat.writeto(metafile)
-
-	# Store new stuff
-	kwargs['metacat']=metacat
-	kwargs['metacat_dir']=metacat_dir
+    #metacat_dir = os.path.join(kwargs['decals_sim_dir'], kwargs['objtype'],kwargs['brickname'][:3],kwargs['brickname'])    
+    metacat_dir = get_savedir(**kwargs)
+    if not os.path.exists(metacat_dir): 
+	os.makedirs(metacat_dir)
+    
+    metafile = os.path.join(metacat_dir, 'metacat'+get_fnsuffix(**kwargs))
+    log.info('Writing {}'.format(metafile))
+    if os.path.isfile(metafile):
+	os.remove(metafile)
+    metacat.writeto(metafile)
+    
+    # Store new stuff
+    kwargs['metacat']=metacat
+    kwargs['metacat_dir']=metacat_dir
 
 
 def create_ith_simcat(d=None):
 	"""Write 'simcat' and 'skipped_ids' tables for a given sample of sources
 
-	Args:
-		d: dict with keys
-			Samp: fits_table for the properties of sources in the brick
-				usually a subset of all sources in the brick determined by
-				rowstart (rs)
-			brickwcs: WCS object for the brick
-			metacat: fits_table with configuration-like params for the 
-				simulated sources
-
-	Returns:
-		Nothing, saves the 'simcat' and 'skipped_ids' tables
-		Adds 'simcat' table to dict 'd'
+        Args:
+          d: {'Samp': fits_table for the properties of sources in the brick
+	     'brickwcs': WCS object for the brick
+	     'metacat': fits_table with configuration params for the simulated sources
+             }
+        
+        Returns:
+	  Nothing, saves the 'simcat' and 'skipped_ids' tables
+	  Adds 'simcat' table to dict 'd'
 	"""
 	assert(d is not None)
 	log = logging.getLogger('decals_sim')
@@ -977,93 +975,90 @@ def create_ith_simcat(d=None):
 	d['simcat_dir']= simcat_dir
 
 def get_runbrick_setup(**kwargs):
-	"""Convert runbrick.py cmd line options into **kwargs for run_brick()
-
-	The command line options depend on the Data Release (e.g. the
-		legacypipe code version. The cmd line options associated with 
-		each DR get modified and repackaged into a dict in 
-		legacypipe.runbrick so this converter is required to call run_brick
-		appropriately
-
-	Args:
-		**kwargs: dict of the cmd line options to obiwan.kenobi.py
-
-	Returns:
-		dict to use when calling legacypipe.runbrick.run_brick like
-			run_brick(brickname, survey, **dict)		
-	"""
-	DR= kwargs['DR']
-	assert(DR in [3,4,5])
-	from legacypipe.runbrick import get_runbrick_kwargs
-	from legacypipe.runbrick import get_parser as get_runbrick_parser
-	zm= kwargs['zoom']
-	cmd_line= ['--no-write', '--skip','--force-all',
-			   '--zoom','%d' % zm[0],'%d' % zm[1],'%d' % zm[2],'%d' % zm[3],
-			   '--no-wise', '--threads','%d' % kwargs['threads']]
-	if kwargs['early_coadds']:
-		cmd_line += ['--early-coadds']
-	if kwargs['stage']:
-		cmd_line += ['--stage', '%s' % kwargs['stage']]
-	# Data-Release specific
-	if DR == 3:
-		cmd_line += ['--run', 'dr3', '--hybrid-psf','--nsigma', '6']
-	elif DR == 4:
-		cmd_line += ['--run', 'dr4v2', '--hybrid-psf','--nsigma', '6']
-	elif DR == 5:
-		# defaults: rex (use --simp), nsigma 6 ,hybrid-psf (--no-hybrid-psf otherwise)
-		# depth cut already done (use --depth-cut to do depth cut anyway)
-		cmd_line += ['--run', 'dr5'] 
-
-	rb_parser= get_runbrick_parser()
-	rb_opt = rb_parser.parse_args(args=cmd_line)
-	rb_optdict = vars(rb_opt)
-	# remove keys as Dustin' does
-	_= rb_optdict.pop('ps', None)
-	_= rb_optdict.pop('verbose',None)
-	_, rb_kwargs= get_runbrick_kwargs(**rb_optdict)
-	return rb_kwargs
+    """Convert runbrick.py cmd line options into `**kwargs` for run_brick()
+    
+    The command line options depend on the Data Release (e.g. the
+      legacypipe code version. The cmd line options associated with 
+      each DR get modified and repackaged into a dict in 
+      legacypipe.runbrick so this converter is required to call run_brick
+      appropriately
+    
+    Args:
+      **kwargs: dict of the cmd line options to obiwan.kenobi.py
+    
+    Returns:
+      dict to use when calling legacypipe.runbrick.run_brick like
+        run_brick(brickname, survey, `**dict`)		
+    """
+    DR= kwargs['DR']
+    assert(DR in [3,4,5])
+    from legacypipe.runbrick import get_runbrick_kwargs
+    from legacypipe.runbrick import get_parser as get_runbrick_parser
+    zm= kwargs['zoom']
+    cmd_line= ['--no-write', '--skip','--force-all',
+	       '--zoom','%d' % zm[0],'%d' % zm[1],'%d' % zm[2],'%d' % zm[3],
+	       '--no-wise', '--threads','%d' % kwargs['threads']]
+    if kwargs['early_coadds']:
+	cmd_line += ['--early-coadds']
+    if kwargs['stage']:
+	cmd_line += ['--stage', '%s' % kwargs['stage']]
+    # Data-Release specific
+    if DR == 3:
+	cmd_line += ['--run', 'dr3', '--hybrid-psf','--nsigma', '6']
+    elif DR == 4:
+	cmd_line += ['--run', 'dr4v2', '--hybrid-psf','--nsigma', '6']
+    elif DR == 5:
+	# defaults: rex (use --simp), nsigma 6 ,hybrid-psf (--no-hybrid-psf otherwise)
+	# depth cut already done (use --depth-cut to do depth cut anyway)
+	cmd_line += ['--run', 'dr5'] 
+    
+    rb_parser= get_runbrick_parser()
+    rb_opt = rb_parser.parse_args(args=cmd_line)
+    rb_optdict = vars(rb_opt)
+    # remove keys as Dustin' does
+    _= rb_optdict.pop('ps', None)
+    _= rb_optdict.pop('verbose',None)
+    _, rb_kwargs= get_runbrick_kwargs(**rb_optdict)
+    return rb_kwargs
 
 def do_one_chunk(d=None):
-	"""Runs the legacypipe/Tractor pipeline on images with simulated sources
-
-	Args:
-		d: dict containing
-			args: obiwan.kenobi.py cmd line argparse.Namespace object
-			brickname: chunk of sky
-			metacat: fits_table 
-				configuration-like params for the simulated sources
-			simcat: fits_table
-				simulated source catalog for a given brick (not CCD).
-
-	Note:
-		runb_brick() is 'main' for the legacypipe/Tractor pipeline
-
-	Returns:
-		Nothing, but this func end ups writing out all the obiwan results 
-	"""
-	assert(d is not None)
-	simdecals = SimDecals(DR=d['args'].DR,\
-						  metacat=d['metacat'], simcat=d['simcat'], output_dir=d['simcat_dir'], \
-						  add_sim_noise=d['args'].add_sim_noise, folding_threshold=d['args'].folding_threshold,\
-						  image_eq_model=d['args'].image_eq_model)
-	# Use Tractor to just process the blobs containing the simulated sources.
-	if d['args'].all_blobs:
-		blobxy = None
-	else:
-		blobxy = zip(d['simcat'].get('x'), d['simcat'].get('y'))
-
-	# Default runbrick call sequence
-	obiwan_kwargs= vars(d['args']) 
-	runbrick_kwargs= get_runbrick_setup(**obiwan_kwargs)
-	# Obiwan modifications
-	runbrick_kwargs.update(blobxy=blobxy)
-	#plotbase='obiwan')
-	print('Calling run_brick with: ')
-	print('brickname= %s' % d['brickname'])
-	print('simdecals= ',simdecals)
-	print('runbrick_kwards= ',runbrick_kwargs)
-	# Run it: run_brick(brick, survey obj, **kwargs)
-	run_brick(d['brickname'], simdecals, **runbrick_kwargs)
+    """Runs the legacypipe/Tractor pipeline on images with simulated sources
+    
+    Args:
+      d: {'args': obiwan.kenobi.py cmd line argparse.Namespace object
+          'brickname': chunk of sky
+          'metacat': fits_table	configuration params for the simulated sources
+          'simcat': fits_table simulated source catalog for a given brick (not CCD).
+    
+    Note:
+      runb_brick() is 'main' for the legacypipe/Tractor pipeline
+    
+    Returns:
+      Nothing, but this func end ups writing out all the obiwan results 
+    """
+    assert(d is not None)
+    simdecals = SimDecals(DR=d['args'].DR,\
+			  metacat=d['metacat'], simcat=d['simcat'], output_dir=d['simcat_dir'], \
+			  add_sim_noise=d['args'].add_sim_noise, folding_threshold=d['args'].folding_threshold,\
+			  image_eq_model=d['args'].image_eq_model)
+    # Use Tractor to just process the blobs containing the simulated sources.
+    if d['args'].all_blobs:
+	blobxy = None
+    else:
+	blobxy = zip(d['simcat'].get('x'), d['simcat'].get('y'))
+    
+    # Default runbrick call sequence
+    obiwan_kwargs= vars(d['args']) 
+    runbrick_kwargs= get_runbrick_setup(**obiwan_kwargs)
+    # Obiwan modifications
+    runbrick_kwargs.update(blobxy=blobxy)
+    #plotbase='obiwan')
+    print('Calling run_brick with: ')
+    print('brickname= %s' % d['brickname'])
+    print('simdecals= ',simdecals)
+    print('runbrick_kwards= ',runbrick_kwargs)
+    # Run it: run_brick(brick, survey obj, **kwargs)
+    run_brick(d['brickname'], simdecals, **runbrick_kwargs)
 
 def dobash(cmd):
     print('UNIX cmd: %s' % cmd)
