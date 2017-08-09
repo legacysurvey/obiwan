@@ -1,0 +1,1217 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>Welcome to obiwan’s documentation! &#8212; obiwan 1.2.0 documentation</title>
+    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '1.2.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Priors On Each Galaxy Population" href="priors.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head>
+  <body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="welcome-to-obiwan-s-documentation">
+<h1>Welcome to obiwan’s documentation!<a class="headerlink" href="#welcome-to-obiwan-s-documentation" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="introduction">
+<h2>Introduction<a class="headerlink" href="#introduction" title="Permalink to this headline">¶</a></h2>
+<p>This is the documentation for obiwan.</p>
+</div>
+<div class="section" id="contents">
+<h2>Contents<a class="headerlink" href="#contents" title="Permalink to this headline">¶</a></h2>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="priors.html">Priors On Each Galaxy Population</a></li>
+<li class="toctree-l1"><a class="reference internal" href="draw_radec_color_z.html">Draw Samples From Each Galaxy Population</a></li>
+<li class="toctree-l1"><a class="reference internal" href="kenobi.html">Run the legacypipe/Tractor pipeline with simulated sources</a></li>
+<li class="toctree-l1"><a class="reference internal" href="changes.html">Change Log</a></li>
+</ul>
+</div>
+</div>
+<div class="section" id="module-obiwan">
+<span id="the-obiwan-package-api"></span><h2>The obiwan package/API<a class="headerlink" href="#module-obiwan" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="obiwan">
+<h3>obiwan<a class="headerlink" href="#obiwan" title="Permalink to this headline">¶</a></h3>
+<p>A package for injecting artificial stars and galaxy-targets (ELGs, LRGs, and QSOs) into the individual images of the DESI Legacy Surveys, DECALS, MzLS, and BASS. The legacypipe/Tractor pipeline is rerun on the modified image data, and the resulting <em>simulated</em> Tractor catalogues form a Data Release (DR) resembling a DR of real objects.</p>
+</div>
+<span class="target" id="module-obiwan.kenobi"></span><p>This is obiwan.kenobi
+…it runs the legacypipe/Tractor pipeline on images containing artificial sources</p>
+<dl class="class">
+<dt id="obiwan.kenobi.BuildStamp">
+<em class="property">class </em><code class="descclassname">obiwan.kenobi.</code><code class="descname">BuildStamp</code><span class="sig-paren">(</span><em>tim</em>, <em>gain=4.0</em>, <em>folding_threshold=1e-05</em>, <em>stamp_size=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/obiwan/kenobi.html#BuildStamp"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obiwan.kenobi.BuildStamp" title="Permalink to this definition">¶</a></dt>
+<dd><p>Does the drawing of simulated sources on a single exposure</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>tim</strong> – Tractor Image Object for a specific CCD</li>
+<li><strong>gain</strong> – gain of the CCD</li>
+<li><strong>folding_threshold</strong> – how close the simulated source flux is to the requested flux
+make smaller to increase simulated source flux/requested flux</li>
+<li><strong>stamp_size</strong> – pixels, width and height of simulated images</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<dl class="attribute">
+<dt id="obiwan.kenobi.BuildStamp.band">
+<code class="descname">band</code><a class="headerlink" href="#obiwan.kenobi.BuildStamp.band" title="Permalink to this definition">¶</a></dt>
+<dd><p>g,r,z</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="obiwan.kenobi.BuildStamp.stamp_size">
+<code class="descname">stamp_size</code><a class="headerlink" href="#obiwan.kenobi.BuildStamp.stamp_size" title="Permalink to this definition">¶</a></dt>
+<dd><p>pixels, width and height of simulated images</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="obiwan.kenobi.BuildStamp.gsparams">
+<code class="descname">gsparams</code><a class="headerlink" href="#obiwan.kenobi.BuildStamp.gsparams" title="Permalink to this definition">¶</a></dt>
+<dd><p>galsim object that configures how accurate simulated source will be</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="obiwan.kenobi.BuildStamp.gsdeviate">
+<code class="descname">gsdeviate</code><a class="headerlink" href="#obiwan.kenobi.BuildStamp.gsdeviate" title="Permalink to this definition">¶</a></dt>
+<dd><p>galsim object that configures its random number generator</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="obiwan.kenobi.BuildStamp.wcs">
+<code class="descname">wcs</code><a class="headerlink" href="#obiwan.kenobi.BuildStamp.wcs" title="Permalink to this definition">¶</a></dt>
+<dd><p>WCS from tim</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="obiwan.kenobi.BuildStamp.psf">
+<code class="descname">psf</code><a class="headerlink" href="#obiwan.kenobi.BuildStamp.psf" title="Permalink to this definition">¶</a></dt>
+<dd><p>psf from tim</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="obiwan.kenobi.BuildStamp.galsim_wcs">
+<code class="descname">galsim_wcs</code><a class="headerlink" href="#obiwan.kenobi.BuildStamp.galsim_wcs" title="Permalink to this definition">¶</a></dt>
+<dd><p>wcs repackaged into galsim compatible object</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="obiwan.kenobi.BuildStamp.zpscale">
+<code class="descname">zpscale</code><a class="headerlink" href="#obiwan.kenobi.BuildStamp.zpscale" title="Permalink to this definition">¶</a></dt>
+<dd><p>conversion factor ‘nanomaggies’ to ‘ADU’</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="obiwan.kenobi.BuildStamp.nano2e">
+<code class="descname">nano2e</code><a class="headerlink" href="#obiwan.kenobi.BuildStamp.nano2e" title="Permalink to this definition">¶</a></dt>
+<dd><p>conversion factor ‘nanomaggies’ to ‘e-‘</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="obiwan.kenobi.BuildStamp.addGaussNoise">
+<code class="descname">addGaussNoise</code><span class="sig-paren">(</span><em>stamp</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/obiwan/kenobi.html#BuildStamp.addGaussNoise"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obiwan.kenobi.BuildStamp.addGaussNoise" title="Permalink to this definition">¶</a></dt>
+<dd><p>Adds gaussian noise to perfect source (in place)</p>
+<dl class="docutils">
+<dt>STAMP and IVARSTAMP are in units of nanomaggies and</dt>
+<dd>1/nanomaggies**2, respectively.</dd>
+</dl>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">invvar for the stamp</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="obiwan.kenobi.BuildStamp.convolve_and_draw">
+<code class="descname">convolve_and_draw</code><span class="sig-paren">(</span><em>obj</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/obiwan/kenobi.html#BuildStamp.convolve_and_draw"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obiwan.kenobi.BuildStamp.convolve_and_draw" title="Permalink to this definition">¶</a></dt>
+<dd><p>Convolve the object with the PSF and then draw it.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="obiwan.kenobi.BuildStamp.elg">
+<code class="descname">elg</code><span class="sig-paren">(</span><em>obj</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/obiwan/kenobi.html#BuildStamp.elg"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obiwan.kenobi.BuildStamp.elg" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create an ELG (disk-like) galaxy.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="obiwan.kenobi.BuildStamp.lrg">
+<code class="descname">lrg</code><span class="sig-paren">(</span><em>obj</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/obiwan/kenobi.html#BuildStamp.lrg"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obiwan.kenobi.BuildStamp.lrg" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create an LRG just like did for ELG</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="obiwan.kenobi.BuildStamp.qso">
+<code class="descname">qso</code><span class="sig-paren">(</span><em>obj</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/obiwan/kenobi.html#BuildStamp.qso"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obiwan.kenobi.BuildStamp.qso" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create a QSO just like a star</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="obiwan.kenobi.BuildStamp.setlocal">
+<code class="descname">setlocal</code><span class="sig-paren">(</span><em>obj</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/obiwan/kenobi.html#BuildStamp.setlocal"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obiwan.kenobi.BuildStamp.setlocal" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the pixel positions, local wcs, local PSF.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="obiwan.kenobi.BuildStamp.star">
+<code class="descname">star</code><span class="sig-paren">(</span><em>obj</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/obiwan/kenobi.html#BuildStamp.star"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obiwan.kenobi.BuildStamp.star" title="Permalink to this definition">¶</a></dt>
+<dd><p>Render a star (PSF).</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="obiwan.kenobi.SimDecals">
+<em class="property">class </em><code class="descclassname">obiwan.kenobi.</code><code class="descname">SimDecals</code><span class="sig-paren">(</span><em>DR=None</em>, <em>survey_dir=None</em>, <em>metacat=None</em>, <em>simcat=None</em>, <em>output_dir=None</em>, <em>add_sim_noise=False</em>, <em>folding_threshold=1e-05</em>, <em>image_eq_model=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/obiwan/kenobi.html#SimDecals"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obiwan.kenobi.SimDecals" title="Permalink to this definition">¶</a></dt>
+<dd><p>Top level object that specifying which data to run through pipeline</p>
+<dl class="docutils">
+<dt>Same behavior as legacypipe.runs.Dr3DecalsSurvey which chooses which</dt>
+<dd>CCDs to include. But this also stores all the relevant obiwan
+objects</dd>
+</dl>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>DR</strong> – which Data-Release to consider. e.g. if DR=3, then only
+images included in DR3 will be considered</li>
+<li><strong>survey_dir</strong> – as used by legacypipe.runbrick.run_brick()
+Defaults to $LEGACY_SURVEY_DIR environment variable.  Where to look for
+files including calibration files, tables of CCDs and bricks, image data</li>
+<li><strong>metacat</strong> – fits_table
+configuration-like params for the simulated sources</li>
+<li><strong>simcat</strong> – fits_table
+simulated source catalog for a given brick (not CCD).</li>
+<li><strong>output_dir</strong> – legacypipe’s outdir</li>
+<li><strong>add_sim_noise</strong> – add Poisson noise from the simulated source to the image</li>
+<li><strong>folding_threshold</strong> – how close the simulated source flux is to the requested flux
+make smaller to increase simulated source flux/requested flux</li>
+<li><strong>image_eq_model</strong> – referred to as ‘testA’
+wherever add a simulated source, replace both image and invvar of the image
+with that of the simulated source only</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<dl class="attribute">
+<dt id="obiwan.kenobi.SimDecals.DR">
+<code class="descname">DR</code><a class="headerlink" href="#obiwan.kenobi.SimDecals.DR" title="Permalink to this definition">¶</a></dt>
+<dd><p>which Data-Release to consider. e.g. if DR=3, then only
+images included in DR3 will be considered</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="obiwan.kenobi.SimDecals.metacat">
+<code class="descname">metacat</code><a class="headerlink" href="#obiwan.kenobi.SimDecals.metacat" title="Permalink to this definition">¶</a></dt>
+<dd><p>fits_table
+configuration-like params for the simulated sources</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="obiwan.kenobi.SimDecals.simcat">
+<code class="descname">simcat</code><a class="headerlink" href="#obiwan.kenobi.SimDecals.simcat" title="Permalink to this definition">¶</a></dt>
+<dd><p>fits_table
+simulated source catalog for a given brick (not CCD).</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="obiwan.kenobi.SimDecals.output_dir">
+<code class="descname">output_dir</code><a class="headerlink" href="#obiwan.kenobi.SimDecals.output_dir" title="Permalink to this definition">¶</a></dt>
+<dd><p>legacypipe’s outdir</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="obiwan.kenobi.SimDecals.add_sim_noise">
+<code class="descname">add_sim_noise</code><a class="headerlink" href="#obiwan.kenobi.SimDecals.add_sim_noise" title="Permalink to this definition">¶</a></dt>
+<dd><p>add Poisson noise from the simulated source to the image</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="obiwan.kenobi.SimDecals.folding_threshold">
+<code class="descname">folding_threshold</code><a class="headerlink" href="#obiwan.kenobi.SimDecals.folding_threshold" title="Permalink to this definition">¶</a></dt>
+<dd><p>how close the simulated source flux is to the requested flux
+make smaller to increase simulated source flux/requested flux</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="obiwan.kenobi.SimDecals.image_eq_model">
+<code class="descname">image_eq_model</code><a class="headerlink" href="#obiwan.kenobi.SimDecals.image_eq_model" title="Permalink to this definition">¶</a></dt>
+<dd><p>referred to as ‘testA’
+wherever add a simulated source, replace both image and invvar of the image
+with that of the simulated source only</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="obiwan.kenobi.SimDecals.filter_ccd_kd_files">
+<code class="descname">filter_ccd_kd_files</code><span class="sig-paren">(</span><em>fns</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/obiwan/kenobi.html#SimDecals.filter_ccd_kd_files"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obiwan.kenobi.SimDecals.filter_ccd_kd_files" title="Permalink to this definition">¶</a></dt>
+<dd><p>introduced in DR5</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="obiwan.kenobi.SimImage">
+<em class="property">class </em><code class="descclassname">obiwan.kenobi.</code><code class="descname">SimImage</code><span class="sig-paren">(</span><em>survey</em>, <em>t</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/obiwan/kenobi.html#SimImage"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obiwan.kenobi.SimImage" title="Permalink to this definition">¶</a></dt>
+<dd><p>Adds simulated sources to a single exposure</p>
+<dl class="docutils">
+<dt>Similar behavior as legacypipe.decam.DecamImage. Instead of</dt>
+<dd>loading images specifically from DECam, this  loads images
+with simulated sources added in</dd>
+</dl>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>survey</strong> – SimDecals() object</li>
+<li><strong>t</strong> – as used by DecamImage
+a single row fits_table for a specific CCD</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<dl class="attribute">
+<dt id="obiwan.kenobi.SimImage.inherits">
+<code class="descname">inherits</code><a class="headerlink" href="#obiwan.kenobi.SimImage.inherits" title="Permalink to this definition">¶</a></dt>
+<dd><p>DecamImage</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="obiwan.kenobi.SimImage.t">
+<code class="descname">t</code><a class="headerlink" href="#obiwan.kenobi.SimImage.t" title="Permalink to this definition">¶</a></dt>
+<dd><p>as used by DecamImage
+a single row fits_table for a specific CCD</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="function">
+<dt id="obiwan.kenobi.build_simcat">
+<code class="descclassname">obiwan.kenobi.</code><code class="descname">build_simcat</code><span class="sig-paren">(</span><em>Samp=None</em>, <em>brickwcs=None</em>, <em>meta=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/obiwan/kenobi.html#build_simcat"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obiwan.kenobi.build_simcat" title="Permalink to this definition">¶</a></dt>
+<dd><p>Creates the simulated source catalog for a given brick (not CCD).</p>
+<dl class="docutils">
+<dt>The WCS for the brick (not CCD) is used to convert ra,dec of source</dt>
+<dd>to x,y pixel location in brickspace</dd>
+</dl>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>Samp</strong> – fits_table for the properties of sources in the brick
+usually a subset of all sources in the brick determined by
+rowstart (rs)</li>
+<li><strong>brickwcs</strong> – WCS object for the brick</li>
+<li><strong>meta</strong> – ‘metacat’ table
+fits_table with configuration-like params for the simulated sources</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">tuple of
+cat:
+skipping_ids:</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="obiwan.kenobi.create_ith_simcat">
+<code class="descclassname">obiwan.kenobi.</code><code class="descname">create_ith_simcat</code><span class="sig-paren">(</span><em>d=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/obiwan/kenobi.html#create_ith_simcat"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obiwan.kenobi.create_ith_simcat" title="Permalink to this definition">¶</a></dt>
+<dd><p>Write ‘simcat’ and ‘skipped_ids’ tables for a given sample of sources</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>d</strong> – {‘Samp’: fits_table for the properties of sources in the brick
+‘brickwcs’: WCS object for the brick
+‘metacat’: fits_table with configuration params for the simulated sources
+}</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">Nothing, saves the ‘simcat’ and ‘skipped_ids’ tables
+Adds ‘simcat’ table to dict ‘d’</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="obiwan.kenobi.create_metadata">
+<code class="descclassname">obiwan.kenobi.</code><code class="descname">create_metadata</code><span class="sig-paren">(</span><em>kwargs=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/obiwan/kenobi.html#create_metadata"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obiwan.kenobi.create_metadata" title="Permalink to this definition">¶</a></dt>
+<dd><p>fits_table with configuration-like params for the simulated sources</p>
+<p>TODO: Should metacat table have a rowstart column?
+TODO: One metacat table per brick, instead of one per <cite>rs*</cite> directory?</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>kwargs</strong> – configuration-like params for the simulated sources
+{‘brickname’: which chunk of sky
+‘objtype’: star,elg,lrg,qso
+‘nobj’: number of simulated sources for this run
+‘stamp_size’: pixels, width and height of simulated images
+‘cutouts’: whether .npy cutouts of every simulated source were written
+‘bright_galaxies’: whether bright_galaxies flag is set
+}</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">Nothing
+writes the ‘metacat’ fits_table to disk and stores it
+in the kwargs input arg</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="obiwan.kenobi.do_ith_cleanup">
+<code class="descclassname">obiwan.kenobi.</code><code class="descname">do_ith_cleanup</code><span class="sig-paren">(</span><em>d=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/obiwan/kenobi.html#do_ith_cleanup"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obiwan.kenobi.do_ith_cleanup" title="Permalink to this definition">¶</a></dt>
+<dd><p>Moves all obiwan+legacypipe outputs to a new directory stucture</p>
+<dl class="docutils">
+<dt>Uses rsync to move everthing, if all the rsync’s succeed then all the</dt>
+<dd>original files and directories are removed</dd>
+</dl>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>d</strong> – dict with keys brickname, simcat_dir</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="obiwan.kenobi.do_one_chunk">
+<code class="descclassname">obiwan.kenobi.</code><code class="descname">do_one_chunk</code><span class="sig-paren">(</span><em>d=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/obiwan/kenobi.html#do_one_chunk"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obiwan.kenobi.do_one_chunk" title="Permalink to this definition">¶</a></dt>
+<dd><p>Runs the legacypipe/Tractor pipeline on images with simulated sources</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>d</strong> – {‘args’: obiwan.kenobi.py cmd line argparse.Namespace object
+‘brickname’: chunk of sky
+‘metacat’: fits_table configuration params for the simulated sources
+‘simcat’: fits_table simulated source catalog for a given brick (not CCD).</td>
+</tr>
+</tbody>
+</table>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">runb_brick() is ‘main’ for the legacypipe/Tractor pipeline</p>
+</div>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">Nothing, but this func end ups writing out all the obiwan results</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="obiwan.kenobi.get_parser">
+<code class="descclassname">obiwan.kenobi.</code><code class="descname">get_parser</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/obiwan/kenobi.html#get_parser"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obiwan.kenobi.get_parser" title="Permalink to this definition">¶</a></dt>
+<dd><p>return parser object, tells it what options to look for
+options can come from a list of strings or command line</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="obiwan.kenobi.get_runbrick_setup">
+<code class="descclassname">obiwan.kenobi.</code><code class="descname">get_runbrick_setup</code><span class="sig-paren">(</span><em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/obiwan/kenobi.html#get_runbrick_setup"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obiwan.kenobi.get_runbrick_setup" title="Permalink to this definition">¶</a></dt>
+<dd><p>Convert runbrick.py cmd line options into <cite>**kwargs</cite> for run_brick()</p>
+<dl class="docutils">
+<dt>The command line options depend on the Data Release (e.g. the</dt>
+<dd>legacypipe code version. The cmd line options associated with
+each DR get modified and repackaged into a dict in
+legacypipe.runbrick so this converter is required to call run_brick
+appropriately</dd>
+</dl>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>**kwargs</strong> – dict of the cmd line options to obiwan.kenobi.py</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><dl class="docutils">
+<dt>dict to use when calling legacypipe.runbrick.run_brick like</dt>
+<dd>run_brick(brickname, survey, <cite>**dict</cite>)</dd>
+</dl>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="obiwan.kenobi.get_srcimg_invvar">
+<code class="descclassname">obiwan.kenobi.</code><code class="descname">get_srcimg_invvar</code><span class="sig-paren">(</span><em>stamp_ivar</em>, <em>img_ivar</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/obiwan/kenobi.html#get_srcimg_invvar"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obiwan.kenobi.get_srcimg_invvar" title="Permalink to this definition">¶</a></dt>
+<dd><p>stamp_ivar, img_ivar – galsim Image objects</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="obiwan.kenobi.main">
+<code class="descclassname">obiwan.kenobi.</code><code class="descname">main</code><span class="sig-paren">(</span><em>args=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/obiwan/kenobi.html#main"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obiwan.kenobi.main" title="Permalink to this definition">¶</a></dt>
+<dd><p>Main routine which parses the optional inputs.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="obiwan.kenobi.no_overlapping_radec">
+<code class="descclassname">obiwan.kenobi.</code><code class="descname">no_overlapping_radec</code><span class="sig-paren">(</span><em>Samp</em>, <em>dist=0.001388888888888889</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/obiwan/kenobi.html#no_overlapping_radec"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obiwan.kenobi.no_overlapping_radec" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns indices of sources that are too close</p>
+<dl class="docutils">
+<dt>We do not inject sources if they are too close to another</dt>
+<dd>simulated source. They are skipped and injected in a
+later</dd>
+</dl>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>Samp</strong> – fits_table for the properties of sources in the brick
+usually a subset of all sources in the brick determined by
+rowstart (rs)</li>
+<li><strong>dist</strong> – arcsec, minimum separation simulated sources are allowed
+to have</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">bool array, indices of simulated sources that are too close</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="obiwan.kenobi.ptime">
+<code class="descclassname">obiwan.kenobi.</code><code class="descname">ptime</code><span class="sig-paren">(</span><em>text</em>, <em>t0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/obiwan/kenobi.html#ptime"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obiwan.kenobi.ptime" title="Permalink to this definition">¶</a></dt>
+<dd><p>Timer</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="obiwan.kenobi.write_dict">
+<code class="descclassname">obiwan.kenobi.</code><code class="descname">write_dict</code><span class="sig-paren">(</span><em>fn</em>, <em>d</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/obiwan/kenobi.html#write_dict"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obiwan.kenobi.write_dict" title="Permalink to this definition">¶</a></dt>
+<dd><p>d – dictionary</p>
+</dd></dl>
+
+<span class="target" id="module-obiwan.priors"></span><div class="section" id="obiwan-priors">
+<h3>obiwan.priors<a class="headerlink" href="#obiwan-priors" title="Permalink to this headline">¶</a></h3>
+<p>Uses intrinsic (dust removed) AB fluxes/mags to select ELGs,LRGs,QSOs,STARs
+Makes color-color plots that reproduce the FDR
+Single band, mag distributions, plotted using ‘as observed’ AB fluxes/mags,
+since these are what one adds into a CP image</p>
+<dl class="class">
+<dt id="obiwan.priors.CommonInit">
+<em class="property">class </em><code class="descclassname">obiwan.priors.</code><code class="descname">CommonInit</code><span class="sig-paren">(</span><em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/obiwan/priors.html#CommonInit"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obiwan.priors.CommonInit" title="Permalink to this definition">¶</a></dt>
+<dd><p>Base class for every STAR,ELG,LRG,QSO class</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>DR</strong> – which Data Release’s data to use</li>
+<li><strong>brick_primary</strong><strong>,</strong><strong>anymask</strong><strong>,</strong><strong>allmask</strong><strong>,</strong><strong>fracflux</strong> – booleans for which imaging cuts to use</li>
+<li><strong>kdefn</strong><strong>,</strong><strong>loadkde</strong><strong>,</strong><strong>savekde</strong> – where to get the saved KDE fit</li>
+<li><strong>savefig</strong><strong>,</strong><strong>alpha</strong><strong>,</strong><strong>outdir</strong> – plotting options</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<dl class="attribute">
+<dt id="obiwan.priors.CommonInit.truth_dir">
+<code class="descname">truth_dir</code><a class="headerlink" href="#obiwan.priors.CommonInit.truth_dir" title="Permalink to this definition">¶</a></dt>
+<dd><p>directory of matched Truth Tables</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="obiwan.priors.CommonInit.args">
+<code class="descname">args</code><a class="headerlink" href="#obiwan.priors.CommonInit.args" title="Permalink to this definition">¶</a></dt>
+<dd><p>ditto above</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="obiwan.priors.CommonInit.imaging_cut">
+<code class="descname">imaging_cut</code><span class="sig-paren">(</span><em>data</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/obiwan/priors.html#CommonInit.imaging_cut"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obiwan.priors.CommonInit.imaging_cut" title="Permalink to this definition">¶</a></dt>
+<dd><p>data is a fits_table object with Tractor Catalogue columns</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="obiwan.priors.CommonInit.std_star_cut">
+<code class="descname">std_star_cut</code><span class="sig-paren">(</span><em>data</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/obiwan/priors.html#CommonInit.std_star_cut"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obiwan.priors.CommonInit.std_star_cut" title="Permalink to this definition">¶</a></dt>
+<dd><p>See: <a class="reference external" href="https://desi.lbl.gov/trac/wiki/TargetSelectionWG/TargetSelection#SpectrophotometricStandardStarsFSTD">https://desi.lbl.gov/trac/wiki/TargetSelectionWG/TargetSelection#SpectrophotometricStandardStarsFSTD</a>
+data is a fits_table object with Tractor Catalogue columns</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="obiwan.priors.CrossValidator">
+<em class="property">class </em><code class="descclassname">obiwan.priors.</code><code class="descname">CrossValidator</code><a class="reference internal" href="_modules/obiwan/priors.html#CrossValidator"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obiwan.priors.CrossValidator" title="Permalink to this definition">¶</a></dt>
+<dd><p>Cross validate the RedshiftPredictor() function</p>
+<dl class="method">
+<dt id="obiwan.priors.CrossValidator.kfold_cross_val">
+<code class="descname">kfold_cross_val</code><span class="sig-paren">(</span><em>C=1.0</em>, <em>kfolds=10</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/obiwan/priors.html#CrossValidator.kfold_cross_val"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obiwan.priors.CrossValidator.kfold_cross_val" title="Permalink to this definition">¶</a></dt>
+<dd><p>C is parameter varying</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="obiwan.priors.CrossValidator.kfold_indices">
+<code class="descname">kfold_indices</code><span class="sig-paren">(</span><em>k</em>, <em>n_train</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/obiwan/priors.html#CrossValidator.kfold_indices"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obiwan.priors.CrossValidator.kfold_indices" title="Permalink to this definition">¶</a></dt>
+<dd><p>returns array of indices of shape (k,n_train/k) to grab the k bins of training data</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="obiwan.priors.ELG">
+<em class="property">class </em><code class="descclassname">obiwan.priors.</code><code class="descname">ELG</code><span class="sig-paren">(</span><em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/obiwan/priors.html#ELG"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obiwan.priors.ELG" title="Permalink to this definition">¶</a></dt>
+<dd><p>Creates the ELG sample</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>CommonInit</strong> (<em>see</em>) – </td>
+</tr>
+</tbody>
+</table>
+<dl class="attribute">
+<dt id="obiwan.priors.ELG.rlimit">
+<code class="descname">rlimit</code><a class="headerlink" href="#obiwan.priors.ELG.rlimit" title="Permalink to this definition">¶</a></dt>
+<dd><p>AB magnitude limit of sample</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="obiwan.priors.ELG.kdefn">
+<code class="descname">kdefn</code><a class="headerlink" href="#obiwan.priors.ELG.kdefn" title="Permalink to this definition">¶</a></dt>
+<dd><p>name for the fit KDE</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="obiwan.priors.ELG.get_dr3_deep2">
+<code class="descname">get_dr3_deep2</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/obiwan/priors.html#ELG.get_dr3_deep2"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obiwan.priors.ELG.get_dr3_deep2" title="Permalink to this definition">¶</a></dt>
+<dd><p>version 3.0 of data discussed in
+<a class="reference external" href="https://desi.lbl.gov/DocDB/cgi-bin/private/RetrieveFile?docid=912">https://desi.lbl.gov/DocDB/cgi-bin/private/RetrieveFile?docid=912</a></p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="obiwan.priors.GalaxyPrior">
+<em class="property">class </em><code class="descclassname">obiwan.priors.</code><code class="descname">GalaxyPrior</code><a class="reference internal" href="_modules/obiwan/priors.html#GalaxyPrior"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obiwan.priors.GalaxyPrior" title="Permalink to this definition">¶</a></dt>
+<dd><p>Stores all 4 galaxy type classes</p>
+</dd></dl>
+
+<dl class="class">
+<dt id="obiwan.priors.KernelOfTruth">
+<em class="property">class </em><code class="descclassname">obiwan.priors.</code><code class="descname">KernelOfTruth</code><span class="sig-paren">(</span><em>data_list</em>, <em>labels</em>, <em>lims</em>, <em>bandwidth=0.05</em>, <em>kernel='gaussian'</em>, <em>kdefn='kde.pickle'</em>, <em>loadkde=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/obiwan/priors.html#KernelOfTruth"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obiwan.priors.KernelOfTruth" title="Permalink to this definition">¶</a></dt>
+<dd><p>Kernel Density Estimate for galaxy sample</p>
+<p>Following <a class="reference external" href="http://scikit-learn.org/stable/auto_examples/neighbors/">http://scikit-learn.org/stable/auto_examples/neighbors/</a>
+plot_kde_1d.html</p>
+<blockquote>
+<div><dl class="docutils">
+<dt>Args:</dt>
+<dd>data_list: list of N features, each element is np.array of M samples
+labels: list of strings, a name for each of the N feature
+lims: list of tuples giving low,hi limits for KDE
+bandwidth: characteristic width of the kernel
+kernel: gaussian, tophat, etc
+kdefn: file to save KDE fit to
+loadkde: boolean, load existing KDE fit if exists</dd>
+</dl>
+</div></blockquote>
+<dl class="attribute">
+<dt id="obiwan.priors.KernelOfTruth.X">
+<code class="descname">X</code><a class="headerlink" href="#obiwan.priors.KernelOfTruth.X" title="Permalink to this definition">¶</a></dt>
+<dd><p>Data to fit KDE to</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="obiwan.priors.KernelOfTruth.kde">
+<code class="descname">kde</code><a class="headerlink" href="#obiwan.priors.KernelOfTruth.kde" title="Permalink to this definition">¶</a></dt>
+<dd><p>KernelDensity() object</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="obiwan.priors.KernelOfTruth.plot_1band_and_color">
+<code class="descname">plot_1band_and_color</code><span class="sig-paren">(</span><em>ndraws=1000</em>, <em>xylims=None</em>, <em>prefix=''</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/obiwan/priors.html#KernelOfTruth.plot_1band_and_color"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obiwan.priors.KernelOfTruth.plot_1band_and_color" title="Permalink to this definition">¶</a></dt>
+<dd><p>xylims – dict of x1,y1,x2,y2,… where x1 is tuple of low,hi for first plot xaxis</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="obiwan.priors.KernelOfTruth.plot_1band_color_and_redshift">
+<code class="descname">plot_1band_color_and_redshift</code><span class="sig-paren">(</span><em>ndraws=1000</em>, <em>xylims=None</em>, <em>prefix=''</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/obiwan/priors.html#KernelOfTruth.plot_1band_color_and_redshift"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obiwan.priors.KernelOfTruth.plot_1band_color_and_redshift" title="Permalink to this definition">¶</a></dt>
+<dd><p>xylims – dict of x1,y1,x2,y2,… where x1 is tuple of low,hi for first plot xaxis</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="obiwan.priors.KernelOfTruth.plot_galaxy_shapes">
+<code class="descname">plot_galaxy_shapes</code><span class="sig-paren">(</span><em>ndraws=1000</em>, <em>xylims=None</em>, <em>name='kde.png'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/obiwan/priors.html#KernelOfTruth.plot_galaxy_shapes"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obiwan.priors.KernelOfTruth.plot_galaxy_shapes" title="Permalink to this definition">¶</a></dt>
+<dd><p>xylims – dict of x1,y1,x2,y2,… where x1 is tuple of low,hi for first plot xaxis</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="obiwan.priors.LRG">
+<em class="property">class </em><code class="descclassname">obiwan.priors.</code><code class="descname">LRG</code><span class="sig-paren">(</span><em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/obiwan/priors.html#LRG"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obiwan.priors.LRG" title="Permalink to this definition">¶</a></dt>
+<dd><p>Creates the LRG sample</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>CommonInit</strong> (<em>see</em>) – </td>
+</tr>
+</tbody>
+</table>
+<dl class="attribute">
+<dt id="obiwan.priors.LRG.zlimit">
+<code class="descname">zlimit</code><a class="headerlink" href="#obiwan.priors.LRG.zlimit" title="Permalink to this definition">¶</a></dt>
+<dd><p>AB magnitude limit of sample</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="obiwan.priors.LRG.kdefn">
+<code class="descname">kdefn</code><a class="headerlink" href="#obiwan.priors.LRG.kdefn" title="Permalink to this definition">¶</a></dt>
+<dd><p>name for the fit KDE</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="obiwan.priors.LRG.fit_kde">
+<code class="descname">fit_kde</code><span class="sig-paren">(</span><em>use_acs=False</em>, <em>loadkde=False</em>, <em>savekde=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/obiwan/priors.html#LRG.fit_kde"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obiwan.priors.LRG.fit_kde" title="Permalink to this definition">¶</a></dt>
+<dd><p>No Targeting cuts on g band, but need to fit it so can insert in grz image</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="obiwan.priors.LRG.get_vipers">
+<code class="descname">get_vipers</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/obiwan/priors.html#LRG.get_vipers"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obiwan.priors.LRG.get_vipers" title="Permalink to this definition">¶</a></dt>
+<dd><p>LRGs from VIPERS in CFHTLS W4 field (12 deg2)</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="obiwan.priors.LRG.plot_kde">
+<code class="descname">plot_kde</code><span class="sig-paren">(</span><em>loadkde=False</em>, <em>savekde=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/obiwan/priors.html#LRG.plot_kde"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obiwan.priors.LRG.plot_kde" title="Permalink to this definition">¶</a></dt>
+<dd><p>No Targeting cuts on g band, but need to fit it so can insert in grz image</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="obiwan.priors.QSO">
+<em class="property">class </em><code class="descclassname">obiwan.priors.</code><code class="descname">QSO</code><span class="sig-paren">(</span><em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/obiwan/priors.html#QSO"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obiwan.priors.QSO" title="Permalink to this definition">¶</a></dt>
+<dd><p>Creates the QSO sample</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>CommonInit</strong> (<em>see</em>) – </td>
+</tr>
+</tbody>
+</table>
+<dl class="attribute">
+<dt id="obiwan.priors.QSO.rlimit">
+<code class="descname">rlimit</code><a class="headerlink" href="#obiwan.priors.QSO.rlimit" title="Permalink to this definition">¶</a></dt>
+<dd><p>AB magnitude limit of sample</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="obiwan.priors.QSO.kdefn">
+<code class="descname">kdefn</code><a class="headerlink" href="#obiwan.priors.QSO.kdefn" title="Permalink to this definition">¶</a></dt>
+<dd><p>name for the fit KDE</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="obiwan.priors.RedshiftPredictor">
+<em class="property">class </em><code class="descclassname">obiwan.priors.</code><code class="descname">RedshiftPredictor</code><span class="sig-paren">(</span><em>X=None</em>, <em>y=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/obiwan/priors.html#RedshiftPredictor"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obiwan.priors.RedshiftPredictor" title="Permalink to this definition">¶</a></dt>
+<dd><p>Predict redshift instead of using the data’s sample</p>
+</dd></dl>
+
+<dl class="class">
+<dt id="obiwan.priors.STAR">
+<em class="property">class </em><code class="descclassname">obiwan.priors.</code><code class="descname">STAR</code><span class="sig-paren">(</span><em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/obiwan/priors.html#STAR"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obiwan.priors.STAR" title="Permalink to this definition">¶</a></dt>
+<dd><p>Creates the STAR sample</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>CommonInit</strong> (<em>see</em>) – </td>
+</tr>
+</tbody>
+</table>
+<dl class="attribute">
+<dt id="obiwan.priors.STAR.kdefn">
+<code class="descname">kdefn</code><a class="headerlink" href="#obiwan.priors.STAR.kdefn" title="Permalink to this definition">¶</a></dt>
+<dd><p>name for the fit KDE</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="obiwan.priors.STAR.get_sweepstars">
+<code class="descname">get_sweepstars</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/obiwan/priors.html#STAR.get_sweepstars"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obiwan.priors.STAR.get_sweepstars" title="Permalink to this definition">¶</a></dt>
+<dd><p>Model the g-r, r-z color-color sequence for stars</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="obiwan.priors.TSBox">
+<em class="property">class </em><code class="descclassname">obiwan.priors.</code><code class="descname">TSBox</code><span class="sig-paren">(</span><em>src='ELG'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/obiwan/priors.html#TSBox"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obiwan.priors.TSBox" title="Permalink to this definition">¶</a></dt>
+<dd><p>Add FDR Target Selection box to any  ELG, LRG, plot</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>src</strong> – ELG, LRG, QSO, STAR</td>
+</tr>
+</tbody>
+</table>
+<dl class="attribute">
+<dt id="obiwan.priors.TSBox.src">
+<code class="descname">src</code><a class="headerlink" href="#obiwan.priors.TSBox.src" title="Permalink to this definition">¶</a></dt>
+<dd><p>ELG, LRG, QSO, STAR</p>
+</dd></dl>
+
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">add_ts_box(): primary function to use</p>
+</div>
+<dl class="method">
+<dt id="obiwan.priors.TSBox.add_ts_box">
+<code class="descname">add_ts_box</code><span class="sig-paren">(</span><em>ax</em>, <em>xlim=None</em>, <em>ylim=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/obiwan/priors.html#TSBox.add_ts_box"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obiwan.priors.TSBox.add_ts_box" title="Permalink to this definition">¶</a></dt>
+<dd><p>draw color selection box</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="obiwan.priors._GaussianMixtureModel">
+<em class="property">class </em><code class="descclassname">obiwan.priors.</code><code class="descname">_GaussianMixtureModel</code><span class="sig-paren">(</span><em>weights_</em>, <em>means_</em>, <em>covars_</em>, <em>covtype</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/obiwan/priors.html#_GaussianMixtureModel"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obiwan.priors._GaussianMixtureModel" title="Permalink to this definition">¶</a></dt>
+<dd><p>Sample from a Mixture of Gaussians (MoG) with known params</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>weights</strong><strong>,</strong><strong>means_</strong><strong>,</strong><strong>covars_</strong> – MoG parameters</li>
+<li><strong>covtype</strong> – ‘spherical’, ‘diag’, ‘tied’, ‘full’</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<dl class="attribute">
+<dt>
+<code class="descname">weights_,means_,covars_</code></dt>
+<dd><p>MoG parameters</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="obiwan.priors._GaussianMixtureModel.covtype">
+<code class="descname">covtype</code><a class="headerlink" href="#obiwan.priors._GaussianMixtureModel.covtype" title="Permalink to this definition">¶</a></dt>
+<dd><p>‘spherical’, ‘diag’, ‘tied’, ‘full’</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="obiwan.priors._GaussianMixtureModel.n_components">
+<code class="descname">n_components</code><a class="headerlink" href="#obiwan.priors._GaussianMixtureModel.n_components" title="Permalink to this definition">¶</a></dt>
+<dd><p>as sounds</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="obiwan.priors._GaussianMixtureModel.n_dimenstions">
+<code class="descname">n_dimenstions</code><a class="headerlink" href="#obiwan.priors._GaussianMixtureModel.n_dimenstions" title="Permalink to this definition">¶</a></dt>
+<dd><p>as sounds</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="obiwan.priors._GaussianMixtureModel.sample_full_pdf">
+<code class="descname">sample_full_pdf</code><span class="sig-paren">(</span><em>n_samples=1</em>, <em>random_state=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/obiwan/priors.html#_GaussianMixtureModel.sample_full_pdf"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obiwan.priors._GaussianMixtureModel.sample_full_pdf" title="Permalink to this definition">¶</a></dt>
+<dd><p>‘sample() uses the component datum x is closest too, sample_full_pdf() uses sum of components at datum x
+this is more time consuming than sample() and difference is negligible</p>
+</dd></dl>
+
+<dl class="staticmethod">
+<dt id="obiwan.priors._GaussianMixtureModel.save">
+<em class="property">static </em><code class="descname">save</code><span class="sig-paren">(</span><em>model</em>, <em>filename</em>, <em>index=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/obiwan/priors.html#_GaussianMixtureModel.save"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obiwan.priors._GaussianMixtureModel.save" title="Permalink to this definition">¶</a></dt>
+<dd><p>index: optional nddex array for subset of compenents to save</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="function">
+<dt id="obiwan.priors.add_MoG_curves">
+<code class="descclassname">obiwan.priors.</code><code class="descname">add_MoG_curves</code><span class="sig-paren">(</span><em>ax</em>, <em>means_</em>, <em>covars_</em>, <em>weights_</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/obiwan/priors.html#add_MoG_curves"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obiwan.priors.add_MoG_curves" title="Permalink to this definition">¶</a></dt>
+<dd><p>plot 2-sigma ellipses for each multivariate component</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>ax</strong> – axis to draw on</li>
+<li><strong>covars</strong><strong>, </strong><strong>weights</strong> (<em>means</em><em>,</em>) – MoG parameters</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="obiwan.priors.rm_last_ticklabel">
+<code class="descclassname">obiwan.priors.</code><code class="descname">rm_last_ticklabel</code><span class="sig-paren">(</span><em>ax</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/obiwan/priors.html#rm_last_ticklabel"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obiwan.priors.rm_last_ticklabel" title="Permalink to this definition">¶</a></dt>
+<dd><p>for multiplot</p>
+</dd></dl>
+
+</div>
+<span class="target" id="module-obiwan.draw_radec_color_z"></span><div class="section" id="obiwan-draw-radec-color-z">
+<h3>obiwan.draw_radec_color_z<a class="headerlink" href="#obiwan-draw-radec-color-z" title="Permalink to this headline">¶</a></h3>
+<p>mpi4py to draw N random ra,dec with grzW1,Re,redshift info from KDEs
+These N ra,dec rows are written to N/n_tasks fits files
+fits2db to load those N/n_tasks fits files into the PostgresQL DB
+Add bricks table to DB and index on that
+func(brick) – returns all ra,dec in a given brick
+Write n_bricks fits files containing these various ra,dec</p>
+<dl class="class">
+<dt id="obiwan.draw_radec_color_z.KDEColors">
+<em class="property">class </em><code class="descclassname">obiwan.draw_radec_color_z.</code><code class="descname">KDEColors</code><span class="sig-paren">(</span><em>objtype='star'</em>, <em>pickle_dir='./'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/obiwan/draw_radec_color_z.html#KDEColors"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obiwan.draw_radec_color_z.KDEColors" title="Permalink to this definition">¶</a></dt>
+<dd><p>Sample color + redshift from each galaxy KDE</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">uses saved KDE from obiwan.priors.KernelOfTruth()</p>
+</div>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>objtype</strong> – star,elg,lrg,qso</li>
+<li><strong>pickle_dir</strong> – where the fit KDE was written</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<dl class="attribute">
+<dt id="obiwan.draw_radec_color_z.KDEColors.objtype">
+<code class="descname">objtype</code><a class="headerlink" href="#obiwan.draw_radec_color_z.KDEColors.objtype" title="Permalink to this definition">¶</a></dt>
+<dd><p>star,elg,lrg,qso</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="obiwan.draw_radec_color_z.KDEColors.pickle_dir">
+<code class="descname">pickle_dir</code><a class="headerlink" href="#obiwan.draw_radec_color_z.KDEColors.pickle_dir" title="Permalink to this definition">¶</a></dt>
+<dd><p>where the fit KDE was written</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="obiwan.draw_radec_color_z.KDEColors.kde">
+<code class="descname">kde</code><a class="headerlink" href="#obiwan.draw_radec_color_z.KDEColors.kde" title="Permalink to this definition">¶</a></dt>
+<dd><p>fit KDE</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="obiwan.draw_radec_color_z.KDEshapes">
+<em class="property">class </em><code class="descclassname">obiwan.draw_radec_color_z.</code><code class="descname">KDEshapes</code><span class="sig-paren">(</span><em>objtype='elg'</em>, <em>pickle_dir='./'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/obiwan/draw_radec_color_z.html#KDEshapes"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obiwan.draw_radec_color_z.KDEshapes" title="Permalink to this definition">¶</a></dt>
+<dd><p>Sample morphology from each galaxy KDE</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">uses saved KDE from obiwan.priors.KernelOfTruth()</p>
+</div>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>objtype</strong> – star,elg,lrg,qso</li>
+<li><strong>pickle_dir</strong> – where the fit KDE was written</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<dl class="attribute">
+<dt id="obiwan.draw_radec_color_z.KDEshapes.objtype">
+<code class="descname">objtype</code><a class="headerlink" href="#obiwan.draw_radec_color_z.KDEshapes.objtype" title="Permalink to this definition">¶</a></dt>
+<dd><p>star,elg,lrg,qso</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="obiwan.draw_radec_color_z.KDEshapes.pickle_dir">
+<code class="descname">pickle_dir</code><a class="headerlink" href="#obiwan.draw_radec_color_z.KDEshapes.pickle_dir" title="Permalink to this definition">¶</a></dt>
+<dd><p>where the fit KDE was written</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="obiwan.draw_radec_color_z.KDEshapes.kde">
+<code class="descname">kde</code><a class="headerlink" href="#obiwan.draw_radec_color_z.KDEshapes.kde" title="Permalink to this definition">¶</a></dt>
+<dd><p>fit KDE</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="obiwan.draw_radec_color_z.KdeSample">
+<em class="property">class </em><code class="descclassname">obiwan.draw_radec_color_z.</code><code class="descname">KdeSample</code><span class="sig-paren">(</span><em>objtype='star'</em>, <em>pickle_dir='./'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/obiwan/draw_radec_color_z.html#KdeSample"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obiwan.draw_radec_color_z.KdeSample" title="Permalink to this definition">¶</a></dt>
+<dd><p>Sample color + redshift + morphology from each galaxy KDE</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">uses saved KDE from obiwan.priors.KernelOfTruth()</p>
+</div>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>objtype</strong> – star,elg,lrg,qso</li>
+<li><strong>pickle_dir</strong> – where the fit KDE was written</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<dl class="attribute">
+<dt id="obiwan.draw_radec_color_z.KdeSample.objtype">
+<code class="descname">objtype</code><a class="headerlink" href="#obiwan.draw_radec_color_z.KdeSample.objtype" title="Permalink to this definition">¶</a></dt>
+<dd><p>star,elg,lrg,qso</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="obiwan.draw_radec_color_z.KdeSample.pickle_dir">
+<code class="descname">pickle_dir</code><a class="headerlink" href="#obiwan.draw_radec_color_z.KdeSample.pickle_dir" title="Permalink to this definition">¶</a></dt>
+<dd><p>where the fit KDE was written</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="obiwan.draw_radec_color_z.KdeSample.kde">
+<code class="descname">kde</code><a class="headerlink" href="#obiwan.draw_radec_color_z.KdeSample.kde" title="Permalink to this definition">¶</a></dt>
+<dd><p>fit KDE</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="function">
+<dt id="obiwan.draw_radec_color_z.draw_points">
+<code class="descclassname">obiwan.draw_radec_color_z.</code><code class="descname">draw_points</code><span class="sig-paren">(</span><em>radec</em>, <em>unique_ids</em>, <em>obj='star'</em>, <em>seed=1</em>, <em>outdir='./'</em>, <em>prefix=''</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/obiwan/draw_radec_color_z.html#draw_points"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obiwan.draw_radec_color_z.draw_points" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>radec</strong> – dict with keys ra1,ra2,dec1,dec2
+the ra,dec limits for the sample</li>
+<li><strong>unique_ids</strong> – list of unique integers for each draw</li>
+<li><strong>obj</strong> – star,elg,lrg,qso</li>
+<li><strong>seed</strong> – to initialize random number generator</li>
+<li><strong>outdir</strong> – where the fit KDE files are</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last"><dl class="docutils">
+<dt>Nothing, but write a fits_table containing the unique id, ra, dec</dt>
+<dd><p class="first last">and color + redshift + morphology info for each source</p>
+</dd>
+</dl>
+</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="obiwan.draw_radec_color_z.get_area">
+<code class="descclassname">obiwan.draw_radec_color_z.</code><code class="descname">get_area</code><span class="sig-paren">(</span><em>radec</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/obiwan/draw_radec_color_z.html#get_area"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obiwan.draw_radec_color_z.get_area" title="Permalink to this definition">¶</a></dt>
+<dd><p>returns area on sphere between ra1,ra2,dec2,dec1
+<a class="reference external" href="https://github.com/desihub/imaginglss/model/brick.py#L64">https://github.com/desihub/imaginglss/model/brick.py#L64</a>, self.area=…</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="obiwan.draw_radec_color_z.get_radec">
+<code class="descclassname">obiwan.draw_radec_color_z.</code><code class="descname">get_radec</code><span class="sig-paren">(</span><em>radec</em>, <em>ndraws=1</em>, <em>random_state=&lt;mtrand.RandomState object&gt;</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/obiwan/draw_radec_color_z.html#get_radec"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obiwan.draw_radec_color_z.get_radec" title="Permalink to this definition">¶</a></dt>
+<dd><p>Draws ndraws samples of Ra,Dec from the unit sphere.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>radec</strong> – dict with keys ra1,ra2,dec1,dec2
+the ra,dec limits for the sample</li>
+<li><strong>ndraws</strong> – number of samples</li>
+<li><strong>randome_state</strong> – numpy random number generator</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">tuple of arrays having length ndraws</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">ra,dec</p>
+</td>
+</tr>
+</tbody>
+</table>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">Taken from
+<a class="reference external" href="https://github.com/desihub/imaginglss/blob/master/scripts/imglss-mpi-make-random.py#L55">https://github.com/desihub/imaginglss/blob/master/scripts/imglss-mpi-make-random.py#L55</a></p>
+</div>
+</dd></dl>
+
+<dl class="function">
+<dt id="obiwan.draw_radec_color_z.mkdir_needed">
+<code class="descclassname">obiwan.draw_radec_color_z.</code><code class="descname">mkdir_needed</code><span class="sig-paren">(</span><em>d</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/obiwan/draw_radec_color_z.html#mkdir_needed"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obiwan.draw_radec_color_z.mkdir_needed" title="Permalink to this definition">¶</a></dt>
+<dd><p>make each needed directory
+d= dictionary, vars(args)</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="obiwan.draw_radec_color_z.organize_by_brick">
+<code class="descclassname">obiwan.draw_radec_color_z.</code><code class="descname">organize_by_brick</code><span class="sig-paren">(</span><em>sample_fns</em>, <em>sbricks</em>, <em>outdir=None</em>, <em>seed=None</em>, <em>prefix=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/obiwan/draw_radec_color_z.html#organize_by_brick"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obiwan.draw_radec_color_z.organize_by_brick" title="Permalink to this definition">¶</a></dt>
+<dd><p>For each sample_fn, split into bricks
+get  brick sample fn for that brick and sample
+write it if does not exist
+sample_fn – sample_seed.fits file assigned to that mpi task
+sbricks – survey bricks table cut to radec region</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="obiwan.draw_radec_color_z.stdouterr_redirected">
+<code class="descclassname">obiwan.draw_radec_color_z.</code><code class="descname">stdouterr_redirected</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwds</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/obiwan/draw_radec_color_z.html#stdouterr_redirected"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obiwan.draw_radec_color_z.stdouterr_redirected" title="Permalink to this definition">¶</a></dt>
+<dd><p>Based on <a class="reference external" href="http://stackoverflow.com/questions/5081657">http://stackoverflow.com/questions/5081657</a></p>
+</dd></dl>
+
+<dl class="function">
+<dt id="obiwan.draw_radec_color_z.write_calling_seq">
+<code class="descclassname">obiwan.draw_radec_color_z.</code><code class="descname">write_calling_seq</code><span class="sig-paren">(</span><em>d</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/obiwan/draw_radec_color_z.html#write_calling_seq"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obiwan.draw_radec_color_z.write_calling_seq" title="Permalink to this definition">¶</a></dt>
+<dd><p>each <cite>*_randoms/</cite> directory should have a file listing how randoms were created</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>d</strong> – dict, vars(args)</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</div>
+</div>
+<div class="section" id="indices-and-tables">
+<h2>Indices and tables<a class="headerlink" href="#indices-and-tables" title="Permalink to this headline">¶</a></h2>
+<ul class="simple">
+<li><a class="reference internal" href="genindex.html"><span class="std std-ref">Index</span></a></li>
+<li><a class="reference internal" href="py-modindex.html"><span class="std std-ref">Module Index</span></a></li>
+<li><a class="reference internal" href="search.html"><span class="std std-ref">Search Page</span></a></li>
+</ul>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="#">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Welcome to obiwan’s documentation!</a><ul>
+<li><a class="reference internal" href="#introduction">Introduction</a></li>
+<li><a class="reference internal" href="#contents">Contents</a></li>
+<li><a class="reference internal" href="#module-obiwan">The obiwan package/API</a><ul>
+<li><a class="reference internal" href="#obiwan">obiwan</a></li>
+<li><a class="reference internal" href="#obiwan-priors">obiwan.priors</a></li>
+<li><a class="reference internal" href="#obiwan-draw-radec-color-z">obiwan.draw_radec_color_z</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#indices-and-tables">Indices and tables</a></li>
+</ul>
+</li>
+</ul>
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="#">Documentation overview</a><ul>
+      <li>Next: <a href="priors.html" title="next chapter">Priors On Each Galaxy Population</a></li>
+  </ul></li>
+</ul>
+</div>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/index.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2014-2017, DESI Collaboration.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.6.3</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.10</a>
+      
+      |
+      <a href="_sources/index.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>
