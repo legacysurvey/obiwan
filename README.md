@@ -10,6 +10,8 @@ https://daler.github.io/sphinxdoc-test/includeme.html
 
 # Instructions
 
+## Setup
+
 1. Given a repo "github.com/legacysurvey/obiwan" containing all the Sphinx files to do "make html", the following will add a branch "gh-pages" to the repo that only contains the Sphinx build products you create on your local computer with "make html", etc.
 2. git clone the repo to "./obiwan", change this line in the Sphinx Makefile to "BUILDDIR = ../../obiwandoc", commit and push to remote
 3. make a directory "./obiwandocs", cd there, git clone the repo naming it as "html", cd to the html directory. e.g. you are now here "./obiwandocs/html"
@@ -23,6 +25,11 @@ https://daler.github.io/sphinxdoc-test/includeme.html
 6. "cd ../../obiwandocs/html && git add . && git commit -m 'first commit to gh-pages' && git push origin gh-pages"
 7. Your docs are now live here: legacysurvey.github.com/obiwan
 
+## How to update the docs
+
+1. "git clone https://github.com/legacysurvey/obiwan.git && mkdir obiwandocs && cd obiwandocs && git clone https://github.com/legacysurvey/obiwan.git html && cd html && git checkout gh-pages"
+2. cd obiwan/docs && make html
+3. cd ../../obiwandocs/html && git add -u :/ && git commit -m "" && git push origin gh-pages"
 
 License
 =======
