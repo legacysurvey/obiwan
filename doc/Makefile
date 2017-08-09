@@ -7,7 +7,8 @@ SPHINXOPTS    =
 SPHINXBUILD   = sphinx-build
 # SPHINXBUILD   = sphinx-build-2.7
 PAPER         =
-BUILDDIR      = _build
+BUILDDIR      = /home/kaylan/myrepo/obiwandocs
+# BUILDDIR      = _build
 
 # User-friendly check for sphinx-build
 ifeq ($(shell which $(SPHINXBUILD) >/dev/null 2>&1; echo $$?), 1)
