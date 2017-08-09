@@ -1,16 +1,15 @@
 #!/bin/bash
 
-sudo apt-get update
-sudo apt-get install git emacs python-setuptools python-dev build-essential
-sudo easy_install pip
-sudo pip install --upgrade virtualenv
-# python3: python3 -m venv <myenvname>
-virtualenv $HOME/env_galsim --python=python2.7
+#sudo apt-get update
+#sudo apt-get install git emacs python-setuptools python-dev build-essential
+#sudo easy_install pip
+#sudo pip install --upgrade virtualenv
+## python3: python3 -m venv <myenvname>
+#virtualenv $HOME/env_galsim --python=python2.7
 source $HOME/env_galsim/bin/activate
 export python_exe=`which python`
+echo python_exe=$python_exe
 # deactivate
-export WCSLIB_INC="-I/usr/include/wcslib-4.20"
-export WCSLIB_LIB="-lwcs"
 
 sudo apt-get install -y graphviz 
 sudo apt-get install -y texlive-latex-extra
@@ -19,6 +18,7 @@ sudo apt-get install -y libnetpbm10
 sudo apt-get install -y libnetpbm10-dev
 sudo apt-get install -y netpbm
 sudo apt-get install -y wcslib-dev
+sudo apt-get install -y libz-dev
 sudo apt-get install -y libcfitsio3
 sudo apt-get install -y libcfitsio3-dev
 sudo apt-get install -y swig
@@ -30,15 +30,21 @@ sudo apt-get install -y liblapack-dev
 sudo apt-get install -y libfftw3-dev
 sudo apt-get install -y scons
 sudo apt-get install -y curl
+sudo apt-get install -y python-tk
+sudo apt-get install -y libcairo2-dev libpng12-dev libjpeg-dev zlib1g-dev
+sudo apt-get install -y libbz2-dev
+
+export WCSLIB_INC="-I/usr/include/wcslib"
+export WCSLIB_LIB="-lwcs"
 
 pip install Sphinx
 pip install numpy
 pip install scipy
 pip install matplotlib 
+pip install cython
 pip install numpydoc
 pip install astropy
 pip install --no-deps git+https://github.com/astropy/photutils.git
-pip install cython
 pip install h5py
 pip install pandas
 pip install psycopg2
