@@ -645,52 +645,34 @@ class TSBox(object):
 #    morph['ba'] = elgs['AXIS_RATIO'][has_morph] #minor/major
 #    return Xall,cuts,morph                            
 
-
-class ReadWrite(object):
-    def read_fits(self,fn):
-        #return Table(fits.getdata(fn, 1))
-        return fits_table(fn)
-
-#DR=2,savefig=False,alpha=1.,\
-#brick_primary=True,anymask=False,allmask=False,fracflux=False):
-class CommonInit(ReadWrite):
-	"""Base class for every STAR,ELG,LRG,QSO class
+class Data(object):
+	"""Fetches and loads truth and catalogue data for star,galaxy populations
 
 	Args:
-		DR: which Data Release's data to use
-		brick_primary,anymask,allmask,fracflux: booleans for which imaging cuts to use
-		kdefn,loadkde,savekde: where to get the saved KDE fit
-		savefig,alpha,outdir: plotting options 
-
+	  DR: which Data Release's data to use
+	    `**img_cuts`: dict, bool to turn on/off whether to apply each imaging cut
+              {'brick_primary',
+               'anymask',
+               'allmask',
+               'fracflux'}
+		
 	Attributes:
 		truth_dir: directory of matched Truth Tables
 		args: ditto above 
 	"""
 
-	def __init__(self,**kwargs):
-		# Syntax is self.val2 = kwargs.get('val2',"default value")
-		self.DR= kwargs.get('DR',2)
-		self.savefig= kwargs.get('savefig',False)
-		self.alpha= kwargs.get('alpha',1.)
-		self.brick_primary= kwargs.get('brick_primary',True)
-		self.anymask= kwargs.get('anymask',False)
-		self.allmask= kwargs.get('allmask',False)
-		self.fracflux= kwargs.get('fracflux',False)
-		print('self.fracflux=',self.fracflux,'kwargs= ',kwargs)
-		if self.DR == 2:
-			self.truth_dir= '/project/projectdirs/desi/target/analysis/truth'
-		elif self.DR == 3:
-			self.truth_dir= '/project/projectdirs/desi/users/burleigh/desi/target/analysis/truth'
-		else: raise valueerror()
-		# KDE params
-		self.kdefn= kwargs.get('kdefn','kde.pickle')
-		self.loadkde= kwargs.get('loadkde',False)
-		self.savekde= kwargs.get('savekde',False)
-		# 
-		self.outdir= kwargs.get('outdir','./')
-		# Running from jupyter nb?
-		self.nb= kwargs.get('nb',False)
-
+	def __init__(self,DR,**img_cuts):
+	    if DR == 2:
+                self.truth_dir='/project/projectdirs/desi/target/analysis/truth'
+            elif DR == 3:
+                self.truth_dir= '/project/projectdirs/desi/users/burleigh/desi/target/analysis/truth' 
+            else: raise ValueError('DR 2,3 supported')
+	    self.brick_primary= img_cuts.get('brick_primary',True)
+	    self.anymask= img_cuts.get('anymask',False)
+	    self.allmask= img_cuts.get('allmask',False)
+	    self.fracflux= img_cuts.get('fracflux',False)
+	   	self.outdir= kwargs.get('outdir','./')
+	
 	def imaging_cut(self,data):
 		"""data is a fits_table object with Tractor Catalogue columns"""
 		cut=np.ones(len(data)).astype(bool)
@@ -870,6 +852,10 @@ class ELG(CommonInit):
 	def get_dr3_deep2(self):
 		"""version 3.0 of data discussed in
 		https://desi.lbl.gov/DocDB/cgi-bin/private/RetrieveFile?docid=912"""
+
+                # Where to save the figures
+                CHAPTER_ID = "end_to_end_project"
+                
 		# Cut on DR3 rmag < self.rlimit
 		if self.DR == 2:
 			zcat = self.read_fits(os.path.join(self.truth_dir,'../deep2/v3.0/','deep2-field1-oii.fits.gz'))
@@ -2334,3 +2320,5 @@ if __name__ == '__main__':
     #lrg.plot_kde_shapes()
     #lrg.plot_kde()
     #lrg.plot()
+
+    
