@@ -115,6 +115,11 @@ before_script:
     - cd $HOME/GalSim
     - sudo scons PYTHON=/home/travis/virtualenv/python2.7.13/bin/python 
     - sudo scons install
+    - cd $HOME && git clone https://github.com/legacysurvey/legacypipe.git
+    - cd legacypipe && git checkout f4fc46ea0b
+    - export PYTHONPATH=$HOME/legacypipe/py:$PYTHONPATH
+    - cd $HOME && git clone https://github.com/legacysurvey/theValidator.git
+    - export PYTHONPATH=$HOME/theValidator:$PYTHONPATH
     - cd $HOME && git clone https://github.com/legacysurvey/obiwan.git
     - export PYTHONPATH=$HOME/obiwan/py:$PYTHONPATH
 
