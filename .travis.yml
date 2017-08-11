@@ -71,6 +71,7 @@ install:
   - pip install matplotlib
   - pip install cython
   - pip install numpydoc
+  - pip install six
   - pip install astropy
   - pip install --no-deps git+https://github.com/astropy/photutils.git
   - pip install h5py
