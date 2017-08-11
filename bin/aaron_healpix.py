@@ -1,8 +1,8 @@
 import numpy as np
 import os
-import healpy as hp
+#import healpy as hp
 import fitsio
-import matplotlib.pyplot as plt
+#import matplotlib.pyplot as plt
 from scipy.stats import sigmaclip
 
 from theValidator.catalogues import Matcher,CatalogueFuncs
@@ -36,12 +36,15 @@ def get_DR5_ccds(bricknames):
         ccd_fn= os.path.join(path,
                              'coadd/%s/%s/legacysurvey-%s-ccds.fits' %
                              (bri,brick,brick))
-        t=fits_table(ccd_fn)
-        t.set('brickname', np.array([brick]*len(t)))
-        T.append(t)
-        #ccd_fns.append(os.path.join(path,
-        #                            'coadd/%s/%s/legacysurvey-%s-ccds.fits' %
-        #                            (bri,brick,brick))
+        try: 
+            t=fits_table(ccd_fn)
+            t.set('brickname', np.array([brick]*len(t)))
+            T.append(t)
+            #ccd_fns.append(os.path.join(path,
+            #                            'coadd/%s/%s/legacysurvey-%s-ccds.fits' %
+            #                            (bri,brick,brick))
+        except IOError:
+            print('not found: %s' % ccd_fn)
     TT= merge_tables(T, columns='fillzero')
     del T
     savefn= 'brick_allccds.fits'
@@ -64,6 +67,9 @@ def get_DR5_ccds(bricknames):
 
 
 if __name__ == '__main__':
+    b=fits_table("/global/cscratch1/sd/kaylanb/dr5_qa/brick_table_psfhealpixdecam-ps1-0128-ddec.fits")
+    get_DR5_ccds(b.brickname)    
+    raise ValueError
     name='healpix.tar.gz'
     fetch_targz(DOWNLOAD_ROOT+name,
                 os.path.join(OUTDIR,name))
