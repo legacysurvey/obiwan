@@ -129,18 +129,16 @@ class Data(object):
         tab.set('tractor_n', dic['n'])
 	return tab        
     
-    # def load_elg_acs():
-    #     print('Matching acs to dr3,deep2')
-    #     deep= self.load_elg()
-    #     acs= get_acs_six_col()
-    #     imatch,imiss,d2d= Matcher().match_within(deep,acs,dist=1./3600)
-    #     deep.cut(imatch['ref'])
-    #     acs.cut(imatch['obs'])
-    #     # Remove ra,dec from acs, then merge
-    #     for key in ['ra','dec']:
-    #         acs.delete_column(key)
-    #    return merge_tables([deep,acs], columns='fillzero')
-        
+     # def load_elg_acs():
+     #     print('Matching acs to dr3,deep2')
+     #     deep= fits_table(os.path.join(self.outdir,
+     #                                   'deep2f1234_acsgcmatched.fits'))
+     #     acs= fits_table(os.path.join(self.outdir,
+     #                                  'acsgc_deep2f1234matched.fits'))
+     #     # Remove ra,dec from acs, then merge
+     #     for key in ['ra','dec']:
+     #         acs.delete_column(key)
+     #     return merge_tables([deep,acs], columns='fillzero')
         
     def load_lrg(self,DR,zlimit=20.46+1):
         """
@@ -190,18 +188,16 @@ class Data(object):
 	tab.set('tractor_n', dic['n'])
         return tab
 
-    # def load_lrg_acs(self,DR,zlimit=20.46+1):
+    # def load_lrg_acs(self,DR,zlimit):
     #     cosmos= self.load_lrg(DR,zlimit)
-    #     acs= get_acs_six_col()
-    #     print('Matching acs to dr3,cosmos')
-    #     imatch,imiss,d2d= Matcher().match_within(cosmos,acs,dist=1./3600)
-    #     cosmos.cut(imatch['ref'])
-    #     acs.cut(imatch['obs'])
+    #     acs= fits_table(os.path.join(self.outdir,
+    #                                  'acsgc_cosmosmatched.fits'))
+    #     # WARNING: not sure what this file is
+    #     # cosmos_acsgcmatched.fits
     #     # Remove ra,dec from acs, then merge
     #     for key in ['ra','dec']:
     #         acs.delete_column(key)
-    #     tab= merge_tables([cosmos,acs], columns='fillzero')
-    #     return tab
+    #     return merge_tables([cosmos,acs], columns='fillzero')
     
     # def load_lrg_vipers(self,DR,zlimit=20.46+1):
     #     """LRGs from VIPERS in CFHTLS W4 field (12 deg2)
@@ -242,7 +238,30 @@ class Data(object):
 	elif self.DR == 3:
 	    raise ValueError()
         return stars
-            
+
+    # def load_star_sweep(self):
+    #     """Model the g-r, r-z color-color sequence for stars"""
+    #     # Build a sample of stars with good photometry from a single sweep.
+    #     rbright = 18
+    #     rfaint = 19.5
+    #     swp_dir='/global/project/projectdirs/cosmo/data/legacysurvey/dr2/sweep/2.0'
+    #     sweep = self.read_fits(os.path.join(swp_dir,'sweep-340p000-350p005.fits'))
+    #     keep = np.where((sweep.get('type') == 'PSF ')*
+    #     		(np.sum((sweep.get('decam_flux')[:, [1,2,4]] > 0)*1, axis=1)==3)*
+    #     		(np.sum((sweep.get('DECAM_ANYMASK')[:, [1,2,4]] > 0)*1, axis=1)==0)*
+    #     	        (np.sum((sweep.get('DECAM_FRACFLUX')[:, [1,2,4]] < 0.05)*1, axis=1)==3)*
+    #     		(sweep.get('decam_flux')[:,2]<(10**(0.4*(22.5-rbright))))*
+    #     		(sweep.get('decam_flux')[:,2]>(10**(0.4*(22.5-rfaint)))))[0]
+    #     stars = sweep[keep]
+    #     print('dr2stars sample: {}'.format(len(stars)))
+    #     gg = 22.5-2.5*np.log10(stars.get('decam_flux')[:, 1])
+    #     rr = 22.5-2.5*np.log10(stars.get('decam_flux')[:, 2])
+    #     zz = 22.5-2.5*np.log10(stars.get('decam_flux')[:, 4])
+    #     gr = gg - rr
+    #     rz = rr - zz
+    #	return np.array(rz),np.array(gr)
+
+    
     def load_qso(self,DR,rlimit=22.7+1):
         """
         Args: 
@@ -340,7 +359,7 @@ class Data(object):
 def inJupyter():
     return 'inline' in matplotlib.get_backend()
     
-def save_png(outdir,fig_id,jupyter=False):
+def save_png(outdir,fig_id):
     dirname= os.path.join(outdir,"figs")
     path= os.path.join(dirname,fig_id + ".png")
     if not os.path.isdir(dirname):
@@ -378,6 +397,132 @@ def load_pickle(outdir,name):
     print("Loaded pickle", path)
     return obj    
         
+ 
+
+class KDE_Model(object):
+    """Fits a Kernel Density Estimate (KDE) to a given source population
+    
+    Args:
+      src: elg,lrg, etc
+      data: tractor catalogue for the population 
+        returned by Data().load_elg(), for elgs 
+      outdir: output dir
+    
+    Attributes:
+      data: copy of data
+      outdir:
+      kde: fit KDE
+    """
+    
+    def __init__(self,src,data,outdir):
+        assert(src in OBJTYPES)
+        self.data= data.copy() # we'll modify it
+        self.outdir= outdir
+        name= '%s-kde' % src
+        try:
+            self.kde= load_pickle(outdir,name)
+        except IOError:
+            # Doesn't exist yet
+            if src == 'elg':
+                self.kde= self.fit_elg()
+            elif src == 'lrg':
+                self.kde= self.fit_lrg()
+            elif src == 'star':
+                self.kde= self.fit_star()
+            elif src == 'qso':
+                self.kde= self.fit_qso()
+            save_pickle(self.kde,outdir,name)
+        
+        
+    def get_kde(self,data_list,
+                bandwidth=0.05, kernel='tophat'):
+        """Fits a KDE to the data
+        
+        Following 
+          http://scikit-learn.org/stable/auto_examples/neighbors/plot_kde_1d.html
+        Args: 
+          data_list: list of features, each feature is a numpy array
+          bandwidth: characteristic width of the kernel
+          kernel: gaussian, tophat, etc
+          
+        Returns: 
+          KernelDensity() object fit to data_list
+        """
+        X= np.array(data_list).T
+        assert(X.shape[1] == len(data_list))
+        return KernelDensity(kernel=kernel,
+                             bandwidth=bandwidth).fit(X)
+    def fit_elg(self):
+        # Cut to sample that represents population
+        self.data.cut( (tab.zhelio >= 0.8) * \
+		       (tab.zhelio <= 1.4) * \
+		       (tab.oii_3727 >= 0.) * \
+		       (tab.oii_3727_err > 0.))
+	# Only finite values
+	keep= ( np.ones(len(self.data),bool) )
+	for col in self.data.get_columns():
+	    if col == 'type':
+		continue
+	    keep *= (np.isfinite(self.data.get(col)))
+	self.data.cut(keep)
+	print('dr3_deep2, after cut bad vals %d' % len(self.data))
+        # Physical size for source
+	self.data.cut( self.data.tractor_re > 0. )
+        return self.get_kde([self.data.r_wdust,
+                             self.data.r_wdust - self.data.z_wdust,
+			     self.data.g_wdust - self.data.r_wdust,
+                             self.data.zhelio,
+			     self.data.tractor_re],
+			     bandwidth=0.05,kernel='tophat')
+
+    def fit_lrg(self):
+	# Cut to sample that repr. population
+	self.data.cut( (self.data.type_zphotcomos == 0) * \
+		       (self.data.mod_gal <= 8)) 
+	print('dr3_cosmos after obiwan cuts: %d' % len(self.data))
+        # Only finite vals
+	keep= np.ones(len(self.data),bool) 
+	for name in self.data.get_columns():
+	    if name == 'type':
+		continue
+	    keep *= (np.isfinite( self.data.get(name) ))
+	self.data.cut(keep)
+	print('dr3_cosmos after finite cuts: %d' % len(self.data))
+	# physical
+	tab.cut(tab.tractor_re > 0.)
+	# Reshift needs be > 0
+	bandwidth=0.05
+	self.data.cut(self.data.zp_gal - bandwidth >= 0.)
+	print('dr3_cosmos after redshift > %f: %d' % (bandwidth,len(self.data)))
+	return self.get_kde([tab.z_wdust, tab.r_wdust - tab.z_wdust, 
+			     tab.r_wdust - tab.w1_wdust, tab.zp_gal, 
+			     tab.g_wdust, tab.tractor_re],
+			    bandwidth=bandwidth,kernel='tophat')
+
+    def fit_star(self):
+        return self.get_kde([self.data.get('decam_mag_wdust')[:,2],
+                             stars.get('decam_mag_nodust')[:,2]-stars.get('decam_mag_nodust')[:,4],
+                             stars.get('decam_mag_nodust')[:,1]-stars.get('decam_mag_nodust')[:,2]],
+			    bandwidth=0.05,kernel='gaussian')
+
+    def fit_qso(self):
+        # Sample
+	hiz=2.1
+        self.data.cut( (self.data.z <= hiz)*\
+                       (self.data.z >= 0.))
+        # Finite vals
+	keep= np.ones(len(self.data),bool) 
+	for name in self.data.get_columns():
+	    if name == 'type':
+		continue
+	    keep *= (np.isfinite( self.data.get(name) ))
+	self.data.cut(keep)
+	return self.get_kde([self.data.get('decam_mag_wdust')[:,2],
+                             self.data.get('decam_mag_wdust')[:,2]-qsos.get('decam_mag_wdust')[:,4],
+                             self.data.get('decam_mag_wdust')[:,1]-qsos.get('decam_mag_wdust')[:,2],
+                             self.data.z],
+                            bandwidth=0.05,kernel='gaussian') 
+
 class KernelOfTruth(object):
     # 1D histograms of each dim of KDE
     def plot_indiv_1d(self,lims=None, ndraws=1000,prefix=''):
@@ -403,36 +548,6 @@ class KernelOfTruth(object):
             print('Wrote %s' % savenm)
 
     # 2D scatterplot of selected dims of KDE
-    def plot_indiv_2d(self,xy_names,xy_lims=None, ndraws=1000,prefix='',outdir=None,
-                      nb=False):
-        samp= self.kde.sample(n_samples=ndraws)
-        for i,_ in enumerate(xy_names):
-            xname= xy_names[i][0]
-            yname= xy_names[i][1]
-            ix= np.where(self.labels == xname)[0][0]
-            iy= np.where(self.labels == yname)[0][0]
-            # Plot
-            fig,ax= plt.subplots(1,2,figsize=(8,5))
-            plt.subplots_adjust(wspace=0.2)
-            ax[0].scatter(self.X[:,ix],self.X[:,iy],
-                          c='k',marker='o',s=10.,rasterized=True,label='Data')
-            ax[1].scatter(samp[:,ix],samp[:,iy],
-                          c='b',marker='o',s=10.,rasterized=True,label='KDE')
-            for cnt in range(2):
-                xlab= ax[cnt].set_xlabel(xname)
-                ylab= ax[cnt].set_ylabel(yname)
-                ax[cnt].legend(loc='upper right')
-                if xy_lims:
-                    ax[cnt].set_xlim(xy_lims[i][0])
-                    ax[cnt].set_ylim(xy_lims[i][1])
-            ax[cnt].legend(loc='upper right')
-            savenm= 'kde_2d_%s_%s_%s.png' % (prefix,xname,yname)
-            if outdir:
-                savenm= os.path.join(outdir,savenm)
-            plt.savefig(savenm,bbox_extra_artists=[xlab,ylab], bbox_inches='tight',dpi=150)
-            print('Wrote %s' % savenm)
-            if not nb:
-                plt.close()
 
     def plot_FDR_using_kde(self,obj='LRG',ndraws=1000,prefix='',outdir=None,nb=False):
         assert(obj in ['LRG','ELG'])
@@ -629,187 +744,11 @@ class KernelOfTruth(object):
 
 
 
-class _GaussianMixtureModel(object):
-    """Sample from a Mixture of Gaussians (MoG) with known params
-    
-	Args:
-		weights_,means_,covars_: MoG parameters
-		covtype: 'spherical', 'diag', 'tied', 'full'
-
-	Attributes:
-		weights_,means_,covars_: MoG parameters
-		covtype: 'spherical', 'diag', 'tied', 'full'
-		n_components: as sounds
-		n_dimenstions: as sounds
-    """
-	
-    def __init__(self, weights_, means_, covars_, covtype):
-        self.weights_ = weights_
-        self.means_ = means_
-        self.covars_ = covars_
-        self.covtype = covtype
-        self.n_components, self.n_dimensions = self.means_.shape
-    
-    @staticmethod
-    def save(model, filename,index=None):
-        """index: optional nddex array for subset of compenents to save"""
-        hdus = fits.HDUList()
-        hdr = fits.Header()
-        hdr['covtype'] = model.covariance_type
-        if index is None:
-            index=np.arange(len(model.weights_))
-        hdus.append(fits.ImageHDU(model.weights_[index], name='weights_', header=hdr))
-        hdus.append(fits.ImageHDU(model.means_[index,...], name='means_'))
-        hdus.append(fits.ImageHDU(model.covars_[index,...], name='covars_'))
-        hdus.writeto(filename, clobber=True)
-        
-    @staticmethod
-    def load(filename):
-        hdus = fits.open(filename, memmap=False)
-        hdr = hdus[0].header
-        covtype = hdr['covtype']
-        model = _GaussianMixtureModel(
-            hdus['weights_'].data, hdus['means_'].data, hdus['covars_'].data, covtype)
-        hdus.close()
-        return model
-    
-    def sample(self, n_samples=1, random_state=None):
-        
-        if self.covtype != 'full':
-            return NotImplementedError(
-                'covariance type "{0}" not implemented yet.'.format(self.covtype))
-        
-        # Code adapted from sklearn's GMM.sample()
-        if random_state is None:
-            random_state = np.random.RandomState()
-
-        weight_cdf = np.cumsum(self.weights_)
-        X = np.empty((n_samples, self.n_dimensions))
-        rand = random_state.rand(n_samples)
-        # decide which component to use for each sample
-        comps = weight_cdf.searchsorted(rand)
-        # for each component, generate all needed samples
-        for comp in range(self.n_components):
-            # occurrences of current component in X
-            comp_in_X = (comp == comps)
-            # number of those occurrences
-            num_comp_in_X = comp_in_X.sum()
-            if num_comp_in_X > 0:
-                X[comp_in_X] = random_state.multivariate_normal(
-                    self.means_[comp], self.covars_[comp], num_comp_in_X)
-        return X
-    
-    def sample_full_pdf(self, n_samples=1, random_state=None):
-        """'sample() uses the component datum x is closest too, sample_full_pdf() uses sum of components at datum x
-        this is more time consuming than sample() and difference is negligible"""
-        if self.covtype != 'full':
-            return NotImplementedError(
-                'covariance type "{0}" not implemented yet.'.format(self.covtype))
-
-        from scipy.stats import multivariate_normal
-        def get_mv(means_,covars_):
-            mv=[]
-            for mu, C in zip(means_, covars_):
-                mv+= [ multivariate_normal(mean=mu, cov=C) ]
-            return mv
-                
-        def prob_map(means_,covars_,weights_,\
-                     xrng=(0.,1.),yrng=(0.,1.),npts=2**10):
-            """returns 
-            -pmap: 2d probability map, with requirement that integral(pdf d2x) within 1% of 1
-            -xvec,yvec: vectors where x[ix] and y[ix] data points have probability pmap[ix,iy]"""
-            assert(xrng[1] > xrng[0] and yrng[1] > yrng[0])
-            xstep= (xrng[1]-xrng[0])/float(npts-1)
-            ystep= (yrng[1]-yrng[0])/float(npts-1)
-            x,y  = np.mgrid[xrng[0]:xrng[1]+xstep:xstep, yrng[0]:yrng[1]+ystep:ystep]
-            pos = np.empty(x.shape + (2,)) #npts x npts x 2
-            pos[:, :, 0] = x; pos[:, :, 1] = y
-            maps= np.zeros(x.shape+ (len(weights_),)) # x n_components
-            # Multi-Variate function
-            mv= get_mv(means_,covars_)
-            # probability map for each component
-            for dist,W,cnt in zip(mv,weights_, range(len(weights_))):
-                maps[:,:,cnt]= dist.pdf(pos) * W
-                print "map %d, dist.pdf max=%.2f, wt=%.3f" % (cnt,dist.pdf(pos).max(),W)
-            # summed prob map
-            pmap= np.sum(maps, axis=2) #some over components*weights
-            xvec= x[:,0]
-            yvec= y[0,:]
-            # intregal of pdf over 2d map = 1
-        #     assert( abs(1.- pmap.sum()*xstep*ystep) <= 0.01 )
-            assert( np.diff(xvec).min() > 0. and np.diff(yvec).min() > 0.)
-            return pmap, xvec,yvec
-            
-        # 2D probability map
-        grrange = (-0.2, 2.0)
-        rzrange = (-0.4, 2.5)
-        pmap,xvec,yvec= prob_map(self.means_,self.covars_,self.weights_,\
-                                 xrng=rzrange,yrng=grrange)
-        # Sample self.n_dimensions using map
-        if random_state is None:
-            r = np.random.RandomState()
-        # Make max pdf = 1 so always pick that cell
-        pmap/= pmap.max()
-        # Store x,y values to use
-        X = np.empty((n_samples, self.n_dimensions))+np.nan
-        # Get samples
-        cnt=0
-        # pick a random cell
-        ix,iy=(r.rand(2)*len(xvec)).astype(int)
-        # Random [0,1)
-        likely= r.rand(1)
-        while cnt < n_samples:
-            if likely <= pmap[ix,iy]: # Sample it!
-                X[cnt,:]= xvec[ix],yvec[iy]
-                cnt+=1
-            # Pick new cell in either case
-            ix,iy=(r.rand(2)*len(xvec)).astype(int) 
-            likely= r.rand(1)
-        assert( np.where(~np.isfinite(X))[0].size == 0)
-        return X
-
-
-def add_MoG_curves(ax, means_, covars_, weights_):
-    """plot 2-sigma ellipses for each multivariate component
-
-	Args: 
-		ax: axis to draw on
-		means_, covars_, weights_: MoG parameters
-	"""
-    ax.scatter(means_[:, 0], means_[:, 1], c='w')
-    scale=2.
-    for cnt, mu, C, w in zip(range(means_.shape[0]),means_, covars_, weights_):
-    #     draw_ellipse(mu, C, scales=[1.5], ax=ax, fc='none', ec='k')
-        # Draw MoG outlines
-        sigma_x2 = C[0, 0]
-        sigma_y2 = C[1, 1]
-        sigma_xy = C[0, 1]
-
-        alpha = 0.5 * np.arctan2(2 * sigma_xy,
-                             (sigma_x2 - sigma_y2))
-        tmp1 = 0.5 * (sigma_x2 + sigma_y2)
-        tmp2 = np.sqrt(0.25 * (sigma_x2 - sigma_y2) ** 2 + sigma_xy ** 2)
-
-        sigma1 = np.sqrt(tmp1 + tmp2)
-        sigma2 = np.sqrt(tmp1 - tmp2)
-        print('comp=%d, sigma1=%f,sigma2=%f' % (cnt+1,sigma1,sigma2))
-
-        ax.text(mu[0],mu[1],str(cnt+1),color='blue')
-        ax.add_patch(Ellipse((mu[0], mu[1]),
-                     2 * scale * sigma1, 2 * scale * sigma2,
-                     alpha * 180. / np.pi,\
-                     fc='none', ec='k'))
-
-
-
-
 def get_rgb_cols():
     return [(255,0,255),(102,255,255),(0,153,153),\
             (255,0,0),(0,255,0),(0,0,255),\
             (0,0,0)]
 
-#def flux2mag(nanoflux):
-#    return 22.5-2.5*np.log10(nanoflux)
 
 # Globals
 xyrange=dict(x_star=[-0.5,2.2],\
@@ -830,6 +769,172 @@ def rm_last_ticklabel(ax):
     labels=list(labels)
     labels[-1]=''
     ax.set_xticklabels(labels)
+
+
+
+        
+    
+class Plot(object):
+    """Makes relavent plots for a given src using data,kde      
+    
+    Args:
+      src: elg,lrg,star,qso
+      data: tractor catalogue for source population
+      kde: Fit KDE returned by FitKDE()
+    
+    """
+    def __init__(src,data,kde,outdir):
+        assert(src in OBJTYPES)
+        self.src= src
+        self.outdir= outdir
+        if src == 'elg':
+            self.plot_elg(data,kde)
+        elif src == 'lrg':
+            self.plot_lrg(data,kde)
+        if src == 'star':
+            self.plot_star(data,kde)
+        if src == 'qso':
+            self.plot_qso(data,kde)
+
+    def tractor_shapes(self,data):
+        for name,rng in zip(['tractor_re','tractor_n'],
+                            [(0,2),(1,4)]):
+            fig,ax= plt.subplots()
+            keep= cat.get(name) > 0.
+            #h,edges= np.histogram(cat.get(name)[keep],bins=40,normed=True)
+            #binc= (edges[1:]+edges[:-1])/2.
+            #ax.step(binc,h,where='mid',lw=1,c='b')
+            _=ax.hist(cat.get(name)[keep],bins=100,normed=True,range=rng)
+            xlab= ax.set_xlabel(name)
+            ylab= ax.set_ylabel('PDF')
+            save_png(self.outdir,'%s_tractor_shapes' % self.src)
+            
+    def data_2d(self,data,xy_names=None,xy_lims=None):
+        assert(xy_names)
+        for i,_ in enumerate(xy_names):
+            xname= xy_names[i][0]
+            yname= xy_names[i][1]
+            # Plot
+            fig,ax= plt.subplots()
+            ax.scatter(tab.get(xname),tab.get(yname),
+                       c='b',marker='o',s=10.,rasterized=True)
+            xlab= ax.set_xlabel(xname)
+            ylab= ax.set_ylabel(yname)
+            if xy_lims:
+                ax.set_xlim(xy_lims[i][0])
+                ax.set_ylim(xy_lims[i][1])
+            save_png(self.outdir,'%s_data_%s_%s' % (self.src,xname,yname))
+
+    def kde_2d(self,kde,ndraws=1000,
+               xy_names=None,xy_lims=None):
+        assert(xy_names)
+        samp= kde.sample(n_samples=ndraws)
+        for i,_ in enumerate(xy_names):
+            xname= xy_names[i][0]
+            yname= xy_names[i][1]
+            # Plot
+            fig,ax= plt.subplots()
+            ax.scatter(samp[:,i],samp[:,i],
+                       c='b',marker='o',s=10.,rasterized=True,label='KDE')
+            xlab= ax.set_xlabel(xname)
+            ylab= ax.set_ylabel(yname)
+            ax.legend(loc='upper right')
+            if xy_lims:
+                ax.set_xlim(xy_lims[i][0])
+                ax.set_ylim(xy_lims[i][1])
+            save_png(self.outdir,'%s_kde_%s_%s' % (self.src,xname,yname))
+
+            
+    def plot_elg(self,data,kde):
+	self.tractor_shapes(data)
+	xy_names= [('tractor_re','zhelio'),
+		   ('tractor_re','g_wdust'),
+		   ('tractor_re','r_wdust'),
+		   ('tractor_re','z_wdust'),
+		   ('zhelio','g_wdust'),
+		   ('zhelio','r_wdust'),
+		   ('zhelio','z_wdust')]
+	self.data_2d(data,xy_names=xy_names,xy_lims=None)
+
+        xy_names= [('rz','gr'),
+	           ('tractor_re','gr'),
+	           ('tractor_re','r_wdust'),
+	           ('tractor_re','rz'),
+		   ('zhelio','tractor_re'),
+		   ('zhelio','gr'),
+		   ('zhelio','r_wdust'),
+		   ('zhelio','rz')]
+ 	xy_lims= [([0,2],[-0.5,1.5]),
+		  ([0.,2],[-0.5,1.5]),  
+		  ([0.,2],[20.5,25.]),  
+		  ([0.,2],[0,2]),  
+		  ([0.6,1.6],[0,2]),  
+		  ([0.6,1.6],[-0.5,1.5]),  
+		  ([0.6,1.6],[20.5,25]),  
+		  ([0.6,1.6],[0,2]),]
+        self.kde_2d(kde,ndraws=10000,
+                    xy_names,xy_lims=xy_lims)
+        #KernelOfTruth().plot_FDR_using_kde(src,kde,self.outdir,
+                                           ndraws=10000)
+	#kde_obj.plot_1band_and_color(ndraws=1000,xylims=xylims,prefix='elg_')
+	#kde_obj.plot_colors_shapes_z(ndraws=1000,xylims=xylims,name='elg_colors_shapes_z_kde.png')
+
+    def plot_lrg(self,data,kde):
+	self.tractor_shapes(data)
+	xy_names= [('tractor_re','zp_gal'),
+		   ('tractor_re','g_wdust'),
+		   ('tractor_re','r_wdust'),
+		   ('tractor_re','z_wdust')]
+	self.data_2d(data,xy_names=xy_names,xy_lims=None)
+
+	xy_names= [('rz','rw1'),
+		   ('zp_gal','tractor_re'),
+		   ('zp_gal','g_wdust'),
+		   ('zp_gal','rz'),
+		   ('zp_gal','z_wdust'),
+		   ('zp_gal','rw1'),
+                   ('tractor_re','g_wdust'),
+		   ('tractor_re','rz'),
+                   ('tractor_re','z_wdust'),
+		   ('tractor_re','rw1')]
+	xy_lims= [([0,2.5],[-2,5.]),
+		  ([0.,1.6],[0.,2.]),  
+		  ([0.,1.6],[17,29]),  
+		  ([0.,1.6],[0,2.5]),  
+		  ([0.,1.6],[17,22]),  
+		  ([0.,1.6],[-2,5.]),  
+		  ([0.,2.],[17,29]),  
+		  ([0.,2.],[0,2.5]),  
+		  ([0.,2.],[17,22]),  
+		  ([0.,2.],[-2,5])]
+        self.kde_2d(kde,ndraws=10000,
+                    xy_names,xy_lims=xy_lims)
+
+	#kde_obj.plot_FDR_using_kde(obj='LRG',ndraws=10000,prefix='dr3cosmos',outdir=self.outdir,nb=self.nb)
+	#plotlims= [(17.,22.),(0,2.5),(-2,5.),(0.,1.6),(17.,29),(-0.5,2.)] #,(-2,10.),(-0.2,1.2),(-20,200)]
+	#kde_obj.plot_1band_and_color(ndraws=1000,xylims=xylims,prefix='lrg_')
+	#kde_obj.plot_1band_color_and_redshift(ndraws=1000,xylims=xylims,prefix='lrg_')
+        
+    def plot_star(self,data,kde):
+        #xylims=dict(x1=(15,24),y1=(0,0.3),\
+	#            x2=(-1,3.5),y2=(-0.5,2))
+	#kde_obj.plot_1band_and_color(ndraws=1000,xylims=xylims,prefix='star_')
+
+        #ax.scatter(rz,gr,c=[rgb],edgecolors='none',marker='o',s=10.,rasterized=True)#,label=key)
+	#ax.set_xlim([-0.5,2.2])
+	#ax.set_ylim([-0.3,2.])
+	#xlab=ax.set_xlabel('r-z')
+	#ylab=ax.set_ylabel('g-r')
+	pass
+    
+    def plot_qso(self,data,kde):
+        #labels=['r wdust','r-z','g-r','redshift']
+	#xylims=dict(x1=(15.,24),y1=(0,0.5),\
+	#	    x2=xyrange['x1_qso'],y2=xyrange['y1_qso'],\
+	#	    x3=(0.,hiz+0.2),y3=(0.,1.))
+	#kde_obj.plot_1band_and_color(ndraws=1000,xylims=xylims,prefix='qso_')
+	#kde_obj.plot_1band_color_and_redshift(ndraws=1000,xylims=xylims,prefix='qso_')
+        pass
 
 
 
@@ -904,276 +1009,6 @@ class TSBox(object):
             else: raise ValueError
         else: raise ValueError('non ELG not supported')
 
-
-
-#def elg_data():
-#    """Use DEEP2 ELGs whose SEDs have been modeled."""
-#    elgs = fits.getdata('/project/projectdirs/desi/spectro/templates/basis_templates/v2.2/elg_templates_v2.0.fits', 1)
-#    # Colors
-#    gg = elgs['DECAM_G']
-#    rr = elgs['DECAM_R']
-#    zz = elgs['DECAM_Z']
-#    gr = gg - rr
-#    rz = rr - zz
-#    Xall = np.array([rz, gr]).T
-#    # Cuts
-#    has_morph = elgs['radius_halflight'] > 0
-#    cuts= dict(has_morph=has_morph) 
-#    print('%d/%d of Fit Template Spectra ELGs have morphologies' % (len(elgs[has_morph]), len(elgs)))
-#    # Morphology
-#    morph= {}
-#    morph['rz'] = rz[has_morph]
-#    morph['gr'] = gr[has_morph]
-#    morph['r50'] = elgs['RADIUS_HALFLIGHT'][has_morph] #arcsec
-#    morph['n'] = elgs['SERSICN'][has_morph]                            
-#    morph['ba'] = elgs['AXIS_RATIO'][has_morph] #minor/major
-#    return Xall,cuts,morph                            
-
-
-def get_acs_six_col(self):
-    savedir='/project/projectdirs/desi/users/burleigh/desi/target/analysis/truth'
-    savenm= os.path.join(savedir,'acs_six_cols.fits')
-    if os.path.exists(savenm):
-        tab=fits_table(savenm)
-    else:
-        acsfn=os.path.join('/project/projectdirs/desi/users/burleigh/desi/target/analysis/truth','ACS-GC_published_catalogs','acs_public_galfit_catalog_V1.0.fits.gz')
-        acs=fits_table(acsfn) 
-        # Repackage
-        tab= fits_table()
-        for key in ['ra','dec','re_galfit_hi','n_galfit_hi','ba_galfit_hi','pa_galfit_hi']:
-            tab.set(key, acs.get(key))
-        # Cuts & clean
-        tab.cut( tab.flag_galfit_hi == 0 )
-        # -90,+90 --> 0,180 
-        tab.pa_galfit_hi += 90. 
-        # Save
-        tab.writeto(savenm)
-        print('Wrote %s' % savenm)
-    return tab
- 
-
-class KDE_Model(object):
-    """Fits a Kernel Density Estimate (KDE) to a given source population
-    
-    Args:
-      src: elg,lrg, etc
-      data: tractor catalogue for the population 
-        returned by Data().load_elg(), for elgs 
-      outdir: output dir
-    
-    Attributes:
-      data: copy of data
-      outdir:
-      kde: fit KDE
-    """
-    
-    def __init__(self,src,data,outdir):
-        assert(src in OBJTYPES)
-        self.data= data.copy() # we'll modify it
-        self.outdir= outdir
-        name= '%s-kde' % src
-        try:
-            self.kde= load_pickle(outdir,name)
-        except IOError:
-            # Doesn't exist yet
-            if src == 'elg':
-                self.kde= self.fit_elg()
-            elif src == 'lrg':
-                self.kde= self.fit_lrg()
-            elif src == 'star':
-                self.kde= self.fit_star()
-            elif src == 'qso':
-                self.kde= self.fit_qso()
-            save_pickle(self.kde,outdir,name)
-        
-        
-    def get_kde(self,data_list,
-                bandwidth=0.05, kernel='tophat'):
-        """Fits a KDE to the data
-        
-        Following 
-          http://scikit-learn.org/stable/auto_examples/neighbors/plot_kde_1d.html
-        Args: 
-          data_list: list of features, each feature is a numpy array
-          bandwidth: characteristic width of the kernel
-          kernel: gaussian, tophat, etc
-          
-        Returns: 
-          KernelDensity() object fit to data_list
-        """
-        X= np.array(data_list).T
-        assert(X.shape[1] == len(data_list))
-        return KernelDensity(kernel=kernel,
-                             bandwidth=bandwidth).fit(X)
-    def fit_elg(self):
-        # Cut to sample that represents population
-        self.data.cut( (tab.zhelio >= 0.8) * \
-		       (tab.zhelio <= 1.4) * \
-		       (tab.oii_3727 >= 0.) * \
-		       (tab.oii_3727_err > 0.))
-	# Only finite values
-	keep= ( np.ones(len(self.data),bool) )
-	for col in self.data.get_columns():
-	    if col == 'type':
-		continue
-	    keep *= (np.isfinite(self.data.get(col)))
-	self.data.cut(keep)
-	print('dr3_deep2, after cut bad vals %d' % len(self.data))
-        # Physical size for source
-	self.data.cut( self.data.tractor_re > 0. )
-        return self.get_kde([self.data.r_wdust,
-                             self.data.r_wdust - self.data.z_wdust,
-			     self.data.g_wdust - self.data.r_wdust,
-                             self.data.zhelio,
-			     self.data.tractor_re],
-			     bandwidth=0.05,kernel='tophat')
-
-    def fit_lrg(self):
-	"""No Targeting cuts on g band, but need to fit it so can 
-        insert in grz image"""
-	# Cut to sample that repr. population
-	tab.cut( (tab.type_zphotcomos == 0) * \
-		 (tab.mod_gal <= 8)) 
-	print('dr3_cosmos after obiwan cuts: %d' % len(tab))
-	# 9D space
-	keep= np.ones(len(tab),bool) 
-	#use_cols= ['g_wdust','r_wdust','z_wdust','w1_wdust',
-	#           'zp_gal']
-	for name in tab.get_columns():
-	    if name == 'type':
-		continue
-	    keep *= (np.isfinite( tab.get(name) ))
-	tab.cut(keep)
-	print('dr3_cosmos after finite cuts: %d' % len(tab))
-	# Redshift > bandwidth
-	bandwidth=0.05
-	tab.cut(tab.zp_gal - bandwidth >= 0.)
-	print('dr3_cosmos after redshift > %f: %d' % (bandwidth,len(tab)))
-	# Sanity plot
-	plot_tractor_shapes(tab,prefix='LRG_dr3cosmos_expdev',outdir=self.outdir,nb=self.nb)
-	print('size %d %d' % (len(tab),len(tab[tab.tractor_re > 0.])))
-	#plot_tractor_galfit_shapes(tab,prefix='LRG_dr3cosmosacs')
-	tab.cut(tab.tractor_re > 0.)
-	xy_names= [('tractor_re','zp_gal'),
-		   ('tractor_re','g_wdust'),
-		   ('tractor_re','r_wdust'),
-		   ('tractor_re','z_wdust')]
-	plot_indiv_2d(tab,xy_names=xy_names, ndraws=1000,prefix='LRG',outdir=self.outdir,nb=self.nb)
-	# KDE
-	names= ['z_wdust','rz','rw1','zp_gal','g_wdust','tractor_re']
-	#'re','n','ba','pa']
-	fitlims= [(17.,22.),(0,2.5),(-2,5.),(0.,1.6),(17.,29),(0.3,1.5)] #,(0.,10.),(0.2,0.9),(0.,180.)]
-	#tab.n, tab.ba, tab.pa
-	kde_obj= KernelOfTruth([tab.z_wdust, tab.r_wdust - tab.z_wdust, 
-				tab.r_wdust - tab.w1_wdust, tab.zp_gal, 
-				tab.g_wdust, tab.tractor_re],
-			       names,fitlims,\
-			       bandwidth=bandwidth,kernel='tophat',\
-			       kdefn=self.kdefn,loadkde=self.loadkde)
-	#kde_obj.plot_indiv_1d(lims=plotlims, ndraws=1000,prefix='lrg_dr3cosmosacs')
-	xy_names= [('rz','rw1'),
-		   ('zp_gal','tractor_re'),
-		   ('zp_gal','g_wdust'),
-		   ('zp_gal','rz'),
-		   ('zp_gal','z_wdust'),
-		   ('zp_gal','rw1'),
-                   ('tractor_re','g_wdust'),
-		   ('tractor_re','rz'),
-                   ('tractor_re','z_wdust'),
-		   ('tractor_re','rw1')]
-	xy_lims= [([0,2.5],[-2,5.]),
-		  ([0.,1.6],[0.,2.]),  
-		  ([0.,1.6],[17,29]),  
-		  ([0.,1.6],[0,2.5]),  
-		  ([0.,1.6],[17,22]),  
-		  ([0.,1.6],[-2,5.]),  
-		  ([0.,2.],[17,29]),  
-		  ([0.,2.],[0,2.5]),  
-		  ([0.,2.],[17,22]),  
-		  ([0.,2.],[-2,5])]
-	kde_obj.plot_indiv_2d(xy_names,xy_lims=xy_lims, ndraws=10000,prefix='lrg_dr3cosmosacs',outdir=self.outdir,nb=self.nb)
-	kde_obj.plot_FDR_using_kde(obj='LRG',ndraws=10000,prefix='dr3cosmos',outdir=self.outdir,nb=self.nb)
-	#plotlims= [(17.,22.),(0,2.5),(-2,5.),(0.,1.6),(17.,29),(-0.5,2.)] #,(-2,10.),(-0.2,1.2),(-20,200)]
-	#kde_obj.plot_1band_and_color(ndraws=1000,xylims=xylims,prefix='lrg_')
-	#kde_obj.plot_1band_color_and_redshift(ndraws=1000,xylims=xylims,prefix='lrg_')
-	if self.savekde:
-	    if os.path.exists(self.kdefn):
-		os.remove(self.kdefn)
-	    kde_obj.save(name=self.kdefn)
-        
-    
-class Plot(object):
-    """Makes relavent plots for a given src using data,kde      
-    
-    Args:
-      src: elg,lrg,star,qso
-      data: tractor catalogue for source population
-      kde: Fit KDE returned by FitKDE()
-    
-    """
-    def __init__(src,data,kde,outdir):
-        assert(src in OBJTYPES)
-        self.src= src
-        self.outdir= outdir
-        if src == 'elg':
-            self.plot_elg(data,kde)
-        elif src == 'lrg':
-            self.plot_lrg(data,kde)
-        if src == 'star':
-            self.plot_star(data,kde)
-        if src == 'qso':
-            self.plot_qso(data,kde)
-
-    def plot_elg(self,data,kde):
-	plot_tractor_shapes(src,data,self.outdir)
-	print('size %d %d' % (len(data),len(data[data.tractor_re > 0.])))
-	
-	xy_names= [('tractor_re','zhelio'),
-		   ('tractor_re','g_wdust'),
-		   ('tractor_re','r_wdust'),
-		   ('tractor_re','z_wdust'),
-		   ('zhelio','g_wdust'),
-		   ('zhelio','r_wdust'),
-		   ('zhelio','z_wdust')]
-	plot_indiv_2d(src,data,self.outdir,
-                      xy_names=xy_names,xy_lims=None,
-                      ndraws=1000)
-	# labels: list of strings, a name for each of the N feature
-        # lims: list of tuples giving low,hi limits for KDE
-	labels=['r_wdust','rz','gr','zhelio','tractor_re']
-        lims= [(20.5,25.),(0,2),(-0.5,1.5),(0.6,1.6),(0.3,1.5)]
-	
-        xy_names= [('rz','gr'),
-	           ('tractor_re','gr'),
-	           ('tractor_re','r_wdust'),
-	           ('tractor_re','rz'),
-		   ('zhelio','tractor_re'),
-		   ('zhelio','gr'),
-		   ('zhelio','r_wdust'),
-		   ('zhelio','rz')]
- 	xy_lims= [([0,2],[-0.5,1.5]),
-		  ([0.,2],[-0.5,1.5]),  
-		  ([0.,2],[20.5,25.]),  
-		  ([0.,2],[0,2]),  
-		  ([0.6,1.6],[0,2]),  
-		  ([0.6,1.6],[-0.5,1.5]),  
-		  ([0.6,1.6],[20.5,25]),  
-		  ([0.6,1.6],[0,2]),]
-        KernelOfTruth().plot_indiv_2d(src,kde,self.outdir,
-                                      xy_names,xy_lims=xy_lims,
-                                      ndraws=10000)
-	KernelOfTruth().plot_FDR_using_kde(src,kde,self.outdir,
-                                           ndraws=10000)
-	#kde_obj.plot_1band_and_color(ndraws=1000,xylims=xylims,prefix='elg_')
-	#kde_obj.plot_colors_shapes_z(ndraws=1000,xylims=xylims,name='elg_colors_shapes_z_kde.png')
-
-    def plot_lrg(self,data,kde):
-
-    def plot_star(self,data,kde):
-        pass
-    
-    def plot_qso(self,data,kde):
-        pass
         
 class FDR_elg(object):    
     def get_FDR_cuts(self,tab):
@@ -1520,64 +1355,7 @@ class FDR_elg(object):
 			kde_obj.save(name=self.kde_shapes_fn)
 
 
-def plot_tractor_shapes(cat,prefix='',outdir=None,nb=False):
-    for name,rng in zip(['tractor_re','tractor_n'],
-                        [(0,2),(1,4)]):
-        fig,ax= plt.subplots()
-        keep= cat.get(name) > 0.
-        #h,edges= np.histogram(cat.get(name)[keep],bins=40,normed=True)
-        #binc= (edges[1:]+edges[:-1])/2.
-        #ax.step(binc,h,where='mid',lw=1,c='b')
-        _=ax.hist(cat.get(name)[keep],bins=100,normed=True,range=rng)
-        xlab= ax.set_xlabel(name)
-        ylab= ax.set_ylabel('PDF')
-        savenm= 'tractor_%s_%s.png' % (prefix,name)
-        if outdir:
-            savenm= os.path.join(outdir,savenm)
-        plt.savefig(savenm,bbox_extra_artists=[xlab,ylab], bbox_inches='tight',dpi=150)
-        print('Wrote %s' % savenm)
-        if not nb:
-            plt.close()
-
-
-def plot_tractor_galfit_shapes(cat,prefix=''):
-    for name in ['re','n']:
-        fig,ax= plt.subplots()
-        keep= cat.get('tractor_'+name) > 0.
-        ax.scatter(cat.get(name)[keep], cat.get('tractor_'+name)[keep],
-                   c='b',marker='o',s=10.,rasterized=True)
-        xlab= ax.set_xlabel('galfit_hi_%s' % name)
-        ylab= ax.set_ylabel('tractor_%s' % name)
-        savenm= 'tractor_galfit_%s_%s.png' % (prefix,name)
-        plt.savefig(savenm,bbox_extra_artists=[xlab,ylab], bbox_inches='tight',dpi=150)
-        plt.close()
-        print('Wrote %s' % savenm)
- 
-# 2D plots
-def plot_indiv_2d(tab,xy_names=None,xy_lims=None, ndraws=1000,prefix='',outdir=None,nb=False):
-    assert(xy_names)
-    for i,_ in enumerate(xy_names):
-        xname= xy_names[i][0]
-        yname= xy_names[i][1]
-        # Plot
-        fig,ax= plt.subplots()
-        ax.scatter(tab.get(xname),tab.get(yname),
-                   c='b',marker='o',s=10.,rasterized=True)
-        xlab= ax.set_xlabel(xname)
-        ylab= ax.set_ylabel(yname)
-        if xy_lims:
-            ax.set_xlim(xy_lims[i][0])
-            ax.set_ylim(xy_lims[i][1])
-        savenm= 'plot_2d_%s_%s_%s.png' % (prefix,xname,yname)
-        if outdir:
-            savenm= os.path.join(outdir,savenm)
-        plt.savefig(savenm,bbox_extra_artists=[xlab,ylab], bbox_inches='tight',dpi=150)
-        print('Wrote %s' % savenm)
-        if not nb:
-            plt.close()
-
-
-class LRG(CommonInit):
+class FDR_lrg(object):
 	def get_FDR_cuts(self,tab):
 		keep={}  
 		keep['star']= tab.type == 1
@@ -1890,113 +1668,7 @@ class LRG(CommonInit):
 				os.remove(self.kde_shapes_fn)
 			kde_obj.save(name=self.kde_shapes_fn)
 
-
-class STAR(CommonInit):
-	"""Creates the STAR sample
-
-	Args: 
-		see CommonInit
-
-	Attributes:
-		kdefn: name for the fit KDE
-	"""
-
-	def __init__(self,**kwargs):
-		super(STAR,self).__init__(**kwargs)
-		# KDE params
-		self.kdefn= 'star-kde.pickle'
-		for attr in ['kdefn']:
-			setattr(self,attr, os.path.join(self.outdir,getattr(self,attr)) )
-
-	def get_sweepstars(self):
-		"""Model the g-r, r-z color-color sequence for stars"""
-		# Build a sample of stars with good photometry from a single sweep.
-		rbright = 18
-		rfaint = 19.5
-		swp_dir='/global/project/projectdirs/cosmo/data/legacysurvey/dr2/sweep/2.0'
-		sweep = self.read_fits(os.path.join(swp_dir,'sweep-340p000-350p005.fits'))
-		keep = np.where((sweep.get('type') == 'PSF ')*
-						(np.sum((sweep.get('decam_flux')[:, [1,2,4]] > 0)*1, axis=1)==3)*
-						(np.sum((sweep.get('DECAM_ANYMASK')[:, [1,2,4]] > 0)*1, axis=1)==0)*
-						(np.sum((sweep.get('DECAM_FRACFLUX')[:, [1,2,4]] < 0.05)*1, axis=1)==3)*
-						(sweep.get('decam_flux')[:,2]<(10**(0.4*(22.5-rbright))))*
-						(sweep.get('decam_flux')[:,2]>(10**(0.4*(22.5-rfaint)))))[0]
-		stars = sweep[keep]
-		print('dr2stars sample: {}'.format(len(stars)))
-		gg = 22.5-2.5*np.log10(stars.get('decam_flux')[:, 1])
-		rr = 22.5-2.5*np.log10(stars.get('decam_flux')[:, 2])
-		zz = 22.5-2.5*np.log10(stars.get('decam_flux')[:, 4])
-		gr = gg - rr
-		rz = rr - zz
-		return np.array(rz),np.array(gr)
-
-	def plot_sweepstars(self): 
-		rz,gr= self.get_sweepstars()
-		fig,ax = plt.subplots(figsize=(5,4))
-		plt.subplots_adjust(wspace=0,hspace=0)
-		rgb=get_rgb_cols()[0]
-		rgb= (rgb[0]/255.,rgb[1]/255.,rgb[2]/255.)
-		ax.scatter(rz,gr,c=[rgb],edgecolors='none',marker='o',s=10.,rasterized=True)#,label=key)
-		ax.set_xlim([-0.5,2.2])
-		ax.set_ylim([-0.3,2.])
-		xlab=ax.set_xlabel('r-z')
-		ylab=ax.set_ylabel('g-r')
-		#handles,labels = ax.get_legend_handles_labels()
-		#index=[0,1,2,3]
-		#handles,labels= np.array(handles)[index],np.array(labels)[index]
-		#leg=ax.legend(handles,labels,loc=(0,1.05),ncol=2,scatterpoints=1,markerscale=2)
-		name='STAR_dr2.png'
-		if self.savefig:
-			plt.savefig(name,\
-						bbox_extra_artists=[xlab,ylab], bbox_inches='tight',dpi=150)
-			plt.close()
-			print('Wrote {}'.format(name))
-	  
-
-	def plot(self):
-		self.plot_sweepstars() 
-		#plt.plot(self.cat.get('ra'),self.cat.get('dec'))
-		#plt.savefig('test.png')
-		#plt.close()
-
-	def plot_kde(self,loadkde=False,savekde=False):
-		stars= self.get_purestars()
-		x=stars.get('decam_mag_wdust')[:,2]
-		y=stars.get('decam_mag_nodust')[:,2]-stars.get('decam_mag_nodust')[:,4]
-		z=stars.get('decam_mag_nodust')[:,1]-stars.get('decam_mag_nodust')[:,2]
-		labels=['r wdust','r-z','g-r']
-		kde_obj= KernelOfTruth([x,y,z],labels,\
-						   [(15,24),(0,2),(0,1.5)],\
-						   bandwidth=0.05,\
-						   kdefn=self.kdefn,loadkde=self.loadkde)
-		xylims=dict(x1=(15,24),y1=(0,0.3),\
-					x2=(-1,3.5),y2=(-0.5,2))
-		kde_obj.plot_1band_and_color(ndraws=1000,xylims=xylims,prefix='star_')
-		if self.savekde:
-			if os.path.exists(self.kdefn):
-				os.remove(self.kdefn)
-			kde_obj.save(name=self.kdefn)
-
-class QSO(CommonInit):
-	"""Creates the QSO sample
-
-	Args: 
-		see CommonInit
-
-	Attributes:
-		rlimit: AB magnitude limit of sample
-		kdefn: name for the fit KDE
-	"""
-	def __init__(self,**kwargs):
-		super(QSO,self).__init__(**kwargs)
-		self.rlimit= kwargs.get('rlimit',22.7)
-		print('QSOs, self.rlimit= ',self.rlimit)
-		# KDE params
-		self.kdefn= 'qso-kde.pickle'
-		for attr in ['kdefn']:
-			setattr(self,attr, os.path.join(self.outdir,getattr(self,attr)) )
-
-	 
+class FDR_qso(object):
 	def plot_FDR(self):
 		# Data
 		qsos= self.get_qsos()
@@ -2108,30 +1780,26 @@ class QSO(CommonInit):
 		self.plot_FDR()
 		self.plot_FDR_multipanel()
 
-	def plot_kde(self,loadkde=False,savekde=False):
-		qsos= self.get_qsos()
-		x= qsos.get('decam_mag_wdust')[:,2]
-		y= qsos.get('decam_mag_wdust')[:,2]-qsos.get('decam_mag_wdust')[:,4]
-		z= qsos.get('decam_mag_wdust')[:,1]-qsos.get('decam_mag_wdust')[:,2]
-		d4= qsos.z
-		hiz=2.1
-		cut= (d4 <= hiz)*(d4 >= 0.)*\
-			 (np.isfinite(x))*(np.isfinite(y))*(np.isfinite(z))
-		x,y,z,d4= x[cut],y[cut],z[cut],d4[cut]
-		labels=['r wdust','r-z','g-r','redshift']
-		kde_obj= KernelOfTruth([x,y,z,d4],labels,\
-						   [(15.,24.),(-1.,1.5),(-1.,2.),(0.,hiz)],\
-						   bandwidth=0.05,kernel='gaussian',\
-						   kdefn=self.kdefn,loadkde=self.loadkde)
-		xylims=dict(x1=(15.,24),y1=(0,0.5),\
-					x2=xyrange['x1_qso'],y2=xyrange['y1_qso'],\
-					x3=(0.,hiz+0.2),y3=(0.,1.))
-		#kde_obj.plot_1band_and_color(ndraws=1000,xylims=xylims,prefix='qso_')
-		kde_obj.plot_1band_color_and_redshift(ndraws=1000,xylims=xylims,prefix='qso_')
-		if self.savekde:
-			if os.path.exists(self.kdefn):
-				os.remove(self.kdefn)
-			kde_obj.save(name=self.kdefn)
+                        
+                        
+
+
+def plot_tractor_galfit_shapes(cat,prefix=''):
+    for name in ['re','n']:
+        fig,ax= plt.subplots()
+        keep= cat.get('tractor_'+name) > 0.
+        ax.scatter(cat.get(name)[keep], cat.get('tractor_'+name)[keep],
+                   c='b',marker='o',s=10.,rasterized=True)
+        xlab= ax.set_xlabel('galfit_hi_%s' % name)
+        ylab= ax.set_ylabel('tractor_%s' % name)
+        savenm= 'tractor_galfit_%s_%s.png' % (prefix,name)
+        plt.savefig(savenm,bbox_extra_artists=[xlab,ylab], bbox_inches='tight',dpi=150)
+        plt.close()
+        print('Wrote %s' % savenm)
+ 
+# 2D plots
+
+
 
 
 class GalaxyPrior(object):
