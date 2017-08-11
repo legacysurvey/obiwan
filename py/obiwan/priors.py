@@ -123,11 +123,6 @@ class Data(object):
 	# DR3 shape info
 	for key in ['type','shapeexp_r','shapedev_r']:
 	    tab.set(key, decals.get(key))
-        # Apply cuts
-        tab.cut( (tab.zhelio >= 0.8) * \
-		 (tab.zhelio <= 1.4) * \
-		 (tab.oii_3727 >= 0.) * \
-		 (tab.oii_3727_err > 0.))
         # Add shape info from tractor cats
         dic= self.get_tractor_shapes(tab)
         tab.set('tractor_re', dic['re'])
@@ -189,8 +184,56 @@ class Data(object):
         # DR3 shape info
         for key in ['type','shapeexp_r','shapedev_r']:
             tab.set(key, decals.get(key))
+        # Add tractor shapes
+	dic= self.get_tractor_shapes(tab)
+	tab.set('tractor_re', dic['re'])
+	tab.set('tractor_n', dic['n'])
         return tab
-            
+
+    # def load_lrg_acs(self,DR,zlimit=20.46+1):
+    #     cosmos= self.load_lrg(DR,zlimit)
+    #     acs= get_acs_six_col()
+    #     print('Matching acs to dr3,cosmos')
+    #     imatch,imiss,d2d= Matcher().match_within(cosmos,acs,dist=1./3600)
+    #     cosmos.cut(imatch['ref'])
+    #     acs.cut(imatch['obs'])
+    #     # Remove ra,dec from acs, then merge
+    #     for key in ['ra','dec']:
+    #         acs.delete_column(key)
+    #     tab= merge_tables([cosmos,acs], columns='fillzero')
+    #     return tab
+    
+    # def load_lrg_vipers(self,DR,zlimit=20.46+1):
+    #     """LRGs from VIPERS in CFHTLS W4 field (12 deg2)
+    #     """
+    #     if DR == 2:
+    #         decals = fits_table(os.path.join(self.outdir,'decals-dr2-vipers-w4.fits.gz'))
+    #         vip = fits_table(os.path.join(self.outdir,'vipers-w4.fits.gz'))
+    #     elif DR == 3:
+    #         decals= fits_table(os.path.join(self.outdir,'dr3-vipersw1w4matched.fits'))
+    #         vip = fits_table(os.path.join(self.outdir,'vipersw1w4-dr3matched.fits'))
+    #     CatalogueFuncs().set_mags_OldDataModel(decals)
+    #     Z_FLUX = decals.get('decam_flux_nodust')[:,4]
+    #     W1_FLUX = decals.get('wise_flux_nodust')[:,0]
+    #     index={}
+    #     index['decals']= np.all((Z_FLUX > 10**((22.5 - zlimit)/2.5),\
+    #     			 W1_FLUX > 0.),axis=0)
+    #     index['decals']*= self.imaging_cut(decals)
+    #     # VIPERS
+    #     # https://arxiv.org/abs/1310.1008
+    #     # https://arxiv.org/abs/1303.2623
+    #     flag= vip.get('zflg').astype(int)
+    #     index['good_z']= np.all((flag >= 2,\
+    #     			 flag <= 9,\
+    #     			 vip.get('zspec') < 9.9),axis=0) 
+    #     # get Mags
+    #     rz,rW1={},{}
+    #     cut= np.all((index['decals'],\
+    #     	     index['good_z']),axis=0)
+    #     rz= decals.get('decam_mag_nodust')[:,2][cut] - decals.get('decam_mag_nodust')[:,4][cut]
+    #     rW1= decals.get('decam_mag_nodust')[:,2][cut] - decals.get('wise_mag_nodust')[:,0][cut]
+    #     return rz,rW1
+    
     def load_star(self,DR):
 	if DR == 2:
 	    stars= fits_table(os.path.join(self.outdir,'Stars_str82_355_4.DECaLS.dr2.fits'))
@@ -289,9 +332,9 @@ class Data(object):
         keep= (cat.type == 'DEV') * (cat.shapedev_r > 0.)
         d['re'][keep]= cat.shapedev_r[keep]
         d['n'][keep]= 4.
-        # BA, PA
-        d['ba']= np.random.uniform(0.2,1.,size=len(cat))
-        d['pa']= np.random.uniform(0.,180.,size=len(cat))
+        # BA, PA --> assume radmon dist, so don't return these
+        #d['ba']= np.random.uniform(0.2,1.,size=len(cat))
+        #d['pa']= np.random.uniform(0.,180.,size=len(cat))
         return d
 
 def inJupyter():
@@ -963,6 +1006,11 @@ class KDE_Model(object):
         return KernelDensity(kernel=kernel,
                              bandwidth=bandwidth).fit(X)
     def fit_elg(self):
+        # Cut to sample that represents population
+        self.data.cut( (tab.zhelio >= 0.8) * \
+		       (tab.zhelio <= 1.4) * \
+		       (tab.oii_3727 >= 0.) * \
+		       (tab.oii_3727_err > 0.))
 	# Only finite values
 	keep= ( np.ones(len(self.data),bool) )
 	for col in self.data.get_columns():
@@ -979,7 +1027,81 @@ class KDE_Model(object):
                              self.data.zhelio,
 			     self.data.tractor_re],
 			     bandwidth=0.05,kernel='tophat')
+
+    def fit_lrg(self):
+	"""No Targeting cuts on g band, but need to fit it so can 
+        insert in grz image"""
+	# Cut to sample that repr. population
+	tab.cut( (tab.type_zphotcomos == 0) * \
+		 (tab.mod_gal <= 8)) 
+	print('dr3_cosmos after obiwan cuts: %d' % len(tab))
+	# 9D space
+	keep= np.ones(len(tab),bool) 
+	#use_cols= ['g_wdust','r_wdust','z_wdust','w1_wdust',
+	#           'zp_gal']
+	for name in tab.get_columns():
+	    if name == 'type':
+		continue
+	    keep *= (np.isfinite( tab.get(name) ))
+	tab.cut(keep)
+	print('dr3_cosmos after finite cuts: %d' % len(tab))
+	# Redshift > bandwidth
+	bandwidth=0.05
+	tab.cut(tab.zp_gal - bandwidth >= 0.)
+	print('dr3_cosmos after redshift > %f: %d' % (bandwidth,len(tab)))
+	# Sanity plot
+	plot_tractor_shapes(tab,prefix='LRG_dr3cosmos_expdev',outdir=self.outdir,nb=self.nb)
+	print('size %d %d' % (len(tab),len(tab[tab.tractor_re > 0.])))
+	#plot_tractor_galfit_shapes(tab,prefix='LRG_dr3cosmosacs')
+	tab.cut(tab.tractor_re > 0.)
+	xy_names= [('tractor_re','zp_gal'),
+		   ('tractor_re','g_wdust'),
+		   ('tractor_re','r_wdust'),
+		   ('tractor_re','z_wdust')]
+	plot_indiv_2d(tab,xy_names=xy_names, ndraws=1000,prefix='LRG',outdir=self.outdir,nb=self.nb)
+	# KDE
+	names= ['z_wdust','rz','rw1','zp_gal','g_wdust','tractor_re']
+	#'re','n','ba','pa']
+	fitlims= [(17.,22.),(0,2.5),(-2,5.),(0.,1.6),(17.,29),(0.3,1.5)] #,(0.,10.),(0.2,0.9),(0.,180.)]
+	#tab.n, tab.ba, tab.pa
+	kde_obj= KernelOfTruth([tab.z_wdust, tab.r_wdust - tab.z_wdust, 
+				tab.r_wdust - tab.w1_wdust, tab.zp_gal, 
+				tab.g_wdust, tab.tractor_re],
+			       names,fitlims,\
+			       bandwidth=bandwidth,kernel='tophat',\
+			       kdefn=self.kdefn,loadkde=self.loadkde)
+	#kde_obj.plot_indiv_1d(lims=plotlims, ndraws=1000,prefix='lrg_dr3cosmosacs')
+	xy_names= [('rz','rw1'),
+		   ('zp_gal','tractor_re'),
+		   ('zp_gal','g_wdust'),
+		   ('zp_gal','rz'),
+		   ('zp_gal','z_wdust'),
+		   ('zp_gal','rw1'),
+                   ('tractor_re','g_wdust'),
+		   ('tractor_re','rz'),
+                   ('tractor_re','z_wdust'),
+		   ('tractor_re','rw1')]
+	xy_lims= [([0,2.5],[-2,5.]),
+		  ([0.,1.6],[0.,2.]),  
+		  ([0.,1.6],[17,29]),  
+		  ([0.,1.6],[0,2.5]),  
+		  ([0.,1.6],[17,22]),  
+		  ([0.,1.6],[-2,5.]),  
+		  ([0.,2.],[17,29]),  
+		  ([0.,2.],[0,2.5]),  
+		  ([0.,2.],[17,22]),  
+		  ([0.,2.],[-2,5])]
+	kde_obj.plot_indiv_2d(xy_names,xy_lims=xy_lims, ndraws=10000,prefix='lrg_dr3cosmosacs',outdir=self.outdir,nb=self.nb)
+	kde_obj.plot_FDR_using_kde(obj='LRG',ndraws=10000,prefix='dr3cosmos',outdir=self.outdir,nb=self.nb)
+	#plotlims= [(17.,22.),(0,2.5),(-2,5.),(0.,1.6),(17.,29),(-0.5,2.)] #,(-2,10.),(-0.2,1.2),(-20,200)]
+	#kde_obj.plot_1band_and_color(ndraws=1000,xylims=xylims,prefix='lrg_')
+	#kde_obj.plot_1band_color_and_redshift(ndraws=1000,xylims=xylims,prefix='lrg_')
+	if self.savekde:
+	    if os.path.exists(self.kdefn):
+		os.remove(self.kdefn)
+	    kde_obj.save(name=self.kdefn)
         
+    
 class Plot(object):
     """Makes relavent plots for a given src using data,kde      
     
@@ -1456,27 +1578,6 @@ def plot_indiv_2d(tab,xy_names=None,xy_lims=None, ndraws=1000,prefix='',outdir=N
 
 
 class LRG(CommonInit):
-	"""Creates the LRG sample
-
-	Args: 
-		see CommonInit
-
-	Attributes:
-		zlimit: AB magnitude limit of sample
-		kdefn: name for the fit KDE
-	"""
-	def __init__(self,**kwargs):
-		super(LRG, self).__init__(**kwargs)
-		self.zlimit= kwargs.get('zlimit',20.46)
-		print('LRGs, self.zlimit= ',self.zlimit)
-		# KDE params
-		self.kdefn= 'lrg-kde.pickle'
-		#self.kde_shapes_fn= 'lrg-shapes-kde.pickle'
-		for attr in ['kdefn']:
-			setattr(self,attr, os.path.join(self.outdir,getattr(self,attr)) )
-
-								 
-
 	def get_FDR_cuts(self,tab):
 		keep={}  
 		keep['star']= tab.type == 1
@@ -1490,106 +1591,7 @@ class LRG(CommonInit):
 								 (tab.zp_gal > 0.6)
 		return keep
 
-	def get_obiwan_cuts(self,tab):
-		# No redshift limits, just reddish galaxy
-		return (tab.type_zphotcomos == 0) * \
-			   (tab.mod_gal <= 8) 
-		return keep
-
-	def fit_kde(self,use_acs=False,
-				loadkde=False,savekde=False):
-		"""No Targeting cuts on g band, but need to fit it so can insert in grz image"""
-		# Load Data
-		if use_acs:
-			print('Matching acs to dr3,cosmos')
-			cosmos= self.get_dr3_cosmos()
-			acs= get_acs_six_col()
-			imatch,imiss,d2d= Matcher().match_within(cosmos,acs,dist=1./3600)
-			cosmos.cut(imatch['ref'])
-			acs.cut(imatch['obs'])
-			# Remove ra,dec from acs, then merge
-			for key in ['ra','dec']:
-				acs.delete_column(key)
-			tab= merge_tables([cosmos,acs], columns='fillzero')
-		else:
-			tab= self.get_dr3_cosmos()
-		print('dr3_cosmos %d' % len(tab))
-		# Add tractor shapes
-		dic= get_tractor_shapes(tab)
-		# WARNING: not actually using 'pa, ba, n' for KDE 
-		tab.set('tractor_re', dic['re'])
-		tab.set('tractor_n', dic['n'])
-		# Cuts
-		keep= self.get_obiwan_cuts(tab)
-		tab.cut(keep)
-		print('dr3_cosmos after obiwan cuts: %d' % len(tab))
-		# 9D space
-		keep= np.ones(len(tab),bool) 
-		#use_cols= ['g_wdust','r_wdust','z_wdust','w1_wdust',
-		#           'zp_gal']
-		for name in tab.get_columns():
-			if name == 'type':
-				continue
-			keep *= (np.isfinite( tab.get(name) ))
-		tab.cut(keep)
-		print('dr3_cosmos after finite cuts: %d' % len(tab))
-		# Redshift > bandwidth
-		bandwidth=0.05
-		tab.cut(tab.zp_gal - bandwidth >= 0.)
-		print('dr3_cosmos after redshift > %f: %d' % (bandwidth,len(tab)))
-		# Sanity plot
-		plot_tractor_shapes(tab,prefix='LRG_dr3cosmos_expdev',outdir=self.outdir,nb=self.nb)
-		print('size %d %d' % (len(tab),len(tab[tab.tractor_re > 0.])))
-		#plot_tractor_galfit_shapes(tab,prefix='LRG_dr3cosmosacs')
-		tab.cut(tab.tractor_re > 0.)
-		xy_names= [('tractor_re','zp_gal'),
-				   ('tractor_re','g_wdust'),
-				   ('tractor_re','r_wdust'),
-				   ('tractor_re','z_wdust')]
-		plot_indiv_2d(tab,xy_names=xy_names, ndraws=1000,prefix='LRG',outdir=self.outdir,nb=self.nb)
-		# KDE
-		names= ['z_wdust','rz','rw1','zp_gal','g_wdust','tractor_re']
-				#'re','n','ba','pa']
-		fitlims= [(17.,22.),(0,2.5),(-2,5.),(0.,1.6),(17.,29),(0.3,1.5)] #,(0.,10.),(0.2,0.9),(0.,180.)]
-		#tab.n, tab.ba, tab.pa
-		kde_obj= KernelOfTruth([tab.z_wdust, tab.r_wdust - tab.z_wdust, 
-								tab.r_wdust - tab.w1_wdust, tab.zp_gal, 
-								tab.g_wdust, tab.tractor_re],
-								names,fitlims,\
-						   bandwidth=bandwidth,kernel='tophat',\
-						   kdefn=self.kdefn,loadkde=self.loadkde)
-		#kde_obj.plot_indiv_1d(lims=plotlims, ndraws=1000,prefix='lrg_dr3cosmosacs')
-		xy_names= [('rz','rw1'),
-				   ('zp_gal','tractor_re'),
-				   ('zp_gal','g_wdust'),
-				   ('zp_gal','rz'),
-				   ('zp_gal','z_wdust'),
-				   ('zp_gal','rw1'),
-				   ('tractor_re','g_wdust'),
-				   ('tractor_re','rz'),
-				   ('tractor_re','z_wdust'),
-				   ('tractor_re','rw1')]
-		xy_lims= [([0,2.5],[-2,5.]),
-				  ([0.,1.6],[0.,2.]),  
-				  ([0.,1.6],[17,29]),  
-				  ([0.,1.6],[0,2.5]),  
-				  ([0.,1.6],[17,22]),  
-				  ([0.,1.6],[-2,5.]),  
-				  ([0.,2.],[17,29]),  
-				  ([0.,2.],[0,2.5]),  
-				  ([0.,2.],[17,22]),  
-				  ([0.,2.],[-2,5]) 
-				 ]
-		kde_obj.plot_indiv_2d(xy_names,xy_lims=xy_lims, ndraws=10000,prefix='lrg_dr3cosmosacs',outdir=self.outdir,nb=self.nb)
-		kde_obj.plot_FDR_using_kde(obj='LRG',ndraws=10000,prefix='dr3cosmos',outdir=self.outdir,nb=self.nb)
-		#plotlims= [(17.,22.),(0,2.5),(-2,5.),(0.,1.6),(17.,29),(-0.5,2.)] #,(-2,10.),(-0.2,1.2),(-20,200)]
-		#kde_obj.plot_1band_and_color(ndraws=1000,xylims=xylims,prefix='lrg_')
-		#kde_obj.plot_1band_color_and_redshift(ndraws=1000,xylims=xylims,prefix='lrg_')
-		if self.savekde:
-			if os.path.exists(self.kdefn):
-				os.remove(self.kdefn)
-			kde_obj.save(name=self.kdefn)
-
+                        
 	def plot_FDR(self):
 		tab= self.get_dr3_cosmos()
 		keep= self.get_FDR_cuts(tab)
@@ -1799,41 +1801,6 @@ class LRG(CommonInit):
 						bbox_extra_artists=[ti,xlab,ylab], bbox_inches='tight',dpi=150)
 			plt.close()
 			print('Wrote {}'.format(name))
-
-
-	def get_vipers(self):
-		"""LRGs from VIPERS in CFHTLS W4 field (12 deg2)"""
-		# DR2 matched
-		if self.DR == 2:
-			decals = self.read_fits(os.path.join(self.truth_dir,'decals-dr2-vipers-w4.fits.gz'))
-			vip = self.read_fits(os.path.join(self.truth_dir,'vipers-w4.fits.gz'))
-		elif self.DR == 3:
-			decals = self.read_fits(os.path.join(self.truth_dir,'dr3-vipersw1w4matched.fits'))
-			vip = self.read_fits(os.path.join(self.truth_dir,'vipersw1w4-dr3matched.fits'))
-		CatalogueFuncs().set_mags_OldDataModel(decals)
-		Z_FLUX = decals.get('decam_flux_nodust')[:,4]
-		W1_FLUX = decals.get('wise_flux_nodust')[:,0]
-		index={}
-		index['decals']= np.all((Z_FLUX > 10**((22.5-self.zlimit)/2.5),\
-								 W1_FLUX > 0.),axis=0)
-		index['decals']*= self.imaging_cut(decals)
-		# VIPERS
-		# https://arxiv.org/abs/1310.1008
-		# https://arxiv.org/abs/1303.2623
-		flag= vip.get('zflg').astype(int)
-		index['good_z']= np.all((flag >= 2,\
-								 flag <= 9,\
-								 vip.get('zspec') < 9.9),axis=0) 
-		# return Mags
-		rz,rW1={},{}
-		cut= np.all((index['decals'],\
-					 index['good_z']),axis=0)
-		rz= decals.get('decam_mag_nodust')[:,2][cut] - decals.get('decam_mag_nodust')[:,4][cut]
-		rW1= decals.get('decam_mag_nodust')[:,2][cut] - decals.get('wise_mag_nodust')[:,0][cut]
-		return rz,rW1
-
-
-
 
 	def plot_vipers(self):
 		rz,rW1= self.get_vipers()
