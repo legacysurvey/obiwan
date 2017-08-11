@@ -645,8 +645,23 @@ class TSBox(object):
 #    morph['ba'] = elgs['AXIS_RATIO'][has_morph] #minor/major
 #    return Xall,cuts,morph                            
 
+DOWNLOAD_ROOT = ""
+OBJTYPES= ['elg','lrg','star','qso']
+
+from six.moves import urllib
+
+	    if DR == 2:
+                self.truth_dir='/project/projectdirs/desi/target/analysis/truth'
+            elif DR == 3:
+                self.truth_dir= '/project/projectdirs/desi/users/burleigh/desi/target/analysis/truth' 
+            else: raise ValueError('DR 2,3 supported')
+
+
 class Data(object):
 	"""Fetches and loads truth and catalogue data for star,galaxy populations
+
+        Stored at /global/project/projectdirs/desi/www/users/kburleigh/obiwan/priors/
+          http://portal.nersc.gov/project/desi/www/users/kburleigh/obiwan/priors/ 
 
 	Args:
 	  DR: which Data Release's data to use
@@ -661,18 +676,130 @@ class Data(object):
 		args: ditto above 
 	"""
 
-	def __init__(self,DR,**img_cuts):
-	    if DR == 2:
-                self.truth_dir='/project/projectdirs/desi/target/analysis/truth'
-            elif DR == 3:
-                self.truth_dir= '/project/projectdirs/desi/users/burleigh/desi/target/analysis/truth' 
-            else: raise ValueError('DR 2,3 supported')
+	def __init__(self,**img_cuts):
 	    self.brick_primary= img_cuts.get('brick_primary',True)
 	    self.anymask= img_cuts.get('anymask',False)
 	    self.allmask= img_cuts.get('allmask',False)
 	    self.fracflux= img_cuts.get('fracflux',False)
-	   	self.outdir= kwargs.get('outdir','./')
-	
+
+        def fetch(self,outdir):
+            self.outdir= outdir
+            if not os.path.exists(outdir):
+                urllib.request.urlretrieve(fn, outdir)            
+
+        def load_elg(self,DR):
+	    # Cut on DR3 rmag < self.rlimit
+	    if DR == 2:
+		zcat = fits_table(os.path.join(self.truth_dir,'../deep2/v3.0/','deep2-field1-oii.fits.gz'))
+		R_MAG= zcat.get('cfhtls_r')
+		rmag_cut= R_MAG<self.rlimit 
+	    elif self.DR == 3:
+		zcat = fits_table(os.path.join(self.outdir,'deep2f234-dr3matched.fits'))
+		decals = fits_table(os.path.join(self.outdir,'dr3-deep2f234matched.fits'))
+                # Add mag data 
+		CatalogueFuncs().set_mags_OldDataModel(decals)
+		rflux= decals.get('decam_flux_nodust')[:,2]
+		rmag_cut= rflux > 10**((22.5-self.rlimit)/2.5)
+		rmag_cut*= self.imaging_cut(decals)
+	    zcat.cut(rmag_cut) 
+	    decals.cut(rmag_cut) 
+	    # color data
+	    if DR == 2:
+		G_MAG= zcat.get('cfhtls_g')
+		R_MAG= zcat.get('cfhtls_r')
+		Z_MAG= zcat.get('cfhtls_z')
+	    elif DR == 3:
+	        G_MAG= decals.get('decam_mag_wdust')[:,1]
+		R_MAG= decals.get('decam_mag_wdust')[:,2]
+		Z_MAG= decals.get('decam_mag_wdust')[:,4]
+		R_MAG_nodust= decals.get('decam_mag_nodust')[:,2]
+		# Don't need w1, but might be useful
+		W1_MAG = decals.get('wise_mag_wdust')[:,0]
+	    # Repackage
+	    tab= fits_table()
+	    # Deep2
+	    tab.set('ra', zcat.ra)
+	    tab.set('dec', zcat.dec)
+	    tab.set('zhelio', zcat.zhelio)
+	    tab.set('oii_3727', zcat.oii_3727)
+	    tab.set('oii_3727_err', zcat.oii_3727_err)
+	    # Decals
+	    tab.set('g_wdust', G_MAG)
+	    tab.set('r_wdust', R_MAG)
+	    tab.set('z_wdust', Z_MAG)
+	    tab.set('w1_wdust', W1_MAG) 
+	    tab.set('r_nodust', R_MAG_nodust)
+	    # DR3 shape info
+	    for key in ['type','shapeexp_r','shapedev_r']:
+		tab.set(key, decals.get(key))
+	    return tab
+
+        def load_lrg(self,DR):
+	    if DR == 2:
+		decals= fits_table(os.path.join(self.outdir,'decals-dr2-cosmos-zphot.fits.gz') )
+		spec=self.read_fits( os.path.join(self.outdir,'cosmos-zphot.fits.gz') )
+	    elif self.DR == 3:
+		decals= fits_table( os.path.join(self.outdir,'dr3-cosmoszphotmatched.fits') )
+		spec= fits_table( os.path.join(self.outdir,'cosmos-zphot-dr3matched.fits') )
+	    # DECaLS
+	    CatalogueFuncs().set_mags_OldDataModel(decals)
+	    Z_FLUX = decals.get('decam_flux_nodust')[:,4]
+	    W1_FLUX = decals.get('wise_flux_nodust')[:,0]
+	    # Cuts
+	    # BUG!!
+	    keep= np.all((Z_FLUX > 10**((22.5-self.zlimit)/2.5),\
+			  W1_FLUX > 0.),axis=0)
+	    keep *= self.imaging_cut(decals)
+	    decals.cut(keep) 
+	    spec.cut(keep)
+	    # Repackage
+	    tab= fits_table()
+	    # Cosmos
+	    tab.set('ra', spec.ra)
+	    tab.set('dec', spec.dec)
+	    tab.set('zp_gal', spec.zp_gal)
+	    tab.set('type_zphotcomos', spec.type)
+	    tab.set('mod_gal', spec.mod_gal)
+	    # DR3
+	    tab.set('g_wdust', decals.get('decam_mag_wdust')[:,1])
+	    tab.set('r_wdust', decals.get('decam_mag_wdust')[:,2])
+	    tab.set('z_wdust', decals.get('decam_mag_wdust')[:,4])
+	    tab.set('w1_wdust', decals.get('wise_mag_wdust')[:,0])
+	    tab.set('r_nodust', decals.get('decam_mag_nodust')[:,2])
+            tab.set('z_nodust', decals.get('decam_mag_nodust')[:,4])
+            # DR3 shape info
+            for key in ['type','shapeexp_r','shapedev_r']:
+                tab.set(key, decals.get(key))
+            return tab
+            
+        def load_star(self,DR):
+	    if DR == 2:
+		stars= fits_table(os.path.join(self.outdir,'Stars_str82_355_4.DECaLS.dr2.fits'))
+		CatalogueFuncs().set_mags_OldDataModel(stars)
+		stars.cut( self.std_star_cut(stars) )
+	    elif self.DR == 3:
+		raise ValueError()
+            return stars
+            
+        def load_qso(self,DR):
+            if DR == 2:        
+		qsos= self.read_fits( os.path.join(self.truth_dir,'AllQSO.DECaLS.dr2.fits') )
+		# Add AB mags
+		CatalogueFuncs().set_mags_OldDataModel(qsos)
+		qsos.cut( self.imaging_cut(qsos) )
+		# r < 22.7, grz > 17
+		GFLUX = qsos.get('decam_flux_nodust')[:,1] 
+		RFLUX = qsos.get('decam_flux_nodust')[:,2]
+		ZFLUX = qsos.get('decam_flux_nodust')[:,4] 
+		GRZFLUX = (GFLUX + 0.8* RFLUX + 0.5* ZFLUX ) / 2.3
+		cut= np.all((RFLUX > 10**((22.5-self.rlimit)/2.5),\
+			     GRZFLUX < 10**((22.5-17.0)/2.5)),axis=0)
+		qsos.cut(cut)
+	    elif DR == 3:
+		raise ValueError('Not done yet')
+            return qsos
+
+            
 	def imaging_cut(self,data):
 		"""data is a fits_table object with Tractor Catalogue columns"""
 		cut=np.ones(len(data)).astype(bool)
@@ -711,99 +838,7 @@ class Data(object):
 					 #np.power(GRCOLOR - 0.32,2) + np.power(RZCOLOR - 0.13,2) < 0.06**2,\
 					 #RFLUX_obs > 10**((22.5-19.0)/2.5)),axis=0)
 		return cut 
-
-class CrossValidator():
-	"""Cross validate the RedshiftPredictor() function
-
-	"""
-	def kfold_indices(k,n_train):
-		"""returns array of indices of shape (k,n_train/k) to grab the k bins of training data"""
-		bucket_sz=int(n_train/float(k))
-		ind= np.arange(k*bucket_sz) #robust for any k, even if does not divide evenly!
-		np.random.shuffle(ind) 
-		return np.reshape(ind,(k,bucket_sz))
-
-	def kfold_cross_val(C=1.,kfolds=10,):
-		"""C is parameter varying"""
-		nsamples= self.X.shape[0]
-		ind= kfold_indices(kfolds,nsamples)
-		err=np.zeros(kfolds)-1
-		keep_clf=dict(err=1.)
-		for i in range(kfolds):
-			ival= ind[i,:]
-			itrain=np.array(list(set(ind.flatten())-set(ival)))
-			assert(len(list(set(ival) | set(itrain))) == len(ind.flatten()))
-			# Train
-			clf = SVC(C=C,kernel='rbf',degree=3)
-			clf.fit(self.X[itrain,:],self.y[itrain])
-			#get error for this kth sample
-			pred= clf.predict(self.X[ival,:])
-			err[i],wrong= benchmark(pred, self.y[ival])
-			if err[i] <= keep_clf['err']: 
-				keep_clf['lsvc']=clf
-				keep_clf['err']=err[i]
-		return err,keep_clf
-
-class RedshiftPredictor(CrossValidator):
-	"""Predict redshift instead of using the data's sample
-
-	"""
-	def __init__(self,X=None,y=None):
-		# All NaNs must be removed
-		X,y= self.remove_nans(X,y=y)
-		self.Xtrain= X
-		self.ytrain= y
-
-	def svm(self,kernel='rbf',C=1.,degree=3):
-		self.clf = SVC(kernel=kernel,C=C,degree=degree)
-		self.clf.fit(self.Xtrain, self.ytrain)
-
-	def nn(self,nn=3):
-		self.clf= KNeighborsClassifier(n_neighbors=nn)
-		self.clf.fit(self.Xtrain, self.ytrain)
-
-	def predict(self,Xtest):
-		Xtest= self.remove_nans(Xtest)
-		return self.clf.predict(Xtest)
-
-	def remove_nans(self,X,y=None):
-		sh= X.shape
-		assert(len(sh) == 2)
-		assert(sh[1] == 2)
-		keep= np.isfinite(X[:,0])*np.isfinite(X[:,1])    
-		X= X[keep,:]
-		if X.shape[0] < sh[0]:
-			print('WARNING: %d/%d of X values were NANs, removed these' % \
-					(sh[0]-X.shape[0],X.shape[0]))
-		if y is not None:
-			y=y[keep]
-			return X,y
-		else:
-			return X
-
-
-	def cross_validate(self,typ='ELG'):
-		k=5
-		Cvals= np.logspace(-1,1,num=5)
-		avgerr= np.zeros(len(Cvals))-1
-		for cnt,C in enumerate(Cvals):
-			print 'kfold cv on C= %g' % C
-			err,junk= self.kfold_cross_val(C=C,kfolds=k)
-			print 'err= ',err
-			avgerr[cnt]= err.mean()
-		print 'avg err= ',avgerr,'C_vals= ',Cvals
-		fout=open('cross_validate_svm_%s.pickle' % typ,'w')
-		pickle.dump((Cvals,avgerr),fout)
-		fout.close()
-		plt.plot(Cvals,avgerr,'k-')
-		plt.scatter(Cvals,avgerr,s=50,color='b')
-		plt.xlabel("C (regularization parameter)")
-		plt.ylabel('Error rate')
-		plt.title('Training')
-		plt.xscale('log')
-		plt.savefig('cross_validate_svm_%s.png' % typ)
-		ibest= np.where(avgerr == avgerr.min())[0][0]
-		print 'lowest cross valid error= ',avgerr[ibest],'for C = ',Cvals[ibest]	
+	
 
 def get_acs_six_col(self):
     savedir='/project/projectdirs/desi/users/burleigh/desi/target/analysis/truth'
@@ -849,58 +884,6 @@ class ELG(CommonInit):
 		for attr in ['kdefn']:
 			setattr(self,attr, os.path.join(self.outdir,getattr(self,attr)) )
 
-	def get_dr3_deep2(self):
-		"""version 3.0 of data discussed in
-		https://desi.lbl.gov/DocDB/cgi-bin/private/RetrieveFile?docid=912"""
-
-                # Where to save the figures
-                CHAPTER_ID = "end_to_end_project"
-                
-		# Cut on DR3 rmag < self.rlimit
-		if self.DR == 2:
-			zcat = self.read_fits(os.path.join(self.truth_dir,'../deep2/v3.0/','deep2-field1-oii.fits.gz'))
-			R_MAG= zcat.get('cfhtls_r')
-			rmag_cut= R_MAG<self.rlimit 
-		elif self.DR == 3:
-			zcat = self.read_fits(os.path.join(self.truth_dir,'deep2f234-dr3matched.fits'))
-			decals = self.read_fits(os.path.join(self.truth_dir,'dr3-deep2f234matched.fits'))
-			# Add mag data 
-			CatalogueFuncs().set_mags_OldDataModel(decals)
-			rflux= decals.get('decam_flux_nodust')[:,2]
-			rmag_cut= rflux > 10**((22.5-self.rlimit)/2.5)
-			rmag_cut*= self.imaging_cut(decals)
-		zcat.cut(rmag_cut) 
-		decals.cut(rmag_cut) 
-		# color data
-		if self.DR == 2:
-			G_MAG= zcat.get('cfhtls_g')
-			R_MAG= zcat.get('cfhtls_r')
-			Z_MAG= zcat.get('cfhtls_z')
-		elif self.DR == 3:
-			G_MAG= decals.get('decam_mag_wdust')[:,1]
-			R_MAG= decals.get('decam_mag_wdust')[:,2]
-			Z_MAG= decals.get('decam_mag_wdust')[:,4]
-			R_MAG_nodust= decals.get('decam_mag_nodust')[:,2]
-			# Don't need w1, but might be useful
-			W1_MAG = decals.get('wise_mag_wdust')[:,0]
-		# Repackage
-		tab= fits_table()
-		# Deep2
-		tab.set('ra', zcat.ra)
-		tab.set('dec', zcat.dec)
-		tab.set('zhelio', zcat.zhelio)
-		tab.set('oii_3727', zcat.oii_3727)
-		tab.set('oii_3727_err', zcat.oii_3727_err)
-		# Decals
-		tab.set('g_wdust', G_MAG)
-		tab.set('r_wdust', R_MAG)
-		tab.set('z_wdust', Z_MAG)
-		tab.set('w1_wdust', W1_MAG) 
-		tab.set('r_nodust', R_MAG_nodust)
-		# DR3 shape info
-		for key in ['type','shapeexp_r','shapedev_r']:
-			tab.set(key, decals.get(key))
-		return tab
 
 
 	def get_FDR_cuts(self,tab):
@@ -1462,46 +1445,6 @@ class LRG(CommonInit):
 		for attr in ['kdefn']:
 			setattr(self,attr, os.path.join(self.outdir,getattr(self,attr)) )
 
-	def get_dr3_cosmos(self):
-		# Cosmos
-		# http://irsa.ipac.caltech.edu/data/COSMOS/gator_docs/cosmos_zphot_mag25_colDescriptions.html
-		# http://irsa.ipac.caltech.edu/data/COSMOS/tables/redshift/cosmos_zphot_mag25.README
-		if self.DR == 2:
-			decals=self.read_fits( os.path.join(self.truth_dir,'decals-dr2-cosmos-zphot.fits.gz') )
-			spec=self.read_fits( os.path.join(self.truth_dir,'cosmos-zphot.fits.gz') )
-		elif self.DR == 3:
-			decals=self.read_fits( os.path.join(self.truth_dir,'dr3-cosmoszphotmatched.fits') )
-			spec=self.read_fits( os.path.join(self.truth_dir,'cosmos-zphot-dr3matched.fits') )
-		# DECaLS
-		CatalogueFuncs().set_mags_OldDataModel(decals)
-		Z_FLUX = decals.get('decam_flux_nodust')[:,4]
-		W1_FLUX = decals.get('wise_flux_nodust')[:,0]
-		# Cuts
-		# BUG!!
-		keep= np.all((Z_FLUX > 10**((22.5-self.zlimit)/2.5),\
-					  W1_FLUX > 0.),axis=0)
-		keep *= self.imaging_cut(decals)
-		decals.cut(keep) 
-		spec.cut(keep)
-		# Repackage
-		tab= fits_table()
-		# Cosmos
-		tab.set('ra', spec.ra)
-		tab.set('dec', spec.dec)
-		tab.set('zp_gal', spec.zp_gal)
-		tab.set('type_zphotcomos', spec.type)
-		tab.set('mod_gal', spec.mod_gal)
-		# DR3
-		tab.set('g_wdust', decals.get('decam_mag_wdust')[:,1])
-		tab.set('r_wdust', decals.get('decam_mag_wdust')[:,2])
-		tab.set('z_wdust', decals.get('decam_mag_wdust')[:,4])
-		tab.set('w1_wdust', decals.get('wise_mag_wdust')[:,0])
-		tab.set('r_nodust', decals.get('decam_mag_nodust')[:,2])
-		tab.set('z_nodust', decals.get('decam_mag_nodust')[:,4])
-		# DR3 shape info
-		for key in ['type','shapeexp_r','shapedev_r']:
-			tab.set(key, decals.get(key))
-		return tab
 								 
 
 	def get_FDR_cuts(self,tab):
@@ -2012,15 +1955,6 @@ class STAR(CommonInit):
 			plt.close()
 			print('Wrote {}'.format(name))
 	  
-	def get_purestars(self):
-		# https://desi.lbl.gov/trac/wiki/TargetSelectionWG/TargetSelection#SpectrophotometricStandardStarsFSTD
-		if self.DR == 2:
-			stars=fits_table(os.path.join(self.truth_dir,'Stars_str82_355_4.DECaLS.dr2.fits'))
-			CatalogueFuncs().set_mags_OldDataModel(stars)
-			stars.cut( self.std_star_cut(stars) )
-			return stars
-		elif self.DR == 3:
-			raise ValueError()
 
 	def plot(self):
 		self.plot_sweepstars() 
@@ -2065,43 +1999,6 @@ class QSO(CommonInit):
 		for attr in ['kdefn']:
 			setattr(self,attr, os.path.join(self.outdir,getattr(self,attr)) )
 
-	def get_qsos(self):
-		if self.DR == 2:        
-			qsos= self.read_fits( os.path.join(self.truth_dir,'AllQSO.DECaLS.dr2.fits') )
-			# Add AB mags
-			CatalogueFuncs().set_mags_OldDataModel(qsos)
-			qsos.cut( self.imaging_cut(qsos) )
-			# r < 22.7, grz > 17
-			GFLUX = qsos.get('decam_flux_nodust')[:,1] 
-			RFLUX = qsos.get('decam_flux_nodust')[:,2]
-			ZFLUX = qsos.get('decam_flux_nodust')[:,4] 
-			GRZFLUX = (GFLUX + 0.8* RFLUX + 0.5* ZFLUX ) / 2.3
-			cut= np.all((RFLUX > 10**((22.5-self.rlimit)/2.5),\
-						 GRZFLUX < 10**((22.5-17.0)/2.5)),axis=0)
-			qsos.cut(cut)
-			return qsos
-		elif self.DR == 3:
-			raise ValueError('Not done yet')
-			qsos=self.read_fits( os.path.join(self.truth_dir,'qso-dr3sweepmatched.fits') )
-			decals=self.read_fits( os.path.join(self.truth_dir,'dr3-qsosweepmatched.fits') )
-			CatalogueFuncs().set_mags_OldDataModel(decals)
-			decals.set('z',qsos.get('z'))
-			decals.cuts( self.imaging_cut(decals) )
-			return decals
-		#G_FLUX= decals.get('decam_flux')[:,1]/decals.get('decam_mw_transmission')[:,1]
-		#R_FLUX= decals.get('decam_flux')[:,2]/decals.get('decam_mw_transmission')[:,2]
-		#Z_FLUX= decals.get('decam_flux')[:,4]/decals.get('decam_mw_transmission')[:,4]
-		# DECaLS
-		#index={}
-		#rfaint=22.7
-		#grzbright=17.
-		#index['decals']= np.all((R_FLUX > 10**((22.5-rfaint)/2.5),\
-		#                         G_FLUX < 10**((22.5-grzbright)/2.5),\
-		#                         R_FLUX < 10**((22.5-grzbright)/2.5),\
-		#                         Z_FLUX < 10**((22.5-grzbright)/2.5),\
-		#                         decals.get('brick_primary') == True),axis=0)
-		# QSO
-		# Return
 	 
 	def plot_FDR(self):
 		# Data
