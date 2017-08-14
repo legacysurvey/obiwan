@@ -63,11 +63,14 @@ class Data(object):
 	self.fracflux= img_cuts.get('fracflux',False)
         
     def fetch(self,outdir):
-        self.outdir= outdir
         name= 'priors.tar.gz'
-        remote_fn= "http://portal.nersc.gov/project/desi/www/users/kburleigh/obiwan/" + name
+        self.outdir= os.path.join(outdir,name.replace('.tar.gz',''))
+        if not os.path.exists(self.outdir):
+            os.makedirs(self.outdir)
+        remote_fn= "http://portal.nersc.gov/project/desi/users/kburleigh/obiwan/" + name
         local_fn= os.path.join(outdir,name)
         if not os.path.exists(local_fn):
+            print('Retrieving %s, extracting here %s' % (remote_fn,local_fn))
             urllib.request.urlretrieve(remote_fn, local_fn)
             tgz = tarfile.open(local_fn)
             tgz.extractall(path=outdir)
@@ -84,7 +87,7 @@ class Data(object):
 	    zcat = fits_table(os.path.join(self.outdir,'deep2-field1-oii.fits.gz'))
 	    R_MAG= zcat.get('cfhtls_r')
 	    rmag_cut= R_MAG < rlimit 
-	elif self.DR == 3:
+	elif DR == 3:
 	    zcat = fits_table(os.path.join(self.outdir,'deep2f234-dr3matched.fits'))
 	    decals = fits_table(os.path.join(self.outdir,'dr3-deep2f234matched.fits'))
             # Add mag data 
@@ -377,11 +380,8 @@ def pyVersion():
         
 def save_pickle(obj,outdir,name):
     """Saves data in "obj" to pickle file"""
-    dirname= os.path.join(outdir,"pkl")
     # py2 and 3 pickle files not backward compatible
-    path= os.path.join(dirname,name + "_py%d.pkl" % pyVersion())
-    if not os.path.isdir(dirname):
-        os.makedirs(dirname)
+    path= os.path.join(outdir,name + "_py%d.pkl" % pyVersion())
     fout=open(path,'w')
     pickle.dump(obj,fout)
     fout.close()
@@ -389,9 +389,8 @@ def save_pickle(obj,outdir,name):
 
 def load_pickle(outdir,name):
     """Loads data in pickle file"""
-    dirname= os.path.join(outdir,"pkl")
     # py2 and 3 pickle files not backward compatible
-    path= os.path.join(dirname,name + "_py%d.pkl" % pyVersion())
+    path= os.path.join(outdir,name + "_py%d.pkl" % pyVersion())
     with open(path,'r') as fout:
         obj= pickle.load(fout)
     print("Loaded pickle", path)
@@ -402,6 +401,8 @@ def load_pickle(outdir,name):
 class KDE_Model(object):
     """Fits a Kernel Density Estimate (KDE) to a given source population
     
+    Only one source or data table per KDE_Model object 
+
     Args:
       src: elg,lrg, etc
       data: tractor catalogue for the population 
@@ -416,25 +417,30 @@ class KDE_Model(object):
     
     def __init__(self,src,data,outdir):
         assert(src in OBJTYPES)
+        self.src= src
         self.data= data.copy() # we'll modify it
-        self.outdir= outdir
-        name= '%s-kde' % src
+        self.outdir= os.path.join(outdir,'kdes')
+        if not os.path.exists(self.outdir):
+            os.makedirs(self.outdir)
+        
+    def get_kde(self):
+        name= '%s-kde' % self.src
         try:
-            self.kde= load_pickle(outdir,name)
+            kde= load_pickle(self.outdir,name)
         except IOError:
             # Doesn't exist yet
-            if src == 'elg':
-                self.kde= self.fit_elg()
-            elif src == 'lrg':
-                self.kde= self.fit_lrg()
-            elif src == 'star':
-                self.kde= self.fit_star()
-            elif src == 'qso':
-                self.kde= self.fit_qso()
-            save_pickle(self.kde,outdir,name)
+            if self.src == 'elg':
+                kde= self.fit_elg()
+            elif self.src == 'lrg':
+                kde= self.fit_lrg()
+            elif self.src == 'star':
+                kde= self.fit_star()
+            elif self.src == 'qso':
+                kde= self.fit_qso()
+            save_pickle(kde,self.outdir,name)
+        return kde
         
-        
-    def get_kde(self,data_list,
+    def fit_kde(self,data_list,
                 bandwidth=0.05, kernel='tophat'):
         """Fits a KDE to the data
         
@@ -454,10 +460,10 @@ class KDE_Model(object):
                              bandwidth=bandwidth).fit(X)
     def fit_elg(self):
         # Cut to sample that represents population
-        self.data.cut( (tab.zhelio >= 0.8) * \
-		       (tab.zhelio <= 1.4) * \
-		       (tab.oii_3727 >= 0.) * \
-		       (tab.oii_3727_err > 0.))
+        self.data.cut( (self.data.zhelio >= 0.8) * \
+		       (self.data.zhelio <= 1.4) * \
+		       (self.data.oii_3727 >= 0.) * \
+		       (self.data.oii_3727_err > 0.))
 	# Only finite values
 	keep= ( np.ones(len(self.data),bool) )
 	for col in self.data.get_columns():
@@ -468,7 +474,7 @@ class KDE_Model(object):
 	print('dr3_deep2, after cut bad vals %d' % len(self.data))
         # Physical size for source
 	self.data.cut( self.data.tractor_re > 0. )
-        return self.get_kde([self.data.r_wdust,
+        return self.fit_kde([self.data.r_wdust,
                              self.data.r_wdust - self.data.z_wdust,
 			     self.data.g_wdust - self.data.r_wdust,
                              self.data.zhelio,
@@ -494,13 +500,13 @@ class KDE_Model(object):
 	bandwidth=0.05
 	self.data.cut(self.data.zp_gal - bandwidth >= 0.)
 	print('dr3_cosmos after redshift > %f: %d' % (bandwidth,len(self.data)))
-	return self.get_kde([tab.z_wdust, tab.r_wdust - tab.z_wdust, 
+	return self.fit_kde([tab.z_wdust, tab.r_wdust - tab.z_wdust, 
 			     tab.r_wdust - tab.w1_wdust, tab.zp_gal, 
 			     tab.g_wdust, tab.tractor_re],
 			    bandwidth=bandwidth,kernel='tophat')
 
     def fit_star(self):
-        return self.get_kde([self.data.get('decam_mag_wdust')[:,2],
+        return self.fit_kde([self.data.get('decam_mag_wdust')[:,2],
                              stars.get('decam_mag_nodust')[:,2]-stars.get('decam_mag_nodust')[:,4],
                              stars.get('decam_mag_nodust')[:,1]-stars.get('decam_mag_nodust')[:,2]],
 			    bandwidth=0.05,kernel='gaussian')
@@ -517,7 +523,7 @@ class KDE_Model(object):
 		continue
 	    keep *= (np.isfinite( self.data.get(name) ))
 	self.data.cut(keep)
-	return self.get_kde([self.data.get('decam_mag_wdust')[:,2],
+	return self.fit_kde([self.data.get('decam_mag_wdust')[:,2],
                              self.data.get('decam_mag_wdust')[:,2]-qsos.get('decam_mag_wdust')[:,4],
                              self.data.get('decam_mag_wdust')[:,1]-qsos.get('decam_mag_wdust')[:,2],
                              self.data.z],
@@ -783,10 +789,13 @@ class Plot(object):
       kde: Fit KDE returned by FitKDE()
     
     """
-    def __init__(src,data,kde,outdir):
+    def __init__(self,outdir):
+        self.outdir= os.path.join(outdir,'plots')
+        if not os.path.exists(self.outdir):
+            os.makedirs(self.outdir)
+
+    def make_plots(self,src,data,kde):
         assert(src in OBJTYPES)
-        self.src= src
-        self.outdir= outdir
         if src == 'elg':
             self.plot_elg(data,kde)
         elif src == 'lrg':
@@ -800,11 +809,11 @@ class Plot(object):
         for name,rng in zip(['tractor_re','tractor_n'],
                             [(0,2),(1,4)]):
             fig,ax= plt.subplots()
-            keep= cat.get(name) > 0.
+            keep= data.get(name) > 0.
             #h,edges= np.histogram(cat.get(name)[keep],bins=40,normed=True)
             #binc= (edges[1:]+edges[:-1])/2.
             #ax.step(binc,h,where='mid',lw=1,c='b')
-            _=ax.hist(cat.get(name)[keep],bins=100,normed=True,range=rng)
+            _=ax.hist(data.get(name)[keep],bins=100,normed=True,range=rng)
             xlab= ax.set_xlabel(name)
             ylab= ax.set_ylabel('PDF')
             save_png(self.outdir,'%s_tractor_shapes' % self.src)
@@ -816,7 +825,7 @@ class Plot(object):
             yname= xy_names[i][1]
             # Plot
             fig,ax= plt.subplots()
-            ax.scatter(tab.get(xname),tab.get(yname),
+            ax.scatter(data.get(xname),data.get(yname),
                        c='b',marker='o',s=10.,rasterized=True)
             xlab= ax.set_xlabel(xname)
             ylab= ax.set_ylabel(yname)
@@ -827,6 +836,7 @@ class Plot(object):
 
     def kde_2d(self,kde,ndraws=1000,
                xy_names=None,xy_lims=None):
+        """xy_names: list of all possible names is stored in KDE_Model().get_"""
         assert(xy_names)
         samp= kde.sample(n_samples=ndraws)
         for i,_ in enumerate(xy_names):
@@ -834,8 +844,11 @@ class Plot(object):
             yname= xy_names[i][1]
             # Plot
             fig,ax= plt.subplots()
-            ax.scatter(samp[:,i],samp[:,i],
-                       c='b',marker='o',s=10.,rasterized=True,label='KDE')
+            try:
+                ax.scatter(samp[:,i],samp[:,i],
+                           c='b',marker='o',s=10.,rasterized=True,label='KDE')
+            except:
+                raise ValueError
             xlab= ax.set_xlabel(xname)
             ylab= ax.set_ylabel(yname)
             ax.legend(loc='upper right')
@@ -846,6 +859,7 @@ class Plot(object):
 
             
     def plot_elg(self,data,kde):
+        self.src= 'elg'
 	self.tractor_shapes(data)
 	xy_names= [('tractor_re','zhelio'),
 		   ('tractor_re','g_wdust'),
@@ -873,13 +887,14 @@ class Plot(object):
 		  ([0.6,1.6],[20.5,25]),  
 		  ([0.6,1.6],[0,2]),]
         self.kde_2d(kde,ndraws=10000,
-                    xy_names,xy_lims=xy_lims)
+                    xy_names=xy_names,xy_lims=xy_lims)
         #KernelOfTruth().plot_FDR_using_kde(src,kde,self.outdir,
-                                           ndraws=10000)
+        #                                   ndraws=10000)
 	#kde_obj.plot_1band_and_color(ndraws=1000,xylims=xylims,prefix='elg_')
 	#kde_obj.plot_colors_shapes_z(ndraws=1000,xylims=xylims,name='elg_colors_shapes_z_kde.png')
 
     def plot_lrg(self,data,kde):
+        self.src='lrg'
 	self.tractor_shapes(data)
 	xy_names= [('tractor_re','zp_gal'),
 		   ('tractor_re','g_wdust'),
@@ -908,7 +923,7 @@ class Plot(object):
 		  ([0.,2.],[17,22]),  
 		  ([0.,2.],[-2,5])]
         self.kde_2d(kde,ndraws=10000,
-                    xy_names,xy_lims=xy_lims)
+                    xy_names=xy_names,xy_lims=xy_lims)
 
 	#kde_obj.plot_FDR_using_kde(obj='LRG',ndraws=10000,prefix='dr3cosmos',outdir=self.outdir,nb=self.nb)
 	#plotlims= [(17.,22.),(0,2.5),(-2,5.),(0.,1.6),(17.,29),(-0.5,2.)] #,(-2,10.),(-0.2,1.2),(-20,200)]
@@ -916,6 +931,7 @@ class Plot(object):
 	#kde_obj.plot_1band_color_and_redshift(ndraws=1000,xylims=xylims,prefix='lrg_')
         
     def plot_star(self,data,kde):
+        self.src='star'
         #xylims=dict(x1=(15,24),y1=(0,0.3),\
 	#            x2=(-1,3.5),y2=(-0.5,2))
 	#kde_obj.plot_1band_and_color(ndraws=1000,xylims=xylims,prefix='star_')
@@ -928,6 +944,7 @@ class Plot(object):
 	pass
     
     def plot_qso(self,data,kde):
+        self.src='qso'
         #labels=['r wdust','r-z','g-r','redshift']
 	#xylims=dict(x1=(15.,24),y1=(0,0.5),\
 	#	    x2=xyrange['x1_qso'],y2=xyrange['y1_qso'],\
@@ -1828,33 +1845,27 @@ if __name__ == '__main__':
     import argparse
     parser= get_parser()
     args = parser.parse_args()
-    
-    if not os.path.exists(args.outdir):
-        os.makedirs(args.outdir)
 
-    #gals=GalaxyPrior()
-    #gals.plot_all()
-    #print "gals.__dict__= ",gals.__dict__
-    kwargs=dict(DR=2,outdir=args.outdir,savefig=True,alpha=0.25,
-                loadkde=False,
-                savekde=True)
-    #star=STAR(**kwargs)
-    #star.plot_kde()
-    #star.plot()
-    kwargs.update(dict(rlimit=22.7+1.))
-    #qso=QSO(**kwargs)
-    #qso.plot_kde()
-    #qso.plot()
-    kwargs.update(dict(DR=3, rlimit=23.4+1.))
-    elg= ELG(**kwargs)
-    elg.fit_kde(use_acs=False)
+    elg= EmptyClass()
+    
+    d= Data()
+    outdir='/home/kaylan/mydata/priors_data'
+    d.fetch(outdir)
+    elg.data= d.load_elg(DR=3)
+
+    k= KDE_Model('elg',elg.data,outdir)
+    elg.kde= k.get_kde()
+
+    p= Plot(outdir)
+    p.make_plots('elg',elg.data,elg.kde)
+    raise ValueError('DONE')
+
     #elg.plot_FDR()
     #elg.plot_FDR_multi()
     #elg.plot_obiwan_multi()
     #elg.plot_FDR_mag_dist()
     #elg.plot_obiwan_mag_dist()
     #elg.plot_LRG_FDR_wELG_data()
-    #raise ValueError
     #elg.plot_FDR_multipanel()
     #elg.get_acs_matched_deep2()
     #elg.plot_dr3_acs_deep2()
@@ -1865,9 +1876,6 @@ if __name__ == '__main__':
 
     #elg.plot_kde()
     #elg.plot()
-    kwargs.update(dict(zlimit=20.46+1.))
-    lrg= LRG(**kwargs)
-    lrg.fit_kde(use_acs=False)
     #lrg.plot_dr3_cosmos_acs()
     #lrg.plot_FDR()
     #lrg.plot_FDR_multi()
@@ -1878,9 +1886,12 @@ if __name__ == '__main__':
     #lrg.plot_LRGs_in_ELG_FDR()
     #lrg.plot_FDR()
     #lrg.plot_FDR_multipanel()
-    raise ValueError
     #lrg.plot_kde_shapes()
     #lrg.plot_kde()
     #lrg.plot()
+
+    
+
+    
 
     
