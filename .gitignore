@@ -13,6 +13,7 @@ doc/_build
 
 # iPython
 doc/nb/.ipynb_checkpoints
+doc/nb/config.json
 
 # Packages/installer info
 *.egg
