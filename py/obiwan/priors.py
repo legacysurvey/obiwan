@@ -38,6 +38,9 @@ from pandas.plotting import scatter_matrix
 from theValidator.catalogues import CatalogueFuncs,Matcher
 
 DOWNLOAD_ROOT = "http://portal.nersc.gov/project/desi/users/kburleigh/obiwan/"
+NERSC_ROOT = DOWNLOAD_ROOT.replace("http://portal.nersc.gov/project/",
+                                   "/global/project/projectdirs/")\
+                          .replace("/users/","/www/users/")
 OBJTYPES= ['elg','lrg','star','qso']
 
 plt.rcParams['axes.labelsize'] = 14
