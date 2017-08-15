@@ -32,6 +32,8 @@ from sklearn.svm import SVC
 from sklearn.neighbors import KNeighborsClassifier
 from six.moves import urllib
 import tarfile
+import pandas as pd
+from pandas.plotting import scatter_matrix
 
 from theValidator.catalogues import CatalogueFuncs,Matcher
 
@@ -363,9 +365,8 @@ def inJupyter():
     return 'inline' in matplotlib.get_backend()
     
 def save_png(outdir,fig_id):
-    dirname= os.path.join(outdir,"figs")
-    path= os.path.join(dirname,fig_id + ".png")
-    if not os.path.isdir(dirname):
+    path= os.path.join(outdir,fig_id + ".png")
+    if not os.path.isdir(outdir):
         os.makedirs(dirname)
     print("Saving figure", path)
     plt.tight_layout()
@@ -395,7 +396,21 @@ def load_pickle(outdir,name):
         obj= pickle.load(fout)
     print("Loaded pickle", path)
     return obj    
-        
+
+def fits2pandas(tab,attrs=None):
+    """converts a fits_table into a pandas DataFrame
+
+    Args:
+      tab: fits_table()
+      attrs: attributes or column names want in the DF
+    """
+    d={}
+    if attrs is None:
+        attrs= tab.get_columns
+    for col in attrs:
+        d[col]= tab.get(col)
+    return pd.DataFrame(d)
+# pd.iloc([inds,:])
  
 
 class KDE_Model(object):
@@ -418,15 +433,28 @@ class KDE_Model(object):
     def __init__(self,src,data,outdir):
         assert(src in OBJTYPES)
         self.src= src
-        self.data= data.copy() # we'll modify it
+        # DF instead of fits_table
+        self.df= fits2pandas(data, attrs=self.keys_for_KDE(src))
         self.outdir= os.path.join(outdir,'kdes')
         if not os.path.exists(self.outdir):
             os.makedirs(self.outdir)
+
+    def keys_for_KDE(self,src):
+        assert src in OBJTYPES
+        if src == "elg":
+            return ['zhelio','oii_3727','oii_3727_err',
+                    'r_wdust','z_wdust','g_wdust','tractor_re']
+        elif src == 'lrg':
+            return []
+        elif src == 'star':
+            return []
+        elif src == 'qso':
+            return []
         
     def get_kde(self):
         name= '%s-kde' % self.src
         try:
-            kde= load_pickle(self.outdir,name)
+            self.df_wcut,self.df_for_kde,kde= load_pickle(self.outdir,name)
         except IOError:
             # Doesn't exist yet
             if self.src == 'elg':
@@ -437,49 +465,52 @@ class KDE_Model(object):
                 kde= self.fit_star()
             elif self.src == 'qso':
                 kde= self.fit_qso()
-            save_pickle(kde,self.outdir,name)
+            save_pickle((self.df_wcut,self.df_for_kde,kde),self.outdir,name)
         return kde
-        
-    def fit_kde(self,data_list,
+    
+    def fit_kde(self,X,
                 bandwidth=0.05, kernel='tophat'):
         """Fits a KDE to the data
         
         Following 
           http://scikit-learn.org/stable/auto_examples/neighbors/plot_kde_1d.html
         Args: 
-          data_list: list of features, each feature is a numpy array
+          X: numpy array of shape [m instances, N features]
           bandwidth: characteristic width of the kernel
           kernel: gaussian, tophat, etc
           
         Returns: 
           KernelDensity() object fit to data_list
         """
-        X= np.array(data_list).T
-        assert(X.shape[1] == len(data_list))
+        assert(X.shape[0] > X.shape[1])
         return KernelDensity(kernel=kernel,
                              bandwidth=bandwidth).fit(X)
+		    
     def fit_elg(self):
-        # Cut to sample that represents population
-        self.data.cut( (self.data.zhelio >= 0.8) * \
-		       (self.data.zhelio <= 1.4) * \
-		       (self.data.oii_3727 >= 0.) * \
-		       (self.data.oii_3727_err > 0.))
-	# Only finite values
-	keep= ( np.ones(len(self.data),bool) )
-	for col in self.data.get_columns():
+        # CUTS
+        # Sample that represents population
+        print('fitting elg!!'.upper())
+        keep= (self.df.zhelio >= 0.8) * \
+	      (self.df.zhelio <= 1.4) * \
+	      (self.df.oii_3727 >= 0.) * \
+	      (self.df.oii_3727_err > 0.)
+	# Finite values
+	for col in self.df.keys():
 	    if col == 'type':
 		continue
-	    keep *= (np.isfinite(self.data.get(col)))
-	self.data.cut(keep)
-	print('dr3_deep2, after cut bad vals %d' % len(self.data))
-        # Physical size for source
-	self.data.cut( self.data.tractor_re > 0. )
-        return self.fit_kde([self.data.r_wdust,
-                             self.data.r_wdust - self.data.z_wdust,
-			     self.data.g_wdust - self.data.r_wdust,
-                             self.data.zhelio,
-			     self.data.tractor_re],
-			     bandwidth=0.05,kernel='tophat')
+	    keep *= (np.isfinite(self.df[col]))
+        # Real size
+	keep*= (self.df.tractor_re > 0.)
+	self.df_wcut= self.df[keep]
+        # DF to fit on
+        d= dict(r_wdust=self.df_wcut.r_wdust,
+                rz_wdust= self.df_wcut.r_wdust - self.df_wcut.z_wdust,
+		gr_wdust= self.df_wcut.g_wdust - self.df_wcut.r_wdust,
+                zhelio= self.df_wcut.zhelio,
+		tractor_re= self.df_wcut.tractor_re)
+        self.df_for_kde= pd.DataFrame(d)
+        return self.fit_kde(self.df_for_kde.values,
+			    bandwidth=0.05,kernel='tophat')
 
     def fit_lrg(self):
 	# Cut to sample that repr. population
@@ -784,7 +815,6 @@ class Plot(object):
     """Makes relavent plots for a given src using data,kde      
     
     Args:
-      src: elg,lrg,star,qso
       data: tractor catalogue for source population
       kde: Fit KDE returned by FitKDE()
     
@@ -793,164 +823,37 @@ class Plot(object):
         self.outdir= os.path.join(outdir,'plots')
         if not os.path.exists(self.outdir):
             os.makedirs(self.outdir)
-
-    def make_plots(self,src,data,kde):
-        assert(src in OBJTYPES)
-        if src == 'elg':
-            self.plot_elg(data,kde)
-        elif src == 'lrg':
-            self.plot_lrg(data,kde)
-        if src == 'star':
-            self.plot_star(data,kde)
-        if src == 'qso':
-            self.plot_qso(data,kde)
-
-    def tractor_shapes(self,data):
-        for name,rng in zip(['tractor_re','tractor_n'],
-                            [(0,2),(1,4)]):
-            fig,ax= plt.subplots()
-            keep= data.get(name) > 0.
-            #h,edges= np.histogram(cat.get(name)[keep],bins=40,normed=True)
-            #binc= (edges[1:]+edges[:-1])/2.
-            #ax.step(binc,h,where='mid',lw=1,c='b')
-            _=ax.hist(data.get(name)[keep],bins=100,normed=True,range=rng)
-            xlab= ax.set_xlabel(name)
-            ylab= ax.set_ylabel('PDF')
-            save_png(self.outdir,'%s_tractor_shapes' % self.src)
             
-    def data_2d(self,data,xy_names=None,xy_lims=None):
-        assert(xy_names)
-        for i,_ in enumerate(xy_names):
-            xname= xy_names[i][0]
-            yname= xy_names[i][1]
-            # Plot
-            fig,ax= plt.subplots()
-            ax.scatter(data.get(xname),data.get(yname),
-                       c='b',marker='o',s=10.,rasterized=True)
-            xlab= ax.set_xlabel(xname)
-            ylab= ax.set_ylabel(yname)
-            if xy_lims:
-                ax.set_xlim(xy_lims[i][0])
-                ax.set_ylim(xy_lims[i][1])
-            save_png(self.outdir,'%s_data_%s_%s' % (self.src,xname,yname))
+    def elg(self,data,df_wcut,df_for_kde,kde):
+        src= 'elg'
+        # Pandas built in
+        df_wcut.hist(bins=20,figsize=(12,8))
+        save_png(self.outdir,'%s_hist_df_wcut' % src)
+        scatter_matrix(df_wcut, figsize=(20, 15))
+        save_png(self.outdir,'%s_scat_df_wcut' % src)
+        ####
+        df_for_kde.hist(bins=20,figsize=(12,8))
+        save_png(self.outdir,'%s_hist_df_for_kde' % src)
+        scatter_matrix(df_for_kde, figsize=(20, 15))
+        save_png(self.outdir,'%s_scat_df_for_kde' % src)
+        ###
+        samp= kde.sample(n_samples=1000)
+        df_samp= pd.DataFrame(samp,columns=(df_for_kde.keys()))
+        df_samp.hist(bins=20,figsize=(20,15))
+        save_png(self.outdir,'%s_hist_df_samp' % src)
+        scatter_matrix(df_samp, figsize=(20, 15))
+        save_png(self.outdir,'%s_scat_df_samp' % src)
 
-    def kde_2d(self,kde,ndraws=1000,
-               xy_names=None,xy_lims=None):
-        """xy_names: list of all possible names is stored in KDE_Model().get_"""
-        assert(xy_names)
-        samp= kde.sample(n_samples=ndraws)
-        for i,_ in enumerate(xy_names):
-            xname= xy_names[i][0]
-            yname= xy_names[i][1]
-            # Plot
-            fig,ax= plt.subplots()
-            try:
-                ax.scatter(samp[:,i],samp[:,i],
-                           c='b',marker='o',s=10.,rasterized=True,label='KDE')
-            except:
-                raise ValueError
-            xlab= ax.set_xlabel(xname)
-            ylab= ax.set_ylabel(yname)
-            ax.legend(loc='upper right')
-            if xy_lims:
-                ax.set_xlim(xy_lims[i][0])
-                ax.set_ylim(xy_lims[i][1])
-            save_png(self.outdir,'%s_kde_%s_%s' % (self.src,xname,yname))
-
-            
-    def plot_elg(self,data,kde):
-        self.src= 'elg'
-	self.tractor_shapes(data)
-	xy_names= [('tractor_re','zhelio'),
-		   ('tractor_re','g_wdust'),
-		   ('tractor_re','r_wdust'),
-		   ('tractor_re','z_wdust'),
-		   ('zhelio','g_wdust'),
-		   ('zhelio','r_wdust'),
-		   ('zhelio','z_wdust')]
-	self.data_2d(data,xy_names=xy_names,xy_lims=None)
-
-        xy_names= [('rz','gr'),
-	           ('tractor_re','gr'),
-	           ('tractor_re','r_wdust'),
-	           ('tractor_re','rz'),
-		   ('zhelio','tractor_re'),
-		   ('zhelio','gr'),
-		   ('zhelio','r_wdust'),
-		   ('zhelio','rz')]
- 	xy_lims= [([0,2],[-0.5,1.5]),
-		  ([0.,2],[-0.5,1.5]),  
-		  ([0.,2],[20.5,25.]),  
-		  ([0.,2],[0,2]),  
-		  ([0.6,1.6],[0,2]),  
-		  ([0.6,1.6],[-0.5,1.5]),  
-		  ([0.6,1.6],[20.5,25]),  
-		  ([0.6,1.6],[0,2]),]
-        self.kde_2d(kde,ndraws=10000,
-                    xy_names=xy_names,xy_lims=xy_lims)
-        #KernelOfTruth().plot_FDR_using_kde(src,kde,self.outdir,
-        #                                   ndraws=10000)
-	#kde_obj.plot_1band_and_color(ndraws=1000,xylims=xylims,prefix='elg_')
-	#kde_obj.plot_colors_shapes_z(ndraws=1000,xylims=xylims,name='elg_colors_shapes_z_kde.png')
-
-    def plot_lrg(self,data,kde):
-        self.src='lrg'
-	self.tractor_shapes(data)
-	xy_names= [('tractor_re','zp_gal'),
-		   ('tractor_re','g_wdust'),
-		   ('tractor_re','r_wdust'),
-		   ('tractor_re','z_wdust')]
-	self.data_2d(data,xy_names=xy_names,xy_lims=None)
-
-	xy_names= [('rz','rw1'),
-		   ('zp_gal','tractor_re'),
-		   ('zp_gal','g_wdust'),
-		   ('zp_gal','rz'),
-		   ('zp_gal','z_wdust'),
-		   ('zp_gal','rw1'),
-                   ('tractor_re','g_wdust'),
-		   ('tractor_re','rz'),
-                   ('tractor_re','z_wdust'),
-		   ('tractor_re','rw1')]
-	xy_lims= [([0,2.5],[-2,5.]),
-		  ([0.,1.6],[0.,2.]),  
-		  ([0.,1.6],[17,29]),  
-		  ([0.,1.6],[0,2.5]),  
-		  ([0.,1.6],[17,22]),  
-		  ([0.,1.6],[-2,5.]),  
-		  ([0.,2.],[17,29]),  
-		  ([0.,2.],[0,2.5]),  
-		  ([0.,2.],[17,22]),  
-		  ([0.,2.],[-2,5])]
-        self.kde_2d(kde,ndraws=10000,
-                    xy_names=xy_names,xy_lims=xy_lims)
-
-	#kde_obj.plot_FDR_using_kde(obj='LRG',ndraws=10000,prefix='dr3cosmos',outdir=self.outdir,nb=self.nb)
-	#plotlims= [(17.,22.),(0,2.5),(-2,5.),(0.,1.6),(17.,29),(-0.5,2.)] #,(-2,10.),(-0.2,1.2),(-20,200)]
-	#kde_obj.plot_1band_and_color(ndraws=1000,xylims=xylims,prefix='lrg_')
-	#kde_obj.plot_1band_color_and_redshift(ndraws=1000,xylims=xylims,prefix='lrg_')
-        
-    def plot_star(self,data,kde):
-        self.src='star'
-        #xylims=dict(x1=(15,24),y1=(0,0.3),\
-	#            x2=(-1,3.5),y2=(-0.5,2))
-	#kde_obj.plot_1band_and_color(ndraws=1000,xylims=xylims,prefix='star_')
-
-        #ax.scatter(rz,gr,c=[rgb],edgecolors='none',marker='o',s=10.,rasterized=True)#,label=key)
-	#ax.set_xlim([-0.5,2.2])
-	#ax.set_ylim([-0.3,2.])
-	#xlab=ax.set_xlabel('r-z')
-	#ylab=ax.set_ylabel('g-r')
+    def lrg(self,data,kde):
+        src='lrg'
+        pass
+    
+    def star(self,data,kde):
+        src='star'
 	pass
     
-    def plot_qso(self,data,kde):
-        self.src='qso'
-        #labels=['r wdust','r-z','g-r','redshift']
-	#xylims=dict(x1=(15.,24),y1=(0,0.5),\
-	#	    x2=xyrange['x1_qso'],y2=xyrange['y1_qso'],\
-	#	    x3=(0.,hiz+0.2),y3=(0.,1.))
-	#kde_obj.plot_1band_and_color(ndraws=1000,xylims=xylims,prefix='qso_')
-	#kde_obj.plot_1band_color_and_redshift(ndraws=1000,xylims=xylims,prefix='qso_')
+    def qso(self,data,kde):
+        src='qso'
         pass
 
 
@@ -1853,11 +1756,12 @@ if __name__ == '__main__':
     d.fetch(outdir)
     elg.data= d.load_elg(DR=3)
 
-    k= KDE_Model('elg',elg.data,outdir)
-    elg.kde= k.get_kde()
+    elg.model= KDE_Model('elg',elg.data,outdir)
+    elg.model.kde= elg.model.get_kde()
 
     p= Plot(outdir)
-    p.make_plots('elg',elg.data,elg.kde)
+    p.elg(elg.data, elg.model.df_wcut,elg.model.df_for_kde,
+          elg.model.kde)
     raise ValueError('DONE')
 
     #elg.plot_FDR()
