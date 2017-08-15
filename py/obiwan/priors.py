@@ -11,8 +11,8 @@ Single band, mag distributions, plotted using 'as observed' AB fluxes/mags,
 since these are what one adds into a CP image
 """
 
+import matplotlib
 if __name__ == '__main__':
-    import matplotlib
     matplotlib.use('Agg')
 import numpy as np
 import matplotlib.pyplot as plt
