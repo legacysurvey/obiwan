@@ -19,23 +19,16 @@ $ export obiwan_data=$CSCRATCH/obiwan_data
 $ mkdir $obiwan_data
 $ cd $obiwan_data
 $ wget http://portal.nersc.gov/project/desi/users/kburleigh/obiwan/legacysurveydirs.tar.gz
-$ tar -xzv legacysurveydirs.tar.gz
-```
-For eBOSS DR3 do
-```sh
-$ export LEGACY_SURVEY_DIR=${obiwan_data}legacysurveydir_ebossdr3
-```
-or instead for DR5
-```sh
-$ export LEGACY_SURVEY_DIR=${obiwan_data}legacysurveydir_dr5
+$ tar -xzvf legacysurveydirs.tar.gz 
 ```
 
-### Git clone 2 repos
+### Git clone 3 repos
 ```sh
 $ export obiwan_code=$CSCRATCH/obiwan_code
 $ mkdir $obiwan_code
 $ cd $obiwan_code
 $ git clone https://github.com/legacysurvey/obiwan.git
+$ git clone https://github.com/legacysurvey/theValidator.git
 $ git clone https://github.com/legacysurvey/legacypipe.git
 $ cd legacypipe
 ```
@@ -64,17 +57,63 @@ cori       docker     READY    85235b9309   2017-08-03T13:49:09 tskisner/desicon
 ```
 
 ### Run!
-You're now ready to do a production run! Edit this slurm job script appropriately
-https://github.com/legacysurvey/obiwan/blob/master/bin/shifter_job.sh
-
-Then submit it with
+First we'll submit a single job and make sure it works. Later we'll install qdo to submit and manage 1000s of jobs. Simply do
 ```sh
-$ cd $obiwan_repo/obiwan/py
-$ sbatch ../bin/shifter_job.sh
+cd $obiwan_code/obiwan/py
+sbatch ../bin/run_atnersc/shifter_job.sh
 ```
-### Qdo (optional)
-...fill in
+There are two things you may want to edit in that script
+ 1) the #SBATCH lines
+ 2) the env var LEGACY_SURVEY_DIR, which you set to either "${obiwan_data}/legacysurveydir_ebossdr3" for eBOSS DR3 or to "${obiwan_data}/legacysurveydir_dr5" for DR5
 
+Warning: make sure you submit the job from a clean environment
 
+### Submit and Manage 1000s of jobs with Qdo
+We'll use the conda package manager for python. We only want a basic environment to install qdo with, so Miniconda will suffice
+```sh
+export obiwan_conda=$CSCRATCH/obiwan_conda
+mkdir $obiwan_conda
+wget  https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh
+bash 
+```
+When it asks where to install, don't accept the default, instead choose
+```sh
+>>> /global/cscratch1/sd/<user>/obiwan_conda
+```
+and "Do you wish the installer to prepend the Miniconda3 install location
+to PATH in your" bashrc, say no
+```sh
+>>> no
+```
+Activate your new environment and switch to python2.7 (obiwan is not python3 yet).
+```sh
+source $obiwan_conda/bin/activate
+conda create -n py27 python=2.7 psycopg2
+source activate py27
+```
+See the NERSC [docs](http://www.nersc.gov/users/data-analytics/data-analytics-2/python/anaconda-python/#toc-anchor-3). for more info. 
 
+Now we can install qdo
+```sh
+cd $obiwan_repo
+git clone https://bitbucket.org/berkeleylab/qdo.git
+cd qdo
+python setup.py install
+cd ../
+```
+now type
+```sh
+qdo list
+```
+and you should see
+```sh
+QueueName              State   Waiting  Pending  Running Succeeded   Failed
+edr                    Active       0        0        0       575        0
+obiwan                 Active       0        0        0         5        1
+dr5                    Active       0   123079     1760     51545      673
+```
+
+### Remaining
+* setup desi_user db account 
+* change obiwan to use desi_user not desi_admin for getSrcsInBrick
 

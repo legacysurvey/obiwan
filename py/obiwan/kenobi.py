@@ -826,6 +826,7 @@ def get_parser():
     parser.add_argument('-o', '--objtype', type=str, choices=['star','elg', 'lrg', 'qso'], default='star', required=True) 
     parser.add_argument('-b', '--brick', type=str, default='2428p117', required=True)
     parser.add_argument('--DR', type=int, choices=[3,4,5], default=None,required=True)
+    parser.add_argument('--outdir', default='./', required=False)
     parser.add_argument('-n', '--nobj', type=int, default=500, metavar='', 
                         help='number of objects to simulate (required input)')
     parser.add_argument('-rs', '--rowstart', type=int, default=0, metavar='', 
@@ -1159,10 +1160,7 @@ def main(args=None):
             return 0
 
     # Output dir
-    if 'DECALS_SIM_DIR' in os.environ:
-        decals_sim_dir = os.getenv('DECALS_SIM_DIR')
-    else:
-        decals_sim_dir = '.'
+    decals_sim_dir = args.outdir
         
     #nchunk = args.nchunk
     #rand = np.random.RandomState(args.seed) # determines seed for all chunks
@@ -1205,7 +1203,7 @@ def main(args=None):
     if True:
         # Non PSQL way
         #fn= get_sample_fn(brickname,decals_sim_dir,prefix=args.prefix)
-        fn=os.path.join(os.environ['DECALS_SIM_DIR'],
+        fn=os.path.join(decals_sim_dir,
                         'elg_randoms/rank_1_seed_1.fits') 
         Samp= fits_table(fn)
         Samp.rename('%s_rhalf' % objtype,'%s_re' % objtype)
