@@ -1,0 +1,77 @@
+#%Module###<-magic cookie ####################################################
+##
+##   Software dependencies for the DESI spectroscopic pipeline.
+##
+##
+# variables for Tcl script use only
+set     version  1.1.11.dev98
+
+module-whatis "Loads software dependencies for DESI spectro pipeline."
+
+proc ModulesHelp { } {
+  global version
+  puts stderr "\t\t DESI software dependencies - Version $version\n"
+  puts stderr "\t This loads a conda environment and other compiled"
+  puts stderr "\t software needed by the spectro pipeline."
+  puts stderr ""
+}
+
+conflict desiconda
+
+
+if [ module-info mode load ] {
+  if [ is-loaded PrgEnv-gnu ] {
+  } else {
+    if [ is-loaded PrgEnv-cray ] {
+      module swap PrgEnv-cray PrgEnv-gnu
+    }
+    if [ is-loaded PrgEnv-intel ] {
+      module swap PrgEnv-intel PrgEnv-gnu
+    }
+  }
+  module swap gcc gcc/6.3.0
+  module load intel/17.0.2.174
+  module load cmake
+  module load git
+  setenv CRAYPE_LINK_TYPE dynamic
+}
+
+# This is set by OS python and gives us problems.
+unsetenv PYTHONSTARTUP
+
+# This is the conda environment location
+prepend-path PATH "/global/cscratch1/sd/kaylanb/obiwan_desiconda/conda/bin"
+setenv PYTHONPATH "/global/cscratch1/sd/kaylanb/obiwan_desiconda/conda/lib/python2.7/site-packages"
+setenv DESICONDA "/global/cscratch1/sd/kaylanb/obiwan_desiconda/conda"
+setenv DESICONDA_EXTRA "/global/cscratch1/sd/kaylanb/obiwan_desiconda/aux"
+
+# This is the location of the extra compiled software
+prepend-path PATH "/global/cscratch1/sd/kaylanb/obiwan_desiconda/aux/bin"
+prepend-path CPATH "/global/cscratch1/sd/kaylanb/obiwan_desiconda/aux/include"
+prepend-path LD_LIBRARY_PATH "/global/cscratch1/sd/kaylanb/obiwan_desiconda/aux/lib"
+prepend-path LIBRARY_PATH "/global/cscratch1/sd/kaylanb/obiwan_desiconda/aux/lib"
+prepend-path PYTHONPATH "/global/cscratch1/sd/kaylanb/obiwan_desiconda/aux/lib/python2.7/site-packages"
+prepend-path PKG_CONFIG_PATH "/global/cscratch1/sd/kaylanb/obiwan_desiconda/aux/lib/pkgconfig"
+
+# Set environment variables possibly needed for compiling spectro pipeline
+
+# FIXME: Disabling these for now, since they override
+# the compiler choices used by distutils, resulting
+# in the intel compiler being using for extensions
+# but with incompatible gcc compile flags.
+
+#setenv CC "gcc"
+#setenv CXX "g++"
+#setenv FC "gfortran"
+
+#setenv MPICC "cc"
+#setenv MPICXX "CC"
+#setenv MPIFC "ftn"
+
+#setenv CFLAGS "-O3 -fPIC -pthread"
+#setenv CXXFLAGS "-O3 -fPIC -pthread"
+#setenv FCFLAGS "-O3 -fPIC -fexceptions -pthread"
+
+#setenv OPENMP_CFLAGS "-fopenmp"
+#setenv OPENMP_CXXFLAGS "-fopenmp"
+
