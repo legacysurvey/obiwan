@@ -31,7 +31,7 @@ export LEGACY_SURVEY_DIR=${obiwan_data}/legacysurveydir_dr5
 # output directory for results
 export obiwan_outdir=$CSCRATCH/obiwan_outdir
 log="${obiwan_outdir}/logs/${brick}.log"
-mkdir $(dirname $log)
+mkdir -p $(dirname $log)
 
 # Force MKL single-threaded
 # https://software.intel.com/en-us/articles/using-threaded-intel-mkl-in-multi-thread-application

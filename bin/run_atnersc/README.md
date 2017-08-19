@@ -13,6 +13,32 @@ You can do the following runs with obiwan
 | DR5 | ELG | fill in |
 
 ### Setup
+setup the 2 directories as describes below
+* `obiwan_code`
+* `obiwan_data`
+Then copy my `bashrc_obiwan` to your ~/, then whenever you login and want to run obiwan
+do source `~/.bashrc_obiwan`
+
+I made my conda environment by 
+* installing 201707...-imaging of desiconda, to 
+`/global/cscratch1/sd/kaylanb/obiwan_desiconda/conda`
+then
+* pip install -U pytest
+* pip install pytest-cov coveralls 
+
+### Test it works
+```sh
+cd $obiwan_code/obiwan
+pytest --cov --ignore `py/obiwan/test/end_to_end`
+```
+This should return something like
+"3 passed in 5.44 seconds"
+Then run a quick section of a brick
+```sh
+cd py
+python obiwan/kenobi.py -b 1238p245 -n 2 --DR 5 -o elg --outdir $obiwan_outdir --add_sim_noise --zoom 1550 1650 1550 1650
+```
+### Images to process
 For all runs do
 ```sh
 $ export obiwan_data=$CSCRATCH/obiwan_data
@@ -22,7 +48,7 @@ $ wget http://portal.nersc.gov/project/desi/users/kburleigh/obiwan/legacysurveyd
 $ tar -xzvf legacysurveydirs.tar.gz 
 ```
 
-### Git clone 3 repos
+### Clone 3 repos
 ```sh
 $ export obiwan_code=$CSCRATCH/obiwan_code
 $ mkdir $obiwan_code

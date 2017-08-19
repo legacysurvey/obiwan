@@ -1200,7 +1200,7 @@ def main(args=None):
 
     # Ra,dec,mag table
     print('before PSQL')
-    if True:
+    if False:
         # Non PSQL way
         #fn= get_sample_fn(brickname,decals_sim_dir,prefix=args.prefix)
         fn=os.path.join(decals_sim_dir,
