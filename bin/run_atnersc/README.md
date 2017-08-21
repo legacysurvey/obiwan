@@ -1,10 +1,5 @@
 # Running Obiwan @ NERSC
 
-The idea is for any NERSC user to easily do optimized production runs of Obiwan using a Docker Image. The steps are basically
- - unpack some tar.gz files to the user's scratch space
- - git clone https://github.com/kaylanb/obiwan.git
- - submit the included slurm job script that will load the Docker Image and run the obiwan repo
-
 ### Setup
 Download the necessary repos
 ```sh
@@ -28,31 +23,8 @@ $ wget http://portal.nersc.gov/project/desi/users/kburleigh/obiwan/legacysurveyd
 $ tar -xzvf legacysurveydirs.tar.gz 
 ```
 
-Now module load module load my conda environment for obiwan. I it using Ted Kisner's [desiconda](https://github.com/desihub/desiconda.git) package then conda installing a few extras like "pytest". Note, if you don't want to type the following commands you can get them from my (obiwan_bashrc)[https://github.com/legacysurvey/obiwan/blob/master/bin/run_atnersc/bashrc_obiwan]
-
-Starting with a clean environment on Cori, 
-```sh
-module use $obiwan_code/obiwan/etc/modulefiles
-module load obiwan_conda
-```
-
-Then set the required environment variables to run the leagcypipe pipeline
-```sh
-for name in dust unwise_coadds  unwise_coadds_timeresolved; do
-    module load $name
-done  
-export LEGACY_SURVEY_DIR=$obiwan_data/legacysurveydir_dr5
-```
-
-and point your PYTHONPATH to the right place
-```sh
-# Non-install pacakges
-export PYTHONPATH=$obiwan_code/theValidator:${PYTHONPATH}
-export PYTHONPATH=$obiwan_code/legacypipe/py:${PYTHONPATH}
-export PYTHONPATH=$obiwan_code/obiwan/py:${PYTHONPATH}
-```
-### Obiwan bashrc file
-To automate the above, plus set additional env vars, copy my bashrc for obiwan to you home directory on Cori
+Module load the conda environment for obiwan. I created it using Ted Kisner's [desiconda](https://github.com/desihub/desiconda.git) package and installing a few extra packages like "pytest". You simply grab the (bashrc_obiwan)[https://github.com/legacysurvey/obiwan/blob/master/bin/run_atnersc/bashrc_obiwan]
+ file from the obiwan repo and source it. From a clean environment on Cori,
 ```
 cd ~/
 wget https://raw.githubusercontent.com/legacysurvey/obiwan/master/bin/run_atnersc/bashrc_obiwan
@@ -62,14 +34,38 @@ then whenever you want to run obiwan, ssh into a clean environment on Cori and
 source ~/bashrc_obiwan
 ```
 
-### Run the test script
+### Notes about the Obiwan bashrc file
+
+You module load the obiwan conda environment with, 
+```sh
+module use $obiwan_code/obiwan/etc/modulefiles
+module load obiwan_conda
+```
+
+These set the environment variables to run the leagcypipe pipeline
+```sh
+for name in dust unwise_coadds  unwise_coadds_timeresolved; do
+    module load $name
+done  
+export LEGACY_SURVEY_DIR=$obiwan_data/legacysurveydir_dr5
+```
+
+this setups up your PYTHONPATH...
+```sh
+# Non-install pacakges
+export PYTHONPATH=$obiwan_code/theValidator:${PYTHONPATH}
+export PYTHONPATH=$obiwan_code/legacypipe/py:${PYTHONPATH}
+export PYTHONPATH=$obiwan_code/obiwan/py:${PYTHONPATH}
+```
+
+### Run unit tests
 This should return something like "3 passed in 5.44 seconds"
 ```sh
 cd $obiwan_code/obiwan
 pytest --cov --ignore `py/obiwan/test/end_to_end`
 ```
 
-Then run a full end to end test. If this works, you are ready for production runs
+Now run a full "end to end" test. This will inject 2 simulated ELG sources into a 100x100 pixel cutout of a DECam CCD, run legacypipe on it, and write out all the obiwan and legacypipe outputs. 
 ```sh
 export dataset=DR3
 export brick=1238p245
@@ -77,8 +73,15 @@ export LEGACY_SURVEY_DIR=${obiwan_code}/obiwan/py/obiwan/test/end_to_end/legacyp
 cd py
 python obiwan/kenobi.py --dataset ${dataset} -b ${brick} -n 2 -o elg --outdir ${dataset}_outdir --add_sim_noise
 ```
+If the above worked you are ready for production runs!
 
 ### Please ignore everything after this for now
+
+The idea is for any NERSC user to easily do optimized production runs of Obiwan using a Docker Image. The steps are basically
+ - unpack some tar.gz files to the user's scratch space
+ - git clone https://github.com/kaylanb/obiwan.git
+ - submit the included slurm job script that will load the Docker Image and run the obiwan repo
+
 
 ### Possible Production Runs
 You can do the following runs with obiwan
