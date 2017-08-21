@@ -1,11 +1,20 @@
+# tests datasets DR3, DR5, DR3_eBOSS
+
 from __future__ import print_function
 import os
 
-#from obiwan.kenobi import main,get_parser
-from obiwan import kenobi
+from obiwan.kenobi import main,get_parser
 
-def test_dataset_DR3():
-    dataset='DR3'
+DATASETS= ['DR3','DR5','DR3_eBOSS']
+
+def run_dataset(dataset):
+    """run a single dataset's test problem
+
+    Args:
+      dataset: string, 'DR3', 'DR5', etc
+    """
+    assert(dataset in DATASETS)
+    print('testing dataset: %s' % dataset)
     obj='elg'
     brick='1238p245'
     os.environ["LEGACY_SURVEY_DIR"]= os.path.join(os.path.dirname(__file__), 
@@ -18,11 +27,10 @@ def test_dataset_DR3():
     cmd_line=['--dataset', dataset, '-b', brick, '-n', '2', 
               '-o', 'elg', '--outdir', outdir, '--add_sim_noise',
               '--randoms_from_fits', randoms_from_fits]
-    parser= kenobi.get_parser()
+    parser= get_parser()
     args = parser.parse_args(args=cmd_line)
     
-    #main(args=args)
-    kenobi.main(args=args)
+    main(args=args)
     assert(True)
 #fn = os.path.join(outdir, 'tractor', '110', 'tractor-1102p240.fits')
 #assert(os.path.exists(fn))
@@ -35,6 +43,14 @@ def test_dataset_DR3():
 #print(cmd)
 #rtn = os.system(cmd)
 #assert(rtn == 0)
+
+def test_datasets():
+    run_dataset('DR3')
+    run_dataset('DR5')
+    assert(True)
+
+if __name__ == "__main__":
+    run_dataset('DR5')
     
 
     

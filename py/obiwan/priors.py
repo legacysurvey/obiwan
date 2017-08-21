@@ -477,6 +477,7 @@ class KDE_Model(object):
         
         Following 
           http://scikit-learn.org/stable/auto_examples/neighbors/plot_kde_1d.html
+        
         Args: 
           X: numpy array of shape [m instances, N features]
           bandwidth: characteristic width of the kernel
@@ -488,7 +489,7 @@ class KDE_Model(object):
         assert(X.shape[0] > X.shape[1])
         return KernelDensity(kernel=kernel,
                              bandwidth=bandwidth).fit(X)
-		    
+    
     def fit_elg(self):
         # CUTS
         # Sample that represents population

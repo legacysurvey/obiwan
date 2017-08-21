@@ -129,7 +129,8 @@ script:
   #- pytest --cov --ignore py/obiwan/test/end_to_end
   cd $HOME/obiwan/py/obiwan
   pytest --cov=test/ --cov-config=test/.coveragerc --ignore=test/end_to_end test/
-  # pytest --cov=test/end_to_end/test_dataset_DR3.py test/end_to_end/test_dataset_DR3.py -p no:warnings
+  # pytest --cov=test/end_to_end/test_datasets.py test/end_to_end/test_datasets.py
+  # pytest -p no:warnings
   #- coverage run obiwan/test/print_test.py test
 
 after_success:
