@@ -108,8 +108,8 @@ class SimDecals(LegacySurveyData):
 		objects
 
 	Args:
-		DR: which Data-Release to consider. e.g. if DR=3, then only 
-			images included in DR3 will be considered 
+		dataset: see definition in 
+            https://github.com/legacysurvey/obiwan/blob/master/py/obiwan/test/end_to_end/README.md 
 		survey_dir: as used by legacypipe.runbrick.run_brick()
 			Defaults to $LEGACY_SURVEY_DIR environment variable.  Where to look for
 			files including calibration files, tables of CCDs and bricks, image data
@@ -126,8 +126,7 @@ class SimDecals(LegacySurveyData):
 			with that of the simulated source only
 
 	Attributes:
-		DR: which Data-Release to consider. e.g. if DR=3, then only 
-			images included in DR3 will be considered 
+		DR: see above 
 		metacat: fits_table 
 			configuration-like params for the simulated sources
 		simcat: fits_table
@@ -141,10 +140,10 @@ class SimDecals(LegacySurveyData):
 			with that of the simulated source only
 	"""
 
-	def __init__(self, DR=None, survey_dir=None, metacat=None, simcat=None, output_dir=None,\
+	def __init__(self, dataset=None, survey_dir=None, metacat=None, simcat=None, output_dir=None,\
 					   add_sim_noise=False, folding_threshold=1.e-5, image_eq_model=False):
 		super(SimDecals, self).__init__(survey_dir=survey_dir, output_dir=output_dir)
-		self.DR= DR
+		self.dataset= dataset
 		self.metacat = metacat
 		self.simcat = simcat
 		# Additional options from command line
@@ -159,24 +158,24 @@ class SimDecals(LegacySurveyData):
 	#######
 	# see legacypipe/runs.py
 	def filter_ccds_files(self, fns):
-		if self.DR == 3:
+		if self.dataset == 'DR3':
 			return [fn for fn in fns if
 					('survey-ccds-decals.fits.gz' in fn  or
 					 'survey-ccds-nondecals.fits.gz' in fn or
 					 'survey-ccds-extra.fits.gz' in fn)]
-		elif self.DR == 4:
-			return [fn for fn in fns if
-					('survey-ccds-dr4-90prime.fits.gz' in fn or
-					'survey-ccds-dr4-mzlsv2.fits.gz' in fn)]
-		elif self.DR == 5:
+		#elif self.dataset == 'DR4':
+		#	return [fn for fn in fns if
+		#			('survey-ccds-dr4-90prime.fits.gz' in fn or
+		#			'survey-ccds-dr4-mzlsv2.fits.gz' in fn)]
+		elif self.dataset == 'DR5':
 			return fns
 
 	def ccds_for_fitting(self, brick, ccds):
-		if self.DR in [3,5]:
+		if self.dataset in ['DR3','DR5']:
 			return np.flatnonzero(ccds.camera == 'decam')
-		elif self.DR == 4:
-			return np.flatnonzero(np.logical_or(ccds.camera == 'mosaic',
-								  ccds.camera == '90prime'))
+		#elif self.dataset == 'DR4':
+		#	return np.flatnonzero(np.logical_or(ccds.camera == 'mosaic',
+		#						  ccds.camera == '90prime'))
 
 	def filter_ccd_kd_files(self, fns):
 		"""introduced in DR5"""
@@ -823,9 +822,10 @@ def get_parser():
     parser = argparse.ArgumentParser(formatter_class=argparse.
                                      ArgumentDefaultsHelpFormatter,
                                      description='DECaLS simulations.')
+    parser.add_argument('--dataset', type=str, choices=['DR5','DR3', 'DR3_eBOSS'], required=True, help='see definitions in obiwan/test/README.md') 
     parser.add_argument('-o', '--objtype', type=str, choices=['star','elg', 'lrg', 'qso'], default='star', required=True) 
     parser.add_argument('-b', '--brick', type=str, default='2428p117', required=True)
-    parser.add_argument('--DR', type=int, choices=[3,4,5], default=None,required=True)
+    parser.add_argument('--outdir', default='./', required=False)
     parser.add_argument('-n', '--nobj', type=int, default=500, metavar='', 
                         help='number of objects to simulate (required input)')
     parser.add_argument('-rs', '--rowstart', type=int, default=0, metavar='', 
@@ -990,8 +990,8 @@ def get_runbrick_setup(**kwargs):
       dict to use when calling legacypipe.runbrick.run_brick like
         run_brick(brickname, survey, `**dict`)		
     """
-    DR= kwargs['DR']
-    assert(DR in [3,4,5])
+    dataset= kwargs['dataset']
+    assert(dataset in ['DR5','DR3','DR3_eBOSS'])
     from legacypipe.runbrick import get_runbrick_kwargs
     from legacypipe.runbrick import get_parser as get_runbrick_parser
     zm= kwargs['zoom']
@@ -999,18 +999,16 @@ def get_runbrick_setup(**kwargs):
 	       '--zoom','%d' % zm[0],'%d' % zm[1],'%d' % zm[2],'%d' % zm[3],
 	       '--no-wise', '--threads','%d' % kwargs['threads']]
     if kwargs['early_coadds']:
-	cmd_line += ['--early-coadds']
+        cmd_line += ['--early-coadds']
     if kwargs['stage']:
-	cmd_line += ['--stage', '%s' % kwargs['stage']]
-    # Data-Release specific
-    if DR == 3:
-	cmd_line += ['--run', 'dr3', '--hybrid-psf','--nsigma', '6']
-    elif DR == 4:
-	cmd_line += ['--run', 'dr4v2', '--hybrid-psf','--nsigma', '6']
-    elif DR == 5:
-	# defaults: rex (use --simp), nsigma 6 ,hybrid-psf (--no-hybrid-psf otherwise)
-	# depth cut already done (use --depth-cut to do depth cut anyway)
-	cmd_line += ['--run', 'dr5'] 
+        cmd_line += ['--stage', '%s' % kwargs['stage']]
+    if dataset == 'DR3':
+        #cmd_line += ['--run', 'dr3', '--hybrid-psf','--nsigma', '6']
+        cmd_line += ['--run', 'dr3','--nsigma', '6']
+    elif dataset == 'DR5':
+        # defaults: rex (use --simp), nsigma 6 ,hybrid-psf (--no-hybrid-psf otherwise)
+        # depth cut already done (use --depth-cut to do depth cut anyway)
+        cmd_line += ['--run', 'dr5'] 
     
     rb_parser= get_runbrick_parser()
     rb_opt = rb_parser.parse_args(args=cmd_line)
@@ -1037,7 +1035,7 @@ def do_one_chunk(d=None):
       Nothing, but this func end ups writing out all the obiwan results 
     """
     assert(d is not None)
-    simdecals = SimDecals(DR=d['args'].DR,\
+    simdecals = SimDecals(dataset=d['args'].dataset,\
 			  metacat=d['metacat'], simcat=d['simcat'], output_dir=d['simcat_dir'], \
 			  add_sim_noise=d['args'].add_sim_noise, folding_threshold=d['args'].folding_threshold,\
 			  image_eq_model=d['args'].image_eq_model)
@@ -1159,10 +1157,7 @@ def main(args=None):
             return 0
 
     # Output dir
-    if 'DECALS_SIM_DIR' in os.environ:
-        decals_sim_dir = os.getenv('DECALS_SIM_DIR')
-    else:
-        decals_sim_dir = '.'
+    decals_sim_dir = args.outdir
         
     #nchunk = args.nchunk
     #rand = np.random.RandomState(args.seed) # determines seed for all chunks
@@ -1202,10 +1197,10 @@ def main(args=None):
 
     # Ra,dec,mag table
     print('before PSQL')
-    if True:
+    if False:
         # Non PSQL way
         #fn= get_sample_fn(brickname,decals_sim_dir,prefix=args.prefix)
-        fn=os.path.join(os.environ['DECALS_SIM_DIR'],
+        fn=os.path.join(decals_sim_dir,
                         'elg_randoms/rank_1_seed_1.fits') 
         Samp= fits_table(fn)
         Samp.rename('%s_rhalf' % objtype,'%s_re' % objtype)

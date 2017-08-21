@@ -1,0 +1,28 @@
+# README instrux
+export obiwan_data=$CSCRATCH/obiwan_data
+export obiwan_code=$CSCRATCH/obiwan_code
+export obiwan_conda=$CSCRATCH/obiwan_conda
+
+module use $obiwan_code/obiwan/etc/modulefiles
+module load obiwan_conda
+for name in dust unwise_coadds  unwise_coadds_timeresolved; do
+    module load $name
+done  
+export LEGACY_SURVEY_DIR=$obiwan_data/legacysurveydir_dr5
+
+# Non-install pacakges
+export PYTHONPATH=$obiwan_code/theValidator:${PYTHONPATH}
+export PYTHONPATH=$obiwan_code/legacypipe/py:${PYTHONPATH}
+export PYTHONPATH=$obiwan_code/obiwan/py:${PYTHONPATH}
+#export PYTHONPATH=.:${PYTHONPATH}
+
+# QDO
+export QDO_BATCH_PROFILE=$NERSC_HOST
+export QDO_BACKEND=postgres
+export QDO_DB_NAME=desirun
+export QDO_DB_HOST=scidb2.nersc.gov
+export QDO_DB_USER=desirun_admin
+export QDO_DB_PASS=32j2j253ss
+# directory from "which qdo" but without the trailing /bin/qdo, eg which qdo should give
+# $QDO_DIR/bin/qdo
+#export QDO_DIR=/global/cscratch1/sd/kaylanb/desiconda_kaylans/conda-envs/20170510-1.1.3
