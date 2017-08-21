@@ -1,7 +1,7 @@
 # Running Obiwan @ NERSC
 
 ### Setup
-Download the necessary repos
+Git clone the repos to a directory "obiwan_code"
 ```sh
 export obiwan_code=$CSCRATCH/obiwan_code
 mkdir $obiwan_code
@@ -14,14 +14,23 @@ git fetch
 git checkout dr5_wobiwan 
 ```
 
-and configuration data.
+Wget dataset files
 ```sh
 $ export obiwan_data=$CSCRATCH/obiwan_data
 $ mkdir $obiwan_data
 $ cd $obiwan_data
 $ wget http://portal.nersc.gov/project/desi/users/kburleigh/obiwan/legacysurveydirs.tar.gz
-$ tar -xzvf legacysurveydirs.tar.gz 
+$ tar -xzvf legacysurveydirs.tar.gz
 ```
+
+Dust map files
+```sh
+$ mkdir -p $obiwan_data/dust/maps
+$ cd $obiwan_data/dust/maps
+$ wget -c http://portal.nersc.gov/project/cosmo/temp/dstn/travis-ci/maps/SFD_dust_4096_ngp.fits
+$ wget -c http://portal.nersc.gov/project/cosmo/temp/dstn/travis-ci/maps/SFD_dust_4096_sgp.fits
+```
+
 
 Module load the conda environment for obiwan. I created it using Ted Kisner's [desiconda](https://github.com/desihub/desiconda.git) package and installing a few extra packages like "pytest". You simply grab the (bashrc_obiwan)[https://github.com/legacysurvey/obiwan/blob/master/bin/run_atnersc/bashrc_obiwan]
  file from the obiwan repo and source it. From a clean environment on Cori,

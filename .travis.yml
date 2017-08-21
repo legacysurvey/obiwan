@@ -125,13 +125,12 @@ before_script:
     - export PYTHONPATH=$HOME/obiwan/py:$PYTHONPATH
 
 script:
-  - cd $HOME/obiwan
-  - pytest --cov --ignore py/obiwan/test/end_to_end
-  #- python -c "import galsim; print(galsim.__file__)"
+  #- cd $HOME/obiwan
+  #- pytest --cov --ignore py/obiwan/test/end_to_end
+  cd $HOME/obiwan/py/obiwan
+  pytest --cov=test/ --cov-config=test/.coveragerc --ignore=test/end_to_end test/
+  # pytest --cov=test/end_to_end/test_dataset_DR3.py test/end_to_end/test_dataset_DR3.py -p no:warnings
   #- coverage run obiwan/test/print_test.py test
-#  - export PYTHONPATH=${PYTHONPATH}:$(pwd)/py:$HOME/astrometry.net
-#  - cd py
-#  - coverage run obiwan/test/obiwan_test_suite.py test
 
 after_success:
   - coveralls

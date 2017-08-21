@@ -4,10 +4,11 @@ export obiwan_code=$CSCRATCH/obiwan_code
 
 module use $obiwan_code/obiwan/etc/modulefiles
 module load obiwan_conda
-for name in dust unwise_coadds  unwise_coadds_timeresolved; do
+for name in unwise_coadds unwise_coadds_timeresolved; do
     module load $name
 done  
 export LEGACY_SURVEY_DIR=$obiwan_data/legacysurveydir_dr5
+export DUST_DIR=$obiwan_data/dust
 
 # Non-install pacakges
 export PYTHONPATH=$obiwan_code/theValidator:${PYTHONPATH}

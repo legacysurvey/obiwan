@@ -335,11 +335,10 @@ class SimImage(DecamImage):
 
 				# Stamp ivar can get messed up at edges
 				# especially when needed stamp smaller than args.stamp_size
-				cent= ivarstamp.array.shape[0]/2
-				med= np.median(ivarstamp.array[cent-2:cent+2,cent-2:cent+2].flatten() )
+				cent= int( min(ivarstamp.array.shape)/2 )
+    				med= np.median(ivarstamp.array[cent-2:cent+2,cent-2:cent+2].flatten() )
 				# 100x median fainter gets majority of star,qso OR elg,lrg profile
 				ivarstamp.array[ ivarstamp.array > 100 * med ] = 0.
-
 				# Add stamp to image
 				back= tim_image[overlap].copy()
 				tim_image[overlap] = back.copy() + stamp.copy()
@@ -830,6 +829,7 @@ def get_parser():
                         help='number of objects to simulate (required input)')
     parser.add_argument('-rs', '--rowstart', type=int, default=0, metavar='', 
                         help='zero indexed, row of ra,dec,mags table, after it is cut to brick, to start on')
+    parser.add_argument('--randoms_from_fits', default=None, help='set to read randoms from fits file instead of scidb2.nersc.gov db, set to absolute path of local fits file on computer')
     parser.add_argument('--prefix', type=str, default='', metavar='', 
                         help='tells which input sample to use')
     #parser.add_argument('-ic', '--ith_chunk', type=long, default=None, metavar='', 
@@ -855,7 +855,7 @@ def get_parser():
                         type=str, default=None, metavar='', help='Run up to the given stage')
     parser.add_argument('--early_coadds', action='store_true',default=False,
                         help='add this option to make the JPGs before detection/model fitting')
-    parser.add_argument('--cutouts', action='store_true',
+    parser.add_argument('--cutouts', action='store_true',default=False,
                         help='Stop after stage tims and save .npy cutouts of every simulated source')
     parser.add_argument('--stamp_size', type=int,action='store',default=64,\
                         help='Stamp/Cutout size in pixels')
@@ -1124,7 +1124,6 @@ def main(args=None):
         pass 
     # Print calling sequence
     print('Args:', args)   
- 
     if args.cutouts:
         args.stage = 'tims'
     # Setup loggers
@@ -1197,12 +1196,12 @@ def main(args=None):
 
     # Ra,dec,mag table
     print('before PSQL')
-    if False:
+    if args.randoms_from_fits:
         # Non PSQL way
         #fn= get_sample_fn(brickname,decals_sim_dir,prefix=args.prefix)
-        fn=os.path.join(decals_sim_dir,
-                        'elg_randoms/rank_1_seed_1.fits') 
-        Samp= fits_table(fn)
+        #fn=os.path.join(decals_sim_dir,
+        #                'elg_randoms/rank_1_seed_1.fits') 
+        Samp= fits_table(args.randoms_from_fits)
         Samp.rename('%s_rhalf' % objtype,'%s_re' % objtype)
     else:
         Samp= getSrcsInBrick(brickname,objtype)

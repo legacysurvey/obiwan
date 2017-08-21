@@ -17,9 +17,12 @@ The Docs are built locally from these [instructions](https://github.com/legacysu
 At [NERSC](http://www.nersc.gov/)
 * see [instructions](https://github.com/legacysurvey/obiwan/blob/master/bin/run_atnersc/README.md)
 
+# Databases
 
-License
-=======
+Randoms are stored in this PSQL database
+/usr/bin/psql -U desi_user -d desi -h scidb2.nersc.gov
+
+# License
 
 obiwan is free software licensed under a 3-clause BSD-style license. For details see
 the ``LICENSE.rst`` file.
