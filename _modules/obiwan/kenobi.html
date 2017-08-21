@@ -143,88 +143,86 @@
                                    <span class="c1">#&#39;rs%d&#39; % kwargs[&#39;rowst&#39;])</span>
 
 <div class="viewcode-block" id="SimDecals"><a class="viewcode-back" href="../../index.html#obiwan.kenobi.SimDecals">[docs]</a><span class="k">class</span> <span class="nc">SimDecals</span><span class="p">(</span><span class="n">LegacySurveyData</span><span class="p">):</span>
-	<span class="sd">&quot;&quot;&quot;Top level object that specifying which data to run through pipeline</span>
+    <span class="sd">&quot;&quot;&quot;Top level object that specifying which data to run through pipeline</span>
+<span class="sd">    </span>
+<span class="sd">    Same behavior as legacypipe.runs.Dr3DecalsSurvey which chooses which</span>
+<span class="sd">      CCDs to include. But this also stores all the relevant obiwan</span>
+<span class="sd">      objects</span>
+<span class="sd">    </span>
+<span class="sd">    Args:</span>
+<span class="sd">      dataset: see definition in </span>
+<span class="sd">        https://github.com/legacysurvey/obiwan/blob/master/py/obiwan/test/end_to_end/README.md </span>
+<span class="sd">      survey_dir: as used by legacypipe.runbrick.run_brick()</span>
+<span class="sd">        Defaults to $LEGACY_SURVEY_DIR environment variable.  Where to look for</span>
+<span class="sd">        files including calibration files, tables of CCDs and bricks, image data</span>
+<span class="sd">      metacat: fits_table </span>
+<span class="sd">        configuration-like params for the simulated sources</span>
+<span class="sd">      simcat: fits_table</span>
+<span class="sd">        simulated source catalog for a given brick (not CCD).</span>
+<span class="sd">      output_dir: legacypipe&#39;s outdir</span>
+<span class="sd">      add_sim_noise: add Poisson noise from the simulated source to the image </span>
+<span class="sd">      folding_threshold: how close the simulated source flux is to the requested flux</span>
+<span class="sd">        make smaller to increase simulated source flux/requested flux</span>
+<span class="sd">      image_eq_model: referred to as &#39;testA&#39;</span>
+<span class="sd">        wherever add a simulated source, replace both image and invvar of the image</span>
+<span class="sd">        with that of the simulated source only</span>
 
-<span class="sd">	Same behavior as legacypipe.runs.Dr3DecalsSurvey which chooses which</span>
-<span class="sd">		CCDs to include. But this also stores all the relevant obiwan</span>
-<span class="sd">		objects</span>
-
-<span class="sd">	Args:</span>
-<span class="sd">		DR: which Data-Release to consider. e.g. if DR=3, then only </span>
-<span class="sd">			images included in DR3 will be considered </span>
-<span class="sd">		survey_dir: as used by legacypipe.runbrick.run_brick()</span>
-<span class="sd">			Defaults to $LEGACY_SURVEY_DIR environment variable.  Where to look for</span>
-<span class="sd">			files including calibration files, tables of CCDs and bricks, image data</span>
-<span class="sd">		metacat: fits_table </span>
-<span class="sd">			configuration-like params for the simulated sources</span>
-<span class="sd">		simcat: fits_table</span>
-<span class="sd">			simulated source catalog for a given brick (not CCD).</span>
-<span class="sd">		output_dir: legacypipe&#39;s outdir</span>
-<span class="sd">		add_sim_noise: add Poisson noise from the simulated source to the image </span>
-<span class="sd">		folding_threshold: how close the simulated source flux is to the requested flux</span>
-<span class="sd">			make smaller to increase simulated source flux/requested flux</span>
-<span class="sd">		image_eq_model: referred to as &#39;testA&#39;</span>
-<span class="sd">			wherever add a simulated source, replace both image and invvar of the image</span>
-<span class="sd">			with that of the simulated source only</span>
-
-<span class="sd">	Attributes:</span>
-<span class="sd">		DR: which Data-Release to consider. e.g. if DR=3, then only </span>
-<span class="sd">			images included in DR3 will be considered </span>
-<span class="sd">		metacat: fits_table </span>
-<span class="sd">			configuration-like params for the simulated sources</span>
-<span class="sd">		simcat: fits_table</span>
-<span class="sd">			simulated source catalog for a given brick (not CCD).</span>
-<span class="sd">		output_dir: legacypipe&#39;s outdir</span>
-<span class="sd">		add_sim_noise: add Poisson noise from the simulated source to the image </span>
-<span class="sd">		folding_threshold: how close the simulated source flux is to the requested flux</span>
-<span class="sd">			make smaller to increase simulated source flux/requested flux</span>
-<span class="sd">		image_eq_model: referred to as &#39;testA&#39;</span>
-<span class="sd">			wherever add a simulated source, replace both image and invvar of the image</span>
-<span class="sd">			with that of the simulated source only</span>
-<span class="sd">	&quot;&quot;&quot;</span>
-
-	<span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">DR</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">survey_dir</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">metacat</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">simcat</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">output_dir</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>\
-					   <span class="n">add_sim_noise</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">folding_threshold</span><span class="o">=</span><span class="mf">1.e-5</span><span class="p">,</span> <span class="n">image_eq_model</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
-		<span class="nb">super</span><span class="p">(</span><span class="n">SimDecals</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">survey_dir</span><span class="o">=</span><span class="n">survey_dir</span><span class="p">,</span> <span class="n">output_dir</span><span class="o">=</span><span class="n">output_dir</span><span class="p">)</span>
-		<span class="bp">self</span><span class="o">.</span><span class="n">DR</span><span class="o">=</span> <span class="n">DR</span>
-		<span class="bp">self</span><span class="o">.</span><span class="n">metacat</span> <span class="o">=</span> <span class="n">metacat</span>
-		<span class="bp">self</span><span class="o">.</span><span class="n">simcat</span> <span class="o">=</span> <span class="n">simcat</span>
-		<span class="c1"># Additional options from command line</span>
-		<span class="bp">self</span><span class="o">.</span><span class="n">add_sim_noise</span><span class="o">=</span> <span class="n">add_sim_noise</span>
-		<span class="bp">self</span><span class="o">.</span><span class="n">folding_threshold</span><span class="o">=</span> <span class="n">folding_threshold</span>
-		<span class="bp">self</span><span class="o">.</span><span class="n">image_eq_model</span><span class="o">=</span> <span class="n">image_eq_model</span>
-		<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;SimDecals: self.image_eq_model=&#39;</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">image_eq_model</span><span class="p">)</span>
-
-	<span class="k">def</span> <span class="nf">get_image_object</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">t</span><span class="p">):</span>
-		<span class="k">return</span> <span class="n">SimImage</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">t</span><span class="p">)</span>
-
-	<span class="c1">#######</span>
-	<span class="c1"># see legacypipe/runs.py</span>
-	<span class="k">def</span> <span class="nf">filter_ccds_files</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fns</span><span class="p">):</span>
-		<span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">DR</span> <span class="o">==</span> <span class="mi">3</span><span class="p">:</span>
-			<span class="k">return</span> <span class="p">[</span><span class="n">fn</span> <span class="k">for</span> <span class="n">fn</span> <span class="ow">in</span> <span class="n">fns</span> <span class="k">if</span>
-					<span class="p">(</span><span class="s1">&#39;survey-ccds-decals.fits.gz&#39;</span> <span class="ow">in</span> <span class="n">fn</span>  <span class="ow">or</span>
-					 <span class="s1">&#39;survey-ccds-nondecals.fits.gz&#39;</span> <span class="ow">in</span> <span class="n">fn</span> <span class="ow">or</span>
-					 <span class="s1">&#39;survey-ccds-extra.fits.gz&#39;</span> <span class="ow">in</span> <span class="n">fn</span><span class="p">)]</span>
-		<span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">DR</span> <span class="o">==</span> <span class="mi">4</span><span class="p">:</span>
-			<span class="k">return</span> <span class="p">[</span><span class="n">fn</span> <span class="k">for</span> <span class="n">fn</span> <span class="ow">in</span> <span class="n">fns</span> <span class="k">if</span>
-					<span class="p">(</span><span class="s1">&#39;survey-ccds-dr4-90prime.fits.gz&#39;</span> <span class="ow">in</span> <span class="n">fn</span> <span class="ow">or</span>
-					<span class="s1">&#39;survey-ccds-dr4-mzlsv2.fits.gz&#39;</span> <span class="ow">in</span> <span class="n">fn</span><span class="p">)]</span>
-		<span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">DR</span> <span class="o">==</span> <span class="mi">5</span><span class="p">:</span>
-			<span class="k">return</span> <span class="n">fns</span>
-
-	<span class="k">def</span> <span class="nf">ccds_for_fitting</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">brick</span><span class="p">,</span> <span class="n">ccds</span><span class="p">):</span>
-		<span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">DR</span> <span class="ow">in</span> <span class="p">[</span><span class="mi">3</span><span class="p">,</span><span class="mi">5</span><span class="p">]:</span>
-			<span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">flatnonzero</span><span class="p">(</span><span class="n">ccds</span><span class="o">.</span><span class="n">camera</span> <span class="o">==</span> <span class="s1">&#39;decam&#39;</span><span class="p">)</span>
-		<span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">DR</span> <span class="o">==</span> <span class="mi">4</span><span class="p">:</span>
-			<span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">flatnonzero</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">logical_or</span><span class="p">(</span><span class="n">ccds</span><span class="o">.</span><span class="n">camera</span> <span class="o">==</span> <span class="s1">&#39;mosaic&#39;</span><span class="p">,</span>
-								  <span class="n">ccds</span><span class="o">.</span><span class="n">camera</span> <span class="o">==</span> <span class="s1">&#39;90prime&#39;</span><span class="p">))</span>
-
-<div class="viewcode-block" id="SimDecals.filter_ccd_kd_files"><a class="viewcode-back" href="../../index.html#obiwan.kenobi.SimDecals.filter_ccd_kd_files">[docs]</a>	<span class="k">def</span> <span class="nf">filter_ccd_kd_files</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fns</span><span class="p">):</span>
-		<span class="sd">&quot;&quot;&quot;introduced in DR5&quot;&quot;&quot;</span>
-		<span class="k">return</span> <span class="p">[]</span></div></div>
-	<span class="c1">#######</span>
-
+<span class="sd">    Attributes:</span>
+<span class="sd">      DR: see above </span>
+<span class="sd">      metacat: fits_table </span>
+<span class="sd">        configuration-like params for the simulated sources</span>
+<span class="sd">      simcat: fits_table</span>
+<span class="sd">        simulated source catalog for a given brick (not CCD).</span>
+<span class="sd">      output_dir: legacypipe&#39;s outdir</span>
+<span class="sd">      add_sim_noise: add Poisson noise from the simulated source to the image </span>
+<span class="sd">      folding_threshold: how close the simulated source flux is to the requested flux</span>
+<span class="sd">        make smaller to increase simulated source flux/requested flux</span>
+<span class="sd">      image_eq_model: referred to as &#39;testA&#39;</span>
+<span class="sd">        wherever add a simulated source, replace both image and invvar of the image</span>
+<span class="sd">        with that of the simulated source only</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dataset</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">survey_dir</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">metacat</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">simcat</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">output_dir</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>\
+		 <span class="n">add_sim_noise</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">folding_threshold</span><span class="o">=</span><span class="mf">1.e-5</span><span class="p">,</span> <span class="n">image_eq_model</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">SimDecals</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">survey_dir</span><span class="o">=</span><span class="n">survey_dir</span><span class="p">,</span> <span class="n">output_dir</span><span class="o">=</span><span class="n">output_dir</span><span class="p">)</span>
+	<span class="bp">self</span><span class="o">.</span><span class="n">dataset</span><span class="o">=</span> <span class="n">dataset</span>
+	<span class="bp">self</span><span class="o">.</span><span class="n">metacat</span> <span class="o">=</span> <span class="n">metacat</span>
+	<span class="bp">self</span><span class="o">.</span><span class="n">simcat</span> <span class="o">=</span> <span class="n">simcat</span>
+	<span class="c1"># Additional options from command line</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">add_sim_noise</span><span class="o">=</span> <span class="n">add_sim_noise</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">folding_threshold</span><span class="o">=</span> <span class="n">folding_threshold</span>
+	<span class="bp">self</span><span class="o">.</span><span class="n">image_eq_model</span><span class="o">=</span> <span class="n">image_eq_model</span>
+	<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;SimDecals: self.image_eq_model=&#39;</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">image_eq_model</span><span class="p">)</span>
+        
+    <span class="k">def</span> <span class="nf">get_image_object</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">t</span><span class="p">):</span>
+	<span class="k">return</span> <span class="n">SimImage</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">t</span><span class="p">)</span>
+    
+    <span class="c1">#######</span>
+    <span class="c1"># see legacypipe/runs.py</span>
+    <span class="k">def</span> <span class="nf">filter_ccds_files</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fns</span><span class="p">):</span>
+	<span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">dataset</span> <span class="o">==</span> <span class="s1">&#39;DR3&#39;</span><span class="p">:</span>
+	    <span class="k">return</span> <span class="p">[</span><span class="n">fn</span> <span class="k">for</span> <span class="n">fn</span> <span class="ow">in</span> <span class="n">fns</span> <span class="k">if</span>
+		    <span class="p">(</span><span class="s1">&#39;survey-ccds-decals.fits.gz&#39;</span> <span class="ow">in</span> <span class="n">fn</span>  <span class="ow">or</span>
+		     <span class="s1">&#39;survey-ccds-nondecals.fits.gz&#39;</span> <span class="ow">in</span> <span class="n">fn</span> <span class="ow">or</span>
+		     <span class="s1">&#39;survey-ccds-extra.fits.gz&#39;</span> <span class="ow">in</span> <span class="n">fn</span><span class="p">)]</span>
+	<span class="c1">#elif self.dataset == &#39;DR4&#39;:</span>
+        <span class="c1">#	return [fn for fn in fns if</span>
+        <span class="c1">#			(&#39;survey-ccds-dr4-90prime.fits.gz&#39; in fn or</span>
+        <span class="c1">#			&#39;survey-ccds-dr4-mzlsv2.fits.gz&#39; in fn)]</span>
+	<span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">dataset</span> <span class="o">==</span> <span class="s1">&#39;DR5&#39;</span><span class="p">:</span>
+	    <span class="k">return</span> <span class="n">fns</span>
+    
+    <span class="k">def</span> <span class="nf">ccds_for_fitting</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">brick</span><span class="p">,</span> <span class="n">ccds</span><span class="p">):</span>
+	<span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">dataset</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;DR3&#39;</span><span class="p">,</span><span class="s1">&#39;DR5&#39;</span><span class="p">]:</span>
+	    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">flatnonzero</span><span class="p">(</span><span class="n">ccds</span><span class="o">.</span><span class="n">camera</span> <span class="o">==</span> <span class="s1">&#39;decam&#39;</span><span class="p">)</span>
+	<span class="c1">#elif self.dataset == &#39;DR4&#39;:</span>
+        <span class="c1">#	return np.flatnonzero(np.logical_or(ccds.camera == &#39;mosaic&#39;,</span>
+	<span class="c1">#						  ccds.camera == &#39;90prime&#39;))</span>
+    
+<div class="viewcode-block" id="SimDecals.filter_ccd_kd_files"><a class="viewcode-back" href="../../index.html#obiwan.kenobi.SimDecals.filter_ccd_kd_files">[docs]</a>    <span class="k">def</span> <span class="nf">filter_ccd_kd_files</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fns</span><span class="p">):</span>
+	<span class="sd">&quot;&quot;&quot;introduced in DR5&quot;&quot;&quot;</span>
+	<span class="k">return</span> <span class="p">[]</span></div></div>
+    
 <div class="viewcode-block" id="get_srcimg_invvar"><a class="viewcode-back" href="../../index.html#obiwan.kenobi.get_srcimg_invvar">[docs]</a><span class="k">def</span> <span class="nf">get_srcimg_invvar</span><span class="p">(</span><span class="n">stamp_ivar</span><span class="p">,</span><span class="n">img_ivar</span><span class="p">):</span>
     <span class="sd">&#39;&#39;&#39;stamp_ivar, img_ivar -- galsim Image objects&#39;&#39;&#39;</span>
     <span class="c1"># Use img_ivar when stamp_ivar == 0, both otherwise</span>
@@ -281,6 +279,13 @@
 	<span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">survey</span><span class="p">,</span> <span class="n">t</span><span class="p">):</span>
 		<span class="nb">super</span><span class="p">(</span><span class="n">SimImage</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">survey</span><span class="p">,</span> <span class="n">t</span><span class="p">)</span>
 		<span class="bp">self</span><span class="o">.</span><span class="n">t</span> <span class="o">=</span> <span class="n">t</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">survey</span><span class="o">.</span><span class="n">dataset</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;DR3&#39;</span><span class="p">,</span><span class="s1">&#39;DR3_eBOSS&#39;</span><span class="p">]:</span>
+                    <span class="k">assert</span><span class="p">(</span><span class="s1">&#39;arawgain&#39;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">t</span><span class="o">.</span><span class="n">get_columns</span><span class="p">())</span>
+                    <span class="k">assert</span><span class="p">(</span><span class="ow">not</span> <span class="s1">&#39;gain&#39;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">t</span><span class="o">.</span><span class="n">get_columns</span><span class="p">())</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">t</span><span class="o">.</span><span class="n">rename</span><span class="p">(</span><span class="s1">&#39;arawgain&#39;</span><span class="p">,</span> <span class="s1">&#39;gain&#39;</span><span class="p">)</span>
+                <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">survey</span><span class="o">.</span><span class="n">dataset</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;DR5&#39;</span><span class="p">]:</span>
+                    <span class="k">assert</span> <span class="s1">&#39;gain&#39;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">t</span><span class="o">.</span><span class="n">get_columns</span><span class="p">()</span>
+                    
 
 	<span class="k">def</span> <span class="nf">get_tractor_image</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
 		<span class="n">tim</span> <span class="o">=</span> <span class="nb">super</span><span class="p">(</span><span class="n">SimImage</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">get_tractor_image</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
@@ -294,9 +299,9 @@
 		<span class="c1">#    seed = None</span>
 
 		<span class="n">objtype</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">survey</span><span class="o">.</span><span class="n">metacat</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;objtype&#39;</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
-		<span class="n">objstamp</span> <span class="o">=</span> <span class="n">BuildStamp</span><span class="p">(</span><span class="n">tim</span><span class="p">,</span> <span class="n">gain</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">t</span><span class="o">.</span><span class="n">arawgain</span><span class="p">,</span> \
-							  <span class="n">folding_threshold</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">survey</span><span class="o">.</span><span class="n">folding_threshold</span><span class="p">,</span>\
-							  <span class="n">stamp_size</span><span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">survey</span><span class="o">.</span><span class="n">metacat</span><span class="o">.</span><span class="n">stamp_size</span><span class="p">)</span>
+		<span class="n">objstamp</span> <span class="o">=</span> <span class="n">BuildStamp</span><span class="p">(</span><span class="n">tim</span><span class="p">,</span> <span class="n">gain</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">t</span><span class="o">.</span><span class="n">gain</span><span class="p">,</span> \
+				      <span class="n">folding_threshold</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">survey</span><span class="o">.</span><span class="n">folding_threshold</span><span class="p">,</span>\
+				      <span class="n">stamp_size</span><span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">survey</span><span class="o">.</span><span class="n">metacat</span><span class="o">.</span><span class="n">stamp_size</span><span class="p">)</span>
 
 		<span class="c1"># Grab the data and inverse variance images [nanomaggies!]</span>
 		<span class="n">tim_image</span> <span class="o">=</span> <span class="n">galsim</span><span class="o">.</span><span class="n">Image</span><span class="p">(</span><span class="n">tim</span><span class="o">.</span><span class="n">getImage</span><span class="p">())</span>
@@ -378,11 +383,10 @@
 
 				<span class="c1"># Stamp ivar can get messed up at edges</span>
 				<span class="c1"># especially when needed stamp smaller than args.stamp_size</span>
-				<span class="n">cent</span><span class="o">=</span> <span class="n">ivarstamp</span><span class="o">.</span><span class="n">array</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">/</span><span class="mi">2</span>
-				<span class="n">med</span><span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">median</span><span class="p">(</span><span class="n">ivarstamp</span><span class="o">.</span><span class="n">array</span><span class="p">[</span><span class="n">cent</span><span class="o">-</span><span class="mi">2</span><span class="p">:</span><span class="n">cent</span><span class="o">+</span><span class="mi">2</span><span class="p">,</span><span class="n">cent</span><span class="o">-</span><span class="mi">2</span><span class="p">:</span><span class="n">cent</span><span class="o">+</span><span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">flatten</span><span class="p">()</span> <span class="p">)</span>
+				<span class="n">cent</span><span class="o">=</span> <span class="nb">int</span><span class="p">(</span> <span class="nb">min</span><span class="p">(</span><span class="n">ivarstamp</span><span class="o">.</span><span class="n">array</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span><span class="o">/</span><span class="mi">2</span> <span class="p">)</span>
+    				<span class="n">med</span><span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">median</span><span class="p">(</span><span class="n">ivarstamp</span><span class="o">.</span><span class="n">array</span><span class="p">[</span><span class="n">cent</span><span class="o">-</span><span class="mi">2</span><span class="p">:</span><span class="n">cent</span><span class="o">+</span><span class="mi">2</span><span class="p">,</span><span class="n">cent</span><span class="o">-</span><span class="mi">2</span><span class="p">:</span><span class="n">cent</span><span class="o">+</span><span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">flatten</span><span class="p">()</span> <span class="p">)</span>
 				<span class="c1"># 100x median fainter gets majority of star,qso OR elg,lrg profile</span>
 				<span class="n">ivarstamp</span><span class="o">.</span><span class="n">array</span><span class="p">[</span> <span class="n">ivarstamp</span><span class="o">.</span><span class="n">array</span> <span class="o">&gt;</span> <span class="mi">100</span> <span class="o">*</span> <span class="n">med</span> <span class="p">]</span> <span class="o">=</span> <span class="mf">0.</span>
-
 				<span class="c1"># Add stamp to image</span>
 				<span class="n">back</span><span class="o">=</span> <span class="n">tim_image</span><span class="p">[</span><span class="n">overlap</span><span class="p">]</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
 				<span class="n">tim_image</span><span class="p">[</span><span class="n">overlap</span><span class="p">]</span> <span class="o">=</span> <span class="n">back</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span> <span class="o">+</span> <span class="n">stamp</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
@@ -533,7 +537,7 @@
 		<span class="c1">#else:</span>
 		<span class="c1">#    self.gsdeviate = galsim.BaseDeviate(seed)</span>
 
-		<span class="bp">self</span><span class="o">.</span><span class="n">wcs</span> <span class="o">=</span> <span class="n">tim</span><span class="o">.</span><span class="n">getWcs</span><span class="p">()</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">wcs</span> <span class="o">=</span> <span class="n">tim</span><span class="o">.</span><span class="n">getWcs</span><span class="p">()</span>
 		<span class="bp">self</span><span class="o">.</span><span class="n">psf</span> <span class="o">=</span> <span class="n">tim</span><span class="o">.</span><span class="n">getPsf</span><span class="p">()</span>
 		<span class="c1"># Tractor wcs object -&gt; galsim wcs object</span>
 		<span class="n">temp_hdr</span> <span class="o">=</span> <span class="n">FITSHDR</span><span class="p">()</span>
@@ -865,13 +869,15 @@
     <span class="n">parser</span> <span class="o">=</span> <span class="n">argparse</span><span class="o">.</span><span class="n">ArgumentParser</span><span class="p">(</span><span class="n">formatter_class</span><span class="o">=</span><span class="n">argparse</span><span class="o">.</span>
                                      <span class="n">ArgumentDefaultsHelpFormatter</span><span class="p">,</span>
                                      <span class="n">description</span><span class="o">=</span><span class="s1">&#39;DECaLS simulations.&#39;</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;--dataset&#39;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">str</span><span class="p">,</span> <span class="n">choices</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;DR5&#39;</span><span class="p">,</span><span class="s1">&#39;DR3&#39;</span><span class="p">,</span> <span class="s1">&#39;DR3_eBOSS&#39;</span><span class="p">],</span> <span class="n">required</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s1">&#39;see definitions in obiwan/test/README.md&#39;</span><span class="p">)</span> 
     <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;-o&#39;</span><span class="p">,</span> <span class="s1">&#39;--objtype&#39;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">str</span><span class="p">,</span> <span class="n">choices</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;star&#39;</span><span class="p">,</span><span class="s1">&#39;elg&#39;</span><span class="p">,</span> <span class="s1">&#39;lrg&#39;</span><span class="p">,</span> <span class="s1">&#39;qso&#39;</span><span class="p">],</span> <span class="n">default</span><span class="o">=</span><span class="s1">&#39;star&#39;</span><span class="p">,</span> <span class="n">required</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span> 
     <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;-b&#39;</span><span class="p">,</span> <span class="s1">&#39;--brick&#39;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">str</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s1">&#39;2428p117&#39;</span><span class="p">,</span> <span class="n">required</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;--DR&#39;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span> <span class="n">choices</span><span class="o">=</span><span class="p">[</span><span class="mi">3</span><span class="p">,</span><span class="mi">4</span><span class="p">,</span><span class="mi">5</span><span class="p">],</span> <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span><span class="n">required</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;--outdir&#39;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s1">&#39;./&#39;</span><span class="p">,</span> <span class="n">required</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
     <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;-n&#39;</span><span class="p">,</span> <span class="s1">&#39;--nobj&#39;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mi">500</span><span class="p">,</span> <span class="n">metavar</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">,</span> 
                         <span class="n">help</span><span class="o">=</span><span class="s1">&#39;number of objects to simulate (required input)&#39;</span><span class="p">)</span>
     <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;-rs&#39;</span><span class="p">,</span> <span class="s1">&#39;--rowstart&#39;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">metavar</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">,</span> 
                         <span class="n">help</span><span class="o">=</span><span class="s1">&#39;zero indexed, row of ra,dec,mags table, after it is cut to brick, to start on&#39;</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;--randoms_from_fits&#39;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s1">&#39;set to read randoms from fits file instead of scidb2.nersc.gov db, set to absolute path of local fits file on computer&#39;</span><span class="p">)</span>
     <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;--prefix&#39;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">str</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="n">metavar</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">,</span> 
                         <span class="n">help</span><span class="o">=</span><span class="s1">&#39;tells which input sample to use&#39;</span><span class="p">)</span>
     <span class="c1">#parser.add_argument(&#39;-ic&#39;, &#39;--ith_chunk&#39;, type=long, default=None, metavar=&#39;&#39;, </span>
@@ -897,7 +903,7 @@
                         <span class="nb">type</span><span class="o">=</span><span class="nb">str</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">metavar</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s1">&#39;Run up to the given stage&#39;</span><span class="p">)</span>
     <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;--early_coadds&#39;</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="s1">&#39;store_true&#39;</span><span class="p">,</span><span class="n">default</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
                         <span class="n">help</span><span class="o">=</span><span class="s1">&#39;add this option to make the JPGs before detection/model fitting&#39;</span><span class="p">)</span>
-    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;--cutouts&#39;</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="s1">&#39;store_true&#39;</span><span class="p">,</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;--cutouts&#39;</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="s1">&#39;store_true&#39;</span><span class="p">,</span><span class="n">default</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
                         <span class="n">help</span><span class="o">=</span><span class="s1">&#39;Stop after stage tims and save .npy cutouts of every simulated source&#39;</span><span class="p">)</span>
     <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;--stamp_size&#39;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span><span class="n">action</span><span class="o">=</span><span class="s1">&#39;store&#39;</span><span class="p">,</span><span class="n">default</span><span class="o">=</span><span class="mi">64</span><span class="p">,</span>\
                         <span class="n">help</span><span class="o">=</span><span class="s1">&#39;Stamp/Cutout size in pixels&#39;</span><span class="p">)</span>
@@ -1032,8 +1038,8 @@
 <span class="sd">      dict to use when calling legacypipe.runbrick.run_brick like</span>
 <span class="sd">        run_brick(brickname, survey, `**dict`)		</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">DR</span><span class="o">=</span> <span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;DR&#39;</span><span class="p">]</span>
-    <span class="k">assert</span><span class="p">(</span><span class="n">DR</span> <span class="ow">in</span> <span class="p">[</span><span class="mi">3</span><span class="p">,</span><span class="mi">4</span><span class="p">,</span><span class="mi">5</span><span class="p">])</span>
+    <span class="n">dataset</span><span class="o">=</span> <span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;dataset&#39;</span><span class="p">]</span>
+    <span class="k">assert</span><span class="p">(</span><span class="n">dataset</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;DR5&#39;</span><span class="p">,</span><span class="s1">&#39;DR3&#39;</span><span class="p">,</span><span class="s1">&#39;DR3_eBOSS&#39;</span><span class="p">])</span>
     <span class="kn">from</span> <span class="nn">legacypipe.runbrick</span> <span class="k">import</span> <span class="n">get_runbrick_kwargs</span>
     <span class="kn">from</span> <span class="nn">legacypipe.runbrick</span> <span class="k">import</span> <span class="n">get_parser</span> <span class="k">as</span> <span class="n">get_runbrick_parser</span>
     <span class="n">zm</span><span class="o">=</span> <span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;zoom&#39;</span><span class="p">]</span>
@@ -1041,18 +1047,16 @@
 	       <span class="s1">&#39;--zoom&#39;</span><span class="p">,</span><span class="s1">&#39;</span><span class="si">%d</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="n">zm</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="s1">&#39;</span><span class="si">%d</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="n">zm</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span><span class="s1">&#39;</span><span class="si">%d</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="n">zm</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span><span class="s1">&#39;</span><span class="si">%d</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="n">zm</span><span class="p">[</span><span class="mi">3</span><span class="p">],</span>
 	       <span class="s1">&#39;--no-wise&#39;</span><span class="p">,</span> <span class="s1">&#39;--threads&#39;</span><span class="p">,</span><span class="s1">&#39;</span><span class="si">%d</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;threads&#39;</span><span class="p">]]</span>
     <span class="k">if</span> <span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;early_coadds&#39;</span><span class="p">]:</span>
-	<span class="n">cmd_line</span> <span class="o">+=</span> <span class="p">[</span><span class="s1">&#39;--early-coadds&#39;</span><span class="p">]</span>
+        <span class="n">cmd_line</span> <span class="o">+=</span> <span class="p">[</span><span class="s1">&#39;--early-coadds&#39;</span><span class="p">]</span>
     <span class="k">if</span> <span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;stage&#39;</span><span class="p">]:</span>
-	<span class="n">cmd_line</span> <span class="o">+=</span> <span class="p">[</span><span class="s1">&#39;--stage&#39;</span><span class="p">,</span> <span class="s1">&#39;</span><span class="si">%s</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;stage&#39;</span><span class="p">]]</span>
-    <span class="c1"># Data-Release specific</span>
-    <span class="k">if</span> <span class="n">DR</span> <span class="o">==</span> <span class="mi">3</span><span class="p">:</span>
-	<span class="n">cmd_line</span> <span class="o">+=</span> <span class="p">[</span><span class="s1">&#39;--run&#39;</span><span class="p">,</span> <span class="s1">&#39;dr3&#39;</span><span class="p">,</span> <span class="s1">&#39;--hybrid-psf&#39;</span><span class="p">,</span><span class="s1">&#39;--nsigma&#39;</span><span class="p">,</span> <span class="s1">&#39;6&#39;</span><span class="p">]</span>
-    <span class="k">elif</span> <span class="n">DR</span> <span class="o">==</span> <span class="mi">4</span><span class="p">:</span>
-	<span class="n">cmd_line</span> <span class="o">+=</span> <span class="p">[</span><span class="s1">&#39;--run&#39;</span><span class="p">,</span> <span class="s1">&#39;dr4v2&#39;</span><span class="p">,</span> <span class="s1">&#39;--hybrid-psf&#39;</span><span class="p">,</span><span class="s1">&#39;--nsigma&#39;</span><span class="p">,</span> <span class="s1">&#39;6&#39;</span><span class="p">]</span>
-    <span class="k">elif</span> <span class="n">DR</span> <span class="o">==</span> <span class="mi">5</span><span class="p">:</span>
-	<span class="c1"># defaults: rex (use --simp), nsigma 6 ,hybrid-psf (--no-hybrid-psf otherwise)</span>
-	<span class="c1"># depth cut already done (use --depth-cut to do depth cut anyway)</span>
-	<span class="n">cmd_line</span> <span class="o">+=</span> <span class="p">[</span><span class="s1">&#39;--run&#39;</span><span class="p">,</span> <span class="s1">&#39;dr5&#39;</span><span class="p">]</span> 
+        <span class="n">cmd_line</span> <span class="o">+=</span> <span class="p">[</span><span class="s1">&#39;--stage&#39;</span><span class="p">,</span> <span class="s1">&#39;</span><span class="si">%s</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;stage&#39;</span><span class="p">]]</span>
+    <span class="k">if</span> <span class="n">dataset</span> <span class="o">==</span> <span class="s1">&#39;DR3&#39;</span><span class="p">:</span>
+        <span class="c1">#cmd_line += [&#39;--run&#39;, &#39;dr3&#39;, &#39;--hybrid-psf&#39;,&#39;--nsigma&#39;, &#39;6&#39;]</span>
+        <span class="n">cmd_line</span> <span class="o">+=</span> <span class="p">[</span><span class="s1">&#39;--run&#39;</span><span class="p">,</span> <span class="s1">&#39;dr3&#39;</span><span class="p">,</span><span class="s1">&#39;--nsigma&#39;</span><span class="p">,</span> <span class="s1">&#39;6&#39;</span><span class="p">]</span>
+    <span class="k">elif</span> <span class="n">dataset</span> <span class="o">==</span> <span class="s1">&#39;DR5&#39;</span><span class="p">:</span>
+        <span class="c1"># defaults: rex (use --simp), nsigma 6 ,hybrid-psf (--no-hybrid-psf otherwise)</span>
+        <span class="c1"># depth cut already done (use --depth-cut to do depth cut anyway)</span>
+        <span class="n">cmd_line</span> <span class="o">+=</span> <span class="p">[</span><span class="s1">&#39;--run&#39;</span><span class="p">,</span> <span class="s1">&#39;dr5&#39;</span><span class="p">]</span> 
     
     <span class="n">rb_parser</span><span class="o">=</span> <span class="n">get_runbrick_parser</span><span class="p">()</span>
     <span class="n">rb_opt</span> <span class="o">=</span> <span class="n">rb_parser</span><span class="o">.</span><span class="n">parse_args</span><span class="p">(</span><span class="n">args</span><span class="o">=</span><span class="n">cmd_line</span><span class="p">)</span>
@@ -1079,7 +1083,7 @@
 <span class="sd">      Nothing, but this func end ups writing out all the obiwan results </span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">assert</span><span class="p">(</span><span class="n">d</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">)</span>
-    <span class="n">simdecals</span> <span class="o">=</span> <span class="n">SimDecals</span><span class="p">(</span><span class="n">DR</span><span class="o">=</span><span class="n">d</span><span class="p">[</span><span class="s1">&#39;args&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">DR</span><span class="p">,</span>\
+    <span class="n">simdecals</span> <span class="o">=</span> <span class="n">SimDecals</span><span class="p">(</span><span class="n">dataset</span><span class="o">=</span><span class="n">d</span><span class="p">[</span><span class="s1">&#39;args&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">dataset</span><span class="p">,</span>\
 			  <span class="n">metacat</span><span class="o">=</span><span class="n">d</span><span class="p">[</span><span class="s1">&#39;metacat&#39;</span><span class="p">],</span> <span class="n">simcat</span><span class="o">=</span><span class="n">d</span><span class="p">[</span><span class="s1">&#39;simcat&#39;</span><span class="p">],</span> <span class="n">output_dir</span><span class="o">=</span><span class="n">d</span><span class="p">[</span><span class="s1">&#39;simcat_dir&#39;</span><span class="p">],</span> \
 			  <span class="n">add_sim_noise</span><span class="o">=</span><span class="n">d</span><span class="p">[</span><span class="s1">&#39;args&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">add_sim_noise</span><span class="p">,</span> <span class="n">folding_threshold</span><span class="o">=</span><span class="n">d</span><span class="p">[</span><span class="s1">&#39;args&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">folding_threshold</span><span class="p">,</span>\
 			  <span class="n">image_eq_model</span><span class="o">=</span><span class="n">d</span><span class="p">[</span><span class="s1">&#39;args&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">image_eq_model</span><span class="p">)</span>
@@ -1168,7 +1172,6 @@
         <span class="k">pass</span> 
     <span class="c1"># Print calling sequence</span>
     <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Args:&#39;</span><span class="p">,</span> <span class="n">args</span><span class="p">)</span>   
- 
     <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">cutouts</span><span class="p">:</span>
         <span class="n">args</span><span class="o">.</span><span class="n">stage</span> <span class="o">=</span> <span class="s1">&#39;tims&#39;</span>
     <span class="c1"># Setup loggers</span>
@@ -1201,10 +1204,7 @@
             <span class="k">return</span> <span class="mi">0</span>
 
     <span class="c1"># Output dir</span>
-    <span class="k">if</span> <span class="s1">&#39;DECALS_SIM_DIR&#39;</span> <span class="ow">in</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">:</span>
-        <span class="n">decals_sim_dir</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s1">&#39;DECALS_SIM_DIR&#39;</span><span class="p">)</span>
-    <span class="k">else</span><span class="p">:</span>
-        <span class="n">decals_sim_dir</span> <span class="o">=</span> <span class="s1">&#39;.&#39;</span>
+    <span class="n">decals_sim_dir</span> <span class="o">=</span> <span class="n">args</span><span class="o">.</span><span class="n">outdir</span>
         
     <span class="c1">#nchunk = args.nchunk</span>
     <span class="c1">#rand = np.random.RandomState(args.seed) # determines seed for all chunks</span>
@@ -1244,12 +1244,12 @@
 
     <span class="c1"># Ra,dec,mag table</span>
     <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;before PSQL&#39;</span><span class="p">)</span>
-    <span class="k">if</span> <span class="kc">True</span><span class="p">:</span>
+    <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">randoms_from_fits</span><span class="p">:</span>
         <span class="c1"># Non PSQL way</span>
         <span class="c1">#fn= get_sample_fn(brickname,decals_sim_dir,prefix=args.prefix)</span>
-        <span class="n">fn</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s1">&#39;DECALS_SIM_DIR&#39;</span><span class="p">],</span>
-                        <span class="s1">&#39;elg_randoms/rank_1_seed_1.fits&#39;</span><span class="p">)</span> 
-        <span class="n">Samp</span><span class="o">=</span> <span class="n">fits_table</span><span class="p">(</span><span class="n">fn</span><span class="p">)</span>
+        <span class="c1">#fn=os.path.join(decals_sim_dir,</span>
+        <span class="c1">#                &#39;elg_randoms/rank_1_seed_1.fits&#39;) </span>
+        <span class="n">Samp</span><span class="o">=</span> <span class="n">fits_table</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">randoms_from_fits</span><span class="p">)</span>
         <span class="n">Samp</span><span class="o">.</span><span class="n">rename</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">%s</span><span class="s1">_rhalf&#39;</span> <span class="o">%</span> <span class="n">objtype</span><span class="p">,</span><span class="s1">&#39;</span><span class="si">%s</span><span class="s1">_re&#39;</span> <span class="o">%</span> <span class="n">objtype</span><span class="p">)</span>
     <span class="k">else</span><span class="p">:</span>
         <span class="n">Samp</span><span class="o">=</span> <span class="n">getSrcsInBrick</span><span class="p">(</span><span class="n">brickname</span><span class="p">,</span><span class="n">objtype</span><span class="p">)</span>

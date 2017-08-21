@@ -196,7 +196,7 @@ make smaller to increase simulated source flux/requested flux</li>
 
 <dl class="class">
 <dt id="obiwan.kenobi.SimDecals">
-<em class="property">class </em><code class="descclassname">obiwan.kenobi.</code><code class="descname">SimDecals</code><span class="sig-paren">(</span><em>DR=None</em>, <em>survey_dir=None</em>, <em>metacat=None</em>, <em>simcat=None</em>, <em>output_dir=None</em>, <em>add_sim_noise=False</em>, <em>folding_threshold=1e-05</em>, <em>image_eq_model=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/obiwan/kenobi.html#SimDecals"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obiwan.kenobi.SimDecals" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="descclassname">obiwan.kenobi.</code><code class="descname">SimDecals</code><span class="sig-paren">(</span><em>dataset=None</em>, <em>survey_dir=None</em>, <em>metacat=None</em>, <em>simcat=None</em>, <em>output_dir=None</em>, <em>add_sim_noise=False</em>, <em>folding_threshold=1e-05</em>, <em>image_eq_model=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/obiwan/kenobi.html#SimDecals"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obiwan.kenobi.SimDecals" title="Permalink to this definition">¶</a></dt>
 <dd><p>Top level object that specifying which data to run through pipeline</p>
 <dl class="docutils">
 <dt>Same behavior as legacypipe.runs.Dr3DecalsSurvey which chooses which</dt>
@@ -208,8 +208,8 @@ objects</dd>
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>DR</strong> – which Data-Release to consider. e.g. if DR=3, then only
-images included in DR3 will be considered</li>
+<li><strong>dataset</strong> – see definition in
+<a class="reference external" href="https://github.com/legacysurvey/obiwan/blob/master/py/obiwan/test/end_to_end/README.md">https://github.com/legacysurvey/obiwan/blob/master/py/obiwan/test/end_to_end/README.md</a></li>
 <li><strong>survey_dir</strong> – as used by legacypipe.runbrick.run_brick()
 Defaults to $LEGACY_SURVEY_DIR environment variable.  Where to look for
 files including calibration files, tables of CCDs and bricks, image data</li>
@@ -232,8 +232,7 @@ with that of the simulated source only</li>
 <dl class="attribute">
 <dt id="obiwan.kenobi.SimDecals.DR">
 <code class="descname">DR</code><a class="headerlink" href="#obiwan.kenobi.SimDecals.DR" title="Permalink to this definition">¶</a></dt>
-<dd><p>which Data-Release to consider. e.g. if DR=3, then only
-images included in DR3 will be considered</p>
+<dd><p>see above</p>
 </dd></dl>
 
 <dl class="attribute">
@@ -541,97 +540,107 @@ Makes color-color plots that reproduce the FDR
 Single band, mag distributions, plotted using ‘as observed’ AB fluxes/mags,
 since these are what one adds into a CP image</p>
 <dl class="class">
-<dt id="obiwan.priors.CommonInit">
-<em class="property">class </em><code class="descclassname">obiwan.priors.</code><code class="descname">CommonInit</code><span class="sig-paren">(</span><em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/obiwan/priors.html#CommonInit"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obiwan.priors.CommonInit" title="Permalink to this definition">¶</a></dt>
-<dd><p>Base class for every STAR,ELG,LRG,QSO class</p>
+<dt id="obiwan.priors.Data">
+<em class="property">class </em><code class="descclassname">obiwan.priors.</code><code class="descname">Data</code><span class="sig-paren">(</span><em>**img_cuts</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/obiwan/priors.html#Data"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obiwan.priors.Data" title="Permalink to this definition">¶</a></dt>
+<dd><p>Fetches and loads truth and catalogue data for star,galaxy populations</p>
+<p>Stored at: /global/project/projectdirs/desi/www/users/kburleigh/obiwan/priors/
+Originally at: dr2-dir, /project/projectdirs/desi/target/analysis/truth
+dr3-dir, /project/projectdirs/desi/users/burleigh/desi/target/analysis/truth</p>
 <table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>img_cuts</strong> – dict, set keys to True/False to turn imaging cuts On/Off</td>
+</tr>
+</tbody>
+</table>
+<dl class="method">
+<dt id="obiwan.priors.Data.get_tractor_shapes">
+<code class="descname">get_tractor_shapes</code><span class="sig-paren">(</span><em>cat</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/obiwan/priors.html#Data.get_tractor_shapes"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obiwan.priors.Data.get_tractor_shapes" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get a dictionary of Tractor Catalogue shape measurements</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>cat</strong> – tractor catalogues</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><dl class="docutils">
+<dt>dict of</dt>
+<dd>{‘re’,’n’,’ba’,’pa’}</dd>
+</dl>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body">d</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="obiwan.priors.Data.imaging_cut">
+<code class="descname">imaging_cut</code><span class="sig-paren">(</span><em>data</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/obiwan/priors.html#Data.imaging_cut"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obiwan.priors.Data.imaging_cut" title="Permalink to this definition">¶</a></dt>
+<dd><p>data: tractor catalogue</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="obiwan.priors.Data.load_elg">
+<code class="descname">load_elg</code><span class="sig-paren">(</span><em>DR</em>, <em>rlimit=24.4</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/obiwan/priors.html#Data.load_elg"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obiwan.priors.Data.load_elg" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
 <li><strong>DR</strong> – which Data Release’s data to use</li>
-<li><strong>brick_primary</strong><strong>,</strong><strong>anymask</strong><strong>,</strong><strong>allmask</strong><strong>,</strong><strong>fracflux</strong> – booleans for which imaging cuts to use</li>
-<li><strong>kdefn</strong><strong>,</strong><strong>loadkde</strong><strong>,</strong><strong>savekde</strong> – where to get the saved KDE fit</li>
-<li><strong>savefig</strong><strong>,</strong><strong>alpha</strong><strong>,</strong><strong>outdir</strong> – plotting options</li>
+<li><strong>rlimit</strong> – AB magnitude limit of sample
+default: is 1 mag deeper than DESI requirement</li>
 </ul>
 </td>
 </tr>
 </tbody>
 </table>
-<dl class="attribute">
-<dt id="obiwan.priors.CommonInit.truth_dir">
-<code class="descname">truth_dir</code><a class="headerlink" href="#obiwan.priors.CommonInit.truth_dir" title="Permalink to this definition">¶</a></dt>
-<dd><p>directory of matched Truth Tables</p>
-</dd></dl>
-
-<dl class="attribute">
-<dt id="obiwan.priors.CommonInit.args">
-<code class="descname">args</code><a class="headerlink" href="#obiwan.priors.CommonInit.args" title="Permalink to this definition">¶</a></dt>
-<dd><p>ditto above</p>
 </dd></dl>
 
 <dl class="method">
-<dt id="obiwan.priors.CommonInit.imaging_cut">
-<code class="descname">imaging_cut</code><span class="sig-paren">(</span><em>data</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/obiwan/priors.html#CommonInit.imaging_cut"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obiwan.priors.CommonInit.imaging_cut" title="Permalink to this definition">¶</a></dt>
-<dd><p>data is a fits_table object with Tractor Catalogue columns</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="obiwan.priors.CommonInit.std_star_cut">
-<code class="descname">std_star_cut</code><span class="sig-paren">(</span><em>data</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/obiwan/priors.html#CommonInit.std_star_cut"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obiwan.priors.CommonInit.std_star_cut" title="Permalink to this definition">¶</a></dt>
-<dd><p>See: <a class="reference external" href="https://desi.lbl.gov/trac/wiki/TargetSelectionWG/TargetSelection#SpectrophotometricStandardStarsFSTD">https://desi.lbl.gov/trac/wiki/TargetSelectionWG/TargetSelection#SpectrophotometricStandardStarsFSTD</a>
-data is a fits_table object with Tractor Catalogue columns</p>
-</dd></dl>
-
-</dd></dl>
-
-<dl class="class">
-<dt id="obiwan.priors.CrossValidator">
-<em class="property">class </em><code class="descclassname">obiwan.priors.</code><code class="descname">CrossValidator</code><a class="reference internal" href="_modules/obiwan/priors.html#CrossValidator"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obiwan.priors.CrossValidator" title="Permalink to this definition">¶</a></dt>
-<dd><p>Cross validate the RedshiftPredictor() function</p>
-<dl class="method">
-<dt id="obiwan.priors.CrossValidator.kfold_cross_val">
-<code class="descname">kfold_cross_val</code><span class="sig-paren">(</span><em>C=1.0</em>, <em>kfolds=10</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/obiwan/priors.html#CrossValidator.kfold_cross_val"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obiwan.priors.CrossValidator.kfold_cross_val" title="Permalink to this definition">¶</a></dt>
-<dd><p>C is parameter varying</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="obiwan.priors.CrossValidator.kfold_indices">
-<code class="descname">kfold_indices</code><span class="sig-paren">(</span><em>k</em>, <em>n_train</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/obiwan/priors.html#CrossValidator.kfold_indices"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obiwan.priors.CrossValidator.kfold_indices" title="Permalink to this definition">¶</a></dt>
-<dd><p>returns array of indices of shape (k,n_train/k) to grab the k bins of training data</p>
-</dd></dl>
-
-</dd></dl>
-
-<dl class="class">
-<dt id="obiwan.priors.ELG">
-<em class="property">class </em><code class="descclassname">obiwan.priors.</code><code class="descname">ELG</code><span class="sig-paren">(</span><em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/obiwan/priors.html#ELG"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obiwan.priors.ELG" title="Permalink to this definition">¶</a></dt>
-<dd><p>Creates the ELG sample</p>
-<table class="docutils field-list" frame="void" rules="none">
+<dt id="obiwan.priors.Data.load_lrg">
+<code class="descname">load_lrg</code><span class="sig-paren">(</span><em>DR</em>, <em>zlimit=21.46</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/obiwan/priors.html#Data.load_lrg"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obiwan.priors.Data.load_lrg" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>CommonInit</strong> (<em>see</em>) – </td>
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>DR</strong> – which Data Release’s data to use</li>
+<li><strong>zlimit</strong> – AB magnitude limit of sample
+default: is 1 mag deeper than DESI requirement</li>
+</ul>
+</td>
 </tr>
 </tbody>
 </table>
-<dl class="attribute">
-<dt id="obiwan.priors.ELG.rlimit">
-<code class="descname">rlimit</code><a class="headerlink" href="#obiwan.priors.ELG.rlimit" title="Permalink to this definition">¶</a></dt>
-<dd><p>AB magnitude limit of sample</p>
-</dd></dl>
-
-<dl class="attribute">
-<dt id="obiwan.priors.ELG.kdefn">
-<code class="descname">kdefn</code><a class="headerlink" href="#obiwan.priors.ELG.kdefn" title="Permalink to this definition">¶</a></dt>
-<dd><p>name for the fit KDE</p>
 </dd></dl>
 
 <dl class="method">
-<dt id="obiwan.priors.ELG.get_dr3_deep2">
-<code class="descname">get_dr3_deep2</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/obiwan/priors.html#ELG.get_dr3_deep2"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obiwan.priors.ELG.get_dr3_deep2" title="Permalink to this definition">¶</a></dt>
-<dd><p>version 3.0 of data discussed in
-<a class="reference external" href="https://desi.lbl.gov/DocDB/cgi-bin/private/RetrieveFile?docid=912">https://desi.lbl.gov/DocDB/cgi-bin/private/RetrieveFile?docid=912</a></p>
+<dt id="obiwan.priors.Data.load_qso">
+<code class="descname">load_qso</code><span class="sig-paren">(</span><em>DR</em>, <em>rlimit=23.7</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/obiwan/priors.html#Data.load_qso"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obiwan.priors.Data.load_qso" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>DR</strong> – which Data Release’s data to use</li>
+<li><strong>rlimit</strong> – AB magnitude limit of sample
+default: is 1 mag deeper than DESI requirement</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="obiwan.priors.Data.std_star_cut">
+<code class="descname">std_star_cut</code><span class="sig-paren">(</span><em>data</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/obiwan/priors.html#Data.std_star_cut"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obiwan.priors.Data.std_star_cut" title="Permalink to this definition">¶</a></dt>
+<dd><p>See: <a class="reference external" href="https://desi.lbl.gov/trac/wiki/TargetSelectionWG/TargetSelection#SpectrophotometricStandardStarsFSTD">https://desi.lbl.gov/trac/wiki/TargetSelectionWG/TargetSelection#SpectrophotometricStandardStarsFSTD</a>
+data is a fits_table object with Tractor Catalogue columns</p>
 </dd></dl>
 
 </dd></dl>
@@ -643,155 +652,85 @@ data is a fits_table object with Tractor Catalogue columns</p>
 </dd></dl>
 
 <dl class="class">
-<dt id="obiwan.priors.KernelOfTruth">
-<em class="property">class </em><code class="descclassname">obiwan.priors.</code><code class="descname">KernelOfTruth</code><span class="sig-paren">(</span><em>data_list</em>, <em>labels</em>, <em>lims</em>, <em>bandwidth=0.05</em>, <em>kernel='gaussian'</em>, <em>kdefn='kde.pickle'</em>, <em>loadkde=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/obiwan/priors.html#KernelOfTruth"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obiwan.priors.KernelOfTruth" title="Permalink to this definition">¶</a></dt>
-<dd><p>Kernel Density Estimate for galaxy sample</p>
-<p>Following <a class="reference external" href="http://scikit-learn.org/stable/auto_examples/neighbors/">http://scikit-learn.org/stable/auto_examples/neighbors/</a>
-plot_kde_1d.html</p>
-<blockquote>
-<div><dl class="docutils">
-<dt>Args:</dt>
-<dd>data_list: list of N features, each element is np.array of M samples
-labels: list of strings, a name for each of the N feature
-lims: list of tuples giving low,hi limits for KDE
-bandwidth: characteristic width of the kernel
-kernel: gaussian, tophat, etc
-kdefn: file to save KDE fit to
-loadkde: boolean, load existing KDE fit if exists</dd>
+<dt id="obiwan.priors.KDE_Model">
+<em class="property">class </em><code class="descclassname">obiwan.priors.</code><code class="descname">KDE_Model</code><span class="sig-paren">(</span><em>src</em>, <em>data</em>, <em>outdir</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/obiwan/priors.html#KDE_Model"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obiwan.priors.KDE_Model" title="Permalink to this definition">¶</a></dt>
+<dd><p>Fits a Kernel Density Estimate (KDE) to a given source population</p>
+<p>Only one source or data table per KDE_Model object</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>src</strong> – elg,lrg, etc</li>
+<li><strong>data</strong> – tractor catalogue for the population
+returned by Data().load_elg(), for elgs</li>
+<li><strong>outdir</strong> – output dir</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<dl class="attribute">
+<dt id="obiwan.priors.KDE_Model.data">
+<code class="descname">data</code><a class="headerlink" href="#obiwan.priors.KDE_Model.data" title="Permalink to this definition">¶</a></dt>
+<dd><p>copy of data</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="obiwan.priors.KDE_Model.outdir">
+<code class="descname">outdir</code><a class="headerlink" href="#obiwan.priors.KDE_Model.outdir" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="obiwan.priors.KDE_Model.kde">
+<code class="descname">kde</code><a class="headerlink" href="#obiwan.priors.KDE_Model.kde" title="Permalink to this definition">¶</a></dt>
+<dd><p>fit KDE</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="obiwan.priors.KDE_Model.fit_kde">
+<code class="descname">fit_kde</code><span class="sig-paren">(</span><em>X</em>, <em>bandwidth=0.05</em>, <em>kernel='tophat'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/obiwan/priors.html#KDE_Model.fit_kde"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obiwan.priors.KDE_Model.fit_kde" title="Permalink to this definition">¶</a></dt>
+<dd><p>Fits a KDE to the data</p>
+<dl class="docutils">
+<dt>Following</dt>
+<dd><a class="reference external" href="http://scikit-learn.org/stable/auto_examples/neighbors/plot_kde_1d.html">http://scikit-learn.org/stable/auto_examples/neighbors/plot_kde_1d.html</a></dd>
 </dl>
-</div></blockquote>
-<dl class="attribute">
-<dt id="obiwan.priors.KernelOfTruth.X">
-<code class="descname">X</code><a class="headerlink" href="#obiwan.priors.KernelOfTruth.X" title="Permalink to this definition">¶</a></dt>
-<dd><p>Data to fit KDE to</p>
-</dd></dl>
-
-<dl class="attribute">
-<dt id="obiwan.priors.KernelOfTruth.kde">
-<code class="descname">kde</code><a class="headerlink" href="#obiwan.priors.KernelOfTruth.kde" title="Permalink to this definition">¶</a></dt>
-<dd><p>KernelDensity() object</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="obiwan.priors.KernelOfTruth.plot_1band_and_color">
-<code class="descname">plot_1band_and_color</code><span class="sig-paren">(</span><em>ndraws=1000</em>, <em>xylims=None</em>, <em>prefix=''</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/obiwan/priors.html#KernelOfTruth.plot_1band_and_color"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obiwan.priors.KernelOfTruth.plot_1band_and_color" title="Permalink to this definition">¶</a></dt>
-<dd><p>xylims – dict of x1,y1,x2,y2,… where x1 is tuple of low,hi for first plot xaxis</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="obiwan.priors.KernelOfTruth.plot_1band_color_and_redshift">
-<code class="descname">plot_1band_color_and_redshift</code><span class="sig-paren">(</span><em>ndraws=1000</em>, <em>xylims=None</em>, <em>prefix=''</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/obiwan/priors.html#KernelOfTruth.plot_1band_color_and_redshift"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obiwan.priors.KernelOfTruth.plot_1band_color_and_redshift" title="Permalink to this definition">¶</a></dt>
-<dd><p>xylims – dict of x1,y1,x2,y2,… where x1 is tuple of low,hi for first plot xaxis</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="obiwan.priors.KernelOfTruth.plot_galaxy_shapes">
-<code class="descname">plot_galaxy_shapes</code><span class="sig-paren">(</span><em>ndraws=1000</em>, <em>xylims=None</em>, <em>name='kde.png'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/obiwan/priors.html#KernelOfTruth.plot_galaxy_shapes"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obiwan.priors.KernelOfTruth.plot_galaxy_shapes" title="Permalink to this definition">¶</a></dt>
-<dd><p>xylims – dict of x1,y1,x2,y2,… where x1 is tuple of low,hi for first plot xaxis</p>
-</dd></dl>
-
-</dd></dl>
-
-<dl class="class">
-<dt id="obiwan.priors.LRG">
-<em class="property">class </em><code class="descclassname">obiwan.priors.</code><code class="descname">LRG</code><span class="sig-paren">(</span><em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/obiwan/priors.html#LRG"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obiwan.priors.LRG" title="Permalink to this definition">¶</a></dt>
-<dd><p>Creates the LRG sample</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>CommonInit</strong> (<em>see</em>) – </td>
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>X</strong> – numpy array of shape [m instances, N features]</li>
+<li><strong>bandwidth</strong> – characteristic width of the kernel</li>
+<li><strong>kernel</strong> – gaussian, tophat, etc</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">KernelDensity() object fit to data_list</p>
+</td>
 </tr>
 </tbody>
 </table>
-<dl class="attribute">
-<dt id="obiwan.priors.LRG.zlimit">
-<code class="descname">zlimit</code><a class="headerlink" href="#obiwan.priors.LRG.zlimit" title="Permalink to this definition">¶</a></dt>
-<dd><p>AB magnitude limit of sample</p>
-</dd></dl>
-
-<dl class="attribute">
-<dt id="obiwan.priors.LRG.kdefn">
-<code class="descname">kdefn</code><a class="headerlink" href="#obiwan.priors.LRG.kdefn" title="Permalink to this definition">¶</a></dt>
-<dd><p>name for the fit KDE</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="obiwan.priors.LRG.fit_kde">
-<code class="descname">fit_kde</code><span class="sig-paren">(</span><em>use_acs=False</em>, <em>loadkde=False</em>, <em>savekde=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/obiwan/priors.html#LRG.fit_kde"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obiwan.priors.LRG.fit_kde" title="Permalink to this definition">¶</a></dt>
-<dd><p>No Targeting cuts on g band, but need to fit it so can insert in grz image</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="obiwan.priors.LRG.get_vipers">
-<code class="descname">get_vipers</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/obiwan/priors.html#LRG.get_vipers"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obiwan.priors.LRG.get_vipers" title="Permalink to this definition">¶</a></dt>
-<dd><p>LRGs from VIPERS in CFHTLS W4 field (12 deg2)</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="obiwan.priors.LRG.plot_kde">
-<code class="descname">plot_kde</code><span class="sig-paren">(</span><em>loadkde=False</em>, <em>savekde=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/obiwan/priors.html#LRG.plot_kde"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obiwan.priors.LRG.plot_kde" title="Permalink to this definition">¶</a></dt>
-<dd><p>No Targeting cuts on g band, but need to fit it so can insert in grz image</p>
 </dd></dl>
 
 </dd></dl>
 
 <dl class="class">
-<dt id="obiwan.priors.QSO">
-<em class="property">class </em><code class="descclassname">obiwan.priors.</code><code class="descname">QSO</code><span class="sig-paren">(</span><em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/obiwan/priors.html#QSO"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obiwan.priors.QSO" title="Permalink to this definition">¶</a></dt>
-<dd><p>Creates the QSO sample</p>
+<dt id="obiwan.priors.Plot">
+<em class="property">class </em><code class="descclassname">obiwan.priors.</code><code class="descname">Plot</code><span class="sig-paren">(</span><em>outdir</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/obiwan/priors.html#Plot"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obiwan.priors.Plot" title="Permalink to this definition">¶</a></dt>
+<dd><p>Makes relavent plots for a given src using data,kde</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>CommonInit</strong> (<em>see</em>) – </td>
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>data</strong> – tractor catalogue for source population</li>
+<li><strong>kde</strong> – Fit KDE returned by FitKDE()</li>
+</ul>
+</td>
 </tr>
 </tbody>
 </table>
-<dl class="attribute">
-<dt id="obiwan.priors.QSO.rlimit">
-<code class="descname">rlimit</code><a class="headerlink" href="#obiwan.priors.QSO.rlimit" title="Permalink to this definition">¶</a></dt>
-<dd><p>AB magnitude limit of sample</p>
-</dd></dl>
-
-<dl class="attribute">
-<dt id="obiwan.priors.QSO.kdefn">
-<code class="descname">kdefn</code><a class="headerlink" href="#obiwan.priors.QSO.kdefn" title="Permalink to this definition">¶</a></dt>
-<dd><p>name for the fit KDE</p>
-</dd></dl>
-
-</dd></dl>
-
-<dl class="class">
-<dt id="obiwan.priors.RedshiftPredictor">
-<em class="property">class </em><code class="descclassname">obiwan.priors.</code><code class="descname">RedshiftPredictor</code><span class="sig-paren">(</span><em>X=None</em>, <em>y=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/obiwan/priors.html#RedshiftPredictor"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obiwan.priors.RedshiftPredictor" title="Permalink to this definition">¶</a></dt>
-<dd><p>Predict redshift instead of using the data’s sample</p>
-</dd></dl>
-
-<dl class="class">
-<dt id="obiwan.priors.STAR">
-<em class="property">class </em><code class="descclassname">obiwan.priors.</code><code class="descname">STAR</code><span class="sig-paren">(</span><em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/obiwan/priors.html#STAR"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obiwan.priors.STAR" title="Permalink to this definition">¶</a></dt>
-<dd><p>Creates the STAR sample</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>CommonInit</strong> (<em>see</em>) – </td>
-</tr>
-</tbody>
-</table>
-<dl class="attribute">
-<dt id="obiwan.priors.STAR.kdefn">
-<code class="descname">kdefn</code><a class="headerlink" href="#obiwan.priors.STAR.kdefn" title="Permalink to this definition">¶</a></dt>
-<dd><p>name for the fit KDE</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="obiwan.priors.STAR.get_sweepstars">
-<code class="descname">get_sweepstars</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/obiwan/priors.html#STAR.get_sweepstars"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obiwan.priors.STAR.get_sweepstars" title="Permalink to this definition">¶</a></dt>
-<dd><p>Model the g-r, r-z color-color sequence for stars</p>
-</dd></dl>
-
 </dd></dl>
 
 <dl class="class">
@@ -824,83 +763,40 @@ loadkde: boolean, load existing KDE fit if exists</dd>
 
 </dd></dl>
 
-<dl class="class">
-<dt id="obiwan.priors._GaussianMixtureModel">
-<em class="property">class </em><code class="descclassname">obiwan.priors.</code><code class="descname">_GaussianMixtureModel</code><span class="sig-paren">(</span><em>weights_</em>, <em>means_</em>, <em>covars_</em>, <em>covtype</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/obiwan/priors.html#_GaussianMixtureModel"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obiwan.priors._GaussianMixtureModel" title="Permalink to this definition">¶</a></dt>
-<dd><p>Sample from a Mixture of Gaussians (MoG) with known params</p>
+<dl class="function">
+<dt id="obiwan.priors.fits2pandas">
+<code class="descclassname">obiwan.priors.</code><code class="descname">fits2pandas</code><span class="sig-paren">(</span><em>tab</em>, <em>attrs=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/obiwan/priors.html#fits2pandas"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obiwan.priors.fits2pandas" title="Permalink to this definition">¶</a></dt>
+<dd><p>converts a fits_table into a pandas DataFrame</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>weights</strong><strong>,</strong><strong>means_</strong><strong>,</strong><strong>covars_</strong> – MoG parameters</li>
-<li><strong>covtype</strong> – ‘spherical’, ‘diag’, ‘tied’, ‘full’</li>
+<li><strong>tab</strong> – fits_table()</li>
+<li><strong>attrs</strong> – attributes or column names want in the DF</li>
 </ul>
 </td>
 </tr>
 </tbody>
 </table>
-<dl class="attribute">
-<dt>
-<code class="descname">weights_,means_,covars_</code></dt>
-<dd><p>MoG parameters</p>
-</dd></dl>
-
-<dl class="attribute">
-<dt id="obiwan.priors._GaussianMixtureModel.covtype">
-<code class="descname">covtype</code><a class="headerlink" href="#obiwan.priors._GaussianMixtureModel.covtype" title="Permalink to this definition">¶</a></dt>
-<dd><p>‘spherical’, ‘diag’, ‘tied’, ‘full’</p>
-</dd></dl>
-
-<dl class="attribute">
-<dt id="obiwan.priors._GaussianMixtureModel.n_components">
-<code class="descname">n_components</code><a class="headerlink" href="#obiwan.priors._GaussianMixtureModel.n_components" title="Permalink to this definition">¶</a></dt>
-<dd><p>as sounds</p>
-</dd></dl>
-
-<dl class="attribute">
-<dt id="obiwan.priors._GaussianMixtureModel.n_dimenstions">
-<code class="descname">n_dimenstions</code><a class="headerlink" href="#obiwan.priors._GaussianMixtureModel.n_dimenstions" title="Permalink to this definition">¶</a></dt>
-<dd><p>as sounds</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="obiwan.priors._GaussianMixtureModel.sample_full_pdf">
-<code class="descname">sample_full_pdf</code><span class="sig-paren">(</span><em>n_samples=1</em>, <em>random_state=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/obiwan/priors.html#_GaussianMixtureModel.sample_full_pdf"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obiwan.priors._GaussianMixtureModel.sample_full_pdf" title="Permalink to this definition">¶</a></dt>
-<dd><p>‘sample() uses the component datum x is closest too, sample_full_pdf() uses sum of components at datum x
-this is more time consuming than sample() and difference is negligible</p>
-</dd></dl>
-
-<dl class="staticmethod">
-<dt id="obiwan.priors._GaussianMixtureModel.save">
-<em class="property">static </em><code class="descname">save</code><span class="sig-paren">(</span><em>model</em>, <em>filename</em>, <em>index=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/obiwan/priors.html#_GaussianMixtureModel.save"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obiwan.priors._GaussianMixtureModel.save" title="Permalink to this definition">¶</a></dt>
-<dd><p>index: optional nddex array for subset of compenents to save</p>
-</dd></dl>
-
 </dd></dl>
 
 <dl class="function">
-<dt id="obiwan.priors.add_MoG_curves">
-<code class="descclassname">obiwan.priors.</code><code class="descname">add_MoG_curves</code><span class="sig-paren">(</span><em>ax</em>, <em>means_</em>, <em>covars_</em>, <em>weights_</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/obiwan/priors.html#add_MoG_curves"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obiwan.priors.add_MoG_curves" title="Permalink to this definition">¶</a></dt>
-<dd><p>plot 2-sigma ellipses for each multivariate component</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>ax</strong> – axis to draw on</li>
-<li><strong>covars</strong><strong>, </strong><strong>weights</strong> (<em>means</em><em>,</em>) – MoG parameters</li>
-</ul>
-</td>
-</tr>
-</tbody>
-</table>
+<dt id="obiwan.priors.load_pickle">
+<code class="descclassname">obiwan.priors.</code><code class="descname">load_pickle</code><span class="sig-paren">(</span><em>outdir</em>, <em>name</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/obiwan/priors.html#load_pickle"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obiwan.priors.load_pickle" title="Permalink to this definition">¶</a></dt>
+<dd><p>Loads data in pickle file</p>
 </dd></dl>
 
 <dl class="function">
 <dt id="obiwan.priors.rm_last_ticklabel">
 <code class="descclassname">obiwan.priors.</code><code class="descname">rm_last_ticklabel</code><span class="sig-paren">(</span><em>ax</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/obiwan/priors.html#rm_last_ticklabel"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obiwan.priors.rm_last_ticklabel" title="Permalink to this definition">¶</a></dt>
 <dd><p>for multiplot</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="obiwan.priors.save_pickle">
+<code class="descclassname">obiwan.priors.</code><code class="descname">save_pickle</code><span class="sig-paren">(</span><em>obj</em>, <em>outdir</em>, <em>name</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/obiwan/priors.html#save_pickle"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obiwan.priors.save_pickle" title="Permalink to this definition">¶</a></dt>
+<dd><p>Saves data in “obj” to pickle file</p>
 </dd></dl>
 
 </div>
