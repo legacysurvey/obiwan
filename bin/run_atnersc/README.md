@@ -5,41 +5,21 @@ The idea is for any NERSC user to easily do optimized production runs of Obiwan 
  - git clone https://github.com/kaylanb/obiwan.git
  - submit the included slurm job script that will load the Docker Image and run the obiwan repo
 
-### Possible Production Runs
-You can do the following runs with obiwan
-| Run | Sources | Docs |
-| ------ | ------ | ------ |
-| eBOSS DR3 | ELG | fill in |
-| DR5 | ELG | fill in |
-
 ### Setup
-setup the 2 directories as describes below
-* `obiwan_code`
-* `obiwan_data`
-Then copy my `bashrc_obiwan` to your ~/, then whenever you login and want to run obiwan
-do source `~/.bashrc_obiwan`
-
-I made my conda environment by 
-* installing 201707...-imaging of desiconda, to 
-`/global/cscratch1/sd/kaylanb/obiwan_desiconda/conda`
-then
-* pip install -U pytest
-* pip install pytest-cov coveralls 
-
-### Test it works
+Download the necessary repos
 ```sh
-cd $obiwan_code/obiwan
-pytest --cov --ignore `py/obiwan/test/end_to_end`
+export obiwan_code=$CSCRATCH/obiwan_code
+mkdir $obiwan_code
+cd $obiwan_code
+git clone https://github.com/legacysurvey/obiwan.git
+git clone https://github.com/legacysurvey/theValidator.git
+git clone https://github.com/legacysurvey/legacypipe.git
+cd legacypipe
+git fetch
+git checkout dr5_wobiwan 
 ```
-This should return something like
-"3 passed in 5.44 seconds"
-Then run a quick section of a brick
-```sh
-cd py
-python obiwan/kenobi.py -b 1238p245 -n 2 --DR 5 -o elg --outdir $obiwan_outdir --add_sim_noise --zoom 1550 1650 1550 1650
-```
-### Images to process
-For all runs do
+
+and configuration data.
 ```sh
 $ export obiwan_data=$CSCRATCH/obiwan_data
 $ mkdir $obiwan_data
@@ -48,16 +28,74 @@ $ wget http://portal.nersc.gov/project/desi/users/kburleigh/obiwan/legacysurveyd
 $ tar -xzvf legacysurveydirs.tar.gz 
 ```
 
-### Clone 3 repos
+Now module load module load my conda environment for obiwan. I it using Ted Kisner's [desiconda](https://github.com/desihub/desiconda.git) package then conda installing a few extras like "pytest". Note, if you don't want to type the following commands you can get them from my (obiwan_bashrc)[https://github.com/legacysurvey/obiwan/blob/master/bin/run_atnersc/bashrc_obiwan]
+
+Starting with a clean environment on Cori, 
 ```sh
-$ export obiwan_code=$CSCRATCH/obiwan_code
-$ mkdir $obiwan_code
-$ cd $obiwan_code
-$ git clone https://github.com/legacysurvey/obiwan.git
-$ git clone https://github.com/legacysurvey/theValidator.git
-$ git clone https://github.com/legacysurvey/legacypipe.git
-$ cd legacypipe
+module use $obiwan_code/obiwan/etc/modulefiles
+module load obiwan_conda
 ```
+
+Then set the required environment variables to run the leagcypipe pipeline
+```sh
+for name in dust unwise_coadds  unwise_coadds_timeresolved; do
+    module load $name
+done  
+export LEGACY_SURVEY_DIR=$obiwan_data/legacysurveydir_dr5
+```
+
+and point your PYTHONPATH to the right place
+```sh
+# Non-install pacakges
+export PYTHONPATH=$obiwan_code/theValidator:${PYTHONPATH}
+export PYTHONPATH=$obiwan_code/legacypipe/py:${PYTHONPATH}
+export PYTHONPATH=$obiwan_code/obiwan/py:${PYTHONPATH}
+```
+### Obiwan bashrc file
+To automate the above, plus set additional env vars, copy my bashrc for obiwan to you home directory on Cori
+```
+cd ~/
+wget https://raw.githubusercontent.com/legacysurvey/obiwan/master/bin/run_atnersc/bashrc_obiwan
+```
+then whenever you want to run obiwan, ssh into a clean environment on Cori and
+```sh
+source ~/bashrc_obiwan
+```
+
+### Run the test script
+This should return something like "3 passed in 5.44 seconds"
+```sh
+cd $obiwan_code/obiwan
+pytest --cov --ignore `py/obiwan/test/end_to_end`
+```
+
+Then run a full end to end test. If this works, you are ready for production runs
+```sh
+export dataset=DR3
+export brick=1238p245
+export LEGACY_SURVEY_DIR=${obiwan_code}/obiwan/py/obiwan/test/end_to_end/legacypipedir_${brick}_dataset_${dataset}
+cd py
+python obiwan/kenobi.py --dataset ${dataset} -b ${brick} -n 2 -o elg --outdir ${dataset}_outdir --add_sim_noise
+```
+
+### Please ignore everything after this for now
+
+### Possible Production Runs
+You can do the following runs with obiwan
+| Run | Sources | Docs |
+| ------ | ------ | ------ |
+| eBOSS DR3 | ELG | fill in |
+| DR5 | ELG | fill in |
+
+### Notes
+I made my conda environment by 
+* installing 201707...-imaging of desiconda, to 
+`/global/cscratch1/sd/kaylanb/obiwan_desiconda/conda`
+then
+* pip install -U pytest
+* pip install pytest-cov coveralls 
+
+Legacypipe
 For eBOSS dr3
 ```sh
 $ git checkout tags/dr3e
@@ -67,6 +105,9 @@ For eBOSS dr3
 ```sh
 $ git checkout tags/dr5.0
 ```
+
+
+
 
 ### Docker Image
 Make sure you can see the correct Docker Image on NERSC Cori.You should see two images with this command

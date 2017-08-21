@@ -15,7 +15,7 @@ The Docs are built locally from these [instructions](https://github.com/legacysu
 # Run The Code 
 
 At [NERSC](http://www.nersc.gov/)
-* see [instructions](https://github.com/legacysurvey/obiwan/blob/ebossSetup/bin/run_atnersc/README.md)
+* see [instructions](https://github.com/legacysurvey/obiwan/blob/master/bin/run_atnersc/README.md)
 
 
 License
