@@ -1,7 +1,7 @@
 # Running Obiwan @ NERSC
 
 ### Setup
-Download the necessary repos
+Git clone the repos to a directory "obiwan_code"
 ```sh
 export obiwan_code=$CSCRATCH/obiwan_code
 mkdir $obiwan_code
@@ -14,14 +14,23 @@ git fetch
 git checkout dr5_wobiwan 
 ```
 
-and configuration data.
+Wget dataset files
 ```sh
 $ export obiwan_data=$CSCRATCH/obiwan_data
 $ mkdir $obiwan_data
 $ cd $obiwan_data
 $ wget http://portal.nersc.gov/project/desi/users/kburleigh/obiwan/legacysurveydirs.tar.gz
-$ tar -xzvf legacysurveydirs.tar.gz 
+$ tar -xzvf legacysurveydirs.tar.gz
 ```
+
+Dust map files
+```sh
+$ mkdir -p $obiwan_data/dust/maps
+$ cd $obiwan_data/dust/maps
+$ wget -c http://portal.nersc.gov/project/cosmo/temp/dstn/travis-ci/maps/SFD_dust_4096_ngp.fits
+$ wget -c http://portal.nersc.gov/project/cosmo/temp/dstn/travis-ci/maps/SFD_dust_4096_sgp.fits
+```
+
 
 Module load the conda environment for obiwan. I created it using Ted Kisner's [desiconda](https://github.com/desihub/desiconda.git) package and installing a few extra packages like "pytest". You simply grab the (bashrc_obiwan)[https://github.com/legacysurvey/obiwan/blob/master/bin/run_atnersc/bashrc_obiwan]
  file from the obiwan repo and source it. From a clean environment on Cori,
@@ -61,17 +70,13 @@ export PYTHONPATH=$obiwan_code/obiwan/py:${PYTHONPATH}
 ### Run unit tests
 This should return something like "3 passed in 5.44 seconds"
 ```sh
-cd $obiwan_code/obiwan
-pytest --cov --ignore `py/obiwan/test/end_to_end`
+cd $obiwan_code/obiwan/py/obiwan
+pytest --cov=test/ --cov-config=test/.coveragerc --ignore=test/end_to_end test/
 ```
 
-Now run a full "end to end" test. This will inject 2 simulated ELG sources into a 100x100 pixel cutout of a DECam CCD, run legacypipe on it, and write out all the obiwan and legacypipe outputs. 
+Now run two full "end to end" tests, one using the DR3 dataset and the other for DR5. Each injects 2 simulated ELGs into a 100x100 pixel cutout of a DECam CCD, runs legacypipe on it, and writes out all the obiwan and legacypipe outputs. 
 ```sh
-export dataset=DR3
-export brick=1238p245
-export LEGACY_SURVEY_DIR=${obiwan_code}/obiwan/py/obiwan/test/end_to_end/legacypipedir_${brick}_dataset_${dataset}
-cd py
-python obiwan/kenobi.py --dataset ${dataset} -b ${brick} -n 2 -o elg --outdir ${dataset}_outdir --add_sim_noise
+pytest --cov=test/end_to_end/test_datasets.py test/end_to_end/test_datasets.py
 ```
 If the above worked you are ready for production runs!
 
