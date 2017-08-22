@@ -44,13 +44,17 @@ def run_dataset(dataset):
 #rtn = os.system(cmd)
 #assert(rtn == 0)
 
-def test_datasets():
+def test_dataset_DR3():
     run_dataset('DR3')
+    assert(True)
+
+def test_dataset_DR5():
     run_dataset('DR5')
     assert(True)
 
+
 if __name__ == "__main__":
-    run_dataset('DR5')
-    
+  test_dataset_DR3()
+  test_dataset_DR5() 
 
     

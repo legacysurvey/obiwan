@@ -1,6 +1,6 @@
 # Running Obiwan @ NERSC
 
-### Setup
+### Code and Data
 Git clone the repos to a directory "obiwan_code"
 ```sh
 export obiwan_code=$CSCRATCH/obiwan_code
@@ -31,45 +31,44 @@ wget -c http://portal.nersc.gov/project/cosmo/temp/dstn/travis-ci/maps/SFD_dust_
 wget -c http://portal.nersc.gov/project/cosmo/temp/dstn/travis-ci/maps/SFD_dust_4096_sgp.fits
 ```
 
-
-Module load the conda environment for obiwan. I created it using Ted Kisner's [desiconda](https://github.com/desihub/desiconda.git) package and installing a few extra packages like "pytest". You simply grab the (bashrc_obiwan)[https://github.com/legacysurvey/obiwan/blob/master/bin/run_atnersc/bashrc_obiwan]
- file from the obiwan repo and source it. From a clean environment on Cori,
+### Python environment
+I created a conda environment for Obiwan using Ted Kisner's [desiconda](https://github.com/desihub/desiconda.git) package for the imaging pipeline. You activate it with a NERSC "module load" command, after which you have the usual conda functionality, like "conda info -e". I put the module load command and setting additional env vars in https://github.com/legacysurvey/obiwan/blob/master/bin/run_atnersc/bashrc_obiwan, so once you git clone obiwan you simply source this file. From a clean environment on Cori,
 ```
-cd ~/
-wget https://raw.githubusercontent.com/legacysurvey/obiwan/master/bin/run_atnersc/bashrc_obiwan
+source $obiwan_code/obiwan/bin/run_atnersc/bashrc_obiwan
 ```
-then whenever you want to run obiwan, ssh into a clean environment on Cori and
+alternatively you can copy the file to your $HOME 
+```sh
+cp $obiwan_code/obiwan/bin/run_atnersc/bashrc_obiwan
+```
+then all you have to do is login to Cori and
 ```sh
 source ~/bashrc_obiwan
 ```
 
-Note, "bashrc_obiwan" loads the python anaconda environment for obiwan with  
-```sh
-module use $obiwan_code/obiwan/etc/modulefiles
-module load obiwan_conda
-```
-and sets env vars required for the imaging pipeline (legacypipe) with
-```sh
-for name in unwise_coadds unwise_coadds_timeresolved; do
-    module load $name
-done  
-export LEGACY_SURVEY_DIR=$obiwan_data/legacysurveydir_dr5
-export DUST_DIR=$obiwan_data/dust
-```
-
-
 ### Run unit tests
-This should return something like "3 passed in 5.44 seconds"
+It is a good idea to pull master before running anything
+```sh
+cd $obiwan_code/obiwan
+git pull origin master
+```
+
+Now run the first suite of unit tests
 ```sh
 cd $obiwan_code/obiwan/py/obiwan
 pytest --cov=test/ --cov-config=test/.coveragerc --ignore=test/end_to_end test/
 ```
+which should print "3 passed in ..." some number of seconds.
 
-Now run two full "end to end" tests, one using the DR3 dataset and the other for DR5. Each injects 2 simulated ELGs into a 100x100 pixel cutout of a DECam CCD, runs legacypipe on it, and writes out all the obiwan and legacypipe outputs. 
+
+If the first suite works, run the second suite. 
 ```sh
 pytest --cov=test/end_to_end/test_datasets.py test/end_to_end/test_datasets.py
 ```
-If the above worked you are ready for production runs!
+which should print "2 passed" and possibly some "warnings" and "ERROR: Failed to generate report: No data to report." As long as you see "2 passed" it worked! 
+
+The second suite does "end to end" tests, currently for datasets DR3 and DR5. Each injects 2 simulated ELGs into a 100x100 pixel cutout of a DECam CCD and runs the imaging pipeline on it. The outpurs are the usual imaging pipeline outputs (tractor catalogues, coadds, etc.) and obiwan metadata. 
+
+If the second test suite printed "2 passed" then you can try some production runs.
 
 ### Please ignore everything after this for now
 
@@ -81,6 +80,7 @@ The idea is for any NERSC user to easily do optimized production runs of Obiwan 
 
 ### Possible Production Runs
 You can do the following runs with obiwan
+
 | Run | Sources | Docs |
 | ------ | ------ | ------ |
 | eBOSS DR3 | ELG | fill in |
