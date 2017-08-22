@@ -18,6 +18,9 @@ export PYTHONPATH=$obiwan_code/theValidator:${PYTHONPATH}
 export PYTHONPATH=$obiwan_code/legacypipe/py:${PYTHONPATH}
 export PYTHONPATH=$obiwan_code/obiwan/py:${PYTHONPATH}
 
+# For logging into the PSQL db (which has the randoms)
+module load postgresql
+
 # QDO (for Obiwan production runs)
 export QDO_BATCH_PROFILE=$NERSC_HOST
 export QDO_BACKEND=postgres

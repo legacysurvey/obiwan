@@ -70,6 +70,15 @@ The second suite does "end to end" tests, currently for datasets DR3 and DR5. Ea
 
 If the second test suite printed "2 passed" then you can try some production runs.
 
+### Login to the PostgreSQL DB
+The psql db at NERSC is called "desi". It's hosted at scidb2.nersc.gov and you sign in with user "desi_user. You'll need the ".pgpass" config/password file (email Kaylan for it). Then put the ".pgass" file in $HOME/ on Cori. 
+
+Make sure the bashrc_obiwan loaded the "postresql" module. Then do
+```sh
+psql -U desi_user -d desi -h scidb2.nersc.gov
+```
+It worked if that brings you to a "desi=>" prompt
+
 ### Please ignore everything after this for now
 
 The idea is for any NERSC user to easily do optimized production runs of Obiwan using a Docker Image. The steps are basically
