@@ -40,18 +40,18 @@ if [ module-info mode load ] {
 unsetenv PYTHONSTARTUP
 
 # This is the conda environment location
-prepend-path PATH "/global/cscratch1/sd/kaylanb/obiwan_desiconda/conda/bin"
-setenv PYTHONPATH "/global/cscratch1/sd/kaylanb/obiwan_desiconda/conda/lib/python2.7/site-packages"
-setenv DESICONDA "/global/cscratch1/sd/kaylanb/obiwan_desiconda/conda"
-setenv DESICONDA_EXTRA "/global/cscratch1/sd/kaylanb/obiwan_desiconda/aux"
+prepend-path PATH "/global/cscratch1/sd/kaylanb/obiwan_desiconda_add_pytest/conda/bin"
+setenv PYTHONPATH "/global/cscratch1/sd/kaylanb/obiwan_desiconda_add_pytest/conda/lib/python2.7/site-packages"
+setenv DESICONDA "/global/cscratch1/sd/kaylanb/obiwan_desiconda_add_pytest/conda"
+setenv DESICONDA_EXTRA "/global/cscratch1/sd/kaylanb/obiwan_desiconda_add_pytest/aux"
 
 # This is the location of the extra compiled software
-prepend-path PATH "/global/cscratch1/sd/kaylanb/obiwan_desiconda/aux/bin"
-prepend-path CPATH "/global/cscratch1/sd/kaylanb/obiwan_desiconda/aux/include"
-prepend-path LD_LIBRARY_PATH "/global/cscratch1/sd/kaylanb/obiwan_desiconda/aux/lib"
-prepend-path LIBRARY_PATH "/global/cscratch1/sd/kaylanb/obiwan_desiconda/aux/lib"
-prepend-path PYTHONPATH "/global/cscratch1/sd/kaylanb/obiwan_desiconda/aux/lib/python2.7/site-packages"
-prepend-path PKG_CONFIG_PATH "/global/cscratch1/sd/kaylanb/obiwan_desiconda/aux/lib/pkgconfig"
+prepend-path PATH "/global/cscratch1/sd/kaylanb/obiwan_desiconda_add_pytest/aux/bin"
+prepend-path CPATH "/global/cscratch1/sd/kaylanb/obiwan_desiconda_add_pytest/aux/include"
+prepend-path LD_LIBRARY_PATH "/global/cscratch1/sd/kaylanb/obiwan_desiconda_add_pytest/aux/lib"
+prepend-path LIBRARY_PATH "/global/cscratch1/sd/kaylanb/obiwan_desiconda_add_pytest/aux/lib"
+prepend-path PYTHONPATH "/global/cscratch1/sd/kaylanb/obiwan_desiconda_add_pytest/aux/lib/python2.7/site-packages"
+prepend-path PKG_CONFIG_PATH "/global/cscratch1/sd/kaylanb/obiwan_desiconda_add_pytest/aux/lib/pkgconfig"
 
 # Set environment variables possibly needed for compiling spectro pipeline
 

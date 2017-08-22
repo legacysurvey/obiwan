@@ -43,30 +43,20 @@ then whenever you want to run obiwan, ssh into a clean environment on Cori and
 source ~/bashrc_obiwan
 ```
 
-
-### Notes about the Obiwan bashrc file
-
-You module load the obiwan conda environment with, 
+Note, "bashrc_obiwan" loads the python anaconda environment for obiwan with  
 ```sh
 module use $obiwan_code/obiwan/etc/modulefiles
 module load obiwan_conda
 ```
-
-These set the environment variables to run the leagcypipe pipeline
+and sets env vars required for the imaging pipeline (legacypipe) with
 ```sh
-for name in dust unwise_coadds  unwise_coadds_timeresolved; do
+for name in unwise_coadds unwise_coadds_timeresolved; do
     module load $name
 done  
 export LEGACY_SURVEY_DIR=$obiwan_data/legacysurveydir_dr5
+export DUST_DIR=$obiwan_data/dust
 ```
 
-this setups up your PYTHONPATH...
-```sh
-# Non-install pacakges
-export PYTHONPATH=$obiwan_code/theValidator:${PYTHONPATH}
-export PYTHONPATH=$obiwan_code/legacypipe/py:${PYTHONPATH}
-export PYTHONPATH=$obiwan_code/obiwan/py:${PYTHONPATH}
-```
 
 ### Run unit tests
 This should return something like "3 passed in 5.44 seconds"
