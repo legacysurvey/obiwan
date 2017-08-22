@@ -16,19 +16,19 @@ git checkout dr5_wobiwan
 
 Wget dataset files
 ```sh
-$ export obiwan_data=$CSCRATCH/obiwan_data
-$ mkdir $obiwan_data
-$ cd $obiwan_data
-$ wget http://portal.nersc.gov/project/desi/users/kburleigh/obiwan/legacysurveydirs.tar.gz
-$ tar -xzvf legacysurveydirs.tar.gz
+export obiwan_data=$CSCRATCH/obiwan_data
+mkdir $obiwan_data
+cd $obiwan_data
+wget http://portal.nersc.gov/project/desi/users/kburleigh/obiwan/legacysurveydirs.tar.gz
+tar -xzvf legacysurveydirs.tar.gz
 ```
 
 Dust map files
 ```sh
-$ mkdir -p $obiwan_data/dust/maps
-$ cd $obiwan_data/dust/maps
-$ wget -c http://portal.nersc.gov/project/cosmo/temp/dstn/travis-ci/maps/SFD_dust_4096_ngp.fits
-$ wget -c http://portal.nersc.gov/project/cosmo/temp/dstn/travis-ci/maps/SFD_dust_4096_sgp.fits
+mkdir -p $obiwan_data/dust/maps
+cd $obiwan_data/dust/maps
+wget -c http://portal.nersc.gov/project/cosmo/temp/dstn/travis-ci/maps/SFD_dust_4096_ngp.fits
+wget -c http://portal.nersc.gov/project/cosmo/temp/dstn/travis-ci/maps/SFD_dust_4096_sgp.fits
 ```
 
 
@@ -42,6 +42,7 @@ then whenever you want to run obiwan, ssh into a clean environment on Cori and
 ```sh
 source ~/bashrc_obiwan
 ```
+
 
 ### Notes about the Obiwan bashrc file
 
@@ -97,11 +98,10 @@ You can do the following runs with obiwan
 
 ### Notes
 I made my conda environment by 
-* installing 201707...-imaging of desiconda, to 
-`/global/cscratch1/sd/kaylanb/obiwan_desiconda/conda`
-then
-* pip install -U pytest
-* pip install pytest-cov coveralls 
+* cd desiconda
+* CONFIG=cori-gcc-py27 PREFIX=/global/cscratch1/sd/kaylanb/obiwan_desiconda_add_pytest make clean
+* CONFIG=cori-gcc-py27 PREFIX=/global/cscratch1/sd/kaylanb/obiwan_desiconda_add_pytest make imaging
+* (from NX) ./install_imaging_cori-gcc-py27.sh 2>&1 | tee log_add_pytest
 
 Legacypipe
 For eBOSS dr3
@@ -114,8 +114,13 @@ For eBOSS dr3
 $ git checkout tags/dr5.0
 ```
 
-
-
+### If other desiconda modules already loaded:
+```sh
+for name in desiconda; do module unload $name;done
+for name in legacysurvey unwise_coadds unwise_coadds_timeresolved dust;do 
+  module unload $name
+done
+```
 
 ### Docker Image
 Make sure you can see the correct Docker Image on NERSC Cori.You should see two images with this command
