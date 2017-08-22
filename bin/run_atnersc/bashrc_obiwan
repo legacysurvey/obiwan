@@ -29,5 +29,4 @@ export QDO_DB_HOST=scidb2.nersc.gov
 export QDO_DB_USER=desirun_user
 #export QDO_DB_PASS=
 # directory from "which qdo" but without the trailing /bin/qdo, eg which qdo should give
-# $QDO_DIR/bin/qdo
-#export QDO_DIR=/global/cscratch1/sd/kaylanb/desiconda_kaylans/conda-envs/20170510-1.1.3
+export QDO_DIR=$CSCRATCH/obiwan_desiconda_add_pytest/conda

@@ -1,3 +1,5 @@
+#!/bin/bash
+
 # We need 3 directories for Obiwan
 export obiwan_data=$CSCRATCH/obiwan_data
 export obiwan_code=$CSCRATCH/obiwan_code

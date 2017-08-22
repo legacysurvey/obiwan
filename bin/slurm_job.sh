@@ -14,6 +14,10 @@ set -x
 # Choose dataset
 export dataset=dr5
 export LEGACY_SURVEY_DIR=$obiwan_data/legacysurveydir_${dataset}
+# Choose source to inject
+export object=elg
+# Choose row start index
+export rowstart=0
 
 export brick=1238p245
 export bri=$(echo $brick | head -c 3)
@@ -30,18 +34,15 @@ export OMP_NUM_THREADS=$threads
 year=`date|awk '{print $NF}'`
 today=`date|awk '{print $3}'`
 month=`date +"%F"|awk -F "-" '{print $2}'`
-export log=$outdir/logs/log.${year}_${month}_${today}
-mkdir -p $(basenae $log)
+export log=$outdir/${object}/${bri}/${brick}/rs${rowstart}/log.${brick}
+mkdir -p $(dirname $log)
 echo Logging to: $log
 
-cmd_line=['--dataset', dataset, '-b', brick, '-n', '2',
-              '-o', 'elg', '--outdir', outdir, '--add_sim_noise',
-                            '--randoms_from_fits', randoms_from_fits]
-
-export dataset=`echo $dataset | tr '[A-Z]' '[a-z]'`
+export dataset=`echo $dataset | tr '[a-z]' '[A-Z]'`
 cd $obiwan_code/obiwan/py
 srun -n 1 -c $usecores python obiwan/kenobi.py --dataset ${dataset} -b ${brick} \
-                       -n 2 -o elg --outdir $outdir --add_sim_noise  \
+                       -n 2 --rowstart ${rowstart} -o ${object} --outdir $outdir \
+                       --add_sim_noise  \
                        >> $log 2>&1
 
 echo SLURM FINISHED
