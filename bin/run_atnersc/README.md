@@ -150,6 +150,17 @@ and this one is for DR5
 cori       docker     READY    85235b9309   2017-08-03T13:49:09 tskisner/desiconda:1.1.9-imaging
 ```
 
+### How I build the Docker images
+Again using Ted Kisner's desiconda repo. First I installed docker-ce on ubuntu following instruction in `docker_install.sh`. Then using desiconda to make the Dockerfile. For py27,
+
+```sh
+cd desiconda_fork
+git checkout add_pytest
+CONFIG=docker-gcc-py27 PREFIX=$HOME/docker_images VERSION=20170822 make clean
+CONFIG=docker-gcc-py27 PREFIX=$HOME/docker_images VERSION=20170822 make imaging
+sudo ocker build --file Dockerfile_imaging_docker-gcc-py27 --tag py27:add-pytest . 2>&1 | tee log_py27_addpytest.txt 
+```
+
 ### Run!
 First we'll submit a single job and make sure it works. Later we'll install qdo to submit and manage 1000s of jobs. Simply do
 ```sh
