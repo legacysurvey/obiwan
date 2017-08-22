@@ -1,0 +1,19 @@
+# We need 3 directories for Obiwan
+export obiwan_data=$CSCRATCH/obiwan_data
+export obiwan_code=$CSCRATCH/obiwan_code
+export obiwan_out=$CSCRATCH/obiwan_out
+
+# Python environment, Ted Kisner's desiconda for imaging  
+module use $obiwan_code/obiwan/etc/modulefiles
+module load obiwan_conda
+# Env vars for imaging pipeline 
+for name in unwise_coadds unwise_coadds_timeresolved; do
+    module load $name
+done  
+export DUST_DIR=$obiwan_data/dust
+
+# Obiwan and imaging pipeline repos
+export PYTHONPATH=$obiwan_code/theValidator:${PYTHONPATH}
+export PYTHONPATH=$obiwan_code/legacypipe/py:${PYTHONPATH}
+export PYTHONPATH=$obiwan_code/obiwan/py:${PYTHONPATH}
+
