@@ -79,6 +79,21 @@ psql -U desi_user -d desi -h scidb2.nersc.gov
 ```
 It worked if that brings you to a "desi=>" prompt
 
+### Production Runs
+
+There are two basic ways of doing the production runs
+ 1) submit a slurm job script for every brick you want to run 
+ 2) automatically submit jobs with qdo
+and two basic python environment setups
+ A) source "prodenv_obiwan" for the obiwan conda environment
+ B) Docker image
+
+#### Option A
+**1**
+see "slurm_job.sh"
+
+**2**
+see "qdo_job.sh"
 ### Please ignore everything after this for now
 
 The idea is for any NERSC user to easily do optimized production runs of Obiwan using a Docker Image. The steps are basically
