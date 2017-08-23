@@ -1,3 +1,5 @@
+#!/bin/bash
+
 # We need 3 directories for Obiwan
 export obiwan_data=$CSCRATCH/obiwan_data
 export obiwan_code=$CSCRATCH/obiwan_code
@@ -18,15 +20,13 @@ export PYTHONPATH=$obiwan_code/theValidator:${PYTHONPATH}
 export PYTHONPATH=$obiwan_code/legacypipe/py:${PYTHONPATH}
 export PYTHONPATH=$obiwan_code/obiwan/py:${PYTHONPATH}
 
-# For logging into the PSQL db (which has the randoms)
-module load postgresql
-
 # QDO (for Obiwan production runs)
 export QDO_BATCH_PROFILE=$NERSC_HOST
 export QDO_BACKEND=postgres
 export QDO_DB_NAME=desirun
 export QDO_DB_HOST=scidb2.nersc.gov
-export QDO_DB_USER=desirun_user
-#export QDO_DB_PASS=
+export QDO_DB_USER=desirun_admin
 # directory from "which qdo" but without the trailing /bin/qdo, eg which qdo should give
 export QDO_DIR=$CSCRATCH/obiwan_desiconda_add_pytest/conda
+# get db pass
+export QDO_DB_PASS="$(cat $HOME/.qdo_db_pass)"
