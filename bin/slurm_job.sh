@@ -40,7 +40,7 @@ export OMP_NUM_THREADS=$threads
 cd $obiwan_code/obiwan/py
 export dataset=`echo $dataset | tr '[a-z]' '[A-Z]'`
 srun -n 1 -c $usecores python obiwan/kenobi.py --dataset ${dataset} -b ${brick} \
-                       --nobj ${nobj} --rowstart ${rowstart} -o ${object} \ 
+                       --nobj ${nobj} --rowstart ${rowstart} -o ${object} \
                        --db_table ${db_table} \
                        --outdir $outdir --add_sim_noise \
                        --threads $threads  \
