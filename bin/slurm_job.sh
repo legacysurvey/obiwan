@@ -2,7 +2,7 @@
 
 #SBATCH -p debug
 #SBATCH -N 1
-#SBATCH -t 00:05:00
+#SBATCH -t 00:30:00
 #SBATCH --account=desi
 #SBATCH -J obiwan
 #SBATCH -L SCRATCH,project
@@ -12,6 +12,7 @@ export brick=1238p245
 export rowstart=0
 export object=elg
 export dataset=dr5
+export nobj=100
 
 usecores=4
 threads=$usecores
@@ -38,7 +39,7 @@ export OMP_NUM_THREADS=$threads
 cd $obiwan_code/obiwan/py
 export dataset=`echo $dataset | tr '[a-z]' '[A-Z]'`
 srun -n 1 -c $usecores python obiwan/kenobi.py --dataset ${dataset} -b ${brick} \
-                       -n 2 --rowstart ${rowstart} -o ${object} --outdir $outdir \
+                       --nobj ${nobj} --rowstart ${rowstart} -o ${object} --outdir $outdir \
                        --add_sim_noise --threads $threads  \
                        >> $log 2>&1
 

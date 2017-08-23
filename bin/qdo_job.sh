@@ -7,6 +7,7 @@ export brick="$1"
 export rowstart="$2"
 export object=elg
 export dataset=dr5
+export nobj=100
 
 # Load env, env vars
 source $CSCRATCH/obiwan_code/obiwan/bin/run_atnersc/prodenv_obiwan 
@@ -30,7 +31,7 @@ export OMP_NUM_THREADS=1
 cd $obiwan_code/obiwan/py
 export dataset=`echo $dataset | tr '[a-z]' '[A-Z]'`
 python obiwan/kenobi.py --dataset ${dataset} -b ${brick} \
-                        -n 500 --rowstart ${rowstart} -o ${object} --outdir $outdir \
+                        --nobj ${nobj} --rowstart ${rowstart} -o ${object} --outdir $outdir \
                         --add_sim_noise  \
                         >> $log 2>&1
 
