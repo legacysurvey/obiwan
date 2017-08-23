@@ -20,6 +20,12 @@ bash $obiwan_code/bin/run_fits2db.sh obiwan_elg_9deg $obiwan_out/randoms/elg_ran
 db_table=obiwan_elg_9deg
 ```
 
+Index and cluster the db table for fast ra,dec querying
+```sh
+psql -U desi_admin -d desi -h scidb2.nersc.gov
+desi=> \i /global/cscratch1/sd/kaylanb/obiwan_code/obiwan/etc/db_cluster 
+```
+
 ### Prepare QDO runs
 
 Get list of bricks touching the regions of randoms, also turn this into a task list for qdo 
@@ -46,20 +52,21 @@ python obiwan/kenobi.py --dataset dr5 ... --db_table obiwan_elg_9deg
 ```
 
 ### Run a 5 min debug job to test the setup
-This is where the "slurm_job.sh" copy comes in. Run the job
+This is where the "slurm_job.sh" copy comes in. Lets say the desi db randoms table is called "obiwan_elg_9deg", then run the slurm_job.sh job as so
 ```sh
-cd $obiwan_out/9deg
+cd $obiwan_out/obiwan_elg_9deg
 sbatch $obiwan_code/obiwan/bin/slurm_job_9deg.sh
 ```
 when it finishes and it appears to have worked, remove its outputs
 ```sh
-rm -r $obiwan_out/9deg/elg/123/1238p245/rs0
+rm -r $obiwan_out/obiwan_elg_9deg/elg/123/1238p245/rs0
 ```
 
 ### Finally, launch with QDO
 ```sh
-cd $obiwan_out/9deg
+cd $obiwan_out/obiwan_elg_9deg
 qdo launch obiwan 40 --cores_per_worker 4 --batchqueue debug --walltime 00:30:00 --script $obiwan_code/obiwan/bin/qdo_job_9deg.sh --keep_env
+qdo launch obiwan 40 --cores_per_worker 4 --batchqueue regular --walltime 05:00:00 --script $obiwan_code/obiwan/bin/qdo_job_9deg.sh --keep_env
 ```
 
 
