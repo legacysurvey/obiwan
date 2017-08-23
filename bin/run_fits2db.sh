@@ -7,8 +7,10 @@
 
 db_table=${1}
 fits_table=${2}
+echo db_table=$db_table
+echo fits_table=$fits_table
 #Make table
-#/global/cscratch1/sd/kaylanb/test/fits2db/fits2db_cori --sql=postgres --create --noload -C -X -t ${db_table} ${fits_table}| /usr/bin/psql -U desi_admin -d desi -h scidb2.nersc.gov
+/global/cscratch1/sd/kaylanb/test/fits2db/fits2db_cori --sql=postgres --create --noload -C -X -t ${db_table} ${fits_table}| /usr/bin/psql -U desi_admin -d desi -h scidb2.nersc.gov
 
 #Load data
 #for fn in table1.fits table2.fits;/global/cscratch1/sd/kaylanb/test/fits2db/fits2db_cori --sql=postgres -C -X -t heyo2 $fn| /usr/bin/psql -U desi_admin -d desi -h scidb2.nersc.gov;done

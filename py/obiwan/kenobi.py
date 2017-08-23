@@ -835,6 +835,7 @@ def get_parser():
                         help='number of objects to simulate (required input)')
     parser.add_argument('-rs', '--rowstart', type=int, default=0, metavar='', 
                         help='zero indexed, row of ra,dec,mags table, after it is cut to brick, to start on')
+    parser.add_argument('--db_table', default='obiwan_elg', help='table name in desi db that randoms are stored in')
     parser.add_argument('--randoms_from_fits', default=None, help='set to read randoms from fits file instead of scidb2.nersc.gov db, set to absolute path of local fits file on computer')
     parser.add_argument('--prefix', type=str, default='', metavar='', 
                         help='tells which input sample to use')
@@ -1210,7 +1211,7 @@ def main(args=None):
         Samp= fits_table(args.randoms_from_fits)
         Samp.rename('%s_rhalf' % objtype,'%s_re' % objtype)
     else:
-        Samp= getSrcsInBrick(brickname,objtype)
+        Samp= getSrcsInBrick(brickname,objtype, db_table=args.db_table)
     print('after PSQL') 
     print('%d samples, for brick %s' % (len(Samp),brickname))
     print('First 2 sources have: ')

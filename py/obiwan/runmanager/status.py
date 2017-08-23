@@ -3,6 +3,7 @@ for a given brick, prints whether each rs* obiwan job finished or not
 """
 import qdo
 import os
+import numpy as np
 from glob import glob
 from collections import defaultdict
 
