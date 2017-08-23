@@ -84,43 +84,62 @@ It worked if that brings you to a "desi=>" prompt
 There are two basic ways of doing the production runs
  1) submit a slurm job script for every brick you want to run 
  2) automatically submit jobs with qdo
-and two basic python environment setups
- A) source "prodenv_obiwan" for the obiwan conda environment
- B) Docker image
+
+And two options telling the compute nodes about your python environment for obiwan
+ A) use the obiwan conda environment: source "prodenv_obiwan"
+ B) use a Docker image (coming soon)
 
 #### 1A
 See https://github.com/legacysurvey/obiwan/blob/master/bin/slurm_job.sh
 
-Edit these:
+Edit these lines:
+```sh
 export brick=1238p245
 export rowstart=0
 export object=elg
 export dataset=dr5
 export nobj=100
+```
 
 Then run with
 ```sh
+cd $obiwan_code
 sbatch $obiwan_code/obiwan/bin/slurm_job.sh
 ```
 
-### 2A
+#### 2A
 See https://github.com/legacysurvey/obiwan/blob/master/bin/qdo_job.sh
 
-Edit these:
+Edit these lines:
+```sh
 export object=elg
 export dataset=dr5
 export nobj=100
+```
 
 Add list of bricks and indices of randoms as qdo tasks
 ```sh
+cd $obiwan_code
 for i in {100..500..100};do echo 1238p245 $i >> obiwan_qdo.txt;done
 qdo load obiwan obiwan_qdo.txt
 ```
 
 Now launch 5 qdo workers for the 5 qdo tasks you just made, using 6 hardware cores per task
 ```sh
+cd $obiwan_code
 qdo launch obiwan 5 --cores_per_worker 6 --batchqueue debug --walltime 00:30:00 --script $CSCRATCH/obiwan_code/obiwan/bin/qdo_job.sh --keep_env
 ```
+
+### Inspecting completed jobs / obiwan outputs
+```sh
+cd $obiwan_code
+python $obiwan_code/obiwan/bin/qdo_scripts/status.py
+```
+
+slurm*.out files are written to whichever directory you called "sbatch ..." or "qdo launch ..." from. 
+
+
+
 ### Please ignore everything after this for now
 
 The idea is for any NERSC user to easily do optimized production runs of Obiwan using a Docker Image. The steps are basically
