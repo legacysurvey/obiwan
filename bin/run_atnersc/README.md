@@ -86,10 +86,10 @@ There are two basic ways of doing the production runs
  2) automatically submit jobs with qdo
 
 And two options telling the compute nodes about your python environment for obiwan
- A) use the obiwan conda environment: source "prodenv_obiwan"
- B) use a Docker image (coming soon)
+ * A) use the obiwan conda environment: source "prodenv_obiwan"
+ * B) use a Docker image (coming soon)
 
-#### 1A
+#### 1A)
 See https://github.com/legacysurvey/obiwan/blob/master/bin/slurm_job.sh
 
 Edit these lines:
@@ -107,7 +107,10 @@ cd $obiwan_code
 sbatch $obiwan_code/obiwan/bin/slurm_job.sh
 ```
 
-#### 2A
+#### 1B)
+Coming soon
+
+#### 2A)
 See https://github.com/legacysurvey/obiwan/blob/master/bin/qdo_job.sh
 
 Edit these lines:
@@ -129,6 +132,9 @@ Now launch 5 qdo workers for the 5 qdo tasks you just made, using 6 hardware cor
 cd $obiwan_code
 qdo launch obiwan 5 --cores_per_worker 6 --batchqueue debug --walltime 00:30:00 --script $CSCRATCH/obiwan_code/obiwan/bin/qdo_job.sh --keep_env
 ```
+
+#### 2B)
+Coming soon
 
 ### Inspecting completed jobs / obiwan outputs
 ```sh
