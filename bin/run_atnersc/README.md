@@ -88,12 +88,39 @@ and two basic python environment setups
  A) source "prodenv_obiwan" for the obiwan conda environment
  B) Docker image
 
-#### Option A
-**1**
-see "slurm_job.sh"
+#### 1A
+See https://github.com/legacysurvey/obiwan/blob/master/bin/slurm_job.sh
 
-**2**
-see "qdo_job.sh"
+Edit these:
+export brick=1238p245
+export rowstart=0
+export object=elg
+export dataset=dr5
+export nobj=100
+
+Then run with
+```sh
+sbatch $obiwan_code/obiwan/bin/slurm_job.sh
+```
+
+### 2A
+See https://github.com/legacysurvey/obiwan/blob/master/bin/qdo_job.sh
+
+Edit these:
+export object=elg
+export dataset=dr5
+export nobj=100
+
+Add list of bricks and indices of randoms as qdo tasks
+```sh
+for i in {100..500..100};do echo 1238p245 $i >> obiwan_qdo.txt;done
+qdo load obiwan obiwan_qdo.txt
+```
+
+Now launch 5 qdo workers for the 5 qdo tasks you just made, using 6 hardware cores per task
+```sh
+qdo launch obiwan 5 --cores_per_worker 6 --batchqueue debug --walltime 00:30:00 --script $CSCRATCH/obiwan_code/obiwan/bin/qdo_job.sh --keep_env
+```
 ### Please ignore everything after this for now
 
 The idea is for any NERSC user to easily do optimized production runs of Obiwan using a Docker Image. The steps are basically
