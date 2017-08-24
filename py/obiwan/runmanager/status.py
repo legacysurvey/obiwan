@@ -21,6 +21,9 @@ def get_logfile(outdir,obj,brick,rowstart):
   return os.path.join( get_logdir(outdir,obj,brick,rowstart),
                        'log.%s' % brick)
 
+def get_slurm_files(outdir):
+  return glob( outdir + '/slurm-*.out')
+
 def rs_from_logfile(log):
     logdir= os.path.dirname(log)
     return logdir[logdir.rfind('/rs')+3:]
@@ -49,12 +52,13 @@ class QdoList(object):
       text += '%s= %s\n' % (attr, getattr(self,attr) )
     return text
 
-  def get_tasks_and_logs(self):
-    """get tasks and logs for the three types of qdo status
+  def get_tasks_logs_slurms(self):
+    """get tasks, logs, slurms for the three types of qdo status
     Running, Succeeded, Failed"""
     # Logs for all Failed tasks
     tasks={}
     logs={}
+    slurms={}
     #err= defaultdict(lambda: [])
     print('qdo Que: %s' % self.que_name)
     q = qdo.connect(self.que_name)
@@ -67,8 +71,21 @@ class QdoList(object):
       for task in tasks[res]:
         #brick,rs= np.array(task.split(' ')).astype(str) #Avoid unicode
         brick,rs= task.split(' ')
-        logs[res].append( get_logfile(self.outdir,self.obj,brick,rs) )
-    return tasks,logs
+        logfn= get_logfile(self.outdir,self.obj,brick,rs)
+        logs[res].append( logfn )
+      # Corresponding slurm files
+      slurms= get_slurm_files(self.outdir)
+      assert(len(slurms) > 0)
+      found= False
+      for slurm in slurms:
+        with open(slurm,'r') as foo:
+          text= foo.read()
+        if logfn in text:
+          found=True
+          slurms[res].append( slurm )
+      if not found: 
+          print('didnt find %s in slurms: ' % logfn,slurms)
+    return tasks,logs,slurms
 
 
 class RunStatus(object):
@@ -85,14 +102,24 @@ class RunStatus(object):
 
   def tally(self):
     tally= defaultdict(list)
-    if res == 'succeeded':
-      for log in self.logs[res]:
-        with open(log,'r') as foo:
-          text= foo.read()
-        if "decals_sim:All done!" in text:
-          tally[res].append( 1 )
-        else:
-          tally[res].append( 0 )
+    for res in self.tasks.keys():
+      if res == 'succeeded':
+        for log in self.logs[res]:
+          with open(log,'r') as foo:
+            text= foo.read()
+          if "decals_sim:All done!" in text:
+            tally[res].append( 1 )
+          else:
+            tally[res].append( 0 )
+      elif res == 'running':
+        for log in self.logs[res]:
+          with open(log,'r') as foo:
+            text= foo.read()
+          if "decals_sim:All done!" in text:
+            tally[res].append( 1 )
+          else:
+            tally[res].append( 0 )
+ 
     return tally
 
   def get_failed_errors(self):
@@ -114,7 +141,7 @@ if __name__ == '__main__':
   print(args)
 
   Q= QdoList(args.outdir,args.obj,que_name='obiwan_9deg')
-  tasks,logs= Q.get_tasks_and_logs()
+  tasks,logs,slurms= Q.get_tasks_logs_slurms()
   
   # Write log fns so can inspect
   for res in logs.keys():
@@ -124,7 +151,7 @@ if __name__ == '__main__':
   tally= R.tally()
   for res in tally.keys():
     print('Tally %s' % res)
-    print('1: %d/%d' % (np.sum(tally[res]), len(tally[res]))
+    print('1: %d/%d' % (np.sum(tally[res]), len(tally[res])))
   #R.get_failed_errors()
   raise ValueError('done')
 
