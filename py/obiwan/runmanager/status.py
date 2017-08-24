@@ -57,8 +57,12 @@ class QdoList(object):
     Running, Succeeded, Failed"""
     # Logs for all Failed tasks
     tasks={}
-    logs={}
-    slurms={}
+    ids={}
+    logs= defaultdict(list)
+    slurms= defaultdict(list)
+    slurm_fns= get_slurm_files(self.outdir)
+    assert(len(slurm_fns) > 0)
+    print('slurm_fns=',slurm_fns)
     #err= defaultdict(lambda: [])
     print('qdo Que: %s' % self.que_name)
     q = qdo.connect(self.que_name)
@@ -66,27 +70,48 @@ class QdoList(object):
       # List of "brick rs" for each QDO_RESULT  
       tasks[res] = [a.task 
                     for a in q.tasks(state= getattr(qdo.Task, res.upper()))]
-      # Corresponding log files  
-      logs[res]= []  
+      ids[res] = [a.id 
+                    for a in q.tasks(state= getattr(qdo.Task, res.upper()))]
+      # Corresponding log, slurm files  
       for task in tasks[res]:
-        #brick,rs= np.array(task.split(' ')).astype(str) #Avoid unicode
+        # Logs
         brick,rs= task.split(' ')
         logfn= get_logfile(self.outdir,self.obj,brick,rs)
         logs[res].append( logfn )
-      # Corresponding slurm files
-      slurms= get_slurm_files(self.outdir)
-      assert(len(slurms) > 0)
-      found= False
-      for slurm in slurms:
-        with open(slurm,'r') as foo:
-          text= foo.read()
-        if logfn in text:
-          found=True
-          slurms[res].append( slurm )
-      if not found: 
-          print('didnt find %s in slurms: ' % logfn,slurms)
-    return tasks,logs,slurms
+        # Slurms
+        found= False
+        for slurm_fn in slurm_fns:
+          with open(slurm_fn,'r') as foo:
+            text= foo.read()
+          if logfn in text:
+            found=True
+            slurms[res].append( slurm_fn )
+        if not found: 
+            print('didnt find %s in slurms: ' % logfn,slurm_fn)
+    return tasks,ids,logs,slurms
 
+  def rerun_tasks(self,task_ids, debug=True):
+    """set qdo tasks state to Pending for these task_ids
+    
+    Args:
+      debug: False to actually reset the qdo tasks state AND to delete
+      all output files for that task
+    """
+    q = qdo.connect(self.que_name)
+    if not debug:
+      print('resetting state for %d tasks' % len(task_ids))
+    for task_id in task_ids:
+      try:
+        task_obj= q.tasks(id= task_id)
+        brick,rs= task_obj.task.split(' ')
+        logdir= get_logdir(self.outdir,self.obj,brick,rs)
+        if debug:
+          print('would remove dir %s' % logdir, 'for task obj',task_obj)
+        else:
+          task_obj.set_state(qdo.Task.PENDING)
+          #os.removedirs(logdir)
+      except ValueError:
+        print('cant find task_id=%d' % task_id)
 
 class RunStatus(object):
   """Tallys which QDO_RESULTS actually finished, what errors occured, etc.
@@ -94,15 +119,17 @@ class RunStatus(object):
   Args:
     tasks: dict, each key is list of qdo tasks
     logs: dict, each key is list of log files for each task
+    err_list: text to search for in log file to classify as that type of err
   """
     
   def __init__(self,tasks,logs):
     self.tasks= tasks
     self.logs= logs
+    self.err_list= ['Error A']
 
-  def tally(self):
+  def get_tally(self):
     tally= defaultdict(list)
-    for res in self.tasks.keys():
+    for res in ['succeeded','failed']:
       if res == 'succeeded':
         for log in self.logs[res]:
           with open(log,'r') as foo:
@@ -111,25 +138,32 @@ class RunStatus(object):
             tally[res].append( 1 )
           else:
             tally[res].append( 0 )
-      elif res == 'running':
+      elif res == 'failed':
         for log in self.logs[res]:
           with open(log,'r') as foo:
             text= foo.read()
-          if "decals_sim:All done!" in text:
-            tally[res].append( 1 )
-          else:
-            tally[res].append( 0 )
- 
+          found_err= False
+          for err in self.err_list:
+            if err in text:
+              tally[res].append(err)
+              found_err=True
+              break
+          if not found_err:
+            tally[res].append('Other')
     return tally
 
-  def get_failed_errors(self):
-      # Sort by type of error 
-      if "EOFError: Ran out of input" in text:
-          err['pickle'].append('%s %s' (brick,rs))
-      elif "IndexError" in text:
-          err['index'].append('%s %s' (brick,rs))
-      elif "AssertionError" in text:
-          err['assert'].append('%s %s' (brick,rs))
+  def print_tally(self,tally):
+    for res in self.tasks.keys():
+      print('--- Tally %s ---' % res)
+      if res == 'succeeded':
+         print('done: %d/%d' % (np.sum(tally[res]), len(tally[res])))
+      elif res == 'failed':
+        for err in R.err_list + ['Other']:
+          print('%s: %d/%d' % (err,
+                   np.where(tally[res] == err)[0].size, len(tally[res])))
+      elif res == 'running':
+         print('assuming rerun: %d/%d' % (len(tally[res]),len(tally[res])))
+
 
 if __name__ == '__main__':
   from argparse import ArgumentParser
@@ -141,18 +175,18 @@ if __name__ == '__main__':
   print(args)
 
   Q= QdoList(args.outdir,args.obj,que_name='obiwan_9deg')
-  tasks,logs,slurms= Q.get_tasks_logs_slurms()
+  tasks,ids,logs,slurms= Q.get_tasks_logs_slurms()
   
   # Write log fns so can inspect
   for res in logs.keys():
     writelist(logs[res],"%s_logfns.txt" % res)
+    writelist(slurms[res],"%s_slurmfns.txt" % res)
 
   R= RunStatus(tasks,logs)
-  tally= R.tally()
-  for res in tally.keys():
-    print('Tally %s' % res)
-    print('1: %d/%d' % (np.sum(tally[res]), len(tally[res])))
-  #R.get_failed_errors()
+  tally= R.get_tally()
+  R.print_tally(tally)
+
+  Q.rerun_tasks(ids['running'], debug=False)
   raise ValueError('done')
 
   cmd= os.path.join( get_brickdir(args.outdir,args.obj,args.brick) + '/*/' + 'log.*')
