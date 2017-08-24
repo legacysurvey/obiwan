@@ -86,13 +86,14 @@ class RunStatus(object):
   def tally(self):
     tally= defaultdict(list)
     if res == 'succeeded':
-      for log in self.logs:
+      for log in self.logs[res]:
         with open(log,'r') as foo:
           text= foo.read()
         if "decals_sim:All done!" in text:
           tally[res].append( 1 )
         else:
           tally[res].append( 0 )
+    return tally
 
   def get_failed_errors(self):
       # Sort by type of error 
@@ -120,6 +121,10 @@ if __name__ == '__main__':
     writelist(logs[res],"%s_logfns.txt" % res)
 
   R= RunStatus(tasks,logs)
+  tally= R.tally()
+  for res in tally.keys():
+    print('Tally %s' % res)
+    print('1: %d/%d' % (np.sum(tally[res]), len(tally[res]))
   #R.get_failed_errors()
   raise ValueError('done')
 
