@@ -7,6 +7,9 @@ import numpy as np
 from glob import glob
 from collections import defaultdict
 
+
+QDO_RESULT= ['Running, Succeeded, Failed']
+
 def get_brickdir(outdir,obj,brick):
   return os.path.join(outdir,obj,brick[:3],brick)
 
@@ -59,31 +62,49 @@ if __name__ == '__main__':
       print('%s %s: %s' % (brick,rs,status[brick][rs]))
 
   raise ValueError()
-  # Logs for all Failed tasks
-  tasks={}
-  logs_fail=[]
-  err= defaultdict(lambda: [])
-  q = qdo.connect('obiwan')
-  tasks['finish'] = q.tasks(state=qdo.Task.SUCCEEDED)
-  tasks['fail'] = q.tasks(state=qdo.Task.FAILED)
-  for i in range(len(tasks['fail'])):
-      brick,rs= tasks['fail'][i]
-      logfn=  get_log(outdir,obj,brick,rs)
-      logs_fail.append(logfn)
-      # Sort by type of error 
-      with open(logfn,'r') as foo:
-        text= foo.read()
-      if "EOFError: Ran out of input" in text:
-          err['pickle'].append('%s %s' (brick,rs))
-      elif "IndexError" in text:
-          err['index'].append('%s %s' (brick,rs))
-      elif "AssertionError" in text:
-          err['assert'].append('%s %s' (brick,rs))
 
-  # Write results
-  for key in err.keys():
-    if err[key].size > 0:
-      writelist(err[key],"%s.txt" % key)
 
-  print(logs_fail)
 
+class QdoList(object):
+  def __init__(self,que_name='obiwan'):
+    self.que_name= que_name
+
+  def get_tasks_and_logs(self):
+    """get tasks and logs for the three types of qdo status
+    Running, Succeeded, Failed"""
+    # Logs for all Failed tasks
+    tasks={}
+    logs={}
+    logs_fail=[]
+    err= defaultdict(lambda: [])
+    q = qdo.connect(self.que_name)
+    for res in QDO_RESULT:
+      tasks[res] = q.tasks(state= getattr(qdo.Task, res))
+      #tasks['fail'] = q.tasks(state=qdo.Task.FAILED)
+    return tasks
+    for i in range(len(tasks['fail'])):
+        brick,rs= tasks['fail'][i]
+        logfn=  get_log(outdir,obj,brick,rs)
+        logs_fail.append(logfn)
+        # Sort by type of error 
+        with open(logfn,'r') as foo:
+          text= foo.read()
+        if "EOFError: Ran out of input" in text:
+            err['pickle'].append('%s %s' (brick,rs))
+        elif "IndexError" in text:
+            err['index'].append('%s %s' (brick,rs))
+        elif "AssertionError" in text:
+            err['assert'].append('%s %s' (brick,rs))
+
+    # Write results
+    for key in err.keys():
+      if err[key].size > 0:
+        writelist(err[key],"%s.txt" % key)
+
+    print(logs_fail)
+
+
+if __name__ == '__main__':
+  q= QdoList('obiwan_9deg')
+  tasks= q.get_tasks_and_logs(self)
+  print('done')

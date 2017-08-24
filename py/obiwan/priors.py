@@ -35,6 +35,7 @@ import tarfile
 import pandas as pd
 from pandas.plotting import scatter_matrix
 
+from obiwan.common import inJupyter, save_png
 from theValidator.catalogues import CatalogueFuncs,Matcher
 
 DOWNLOAD_ROOT = "http://portal.nersc.gov/project/desi/users/kburleigh/obiwan/"
@@ -363,22 +364,6 @@ class Data(object):
         #d['ba']= np.random.uniform(0.2,1.,size=len(cat))
         #d['pa']= np.random.uniform(0.,180.,size=len(cat))
         return d
-
-def inJupyter():
-    return 'inline' in matplotlib.get_backend()
-    
-def save_png(outdir,fig_id):
-    path= os.path.join(outdir,fig_id + ".png")
-    if not os.path.isdir(outdir):
-        os.makedirs(dirname)
-    print("Saving figure", path)
-    plt.tight_layout()
-    plt.savefig(path, format='png', dpi=150)
-    #plt.savefig(path, format='png',box_extra_artists=[xlab,ylab],
-    #            bbox_inches='tight',dpi=150)
-    if not inJupyter():
-        plt.close()
-
 def pyVersion():
     return sys.version_info.major
         
