@@ -16,8 +16,13 @@ class PsqlWorker(object):
         self.cur.close()
         self.conn.close()
 
-def getSrcsInBrick(brickname,objtype, db_table='obiwan_elg'):
-    '''returns a fit_table of PSQL query'''
+def getSrcsInBrick(brickname,objtype, db_table='obiwan_elg',
+                   skipped_ids=None):
+    '''returns a fit_table of PSQL query
+    
+    Args:
+      skipped_ids: array or list of strings of ids if not None, the db ids
+    '''
     db= PsqlWorker()
     cmd= "select brickname,ra1,ra2,dec1,dec2 from obiwan_bricks where brickname = '%s'" % brickname
     print('cmd= %s' % cmd)
@@ -36,6 +41,11 @@ def getSrcsInBrick(brickname,objtype, db_table='obiwan_elg'):
             cmd=cmd+ ",%s_w1" % objtype
     cmd=cmd+ " from %s where q3c_poly_query(ra, dec, '{%f,%f, %f,%f, %f,%f, %f,%f}')" % \
              (db_table, ra1,dec1, ra2,dec1, ra2,dec2, ra1,dec2)
+    if skipped_ids is not None:
+      cmd+= "and id in ("
+      for skip_id in skipped_ids[:-1]:
+        cmd+= "%s," % skip_id
+      cmd+= "%s)" % skipped_ids[-1]
     print('cmd= %s' % cmd)
     db.cur.execute(cmd)
     a= db.cur.fetchall()

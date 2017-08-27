@@ -5,6 +5,7 @@ import qdo
 import os
 import numpy as np
 from glob import glob
+import re
 from collections import defaultdict
 
 
@@ -119,13 +120,15 @@ class RunStatus(object):
   Args:
     tasks: dict, each key is list of qdo tasks
     logs: dict, each key is list of log files for each task
-    err_list: text to search for in log file to classify as that type of err
+
+  Defaults:
+    regex_errs: list of regular expressions matching possible log file errors
   """
     
   def __init__(self,tasks,logs):
     self.tasks= tasks
     self.logs= logs
-    self.err_list= ['Error A']
+    self.regex_errs= ['ValueError: starting row=[0-9]* exceeds number of artificial sources, quit']
 
   def get_tally(self):
     tally= defaultdict(list)
@@ -143,50 +146,65 @@ class RunStatus(object):
           with open(log,'r') as foo:
             text= foo.read()
           found_err= False
-          for err in self.err_list:
-            if err in text:
-              tally[res].append(err)
+          for regex in self.regex_errs:
+            foundIt= re.search(regex, text)
+            if foundIt:
+              tally[res].append(regex)
               found_err=True
               break
           if not found_err:
             tally[res].append('Other')
+    # numpy array, not list, works with np.where()
+    for res in tally.keys():
+      tally[res]= np.array(tally[res])
     return tally
 
   def print_tally(self,tally):
     for res in self.tasks.keys():
       print('--- Tally %s ---' % res)
       if res == 'succeeded':
-         print('done: %d/%d' % (np.sum(tally[res]), len(tally[res])))
+         print('%d/%d = done' % (len(tally[res]), np.sum(tally[res])))
       elif res == 'failed':
-        for err in R.err_list + ['Other']:
-          print('%s: %d/%d' % (err,
-                   np.where(tally[res] == err)[0].size, len(tally[res])))
+        for regex in self.regex_errs + ['Other']:
+          print('%d/%d = %s' % (
+                   np.where(tally[res] == regex)[0].size, len(tally[res]), regex))
       elif res == 'running':
-         print('assuming rerun: %d/%d' % (len(tally[res]),len(tally[res])))
+         print('%d/%d : need rerun' % (len(tally[res]),len(tally[res])))
+  
+  def get_logs_for_failed(self,regex='Other'):
+    """Returns log and slurm filenames for failed tasks labeled as regex"""
+    return self.logs[ tally['failed'] == regex ]
+
 
 
 if __name__ == '__main__':
   from argparse import ArgumentParser
   parser = ArgumentParser()
+  parser.add_argument('--qdo_quename',default='obiwan_9deg',help='',required=False)
   parser.add_argument('--outdir',default='/global/cscratch1/sd/kaylanb/obiwan_out/123/1238p245',help='',required=False)
   parser.add_argument('--obj',default='elg',help='',required=False)
   parser.add_argument('--brick',default='1238p245',help='',required=False)
   args = parser.parse_args()
   print(args)
 
-  Q= QdoList(args.outdir,args.obj,que_name='obiwan_9deg')
+  Q= QdoList(args.outdir,args.obj,que_name=args.qdo_quename)
   tasks,ids,logs,slurms= Q.get_tasks_logs_slurms()
   
   # Write log fns so can inspect
   for res in logs.keys():
-    writelist(logs[res],"%s_logfns.txt" % res)
-    writelist(slurms[res],"%s_slurmfns.txt" % res)
+    writelist(logs[res],"%s_%s_logfns.txt" % (args.qdo_quename,res))
+    writelist(slurms[res],"%s_%s_slurmfns.txt" % (args.qdo_quename,res))
 
   R= RunStatus(tasks,logs)
   tally= R.get_tally()
   R.print_tally(tally)
 
-  Q.rerun_tasks(ids['running'], debug=False)
+  #err_logs= R.get_logs_for_failed(regex='Other')
+  err_logs= logs[ np.where(tally['failed'] == 'ValueError: starting row=[0-9]* exceeds number of artificial sources, quit')[0] ]
+  writelist(err_logs,"%s_failedlogs.txt" % args.qdo_quename)
+
+
+  #Q.rerun_tasks(ids['running'], debug=False)
   raise ValueError('done')
 
   cmd= os.path.join( get_brickdir(args.outdir,args.obj,args.brick) + '/*/' + 'log.*')

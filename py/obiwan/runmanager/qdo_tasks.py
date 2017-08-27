@@ -4,6 +4,8 @@ import numpy as np
 from astrometry.util.fits import fits_table
 from astrometry.libkd.spherematch import match_radec
 
+from obiwan.runmanager.status import writelist
+
 SURVEY_BRICKS= os.path.join(os.environ['obiwan_data'],
                             'legacysurveydir/survey-bricks.fits.gz')
 assert(os.path.exists(SURVEY_BRICKS))
@@ -33,28 +35,68 @@ class Bricks(object):
     #                             self.bricks.dec2 <= dec[1]))
     #return self.bricks[keep].copy()
 
-if __name__ == '__main__':
-  from argparse import ArgumentParser
-  parser = ArgumentParser()
-  parser.add_argument('--ra1',type=float,action='store',default=123.3,required=False)
-  parser.add_argument('--ra2',type=float,action='store',default=124.3,required=False)
-  parser.add_argument('--dec1',type=float,action='store',default=24.0,required=False)
-  parser.add_argument('--dec2',type=float,action='store',default=25.0,required=False)
-  parser.add_argument('--nobj_total',type=int,action='store',default=2400,help='total number of randoms in the region running obiwan on',required=False)
-  parser.add_argument('--nobj_per_run',type=int,action='store',default=500,help='number of simulated sources to inject per obiwan run',required=False)
-  args = parser.parse_args()
+def write_qdo_tasks_normal(ra1=123.3,ra2=124.3,dec1=24.0,dec2=25.0, 
+                           nobj_total=2400, nobj_per_run=500):
+  """for all bricks in a ra,dec box region, write qdo task list for obiwan runs
+  
+  Args:
+    ra1,ra2,dec1,dec2: floats, corners of ra dec box
+    nobj_total: total number of randoms in the region running obiwan on
+    nobj_per_run: number of simulated sources to inject per obiwan run
 
+  Returns:
+    Writes qdo task list to file
+  """
   # bricks touching region
   b= Bricks()
-  tab= b.overlapBox(ra=[args.ra1,args.ra2], dec=[args.dec1,args.dec2])
+  tab= b.overlapBox(ra=[ra1,ra2], dec=[dec1,dec2])
 
-  from obiwan.runmanager.status import writelist
   writelist(np.sort(tab.brickname), 'bricks_inregion.txt')
 
   # corresponding qdo tasks
-  avg_nobj_per_brick= int( args.nobj_total / len(tab))
+  avg_nobj_per_brick= int( nobj_total / len(tab))
   print('avg_nobj_per_brick= %d' % avg_nobj_per_brick)
-  tasks= ['%s %d' % (brick,rs) 
+  # Tasks: brickname rowstart skip_ids
+  tasks= ['%s %d %s' % (brick,rs,'no') 
             for brick in np.sort(tab.brickname)
-            for rs in np.arange(0,avg_nobj_per_brick,args.nobj_per_run)]
+            for rs in np.arange(0,avg_nobj_per_brick, nobj_per_run)]
   writelist(tasks, 'tasks_inregion.txt')
+
+def write_qdo_tasks_skipids(brick_list_fn, nobj_per_run=500):
+  """for given list of bricks, write qdo task list for "skip_ids" obiwan runs
+
+  Args:
+    brick_list_fn: text file with one brickname per line
+    nobj_per_run: number of simulated sources to inject per obiwan run
+
+  Returns:
+    Writes qdo task list to file
+  """
+  bricks= np.loadtxt(brick_list_fn,dtype=str)
+  tasks= ['%s %d %s' % (brick,rs,'yes') 
+            for brick in bricks
+            for rs in np.arange(0,2*nobj_per_run, nobj_per_run)]
+  writelist(tasks, 'tasks_skipids.txt')
+
+
+
+if __name__ == '__main__':
+  # Examples of how to call each type of function in this module
+  # Qdo "normal" task list for all bricks in a ra,dec box region
+  write_qdo_tasks_normal(ra1=123.3,ra2=124.3,dec1=24.0,dec2=25.0, 
+                         nobj_total=2400, nobj_per_run=500)
+  # Qdo "skip_ids" task list for a given list of bricks
+
+  write_qdo_tasks_skipids(brick_list_fn, nobj_per_run=500)
+  #from argparse import ArgumentParser
+  #parser = ArgumentParser()
+  #parser.add_argument('--region', type=str, choices=['no','yes'],default='no', help='inject skipped ids for brick, otherwise run as usual')
+  #parser.add_argument('--bricks_list', type=str, default=None, help='text file listing bricks to inject skipped ids for brick, otherwise run as usual')
+  #parser.add_argument('--ra1',type=float,action='store',default=123.3,required=False)
+  #parser.add_argument('--ra2',type=float,action='store',default=124.3,required=False)
+  #parser.add_argument('--dec1',type=float,action='store',default=24.0,required=False)
+  #parser.add_argument('--dec2',type=float,action='store',default=25.0,required=False)
+  #parser.add_argument('--nobj_total',type=int,action='store',default=2400,help='total number of randoms in the region running obiwan on',required=False)
+  #parser.add_argument('--nobj_per_run',type=int,action='store',default=500,help='number of simulated sources to inject per obiwan run',required=False)
+  #args = parser.parse_args()
+
