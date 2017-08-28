@@ -2,7 +2,7 @@
 
 #SBATCH -p debug
 #SBATCH -N 1
-#SBATCH -t 00:30:00
+#SBATCH -t 00:05:00
 #SBATCH --account=desi
 #SBATCH -J obiwan
 #SBATCH -L SCRATCH,project
@@ -10,10 +10,13 @@
 
 export brick=1238p245
 export rowstart=0
+#export do_skipids=no
+#export db_table=obiwan_elg_9deg
+export do_skipids=yes
+export db_table=obiwan_9deg_doskip
 export object=elg
 export dataset=dr5
 export nobj=300
-export db_table=obiwan_elg_9deg
 
 usecores=4
 threads=$usecores
@@ -44,5 +47,6 @@ srun -n 1 -c $usecores python obiwan/kenobi.py --dataset ${dataset} -b ${brick} 
                        --db_table ${db_table} \
                        --outdir $outdir --add_sim_noise \
                        --threads $threads  \
+                       --do_skipids $do_skipids \
                        >> $log 2>&1
 

@@ -81,13 +81,12 @@ def write_qdo_tasks_skipids(brick_list_fn, nobj_per_run=500):
 
 
 if __name__ == '__main__':
-  # Examples of how to call each type of function in this module
   # Qdo "normal" task list for all bricks in a ra,dec box region
-  write_qdo_tasks_normal(ra1=123.3,ra2=124.3,dec1=24.0,dec2=25.0, 
-                         nobj_total=2400, nobj_per_run=500)
+  ##write_qdo_tasks_normal(ra1=123.3,ra2=124.3,dec1=24.0,dec2=25.0, 
+  ##                       nobj_total=2400, nobj_per_run=500)
   # Qdo "skip_ids" task list for a given list of bricks
-
-  write_qdo_tasks_skipids(brick_list_fn, nobj_per_run=500)
+  brick_list_fn= '/global/cscratch1/sd/kaylanb/obiwan_code/obiwan/bricks_ready_skip.txt'
+  write_qdo_tasks_skipids(brick_list_fn, nobj_per_run=300)
   #from argparse import ArgumentParser
   #parser = ArgumentParser()
   #parser.add_argument('--region', type=str, choices=['no','yes'],default='no', help='inject skipped ids for brick, otherwise run as usual')

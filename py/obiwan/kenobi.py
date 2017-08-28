@@ -764,7 +764,7 @@ def build_simcat(Samp=None,brickwcs=None, meta=None):
     #dec = rand.uniform(bounds[2], bounds[3], nobj)
     i_keep,i_skip= flag_nearest_neighbors(Samp, radius_in_deg=5./3600)
     skipping_ids= Samp.get('id')[i_skip]
-    print('sources %d, keeping %d, flagged as nearby %d' % (len(Samp),len(i_keep),len(i_skip)))
+    log.info('sources %d, keeping %d, flagged as nearby %d' % (len(Samp),len(i_keep),len(i_skip)))
     Samp.cut(i_keep)
     
     xxyy = brickwcs.radec2pixelxy(Samp.ra,Samp.dec)

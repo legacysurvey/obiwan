@@ -50,7 +50,7 @@ def getSrcsInBrick(brickname,objtype, db_table='obiwan_elg',
     db.cur.execute(cmd)
     a= db.cur.fetchall()
     if len(a) == 0:
-        print('WARING: found nothing with: %s' % cmd)
+        raise ValueError('No randoms in brick %s, e.g. found nothing with db query: %s' % (brickname,cmd))
     # Package in fits_table
     d={}
     # TODO: make simpler and use re instead of rhalf above

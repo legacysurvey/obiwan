@@ -128,7 +128,11 @@ class RunStatus(object):
   def __init__(self,tasks,logs):
     self.tasks= tasks
     self.logs= logs
-    self.regex_errs= ['ValueError: starting row=[0-9]* exceeds number of artificial sources, quit']
+    self.regex_errs= [
+        'ValueError: starting row=[0-9]* exceeds number of artificial sources, quit',
+        'No randoms in brick [0-9]*[pm][0-9]*, e.g. found nothing with db query:',
+        'WARING: found nothing with:'
+        ]
 
   def get_tally(self):
     tally= defaultdict(list)
@@ -200,8 +204,9 @@ if __name__ == '__main__':
   R.print_tally(tally)
 
   #err_logs= R.get_logs_for_failed(regex='Other')
-  err_logs= logs[ np.where(tally['failed'] == 'ValueError: starting row=[0-9]* exceeds number of artificial sources, quit')[0] ]
-  writelist(err_logs,"%s_failedlogs.txt" % args.qdo_quename)
+  err_key= 'Other'
+  err_logs= np.array(logs['failed'])[ tally['failed'] == err_key ]
+  writelist(err_logs,"logsfailed_%s.txt"% err_key)
 
 
   #Q.rerun_tasks(ids['running'], debug=False)
