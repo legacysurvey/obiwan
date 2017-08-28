@@ -96,11 +96,11 @@ def ptime(text,t0):
 
 
 def get_savedir(**kwargs):
-  if kwargs['args'].do_skipids == 'no':
+  if kwargs['do_skipids'] == 'no':
     return os.path.join(kwargs['decals_sim_dir'],kwargs['objtype'],\
                         kwargs['brickname'][:3], kwargs['brickname'],\
                         "rs%d" % kwargs['rowst'])    
-  elif kwargs['args'].do_skipids == 'yes':
+  elif kwargs['do_skipids'] == 'yes':
     return os.path.join(kwargs['decals_sim_dir'],kwargs['objtype'],\
                         kwargs['brickname'][:3], kwargs['brickname'],\
                         "skip_rs%d" % kwargs['rowst'])    
@@ -710,68 +710,27 @@ class BuildStamp():
 
 
 
-def no_overlapping_radec_2(Samp, radius_in_deg=5./3600):
+def flag_nearest_neighbors(Samp, radius_in_deg=5./3600):
   """Returns Sample indices to keep (have > dist separations) and indices to skip
 
   Returns:
     tuple: keep,skip: indices of Samp to keep and skip
   """
-  ra,dec= Samp.get('ra'),Samp.get('dec')
-  I,J,d = match_radec(ra,dec, ra,dec, radius_in_deg, notself=True)
-  setI= set(I)
-  setJ= set(J)
-  # Common elements
-  skip= setI.intersection(setJ)
-  # In either but not both
-  keep= setI.symmetric_difference(setJ)
-  assert(len(skip) + len(keep) == len(Samp))
-  return list(keep),list(skip) 
-
-def no_overlapping_radec(Samp, dist=5./3600):
-    '''Returns indices of sources that are too close
-
-	We do not inject sources if they are too close to another
-		simulated source. They are skipped and injected in a 
-		later 
-
-	Args:
-		Samp: fits_table for the properties of sources in the brick
-			usually a subset of all sources in the brick determined by
-			rowstart (rs)
-		dist: arcsec, minimum separation simulated sources are allowed 
-			to have
-
-	Returns:
-		bool array, indices of simulated sources that are too close
-    '''
-    log = logging.getLogger('decals_sim')
-    ra,dec= Samp.get('ra'),Samp.get('dec')
-    # ra,dec indices of just neighbors within "dist" away, just nerest neighbor of those
-    cat1 = SkyCoord(ra=ra*units.degree, dec=dec*units.degree)
-    cat2 = SkyCoord(ra=ra*units.degree, dec=dec*units.degree)
-    i2, d2d, d3d = cat1.match_to_catalog_sky(cat2,nthneighbor=2) # don't match to self
-    # Cut to large separations
-    return np.array(d2d) > dist 
-
-    #cnt = 1
-    ##log.info("astrom: after iter=%d, have overlapping ra,dec %d/%d", cnt, len(m2),ra.shape[0])
-    #log.info("Astrpy: after iter=%d, have overlapping ra,dec %d/%d", cnt, len(m2),ra.shape[0])
-    #while len(m2) > 0:
-    #    ra[m2]= random_state.uniform(bounds[0], bounds[1], len(m2))
-    #    dec[m2]= random_state.uniform(bounds[2], bounds[3], len(m2))
-    #    # Any more matches? 
-    #    cat1 = SkyCoord(ra=ra*units.degree, dec=dec*units.degree)
-    #    cat2 = SkyCoord(ra=ra*units.degree, dec=dec*units.degree)
-    #    m2, d2d, d3d = cat1.match_to_catalog_sky(cat2,nthneighbor=2) # don't match to self
-    #    b= np.array(d2d) <= dist
-    #    m2= np.array(m2)[b]
-    #    #
-    #    cnt += 1
-    #    log.info("after iter=%d, have overlapping ra,dec %d/%d", cnt, len(m2),ra.shape[0])
-    #    if cnt > 30:
-    #        log.error('Crash, could not get non-overlapping ra,dec in 30 iterations')
-    #        raise ValueError
-    #return ra, dec
+  flag_set=set()
+  all_indices= range(len(Samp))
+  for cnt in all_indices:
+      if cnt in flag_set:
+          continue
+      else:
+          I,J,d = match_radec(Samp.ra[cnt],Samp.dec[cnt],
+                              Samp.ra,Samp.dec, 5./3600,
+                              notself=False,nearest=False)
+          # Remove all Samp matches (J), minus the reference ra,dec
+          flag_inds= set(J).difference(set( [cnt] ))
+          if len(flag_inds) > 0:
+              flag_set= flag_set.union(flag_inds)
+  keep= list( set(all_indices).difference(flag_set) )
+  return keep, list(flag_set)
 
 #def build_simcat(nobj=None, brickname=None, brickwcs=None, meta=None, seed=None, noOverlap=True):
 def build_simcat(Samp=None,brickwcs=None, meta=None):
@@ -803,16 +762,9 @@ def build_simcat(Samp=None,brickwcs=None, meta=None):
     #bounds = brickwcs.radec_bounds()
     #ra = rand.uniform(bounds[0], bounds[1], nobj)
     #dec = rand.uniform(bounds[2], bounds[3], nobj)
-    #if noOverlap:
-        #ra, dec= no_overlapping_radec(ra,dec, bounds,
-        #                              random_state=rand,
-        #                              dist=5./3600)
-    # Cut to ra,dec that are sufficiently separated (> 5'' away from each other)
-    ##I= no_overlapping_radec(Samp,dist=5./3600)
-    ##skipping_ids= Samp.get('id')[I == False]
-    i_keep,i_skip= no_overlapping_radec_2(Samp, radius_in_deg=5./3600)
+    i_keep,i_skip= flag_nearest_neighbors(Samp, radius_in_deg=5./3600)
     skipping_ids= Samp.get('id')[i_skip]
-    print('keeping %d, skipping %d' % (len(i_keep),len(i_skip)))
+    print('sources %d, keeping %d, flagged as nearby %d' % (len(Samp),len(i_keep),len(i_skip)))
     Samp.cut(i_keep)
     
     xxyy = brickwcs.radec2pixelxy(Samp.ra,Samp.dec)
@@ -1312,6 +1264,7 @@ def main(args=None):
                 maxobjs=maxobjs,\
                 rowst=rowst,\
                 rowend=rowend,\
+                do_skipids=args.do_skipids,\
                 args=args)
 
     # Stop if starting row exceeds length of radec,color table

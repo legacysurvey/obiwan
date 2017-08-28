@@ -35,3 +35,6 @@ MANIFEST
 
 # Mac OSX
 .DS_Store
+
+# testdata too big for github
+py/obiwan/test/testdata*
