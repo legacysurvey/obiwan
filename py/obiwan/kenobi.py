@@ -823,7 +823,7 @@ def get_parser():
     parser.add_argument('-rs', '--rowstart', type=int, default=0, metavar='', 
                         help='zero indexed, row of ra,dec,mags table, after it is cut to brick, to start on')
     parser.add_argument('--do_skipids', type=str, choices=['no','yes'],default='no', help='inject skipped ids for brick, otherwise run as usual')
-    parser.add_argument('--db_table', default='obiwan_elg', help='table name in desi db that randoms are stored in')
+    parser.add_argument('--randoms_db', default='obiwan_elg', help='desi db table name for randoms')
     parser.add_argument('--randoms_from_fits', default=None, help='set to read randoms from fits file instead of scidb2.nersc.gov db, set to absolute path of local fits file on computer')
     parser.add_argument('--prefix', type=str, default='', metavar='', 
                         help='tells which input sample to use')
@@ -1200,10 +1200,10 @@ def main(args=None):
         Samp.rename('%s_rhalf' % objtype,'%s_re' % objtype)
     else:
       if args.do_skipids == 'no':
-        Samp= getSrcsInBrick(brickname,objtype, db_table=args.db_table)
+        Samp= getSrcsInBrick(brickname,objtype, db_table=args.randoms_db)
       elif args.do_skipids == 'yes':
         skip_ids= get_skip_ids(decals_sim_dir, brickname, objtype)
-        Samp= getSrcsInBrick(brickname,objtype, db_table=args.db_table,
+        Samp= getSrcsInBrick(brickname,objtype, db_table=args.randoms_db,
                              skipped_ids= skip_ids)
     print('after PSQL') 
     print('%d samples, for brick %s' % (len(Samp),brickname))
