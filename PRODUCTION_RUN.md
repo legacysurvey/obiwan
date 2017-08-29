@@ -69,4 +69,28 @@ qdo launch obiwan 40 --cores_per_worker 4 --batchqueue debug --walltime 00:30:00
 qdo launch obiwan 40 --cores_per_worker 4 --batchqueue regular --walltime 05:00:00 --script $obiwan_code/obiwan/bin/qdo_job_9deg.sh --keep_env
 ```
 
+### Managing your qdo production run
+The scripts are in `obiwan/py/obiwan/runmanager/*.py`. I ran the 9 deg2 test using two qdo ques, named `obiwan_9deg` for all `rs*/` jobs and (when those all completed) `obiwan_9deg_doskip` for all `skip_rs*/` jobs.
+
+(1) To get a list of all log.<brickname> and slurm-<slurmid>.out files, sorted by status of "succeeded, failed, running" in the qdo db, and a tally of each error that occurred, do
+```sh
+cd $obiwan_code
+python $obiwan_code/obiwan/py/obiwan/runmanager/status.py --qdo_quename obiwan_9deg --outdir /global/cscratch1/sd/kaylanb/obiwan_out/obiwan_elg_9deg --obj elg
+```
+replace "obiwan_9deg" by "obiwan_9deg_doskip" to get the same for the `skip_rs*` jobs.
+
+(2) If you have a region on the sky where you want to run obiwan, you can get a list of all the tasks you need to do so with
+```py
+from obiwan.runmanager.qdo_tasks import write_qdo_tasks_normal
+write_qdo_tasks_normal(ra1=123.3,ra2=124.3,dec1=24.0,dec2=25.0,
+                       nobj_total=2400, nobj_per_run=500)
+```
+where ra1,ra2,dec1,dec2 are the corners of your region. nobj_total is the total number of randoms in the psql randoms db for your region, and nobj_per_run is how many randoms to inject per obiwan run.
+
+Once you finish all the above runs, you need to inject the randoms that were skipped. You can get a list of all these tasks with a text file listing the bricknames to inject the skipped randoms into
+```py
+from obiwan.runmanager.qdo_tasks import write_qdo_tasks_skipids
+write_qdo_tasks_skipids(brick_list_fn, nobj_per_run=500)
+```
+
 

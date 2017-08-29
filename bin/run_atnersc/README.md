@@ -136,16 +136,6 @@ qdo launch obiwan 5 --cores_per_worker 6 --batchqueue debug --walltime 00:30:00 
 #### 2B)
 Coming soon
 
-### Inspecting completed jobs / obiwan outputs
-```sh
-cd $obiwan_code
-python $obiwan_code/obiwan/bin/qdo_scripts/status.py
-```
-
-slurm*.out files are written to whichever directory you called "sbatch ..." or "qdo launch ..." from. 
-
-
-
 ### Please ignore everything after this for now
 
 The idea is for any NERSC user to easily do optimized production runs of Obiwan using a Docker Image. The steps are basically
