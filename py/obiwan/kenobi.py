@@ -23,6 +23,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 from pkg_resources import resource_filename
 from pickle import dump
+from glob import glob
+import csv
 
 
 from astropy.table import Table, Column, vstack
@@ -33,6 +35,8 @@ import fitsio
 
 from astropy import units
 from astropy.coordinates import SkyCoord
+
+from astrometry.libkd.spherematch import match_radec
 
 from tractor.psfex import PsfEx, PsfExModel
 from tractor.basics import GaussianMixtureEllipsePSF, RaDecPos
@@ -47,7 +51,7 @@ from obiwan.db_tools import getSrcsInBrick
 from astrometry.util.fits import fits_table, merge_tables
 from astrometry.util.ttime import Time
 
-import csv
+from theValidator.catalogues import CatalogueFuncs
 
 def write_dict(fn,d):
     '''d -- dictionary'''
@@ -92,9 +96,23 @@ def ptime(text,t0):
 
 
 def get_savedir(**kwargs):
+  if kwargs['do_skipids'] == 'no':
     return os.path.join(kwargs['decals_sim_dir'],kwargs['objtype'],\
                         kwargs['brickname'][:3], kwargs['brickname'],\
                         "rs%d" % kwargs['rowst'])    
+  elif kwargs['do_skipids'] == 'yes':
+    return os.path.join(kwargs['decals_sim_dir'],kwargs['objtype'],\
+                        kwargs['brickname'][:3], kwargs['brickname'],\
+                        "skip_rs%d" % kwargs['rowst'])    
+
+def get_skip_ids(decals_sim_dir, brickname, objtype):
+  fns= glob(os.path.join(decals_sim_dir, objtype,
+                         brickname[:3], brickname,
+                         '*','obiwan','skippedids-*.fits'))
+  if len(fns) == 0:
+    raise ValueError("no skippedids.fits files exist for this brick %s" % brickname)
+  T= CatalogueFuncs().stack(fns, textfile=False)
+  return T.ids.astype(str)
 
 def get_fnsuffix(**kwargs):
     return '-{}-{}.fits'.format(kwargs['objtype'], kwargs['brickname'])
@@ -692,54 +710,28 @@ class BuildStamp():
 		return self.star(obj)
 
 
-#def no_overlapping_radec(ra,dec, bounds, random_state=None, dist=5.0/3600):
-def no_overlapping_radec(Samp, dist=5./3600):
-    '''Returns indices of sources that are too close
 
-	We do not inject sources if they are too close to another
-		simulated source. They are skipped and injected in a 
-		later 
+def flag_nearest_neighbors(Samp, radius_in_deg=5./3600):
+  """Returns Sample indices to keep (have > dist separations) and indices to skip
 
-	Args:
-		Samp: fits_table for the properties of sources in the brick
-			usually a subset of all sources in the brick determined by
-			rowstart (rs)
-		dist: arcsec, minimum separation simulated sources are allowed 
-			to have
-
-	Returns:
-		bool array, indices of simulated sources that are too close
-    '''
-    log = logging.getLogger('decals_sim')
-    ra,dec= Samp.get('ra'),Samp.get('dec')
-    #if random_state is None:
-    #    random_state = np.random.RandomState()
-    # ra,dec indices of just neighbors within "dist" away, just nerest neighbor of those
-    cat1 = SkyCoord(ra=ra*units.degree, dec=dec*units.degree)
-    cat2 = SkyCoord(ra=ra*units.degree, dec=dec*units.degree)
-    i2, d2d, d3d = cat1.match_to_catalog_sky(cat2,nthneighbor=2) # don't match to self
-    # Cut to large separations
-    return np.array(d2d) > dist 
-
-    #cnt = 1
-    ##log.info("astrom: after iter=%d, have overlapping ra,dec %d/%d", cnt, len(m2),ra.shape[0])
-    #log.info("Astrpy: after iter=%d, have overlapping ra,dec %d/%d", cnt, len(m2),ra.shape[0])
-    #while len(m2) > 0:
-    #    ra[m2]= random_state.uniform(bounds[0], bounds[1], len(m2))
-    #    dec[m2]= random_state.uniform(bounds[2], bounds[3], len(m2))
-    #    # Any more matches? 
-    #    cat1 = SkyCoord(ra=ra*units.degree, dec=dec*units.degree)
-    #    cat2 = SkyCoord(ra=ra*units.degree, dec=dec*units.degree)
-    #    m2, d2d, d3d = cat1.match_to_catalog_sky(cat2,nthneighbor=2) # don't match to self
-    #    b= np.array(d2d) <= dist
-    #    m2= np.array(m2)[b]
-    #    #
-    #    cnt += 1
-    #    log.info("after iter=%d, have overlapping ra,dec %d/%d", cnt, len(m2),ra.shape[0])
-    #    if cnt > 30:
-    #        log.error('Crash, could not get non-overlapping ra,dec in 30 iterations')
-    #        raise ValueError
-    #return ra, dec
+  Returns:
+    tuple: keep,skip: indices of Samp to keep and skip
+  """
+  flag_set=set()
+  all_indices= range(len(Samp))
+  for cnt in all_indices:
+      if cnt in flag_set:
+          continue
+      else:
+          I,J,d = match_radec(Samp.ra[cnt],Samp.dec[cnt],
+                              Samp.ra,Samp.dec, 5./3600,
+                              notself=False,nearest=False)
+          # Remove all Samp matches (J), minus the reference ra,dec
+          flag_inds= set(J).difference(set( [cnt] ))
+          if len(flag_inds) > 0:
+              flag_set= flag_set.union(flag_inds)
+  keep= list( set(all_indices).difference(flag_set) )
+  return keep, list(flag_set)
 
 #def build_simcat(nobj=None, brickname=None, brickwcs=None, meta=None, seed=None, noOverlap=True):
 def build_simcat(Samp=None,brickwcs=None, meta=None):
@@ -771,14 +763,10 @@ def build_simcat(Samp=None,brickwcs=None, meta=None):
     #bounds = brickwcs.radec_bounds()
     #ra = rand.uniform(bounds[0], bounds[1], nobj)
     #dec = rand.uniform(bounds[2], bounds[3], nobj)
-    #if noOverlap:
-        #ra, dec= no_overlapping_radec(ra,dec, bounds,
-        #                              random_state=rand,
-        #                              dist=5./3600)
-    # Cut to ra,dec that are sufficiently separated (> 5'' away from each other)
-    I= no_overlapping_radec(Samp,dist=5./3600)
-    skipping_ids= Samp.get('id')[I == False]
-    Samp.cut(I)
+    i_keep,i_skip= flag_nearest_neighbors(Samp, radius_in_deg=5./3600)
+    skipping_ids= Samp.get('id')[i_skip]
+    log.info('sources %d, keeping %d, flagged as nearby %d' % (len(Samp),len(i_keep),len(i_skip)))
+    Samp.cut(i_keep)
     
     xxyy = brickwcs.radec2pixelxy(Samp.ra,Samp.dec)
 
@@ -835,7 +823,8 @@ def get_parser():
                         help='number of objects to simulate (required input)')
     parser.add_argument('-rs', '--rowstart', type=int, default=0, metavar='', 
                         help='zero indexed, row of ra,dec,mags table, after it is cut to brick, to start on')
-    parser.add_argument('--db_table', default='obiwan_elg', help='table name in desi db that randoms are stored in')
+    parser.add_argument('--do_skipids', type=str, choices=['no','yes'],default='no', help='inject skipped ids for brick, otherwise run as usual')
+    parser.add_argument('--randoms_db', default='obiwan_elg', help='desi db table name for randoms')
     parser.add_argument('--randoms_from_fits', default=None, help='set to read randoms from fits file instead of scidb2.nersc.gov db, set to absolute path of local fits file on computer')
     parser.add_argument('--prefix', type=str, default='', metavar='', 
                         help='tells which input sample to use')
@@ -1211,7 +1200,12 @@ def main(args=None):
         Samp= fits_table(args.randoms_from_fits)
         Samp.rename('%s_rhalf' % objtype,'%s_re' % objtype)
     else:
-        Samp= getSrcsInBrick(brickname,objtype, db_table=args.db_table)
+      if args.do_skipids == 'no':
+        Samp= getSrcsInBrick(brickname,objtype, db_table=args.randoms_db)
+      elif args.do_skipids == 'yes':
+        skip_ids= get_skip_ids(decals_sim_dir, brickname, objtype)
+        Samp= getSrcsInBrick(brickname,objtype, db_table=args.randoms_db,
+                             skipped_ids= skip_ids)
     print('after PSQL') 
     print('%d samples, for brick %s' % (len(Samp),brickname))
     print('First 2 sources have: ')
@@ -1271,6 +1265,7 @@ def main(args=None):
                 maxobjs=maxobjs,\
                 rowst=rowst,\
                 rowend=rowend,\
+                do_skipids=args.do_skipids,\
                 args=args)
 
     # Stop if starting row exceeds length of radec,color table
