@@ -109,7 +109,8 @@ def get_skip_ids(decals_sim_dir, brickname, objtype):
   fns= glob(os.path.join(decals_sim_dir, objtype,
                          brickname[:3], brickname,
                          '*','obiwan','skippedids-*.fits'))
-  assert(len(fns) > 0)
+  if len(fns) == 0:
+    raise ValueError("no skippedids.fits files exist for this brick %s" % brickname)
   T= CatalogueFuncs().stack(fns, textfile=False)
   return T.ids.astype(str)
 

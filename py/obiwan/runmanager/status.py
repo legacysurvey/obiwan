@@ -14,20 +14,20 @@ QDO_RESULT= ['running', 'succeeded', 'failed']
 def get_brickdir(outdir,obj,brick):
   return os.path.join(outdir,obj,brick[:3],brick)
 
-def get_logdir(outdir,obj,brick,rowstart):
+def get_logdir(outdir,obj,brick,rowstart,doSkipid='no'):
+  if doSkipid == "no":
+    suffix= 'rs%s' % rowstart
+  elif doSkipid == 'yes':
+    suffix= 'skip_rs%s' % rowstart
   return os.path.join( get_brickdir(outdir,obj,brick),
-                       'rs%s' % rowstart)
+                       '%s' % suffix)
 
-def get_logfile(outdir,obj,brick,rowstart):
-  return os.path.join( get_logdir(outdir,obj,brick,rowstart),
+def get_logfile(outdir,obj,brick,rowstart, doSkipid='no'):
+  return os.path.join( get_logdir(outdir,obj,brick,rowstart, doSkipid=doSkipid),
                        'log.%s' % brick)
 
 def get_slurm_files(outdir):
   return glob( outdir + '/slurm-*.out')
-
-def rs_from_logfile(log):
-    logdir= os.path.dirname(log)
-    return logdir[logdir.rfind('/rs')+3:]
 
 def writelist(lis,fn):
   if os.path.exists(fn):
@@ -41,6 +41,14 @@ def writelist(lis,fn):
 
 
 class QdoList(object):
+  """Queries the qdo db and maps log files to tasks and task status
+  
+  Args:
+    outdir: obiwan outdir, the slurm*.out files are there
+    obj: ...
+    que_name: ie. qdo create que_name
+  """
+
   def __init__(self,outdir,obj='elg',que_name='obiwan'):
     self.outdir= outdir
     self.obj= obj
@@ -76,8 +84,8 @@ class QdoList(object):
       # Corresponding log, slurm files  
       for task in tasks[res]:
         # Logs
-        brick,rs= task.split(' ')
-        logfn= get_logfile(self.outdir,self.obj,brick,rs)
+        brick,rs,doSkipid = task.split(' ')
+        logfn= get_logfile(self.outdir,self.obj,brick,rs, doSkipid=doSkipid)
         logs[res].append( logfn )
         # Slurms
         found= False
@@ -104,8 +112,8 @@ class QdoList(object):
     for task_id in task_ids:
       try:
         task_obj= q.tasks(id= task_id)
-        brick,rs= task_obj.task.split(' ')
-        logdir= get_logdir(self.outdir,self.obj,brick,rs)
+        brick,rs,doSkipid = task_obj.task.split(' ')
+        logdir= get_logdir(self.outdir,self.obj,brick,rs, doSkipid=doSkipid)
         if debug:
           print('would remove dir %s' % logdir, 'for task obj',task_obj)
         else:
@@ -131,7 +139,9 @@ class RunStatus(object):
     self.regex_errs= [
         'ValueError: starting row=[0-9]* exceeds number of artificial sources, quit',
         'No randoms in brick [0-9]*[pm][0-9]*, e.g. found nothing with db query:',
-        'WARING: found nothing with:'
+        'WARING: found nothing with:',
+        'File "obiwan/kenobi.py", line 112, in get_skip_ids',
+        'no skippedids.fits files exist for this brick'
         ]
 
   def get_tally(self):
@@ -187,7 +197,6 @@ if __name__ == '__main__':
   parser.add_argument('--qdo_quename',default='obiwan_9deg',help='',required=False)
   parser.add_argument('--outdir',default='/global/cscratch1/sd/kaylanb/obiwan_out/123/1238p245',help='',required=False)
   parser.add_argument('--obj',default='elg',help='',required=False)
-  parser.add_argument('--brick',default='1238p245',help='',required=False)
   args = parser.parse_args()
   print(args)
 
@@ -206,31 +215,10 @@ if __name__ == '__main__':
   #err_logs= R.get_logs_for_failed(regex='Other')
   err_key= 'Other'
   err_logs= np.array(logs['failed'])[ tally['failed'] == err_key ]
-  writelist(err_logs,"logsfailed_%s.txt"% err_key)
+  writelist(err_logs,"%s_%s_logsfailed.txt" % (args.qdo_quename,err_key))
 
 
   #Q.rerun_tasks(ids['running'], debug=False)
   raise ValueError('done')
-
-  cmd= os.path.join( get_brickdir(args.outdir,args.obj,args.brick) + '/*/' + 'log.*')
-  logs= glob( cmd)
-  assert(len(logs) > 0)
-
-  status= defaultdict(dict)
-  for log in logs:
-    rs= rs_from_logfile(log)
-    with open(log,'r') as foo:
-      text= foo.read()
-    if "INFO:decals_sim:All done!" in text:
-      status[args.brick][rs]='done'
-    else:
-      status[args.brick][rs]='not'
-  # Print results
-  for brick in status.keys():
-    for rs in status[brick].keys():
-      print('%s %s: %s' % (brick,rs,status[brick][rs]))
-
-  raise ValueError()
-
 
 
