@@ -11,7 +11,7 @@ from astrometry.libkd.spherematch import match_radec
 from astrometry.util.fits import fits_table, merge_tables
 from obiwan.fetch import fetch_targz
 
-DOWNLOAD_ROOT = "http://portal.nersc.gov/project/desi/users/kburleigh/dr5_qa/"
+DOWNLOAD_ROOT = "http://portal.nersc.gov/project/desi/users/kburleigh/"
 
 class Healpix(object):
     def get_nside(self,num_pix):
@@ -27,13 +27,17 @@ class Healpix(object):
             return np.sqrt(deg2*3600)
 
 class Data(object):
-    def __init__(self,targz_dir):
+    def __init__(self,targz_dir, allDR5=False):
         self.targz_dir= targz_dir
-        
+        if allDR5:
+          self.drname='dr5_qa_70k'
+        else:
+          self.drname='dr5_qa'
+
     def fetch(self):
         name='healpix.tar.gz'
-        fetch_targz(DOWNLOAD_ROOT+name,
-                    os.path.join(self.targz_dir,'dr5_qa',name))
+        fetch_targz(os.path.join(DOWNLOAD_ROOT,self.drname,name),
+                    os.path.join(self.targz_dir,self.drname,name))
         
     def get_data(self,psf_or_aper,which):
         """read healpix data, RING ordered'
@@ -47,7 +51,7 @@ class Data(object):
           nmatch: healpix array for number ps1 matches in each pixel
         """
         fn='%s/healpix/decam-ps1-0128-%s.fits' % (psf_or_aper,which)
-        hdu=fitsio.FITS(os.path.join(self.targz_dir,'dr5_qa',fn))
+        hdu=fitsio.FITS(os.path.join(self.targz_dir,self.drname,fn))
         data=hdu[0].read()
         nmatch= hdu[1].read()
         return data,nmatch
@@ -90,8 +94,9 @@ class Plots(object):
         hp.mollview(data,min=min,max=max,nest=False)
         
     def mollzoom(self, ra,dec,hp_vals,name,
-                 vlim=None,ralim=None,declim=None):
-        plt.figure(figsize=(4,10))
+                 vlim=None,ralim=None,declim=None,
+                 figsize=(5,5)):
+        plt.figure(figsize=figsize)
         plt.scatter(ra,dec,c=hp_vals,cmap='rainbow',alpha=0.75)
         if vlim:
             plt.clim(vlim)
@@ -211,10 +216,11 @@ if __name__ == '__main__':
   parser.add_argument('--outdir', type=str, default=None, help='where save plots and fits tables to')
   parser.add_argument('--psf_or_aper', type=str, choices=['psf','aper'],default='psf')
   parser.add_argument('--which', type=str, choices=['ddec','dra','g','r','z'],default='ddec')
+  parser.add_argument('--allDR5', action="store_true", default=False,help='only on NERSC, load GB sized healpix maps with data from all of DR5')
   args = parser.parse_args()
   print(args)
   
-  d= Data(args.targz_dir)
+  d= Data(args.targz_dir, allDR5=args.allDR5)
   d.fetch()
   data,nmatch= d.get_data(psf_or_aper=args.psf_or_aper,
                           which=args.which)
@@ -223,7 +229,8 @@ if __name__ == '__main__':
   
   p= Plots(close=False,outdir=args.outdir)
   ra,dec,cut_data= d.get_radec(data, keep= data != 0)
-  p.mollzoom(ra,dec,np.abs(cut_data),'test',ralim=[0,20],declim=[-20,20],
+  p.mollzoom(ra,dec,np.abs(cut_data),'test',
+             ralim=[ra.min(),ra.max()],declim=[dec.min(),dec.max()],
              vlim=(0.01,0.1))
 
   # Find closest brick to each of 5 largest deviations
