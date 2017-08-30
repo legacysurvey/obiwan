@@ -4,13 +4,12 @@
 # qdo launch obiwan 3 --cores_per_worker 4 --batchqueue debug --walltime 00:05:00 --script $obiwan_code/obiwan/bin/qdo_job_test.sh --keep_env
 
 
-export name_for_run=obiwan_elg_9deg
-export randoms_db=obiwan_elg_9deg
+export name_for_run=elg_9deg2_ra175
+export randoms_db=obiwan_elg_ra175
 export dataset=dr5
 export brick="$1"
 export rowstart="$2"
-#export do_skipids=no
-export do_skipids=yes
+export do_skipids=no
 export object=elg
 export nobj=300
 
