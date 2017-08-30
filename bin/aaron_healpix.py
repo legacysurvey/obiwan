@@ -4,6 +4,7 @@ import healpy as hp
 import fitsio
 import matplotlib.pyplot as plt
 from scipy.stats import sigmaclip
+from collections import defaultdict
 
 #from theValidator.catalogues import Matcher,CatalogueFuncs
 from astrometry.libkd.spherematch import match_radec
@@ -62,15 +63,22 @@ class Bricks(object):
         self.bricks= fits_table(os.path.join(targz_dir,
                                 'legacysurveydir','survey-bricks.fits.gz'))
         if decals:
-            self.brick.cut( (brick.dec > -20) & (brick.dec < 30))
+            self.bricks.cut( (self.bricks.dec > -30) &
+                             (self.bricks.dec < 30))
 
     def get_nearest_brick(self,ra,dec):
-        """returns nearest brick to given ra,dec"""
+        """given an ra,dec returns the nearest brick"""
         deg_per_brick=0.25
         #imatch,imiss,d2d= Matcher().match_within(heal,brick, dist= deg_per_brick/2)
         I,J,d = match_radec(ra,dec, self.bricks.ra,self.bricks.dec,
-                            deg_per_brick/2, nearest=True)
-        return self.bricks.brickname[I]
+                            deg_per_brick, nearest=True)
+        return self.bricks.brickname[ J[0] ]
+
+    def get_nearest_bricks(self,ra_list,dec_list):
+        bricks=[]
+        for ra,dec in zip(ra_list,dec_list):
+            bricks.append( self.get_nearest_brick(ra,dec) )
+        return bricks
 
 
 class Plots(object):
@@ -83,7 +91,7 @@ class Plots(object):
         
     def mollzoom(self, ra,dec,hp_vals,name,
                  vlim=None,ralim=None,declim=None):
-        plt.figure(figsize=(10,4))
+        plt.figure(figsize=(4,10))
         plt.scatter(ra,dec,c=hp_vals,cmap='rainbow',alpha=0.75)
         if vlim:
             plt.clim(vlim)
@@ -180,7 +188,7 @@ def get_DR5_ccds(bricknames):
             T.append(t)
             #ccd_fns.append(os.path.join(path,
             #                            'coadd/%s/%s/legacysurvey-%s-ccds.fits' %
-            #                            (bri,brick,brick))
+            #                            (bri,brick,brickv))
         except IOError:
             print('not found: %s' % ccd_fn)
     TT= merge_tables(T, columns='fillzero')
@@ -220,12 +228,20 @@ if __name__ == '__main__':
 
   # Find closest brick to each of 5 largest deviations
   hi_to_low= np.sort(np.abs(cut_data))[::-1]
-  for data_val in hi_to_low[:5]:
+  worst= defaultdict(list)
+  for data_val in hi_to_low[:10]:
       i= np.where( np.abs(cut_data) == data_val)[0]
-      print(ra[i],dec[i], B.get_nearest_brick(ra[i],dec[i]))
-        
+      worst['dev'].append( data_val )
+      worst['ra'].append( ra[i][0] )
+      worst['dec'].append( dec[i][0] )
+
   B= Bricks(args.targz_dir)
-  print( B.get_nearest_brick(hot_ra,hot_dec) )
+  worst['brick']= B.get_nearest_bricks(worst['ra'],worst['dec'])
+  with open('worst_%s_%s.txt' % (args.psf_or_aper,args.which),'w') as f:
+      for dev,ra,dec,brick in zip(worst['dev'],
+                                  worst['ra'],worst['dec'],worst['brick']):
+          f.write('%.2f %.2f %.2f %s\n' % (dev,ra,dec,brick))
+        
   
   
   #orig_code(data,nmatch)
