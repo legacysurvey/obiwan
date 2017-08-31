@@ -9,7 +9,7 @@ export randoms_db=obiwan_elg_ra175
 export dataset=dr5
 export brick="$1"
 export rowstart="$2"
-export do_skipids=no
+export do_skipids="$3"
 export object=elg
 export nobj=300
 
