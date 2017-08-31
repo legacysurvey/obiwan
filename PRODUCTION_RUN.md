@@ -96,7 +96,7 @@ cd $obiwan_code/bin
 cp qdo_job.sh qdo_job_9deg.sh
 cp slurm_job.sh slurm_job_9deg.sh
 ```
-and the following fields in both job files need to be updated
+and the following fields in both job files need to be updated (`do_skipids` only needs to be updated for slurm_job.sh, its auotmatic for qdo_job.sh)
 ```sh
 export name_for_run=elg_9deg2_ra175
 export randoms_db=elg_9deg2_ra175
@@ -146,5 +146,20 @@ python
 >>> from obiwan.runmanager.qdo_tasks import write_qdo_tasks_skipids
 >>> write_qdo_tasks_skipids('brick_list.txt', nobj_per_run=300)
 ```
+which outputs a file `tasks_skipids.txt`
+
+Create a new qdo queue_name for the skipid runs and load the new tasks
+```sh
+export qdo_quename=obiwan_ra175_doskip
+qdo create ${qdo_quename} 
+qdo load ${qdo_quename} tasks_skipids.txt
+```
+
+The qdo tasks automatically set the do_skipid flag, so you dont need to edit the qdo_job_9deg.sh file. Just run it with your new qdo que_name
+```sh
+cd $obiwan_out/${name_for_run}
+qdo launch ${qdo_quename} 40 --cores_per_worker 4 --batchqueue regular --walltime 05:00:00 --script $obiwan_code/obiwan/bin/qdo_job_9deg.sh --keep_env
+```
+
 
 
