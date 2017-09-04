@@ -397,8 +397,11 @@ def fits2pandas(tab,attrs=None):
         attrs= tab.get_columns
     for col in attrs:
         d[col]= tab.get(col)
-    return pd.DataFrame(d)
-# pd.iloc([inds,:])
+    df= pd.DataFrame(d)
+    # Fix byte ordering from fits
+    # https://stackoverflow.com/questions/18599579/pulling-multiple-non-consecutive-index-values-from-a-pandas-dataframe
+    df= df.apply(lambda x: x.values.byteswap().newbyteorder())
+    return df
  
 
 class KDE_Model(object):
