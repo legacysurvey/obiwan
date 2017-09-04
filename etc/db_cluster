@@ -1,5 +1,0 @@
-CREATE INDEX obiwan_bricks_idx ON obiwan_bricks (brickname);
-CREATE INDEX q3c_obiwan_elg_9deg_idx ON obiwan_elg_9deg (q3c_ang2ipix(ra, dec));
-CREATE INDEX obiwan_elg_9deg_idx ON obiwan_elg_9deg (id);
-CLUSTER q3c_obiwan_elg_9deg_idx ON obiwan_elg_9deg;
-ANALYZE obiwan_elg_9deg;

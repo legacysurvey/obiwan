@@ -336,7 +336,7 @@ class KDEshapes(object):
 		return re,n,ba,pa
 
 def get_sample_dir(outdir,obj):
-    return os.path.join(outdir,'%s_randoms' % obj)
+    return outdir
 
 def mkdir_needed(d):
     """make each needed directory 
@@ -416,7 +416,9 @@ def survey_bricks_cut2radec(radec):
     print('%d bricks, cutting to radec' % len(tab))
     return tab
             
-def draw_points(radec,unique_ids,obj='star',seed=1,outdir='./',prefix=''):
+def draw_points(radec,unique_ids,obj='star',seed=1,
+                kdedir='./',outdir='./',
+                prefix=''):
     """
 	Args:
 		radec: dict with keys ra1,ra2,dec1,dec2
@@ -424,7 +426,8 @@ def draw_points(radec,unique_ids,obj='star',seed=1,outdir='./',prefix=''):
 		unique_ids: list of unique integers for each draw
 		obj: star,elg,lrg,qso
 		seed: to initialize random number generator
-		outdir: where the fit KDE files are
+		kdedir: dir containing the kde.pickle files
+		outdir: dir to write randoms to
 
 	Returns:
 		Nothing, but write a fits_table containing the unique id, ra, dec
@@ -437,7 +440,7 @@ def draw_points(radec,unique_ids,obj='star',seed=1,outdir='./',prefix=''):
     # Joint Sample
     mags={}
     print('KdeSample')
-    kde_obj= KdeSample(objtype=obj, pickle_dir=outdir)
+    kde_obj= KdeSample(objtype=obj, pickle_dir=kdedir)
     if obj == 'star':
         mags['%s_g'%obj],mags['%s_r'%obj],mags['%s_z'%obj]= \
                     kde_obj.get_colors(ndraws=ndraws,random_state=random_state)
@@ -812,7 +815,8 @@ def get_parser():
     parser.add_argument('--spacing',type=float,action='store',default=10.,help='choosing N radec pionts so points have spacingxspacing arcsec spacing',required=False)
     parser.add_argument('--ndraws',type=int,action='store',help='default space by 10x10 arcsec, number of draws for all mpi tasks',required=False)
     parser.add_argument('--prefix', type=str, default='', help='Prefix to prepend to the output files.')
-    parser.add_argument('--outdir', type=str, default='./radec_points_dir', help='Output directory.')
+    parser.add_argument('--kdedir', type=str, default='dir continaing *kde.pickle files', help='Output directory.')
+    parser.add_argument('--outdir', type=str, default='dir to write randoms to', help='Output directory.')
     parser.add_argument('--nproc', type=int, default=1, help='Number of CPUs to use.')
     return parser 
 
@@ -882,7 +886,9 @@ if __name__ == "__main__":
             # Bcast the dir
             #comm.bcast(data, root=0)
             #print('rank=%d, data["dr"]= ' % comm.rank,data['dr'])
-            draw_points(radec,unique_ids,obj=args.obj, seed=seed,outdir=args.outdir,prefix=args.prefix)
+            draw_points(radec,unique_ids,obj=args.obj, seed=seed,
+                        kdedir=args.kdedir, outdir=args.outdir,
+                        prefix=args.prefix)
         elif args.dowhat == 'bybrick':
             # Write {outdir}/input_sample/bybrick/{prefix}sample_{brick}_{seed}.fits files
             # Root 0 reads survey bricks, makes dirs
@@ -972,7 +978,9 @@ if __name__ == "__main__":
             dr= get_sample_dir(outdir=args.outdir,obj=args.obj)
             if not os.path.exists(dr):
                 os.makedirs(dr)
-            draw_points(radec,unique_ids,obj=args.obj, seed=seed,outdir=args.outdir,prefix=args.prefix)
+            draw_points(radec,unique_ids,obj=args.obj, seed=seed,
+                        kdedir=args.kdedir, outdir=args.outdir,
+                        prefix=args.prefix)
         elif args.dowhat == 'bybrick':
             # Assign list of samples to each worker
             sample_fns= get_sample_fns(outdir=args.outdir,prefix=args.prefix)

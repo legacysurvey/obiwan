@@ -1,0 +1,4 @@
+CREATE INDEX q3c_name_idx ON name (q3c_ang2ipix(ra, dec));
+CREATE INDEX name_idx ON name (id);
+CLUSTER q3c_name_idx ON name;
+ANALYZE name;

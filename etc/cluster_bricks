@@ -1,0 +1,1 @@
+CREATE INDEX obiwan_bricks_idx ON obiwan_bricks (brickname);

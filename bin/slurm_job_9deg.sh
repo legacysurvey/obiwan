@@ -8,13 +8,12 @@
 #SBATCH -L SCRATCH,project
 #SBATCH -C haswell
 
-export name_for_run=obiwan_elg_9deg
-export randoms_db=obiwan_elg_9deg
+export name_for_run=elg_9deg2_ra175
+export randoms_db=obiwan_elg_ra175
 export dataset=dr5
-export brick=1238p245
+export brick=1750p225
 export rowstart=0
-#export do_skipids=no
-export do_skipids=yes
+export do_skipids=no
 export object=elg
 export nobj=300
 
