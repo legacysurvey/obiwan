@@ -62,6 +62,65 @@ class Data(object):
         ra,dec= hp.pix2ang(nside,np.where(keep)[0],lonlat=True)
         return ra,dec, data[keep]
 
+class EmptyClass(object):
+    pass
+
+def footprint_wSFD():
+    # work with SFD map and Decals/Mzls tiles
+    # lonlat from SFD healpix is in galactic coords, convert this to Celestial
+    from astrometry.util.fits import fits_table, merge_tables
+    from astrometry.libkd.spherematch import match_radec
+    from astropy.coordinates import Galactic,ICRS
+    from astropy import units as u
+    
+    hdu=fitsio.FITS('/home/kaylan/mydata/sfd98/lambda_fds_dust_94GHz.fits')
+    sfd= EmptyClass()
+    temp= hdu[1].read()
+    sfd.temp= temp['TEMPERATURE'] 
+    npix= Healpix().get_nside(len(sfd.temp))
+    assert(npix == 512)
+    sfd.l_indeg,sfd.b_indeg= hp.pix2ang(512,np.where(sfd.temp > 0)[0],nest=True,lonlat=True)
+    #inPlane= np.where((sfd_gal_dec > -20) & (sfd_gal_dec < 20))[0]
+    trans= Galactic(l=sfd.l_indeg * u.degree,
+                    b=sfd.b_indeg * u.degree)
+    radec= trans.transform_to(ICRS)
+    sfd.ra,sfd.dec= radec.ra.value, radec.dec.value
+    
+    mzls=fits_table("/home/kaylan/mydata/tiles_decam_mosaic/mosaic-tiles_obstatus.fits")
+    decals=fits_table("/home/kaylan/mydata/tiles_decam_mosaic/decam-tiles_obstatus.fits")
+    desi= merge_tables([mzls,decals],columns='fillzero')
+    desi.cut( (desi.in_desi_orig == 1) |
+              (desi.in_desi == 1) |
+              (desi.in_des == 1) )
+    #legsurvey= merge_tables([mzls,decals],columns='fillzero')
+    #des= merge_tables([mzls,decals],columns='fillzero') 
+    #legsurvey.cut( (legsurvey.in_desi_orig == 1) |
+    #               (legsurvey.in_desi == 1) )
+    #des.cut( (des.in_des == 1) )
+    
+    ps= Healpix().get_pixscale(len(sfd.temp),unit='deg')
+    # match_radec(ref,obs): for each point in ref, return matching point in obs
+    I,J,d= match_radec(desi.ra,desi.dec, sfd.ra,sfd.dec, ps*8)
+    sfd.ipix_legsurvey= list( set(J) )
+    return sfd
+
+    # legasurvey pts fill in in ps*3
+    I,J,d= match_radec(legsurvey.ra,legsurvey.dec, sfd.ra,sfd.dec, ps*3)
+    sfd.ipix_legsurvey= set(J)
+    # des fills in with ps*8
+    I,J,d= match_radec(des.ra,des.dec, sfd.ra,sfd.dec, ps*8)
+    sfd.ipix_legsurvey.union( set(J) )
+    sfd.ipix_legsurvey= list(sfd.ipix_legsurvey)
+    return sfd
+
+def plot_footprint(sfd):
+    """sfd is what footprint_wSFD() returns"""
+    temp= np.log10(sfd.temp)
+    temp[sfd.ipix_legsurvey]= 2.
+    hp.mollview(temp,nest=True,flip='geo',title='Mollweide Projection, Galactic Coordinates',unit='',max=-0.5)
+    hp.graticule(c='k',lw=1) 
+    plt.savefig('footprint_wSFD.png',dpi=150)
+    
 class Bricks(object):
     def __init__(self,targz_dir,decals=True):
         self.bricks= fits_table(os.path.join(targz_dir,
