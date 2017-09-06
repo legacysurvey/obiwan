@@ -36,7 +36,7 @@ if __name__ == '__main__':
   parser.add_argument('--obj',default='elg',help='',required=False)
   args = parser.parse_args()
   print(args)
-
+  
   Q= QdoList(args.outdir,args.obj,que_name=args.qdo_quename)
   result= 'succeeded'
   tasks,ids,logs_dict,slurms= Q.get_tasks_logs_slurms(one_result= result, getslurms=False)

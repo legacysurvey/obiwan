@@ -104,7 +104,6 @@ def get_savedir(**kwargs):
     return os.path.join(kwargs['decals_sim_dir'],kwargs['objtype'],\
                         kwargs['brickname'][:3], kwargs['brickname'],\
                         "skip_rs%d" % kwargs['rowst'])    
-
 def get_skip_ids(decals_sim_dir, brickname, objtype):
   fns= glob(os.path.join(decals_sim_dir, objtype,
                          brickname[:3], brickname,
