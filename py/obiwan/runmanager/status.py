@@ -61,12 +61,13 @@ class QdoList(object):
       text += '%s= %s\n' % (attr, getattr(self,attr) )
     return text
 
-  def get_tasks_logs_slurms(self, qdo_result=None):
+  def get_tasks_logs_slurms(self, one_result=None, getslurms=True):
     """get tasks, logs, slurms for the three types of qdo status
     Running, Succeeded, Failed
     
     Args:
-      qdo_result: Optional, only get logs slurms etc for one of succeeded, failed, running
+      one_result: only get logs slurms etc for one of succeeded, failed, running
+      getslurms: set to False to skip finding slurm.out file
     """
     # Logs for all Failed tasks
     tasks={}
@@ -79,12 +80,12 @@ class QdoList(object):
     #err= defaultdict(lambda: [])
     print('qdo Que: %s' % self.que_name)
     q = qdo.connect(self.que_name)
-    if qdo_result:
-      assert(qdo_result in QDO_RESULT)
-      qdo_result= [qdo_result]
+    if one_result:
+      assert(one_result in QDO_RESULT)
+      all_results= [one_result]
     else:
-      qdo_result= QDO_RESULT
-    for res in qdo_result:
+      all_results= QDO_RESULT
+    for res in all_results:
       # List of "brick rs" for each QDO_RESULT  
       tasks[res] = [a.task 
                     for a in q.tasks(state= getattr(qdo.Task, res.upper()))]
@@ -97,15 +98,16 @@ class QdoList(object):
         logfn= get_logfile(self.outdir,self.obj,brick,rs, doSkipid=doSkipid)
         logs[res].append( logfn )
         # Slurms
-        found= False
-        for slurm_fn in slurm_fns:
-          with open(slurm_fn,'r') as foo:
-            text= foo.read()
-          if logfn in text:
-            found=True
-            slurms[res].append( slurm_fn )
-        if not found: 
-            print('didnt find %s in slurms: ' % logfn,slurm_fn)
+        if getslurms:
+          found= False
+          for slurm_fn in slurm_fns:
+            with open(slurm_fn,'r') as foo:
+              text= foo.read()
+            if logfn in text:
+              found=True
+              slurms[res].append( slurm_fn )
+          if not found: 
+              print('didnt find %s in slurms: ' % logfn,slurm_fn)
     return tasks,ids,logs,slurms
 
   def rerun_tasks(self,task_ids, debug=True):
@@ -206,12 +208,12 @@ if __name__ == '__main__':
   parser.add_argument('--qdo_quename',default='obiwan_9deg',help='',required=False)
   parser.add_argument('--outdir',default='/global/cscratch1/sd/kaylanb/obiwan_out/123/1238p245',help='',required=False)
   parser.add_argument('--obj',default='elg',help='',required=False)
-  parser.add_argument('--qdo_result',choices=[None,'succeeded','failed','running'],default=None,help='set to only get logs for that result',required=False)
+  parser.add_argument('--one_result',choices=[None,'succeeded','failed','running'],default=None,help='set to only get logs for that result',required=False)
   args = parser.parse_args()
   print(args)
 
   Q= QdoList(args.outdir,args.obj,que_name=args.qdo_quename)
-  tasks,ids,logs,slurms= Q.get_tasks_logs_slurms(qdo_result= args.qdo_result)
+  tasks,ids,logs,slurms= Q.get_tasks_logs_slurms(one_result= args.one_result)
   
   # Write log fns so can inspect
   for res in logs.keys():
