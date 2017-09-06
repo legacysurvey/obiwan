@@ -1,10 +1,11 @@
-from pandas import pd
+import os
+import pandas as pd
 from glob import glob
 
 from obiwan.runmanager.status import QdoList,writelist
 from obiwan.kenobi import dobash
 
-def getBricks(loglist):
+def bricksFromLogs(loglist):
   """return set of bricks occuring in logfiles
   
   Args:
@@ -42,7 +43,7 @@ if __name__ == '__main__':
   logs= logs_dict[result]
   writelist(logs,"%s_%s_logfns.txt" % (args.qdo_quename,result))
   
-  bricks= getBricks(logs)
+  bricks= bricksFromLogs(logs)
   bricks_both= bricksInDR5(bricks)
   if len(bricks_both) == 0:
     raise ValueError('none of bricks are in DR5!')

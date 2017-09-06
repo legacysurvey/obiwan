@@ -349,7 +349,7 @@ class SimImage(DecamImage):
 				# this is a deep learning run
 				add_source= stamp.bounds == overlap
 			if add_source:
-        print('Stamp overlaps tim: id=%d band=%s' % (obj.id,objstamp.band))  
+				print('Stamp overlaps tim: id=%d band=%s' % (obj.id,objstamp.band))      
 				stamp = stamp[overlap]      
 				ivarstamp = ivarstamp[overlap]      
 				stamp_nonoise= stamp_nonoise[overlap]
