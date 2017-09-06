@@ -326,13 +326,17 @@ class SimImage(DecamImage):
 				stamp = objstamp.lrg(obj)
 			elif objtype == 'qso':
 				stamp = objstamp.qso(obj)
-			t0= ptime('Drew the %s' % objtype.upper(),t0)
 			#print('I predict we draw it',draw_it)
 			# Save radial profiles after draw, addNoise, etc. for unit tests
 			#rad_profs=np.zeros((stamp.array.shape[0],3))
 			#rad_profs[:,0]= stamp.array.copy()[ stamp.array.shape[0]/2,: ]
 			# Want to save flux actually added too
 			added_flux= stamp.added_flux
+			t0= ptime('Finished Drawing %s: id=%d band=%s dbflux=%f addedflux=%f' % 
+                (objtype.upper(), obj.id,objstamp.band, 
+                 obj.get(objstamp.band+'flux'),added_flux)
+                ,t0)
+
 			stamp_nonoise= stamp.copy()
 			if self.survey.add_sim_noise:
 				#stamp2,stamp3= objstamp.addGaussNoise(stamp, ivarstamp)
@@ -345,6 +349,7 @@ class SimImage(DecamImage):
 				# this is a deep learning run
 				add_source= stamp.bounds == overlap
 			if add_source:
+        print('Stamp overlaps tim: id=%d band=%s' % (obj.id,objstamp.band))  
 				stamp = stamp[overlap]      
 				ivarstamp = ivarstamp[overlap]      
 				stamp_nonoise= stamp_nonoise[overlap]

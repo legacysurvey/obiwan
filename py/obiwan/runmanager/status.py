@@ -61,9 +61,13 @@ class QdoList(object):
       text += '%s= %s\n' % (attr, getattr(self,attr) )
     return text
 
-  def get_tasks_logs_slurms(self):
+  def get_tasks_logs_slurms(self, qdo_result=None):
     """get tasks, logs, slurms for the three types of qdo status
-    Running, Succeeded, Failed"""
+    Running, Succeeded, Failed
+    
+    Args:
+      qdo_result: Optional, only get logs slurms etc for one of succeeded, failed, running
+    """
     # Logs for all Failed tasks
     tasks={}
     ids={}
@@ -75,7 +79,12 @@ class QdoList(object):
     #err= defaultdict(lambda: [])
     print('qdo Que: %s' % self.que_name)
     q = qdo.connect(self.que_name)
-    for res in QDO_RESULT:
+    if qdo_result:
+      assert(qdo_result in QDO_RESULT)
+      qdo_result= [qdo_result]
+    else:
+      qdo_result= QDO_RESULT
+    for res in qdo_result:
       # List of "brick rs" for each QDO_RESULT  
       tasks[res] = [a.task 
                     for a in q.tasks(state= getattr(qdo.Task, res.upper()))]
@@ -197,11 +206,12 @@ if __name__ == '__main__':
   parser.add_argument('--qdo_quename',default='obiwan_9deg',help='',required=False)
   parser.add_argument('--outdir',default='/global/cscratch1/sd/kaylanb/obiwan_out/123/1238p245',help='',required=False)
   parser.add_argument('--obj',default='elg',help='',required=False)
+  parser.add_argument('--qdo_result',choices=[None,'succeeded','failed','running'],default=None,help='set to only get logs for that result',required=False)
   args = parser.parse_args()
   print(args)
 
   Q= QdoList(args.outdir,args.obj,que_name=args.qdo_quename)
-  tasks,ids,logs,slurms= Q.get_tasks_logs_slurms()
+  tasks,ids,logs,slurms= Q.get_tasks_logs_slurms(qdo_result= args.qdo_result)
   
   # Write log fns so can inspect
   for res in logs.keys():
