@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 """Analyze the output of decals_simulations.
 
 EXAMPLE
@@ -34,7 +32,8 @@ import numpy as np
 from astropy.io import fits
 from astropy.table import vstack, Table
 from astropy import units
-from astropy.coordinates import SkyCoord
+#from astropy.coordinates import SkyCoord
+from astrometry.libkd.spherematch import match_radec
 
 # import seaborn as sns
 from PIL import Image, ImageDraw
@@ -533,114 +532,100 @@ if __name__ == "__main__":
     print(simcat_fns)
     print(simtractor_fns)
     print(tractor_fn)
-    raise ValueError
+
+    # Merge
+    simcat= CatalogueFuncs().stack(simcat_fns,textfile=False)
+    pre_exist= fits_table(tractor_fn)
+    simtractor= CatalogueFuncs().stack(simtractor_fns,textfile=False)
+    print('Injected %d sources, Pre-existing %d sources, Recovered sims + real %d' % 
+          (len(simcat),len(pre_exist),len(simtractor)))
+
+    # 4 types of sources in simtractor: 
+    # 1) added and found it, 2) added and lost it, 
+    # 3) already in image and found it, 4) already in image but missed it for some reason 
+    # 5) added near already existing source and found at least one of them, 6) ditto 5 but missed both
+    # Added 
+    I,J,d = match_radec(simcat.ra,simcat.dec,
+                        simtractor.ra,simtractor.dec,
+                        1./3600, nearest=True)
+    i_add_all= np.arange(len(simcat))
+    i_add_fnd= J
+    i_add_lost= list( set(i_added_all).difference(set(i_added_fnd)) )
+    add_fnd= simtractor.copy().cut(i_add_fnd)
+    add_lost= simtractor.copy().cut(i_add_lost)
+    print('Added and found: %d/%d, Added but lost: %d/%d' % 
+          (len(add_fnd),len(simcat),len(add_lost),len(simcat)))
     
+    # Already in image 
+    # WARNING: Assumes identical setup as original run
+    I,J,d = match_radec(pre_exist.ra,pre_exist.dec,
+                        simtractor.ra,simtractor.dec,
+                        1./3600, nearest=True)
+    i_exist_all= np.arange(len(pre_exist))
+    i_exist_fnd= J
+    i_exist_lost= list( set(i_exist_all).difference(set(i_exist_fnd)) )
+    exist_fnd= simtractor.copy().cut(i_exist_fnd)
+    exist_lost= simtractor.copy().cut(i_exist_lost)
+    print('Exists and found: %d/%d, Exists but lost: %d/%d' % 
+          (len(exist_fnd),len(pre_exist),len(exist_lost),len(pre_exist)))
     
+    #good = np.where((np.abs(tractor['decam_flux'][m1,2]/simcat['rflux'][m2]-1)<0.3)*1)
+
+    # Get cutouts of the bright matched sources with small/large delta mag 
+    if extra_plots:
+        for img_name in ['image','resid','simscoadd']:
+            # Indices of large and small dmag
+            junk,i_large_dmag,i_small_dmag= bright_dmag_cut(simcat[m2],tractor[m1])
+            # Large dmag cutouts
+            qafile = os.path.join(output_dir, 'qa-{}-{}-{}-bright-large-dmag-{:02d}.png'.format(\
+                                        brickname, lobjtype, img_name, int(chunksuffix)))
+            plot_cutouts_by_index(simcat,i_large_dmag, brickname,lobjtype,chunksuffix, \
+                                  indir=cdir,img_name=img_name,qafile=qafile)
+            log.info('Wrote {}'.format(qafile))
+            # Small dmag cutouts
+            qafile = os.path.join(output_dir, 'qa-{}-{}-{}-bright-small-dmag-{:02d}.png'.format(\
+                                        brickname, lobjtype, img_name, int(chunksuffix)))
+            plot_cutouts_by_index(simcat,i_small_dmag, brickname,lobjtype,chunksuffix, \
+                                  indir=cdir,img_name=img_name,qafile=qafile)
+            log.info('Wrote {}'.format(qafile))
+     
+    # Get cutouts of the missing sources in each chunk (if any)
+    if len(missing) > 0 and extra_plots:
+        simcat_R= flux2mag(simcat['rflux'])
+        for img_name in ['image']: #,'simscoadd']:
+            qafile = os.path.join(output_dir, 'qa-{}-{}-{}-missing-{:02d}.png'.format(\
+                                        brickname, lobjtype, img_name, int(chunksuffix)))
+            miss = missing[np.argsort(simcat_R[missing])]
+            plot_cutouts_by_index(simcat,miss, brickname,lobjtype,chunksuffix, \
+                                  indir=cdir,img_name=img_name,qafile=qafile)
+            log.info('Wrote {}'.format(qafile))
+        
+        
+
+    # Annotate the coadd image and residual files so the simulated sources
+    # are labeled.
+    if extra_plots:
+        for img_name in ('simscoadd','image', 'resid'):
+            qafile = os.path.join(output_dir, 'qa-{}-{}-{}-{:02d}-annot.png'.format(\
+                                  brickname, lobjtype,img_name, int(chunksuffix)))
+            plot_annotated_coadds(simcat, brickname, lobjtype, chunksuffix, \
+                                  indir=cdir,img_name=img_name,qafile=qafile)
+            log.info('Wrote {}'.format(qafile))
+
     # Plotting preferences
     #sns.set(style='white',font_scale=1.6,palette='dark')#,font='fantasy')
     #col = sns.color_palette('dark')
     col = ['b', 'k', 'c', 'm', 'y', 0.8]
     
-    # Read metadata catalog.
-    metafile = os.path.join(input_dir, 'metacat-{}-{}-rowstart0.fits'.format(lobjtype,brickname))
-    log.info('Reading {}'.format(metafile))
-    meta = fits.getdata(metafile, 1)
-    
     # We need this for our histograms below
     magbinsz = 0.2
-    rminmax = np.array([15.,24.])  #np.squeeze(meta['RMAG_RANGE'])
+    # See priors.py
+    mag_limits= dict(elg_rlimit=23.4+1,
+                     lrg_zlimit=20.46+1)
+    rminmax = np.array([15., mag_limits['%s_rlimit' % args.objtype])  
     nmagbin = long((rminmax[1]-rminmax[0])/magbinsz)
 
-    # Work in chunks.
-    allsimcat = []
-    bigsimcat = []
-    bigsimcat_missed = []
-    bigtractor = []
-    chunk_dirs= glob.glob(os.path.join(os.path.dirname(input_dir),'rowstart*'))
-    nchunk= len(chunk_dirs)
-    if nchunk == 0: raise ValueError
-    # Loop through chunk dirs 000,001,...,999
-    for ichunk,cdir in enumerate([chunk_dirs[0]]):
-        chunksuffix = os.path.basename(cdir) #'{:02d}'.format(ichunk)
-        log.info('Working on chunk {:02d}/{:02d}'.format(ichunk+1, nchunk))
-        
-        # Read the simulated object catalog
-        simcatfile = os.path.join(cdir, 'simcat-{}-{}-{}.fits'.format(lobjtype,brickname,chunksuffix))
-        log.info('Reading {}'.format(simcatfile))
-        simcat = Table(fits.getdata(simcatfile, 1))
 
-        # Read Tractor catalog
-        tractorfile = os.path.join(cdir, 'tractor-{}-{}-{}.fits'.format(lobjtype,brickname,chunksuffix))
-        log.info('Reading {}'.format(tractorfile))
-        tractor = Table(fits.getdata(tractorfile, 1))
-        # Match
-        cat1 = SkyCoord(ra=tractor['ra']*units.degree, dec=tractor['dec']*units.degree)
-        cat2 = SkyCoord(ra=simcat['ra']*units.degree, dec=simcat['dec']*units.degree)
-        m2, d2d, d3d = cat1.match_to_catalog_3d(cat2)
-        b= np.array(d2d) <= 1./3600
-        m2= np.array(m2)[b]
-        m1= np.arange(len(tractor))[b]
-        print('matched %d/%d' % (len(m2),len(simcat['ra'])))
-        
-        missing = np.delete(np.arange(len(simcat)), m2, axis=0)
-        log.info('Missing {}/{} sources'.format(len(missing), len(simcat)))
-
-        #good = np.where((np.abs(tractor['decam_flux'][m1,2]/simcat['rflux'][m2]-1)<0.3)*1)
-
-        # Build matching catalogs for the plots below.
-        if len(bigsimcat) == 0:
-            bigsimcat = simcat[m2]
-            bigtractor = tractor[m1]
-            bigsimcat_missing = simcat[missing]
-        else:
-            bigsimcat = vstack((bigsimcat, simcat[m2]))
-            bigtractor = vstack((bigtractor, tractor[m1]))
-            bigsimcat_missing = vstack((bigsimcat_missing, simcat[missing]))
-        if len(allsimcat) == 0:
-            allsimcat = simcat
-        else:
-            allsimcat = vstack((allsimcat, simcat))
-
-        # Get cutouts of the bright matched sources with small/large delta mag 
-        if extra_plots:
-            for img_name in ['image','resid','simscoadd']:
-                # Indices of large and small dmag
-                junk,i_large_dmag,i_small_dmag= bright_dmag_cut(simcat[m2],tractor[m1])
-                # Large dmag cutouts
-                qafile = os.path.join(output_dir, 'qa-{}-{}-{}-bright-large-dmag-{:02d}.png'.format(\
-                                            brickname, lobjtype, img_name, int(chunksuffix)))
-                plot_cutouts_by_index(simcat,i_large_dmag, brickname,lobjtype,chunksuffix, \
-                                      indir=cdir,img_name=img_name,qafile=qafile)
-                log.info('Wrote {}'.format(qafile))
-                # Small dmag cutouts
-                qafile = os.path.join(output_dir, 'qa-{}-{}-{}-bright-small-dmag-{:02d}.png'.format(\
-                                            brickname, lobjtype, img_name, int(chunksuffix)))
-                plot_cutouts_by_index(simcat,i_small_dmag, brickname,lobjtype,chunksuffix, \
-                                      indir=cdir,img_name=img_name,qafile=qafile)
-                log.info('Wrote {}'.format(qafile))
-         
-        # Get cutouts of the missing sources in each chunk (if any)
-        if len(missing) > 0 and extra_plots:
-            simcat_R= flux2mag(simcat['rflux'])
-            for img_name in ['image']: #,'simscoadd']:
-                qafile = os.path.join(output_dir, 'qa-{}-{}-{}-missing-{:02d}.png'.format(\
-                                            brickname, lobjtype, img_name, int(chunksuffix)))
-                miss = missing[np.argsort(simcat_R[missing])]
-                plot_cutouts_by_index(simcat,miss, brickname,lobjtype,chunksuffix, \
-                                      indir=cdir,img_name=img_name,qafile=qafile)
-                log.info('Wrote {}'.format(qafile))
-            
-            
-
-        # Annotate the coadd image and residual files so the simulated sources
-        # are labeled.
-        if extra_plots:
-            for img_name in ('simscoadd','image', 'resid'):
-                qafile = os.path.join(output_dir, 'qa-{}-{}-{}-{:02d}-annot.png'.format(\
-                                      brickname, lobjtype,img_name, int(chunksuffix)))
-                plot_annotated_coadds(simcat, brickname, lobjtype, chunksuffix, \
-                                      indir=cdir,img_name=img_name,qafile=qafile)
-                log.info('Wrote {}'.format(qafile))
 
     # now operate on concatenated catalogues from multiple chunks
     # Grab flags
