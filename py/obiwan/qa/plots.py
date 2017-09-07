@@ -95,7 +95,7 @@ def bright_dmag_cut(matched_simcat,matched_tractor):
     b_small_dmag= np.all((b_bright,b_good,b['g']==False,b['r']==False,b['z']==False),axis=0)
     return med,np.where(b_large_dmag)[0],np.where(b_small_dmag)[0]
  
-def plot_cutouts_by_index(simcat,index, brickname,lobjtype,chunksuffix, \
+def plot_cutouts_by_index(simcat,index, brickname,objtype, \
                           indir=None, img_name='simscoadd',qafile='test.png'):
     hw = 30 # half-width [pixels]
     rad = 14
@@ -187,7 +187,7 @@ def plot_injected_mags(allsimcat, log,qafile='test.png'):
     plt.savefig(qafile,bbox_extra_artists=[xlab,ylab], bbox_inches='tight')
     plt.close()
  
-def plot_good_bad_ugly(allsimcat,bigsimcat,bigsimcat_missing, nmagbin,rminmax, b_good,b_bad, log,qafile='test.png'):
+def plot_good_bad_ugly(bigsimcat,bigsimcat_missing, nmagbin,rminmax, b_good,b_bad, log,qafile='test.png'):
     #rmaghist, magbins = np.histogram(allsimcat['r'], bins=nmagbin, range=rminmax)
     bigsimcat_R= flux2mag(bigsimcat['rflux'])
     bigsimcat_miss_R= flux2mag(bigsimcat_missing['rflux'])
@@ -280,7 +280,7 @@ def plot_chi(bigsimcat,bigtractor, b_good,rminmax, log,qafile='test.png'):
     plt.savefig(qafile,bbox_extra_artists=[xlab,ylab], bbox_inches='tight')
     plt.close()
  
-def plot_color_tractor_minus_answer(bigtractor,bigsimcat, rminmax, brickname,lobjtype, log,qafile='test.png'):
+def plot_color_tractor_minus_answer(bigsimcat, bigtractor,rminmax, brickname,lobjtype, log,qafile='test.png'):
     gr_tra = -2.5*np.log10(bigtractor['decam_flux'][:, 1]/bigtractor['decam_flux'][:, 2])
     rz_tra = -2.5*np.log10(bigtractor['decam_flux'][:, 2]/bigtractor['decam_flux'][:, 4])
     gr_sim = -2.5*np.log10(bigsimcat['gflux']/bigsimcat['rflux'])
@@ -470,7 +470,166 @@ class TestData(object):
     local_fn= os.path.join(outdir,name)
     fetch_targz(remote_fn,local_fn)
 
+
+class SourceMatcher(object):
+    """Does all the matching between injected, recovered, and pre existing sources
+
+    There are 6 types of sources. 
+      (1) added and recovered 
+      (2) added but lost
+      (3) pre existng from previous DR and recovered even when simulated sources injected, 
+      (4) '' but lost for whatever reason,  
+      (5) added and pre existing near by and found at least one of them
+      (6) '' but lost both
+    """
+    def __init__(self):
+        """
+        Attrs:
+            i_catalogue_name: indices for that catalogue
+            catalouge_name: that catalogue with those indices applied
+            size: dict number sources in each tyep fo catalogue
+        """
+        self.i_simcat= {}
+        self.simcat= {}
+
+        self.i_simtractor= {}
+        self.simtractor= {}
+
+        self.i_realtractor= {}
+        self.realtractor= {}
+
+        self.size= {}
+
+    def added(self,simcat,simtractor):
+        """Source types 1, 2
+        
+        Args:
+            simcat: all injected sources, before geometry cuts
+            simtractor: all sources in resulting tractor catalogues
+        """
+        self.size['simcat']= len(simcat)
+        self.size['simtractor']= len(simtractor)
+
+        I,J,d = match_radec(simcat.ra, simcat.dec,
+                            simtractor.ra, simtractor.dec,
+                            1./3600, nearest=True)
+
+        self.i_simtractor['rec_simcat']= J #indices of simtractor, where recovered simcat sources
+        self.i_simcat['recby_simtractor']= I #indices of simcat, where recovered by simtractor
+        i_simcat_all= np.arange(self.size['simcat'])
+        self.i_simcat['losby_simtractor']= list( set(i_simcat_all).difference(set(I)) )
+
+        # Apply
+        for key in self.i_simcat.keys():
+            self.simcat[key]= simcat.copy().cut( self.i_simcat[key] )
+        for key in self.i_simtractor.keys():
+            self.simtractor[key]= simtractor.copy().cut( self.i_simtractor[key] )
+
+        self.print_added()
+
+    def print_added(self):
+        assert( hasattr(self,'i_simtractor') )
+        print('Added and recovered: %d/%d, Added but lost: %d/%d' % 
+               (len(self.i_simcat['recby_simtractor']), self.size['simcat'],
+                len(i_simcat['losby_simtractor']), self.size['simcat']))
+
+    def already_exist(self,realtractor,simtractor):
+        """Source types 3, 4
+        
+        WARNING: assumes the obiwan run used identical in put ccds and code to 
+          the data release that realtractor comes from
+
+        Args:
+            realtractor: tractor catalogue from a data release
+            simtractor: all sources in resulting tractor catalogues
+        """
+        self.size['realtractor']= len(realtractor)
+        self.size['simtractor']= len(simtractor)
+
+        I,J,d = match_radec(realtractor.ra, realtractor.dec,
+                            simtractor.ra, simtractor.dec,
+                            1./3600, nearest=True)
+
+        self.i_simtractor['rec_butreal']= J 
+        self.i_realtractor['recby_simtractor']= I 
+        i_realtractor_all= np.arange(self.size['realtractor'])
+        self.i_realtractor['losby_simtractor']= list( set(i_realtractor_all).difference(set(I)) )
+
+        # Apply
+        for key in self.i_realtractor.keys():
+            self.realtractor[key]= realtractor.copy().cut( self.i_realtractor[key] )
+        for key in self.i_simtractor.keys():
+            self.simtractor[key]= simtractor.copy().cut( self.i_simtractor[key] )
+
+        self.print_real()
+
+    def print_real(self):
+        assert( hasattr(self,'i_realtractor') )
+        print('Real and recovered: %d/%d, Real but lost: %d/%d' % 
+                (len(self.i_realtractor['recby_simtractor']), self.size['realtractor'],
+                 len(self.i_realtractor['losby_butreal']), self.size['realtractor']))
     
+    # Added and Existing source there
+    # I,J,d = match_radec(pre_exist.ra,pre_exist.dec,
+    #                     simcat.ra,simcat.dec,
+    #                     1./3600, nearest=True)
+    # i_add_exist_all= np.arange(len(I))
+    # i_add_exist_fnd= list( set(J).intersection(set(i_add_all)) )
+    # i_exist_lost= list( set(i_exist_all).difference(set(i_exist_fnd)) )
+    # exist_fnd= simtractor.copy().cut(i_exist_fnd)
+    # exist_lost= simtractor.copy().cut(i_exist_lost)
+    # print('Exists and found: %d/%d, Exists but lost: %d/%d' % 
+    #       (len(exist_fnd),len(pre_exist),len(exist_lost),len(pre_exist)))
+  
+def imshow_one_chunk(simcat_fn, simtractor_fn, tractor_fn):
+        simcat= fits_table(simcat_fn)
+        simtractor= fits_table(simtractor_fn)
+        data= SourceMatcher()
+        data.added(simcat,simtractor)
+
+        # Circle added
+        for img_name in ('simscoadd','image', 'resid'):
+            qafile = os.path.join(output_dir, 
+                                  'qa-{}-{}-{}-{:02d}-annot.png'.format(\
+                                  brickname, objtype,img_name))
+            plot_annotated_coadds(simcat, brickname, objtype, \
+                                  indir= input_dir,img_name=img_name,qafile=qafile)
+            log.info('Wrote {}'.format(qafile))
+
+        # Stamps added and recovered
+        for img_name in ['image','resid','simscoadd']:
+            # Indices of large and small dmag
+            junk,i_large_dmag,i_small_dmag= 
+                bright_dmag_cut(data.simcat['recby_simtractor'],
+                                data.simtractor['rec_simcat'])
+            # Large dmag cutouts
+            qafile = os.path.join(output_dir, 
+                                  'qa-{}-{}-{}-bright-large-dmag-{:02d}.png'.format(\
+                                  brickname, objtype, img_name)
+            plot_cutouts_by_index(simcat,i_large_dmag, brickname,objtype, \
+                                  indir= input_dir,img_name=img_name,qafile=qafile)
+            log.info('Wrote {}'.format(qafile))
+            # Small dmag cutouts
+            qafile = os.path.join(output_dir, 
+                                  'qa-{}-{}-{}-bright-small-dmag-{:02d}.png'.format(\
+                                   brickname, objtype, img_name)
+            plot_cutouts_by_index(simcat,i_small_dmag, brickname,objtype, \
+                                  indir=input_dir,img_name=img_name,qafile=qafile)
+            log.info('Wrote {}'.format(qafile))
+     
+        # Stamps added but lost
+        if len( data.i_simcat['losby_simtractor']) > 0:
+            simcat_R= flux2mag(simcat.rflux)
+                for img_name in ['image']: #,'simscoadd']:
+                    qafile = os.path.join(output_dir, 
+                                        'qa-{}-{}-{}-missing-{:02d}.png'.format(\
+                                        brickname, objtype, img_name)
+                    miss = data.i_simcat['losby_simtractor']
+                    plot_cutouts_by_index(simcat,miss, brickname,lobjtype,chunksuffix, \
+                                        indir=cdir,img_name=img_name,qafile=qafile)
+                    log.info('Wrote {}'.format(qafile))
+
+
 if __name__ == "__main__":    
     from argparse import ArgumentParser
     parser = ArgumentParser(description='DECaLS simulations.')
@@ -526,122 +685,36 @@ if __name__ == "__main__":
     simtractor_fns= glob( os.path.join(input_dir,
                                        '*/tractor/tractor-%s.fits' %
                                        (args.brick,)))
-    tractor_fn= os.path.join(args.data_dir,
+    realtractor_fn= os.path.join(args.data_dir,
                              'qa/DR5_out/tractor/%s/tractor-%s.fits' %
                              (args.brick[:3],args.brick) )
     assert( (len(simcat_fns) > 0) &
             (len(simtractor_fns) > 0) &
-            (len(tractor_fn) > 0) )
+            (len(realtractor_fn) > 0) )
     print(simcat_fns)
     print(simtractor_fns)
-    print(tractor_fn)
+    print(realtractor_fn)
+
+    # Plots for each rs*, skip_rs*
+    for simcat_fn, simtractor_fn, realtractor_fn in zip(
+                                    simcat_fns, 
+                                    simtractor_fns,
+                                    realtractor_fns):
+        imshow_one_chunk(simcat_fn, simtractor_fn, 
+                         realtractor_fn)
 
     # Merge
     simcat= CatalogueFuncs().stack(simcat_fns,textfile=False)
-    pre_exist= fits_table(tractor_fn)
     simtractor= CatalogueFuncs().stack(simtractor_fns,textfile=False)
+    realtractor= fits_table(tractor_fn)
     print('Injected %d sources, Pre-existing %d sources, Recovered sims + real %d' % 
           (len(simcat),len(pre_exist),len(simtractor)))
 
-    # 4 types of sources in simtractor: 
-    # 1) added and found it, 2) added and lost it, 
-    # 3) already in image and found it, 4) already in image but missed it for some reason 
-    # 5) added near already existing source and found at least one of them, 6) ditto 5 but missed both
-    i_simcat={}
-    i_simtractor={}
-    i_preexist={}
-    # Added 
-    I,J,d = match_radec(simcat.ra,simcat.dec,
-                        simtractor.ra,simtractor.dec,
-                        1./3600, nearest=True)
-    i_simcat_all= np.arange(len(simcat))
-    i_simtractor['rec_simcat']= J #indices of simtractor, where recovered simcat sources
-    i_simtractor['los_simcat']= list( set(i_simcat_all).difference(set(J)) )
-    i_simtractor_all= np.arange(len(simtractor))
-    i_simcat['recby_simtractor']= I #indices of simcat, where recovered by simtractor
-    i_simcat['losby_simtractor']= list( set(i_simtractor_all).difference(set(I)) )
-    #add_fnd= simtractor.copy().cut(i_add_fnd)
-    #add_lost= simtractor.copy().cut(i_add_lost)
-    print('Added and found: %d/%d, Added but lost: %d/%d' % 
-          (len(i_simtractor['rec_simcat']),len(i_simcat_all),
-           len(i_simtractor['los_simcat']),len(i_simcat_all)))
-
-    tab= EmptyClass()
-    tab.simcat= EmptyClass()
-    tab.simtractor= EmptyClass()
-    tab.simcat.recby_simtractor= simcat.copy().cut( i_simcat['recby_simtractor'] )
-    tab.simtractor.rec_simcat= simtractor.copy().cut( i_simtractor['rec_simcat'] )
-
-    
-    # Already in image 
-    # WARNING: Assumes identical setup as original run
-    I,J,d = match_radec(pre_exist.ra,pre_exist.dec,
-                        simtractor.ra,simtractor.dec,
-                        1./3600, nearest=True)
-    i_exist_all= np.arange(len(pre_exist))
-    i_exist_fnd= J
-    i_exist_lost= list( set(i_exist_all).difference(set(i_exist_fnd)) )
-    exist_fnd= simtractor.copy().cut(i_exist_fnd)
-    exist_lost= simtractor.copy().cut(i_exist_lost)
-    print('Exists and found: %d/%d, Exists but lost: %d/%d' % 
-          (len(exist_fnd),len(pre_exist),len(exist_lost),len(pre_exist)))
-    
-    # Added and Existing source there
-    # I,J,d = match_radec(pre_exist.ra,pre_exist.dec,
-    #                     simcat.ra,simcat.dec,
-    #                     1./3600, nearest=True)
-    # i_add_exist_all= np.arange(len(I))
-    # i_add_exist_fnd= list( set(J).intersection(set(i_add_all)) )
-    # i_exist_lost= list( set(i_exist_all).difference(set(i_exist_fnd)) )
-    # exist_fnd= simtractor.copy().cut(i_exist_fnd)
-    # exist_lost= simtractor.copy().cut(i_exist_lost)
-    # print('Exists and found: %d/%d, Exists but lost: %d/%d' % 
-    #       (len(exist_fnd),len(pre_exist),len(exist_lost),len(pre_exist)))
-    
+    data= SourceMatcher()
+    data.added(simcat,simtractor)
+    data.already_exist(realtractor,simtractor)
 
     #good = np.where((np.abs(tractor['decam_flux'][m1,2]/simcat['rflux'][m2]-1)<0.3)*1)
-
-    # Get cutouts of the bright matched sources with small/large delta mag 
-    if extra_plots:
-        for img_name in ['image','resid','simscoadd']:
-            # Indices of large and small dmag
-            junk,i_large_dmag,i_small_dmag= bright_dmag_cut(tab.simcat.recby_simtractor,
-                                                            tab.simtractor.rec_simcat)
-            # Large dmag cutouts
-            qafile = os.path.join(output_dir, 'qa-{}-{}-{}-bright-large-dmag-{:02d}.png'.format(\
-                                  brickname, objtype, img_name)
-            plot_cutouts_by_index(simcat,i_large_dmag, brickname,objtype, \
-                                  indir=cdir,img_name=img_name,qafile=qafile)
-            log.info('Wrote {}'.format(qafile))
-            # Small dmag cutouts
-            qafile = os.path.join(output_dir, 'qa-{}-{}-{}-bright-small-dmag-{:02d}.png'.format(\
-                                        brickname, lobjtype, img_name, int(chunksuffix)))
-            plot_cutouts_by_index(simcat,i_small_dmag, brickname,lobjtype,chunksuffix, \
-                                  indir=input_dir,img_name=img_name,qafile=qafile)
-            log.info('Wrote {}'.format(qafile))
-     
-    # Get cutouts of the missing sources in each chunk (if any)
-    if len(missing) > 0 and extra_plots:
-        simcat_R= flux2mag(simcat['rflux'])
-        for img_name in ['image']: #,'simscoadd']:
-            qafile = os.path.join(output_dir, 'qa-{}-{}-{}-missing-{:02d}.png'.format(\
-                                        brickname, lobjtype, img_name, int(chunksuffix)))
-            miss = missing[np.argsort(simcat_R[missing])]
-            plot_cutouts_by_index(simcat,miss, brickname,lobjtype,chunksuffix, \
-                                  indir=cdir,img_name=img_name,qafile=qafile)
-            log.info('Wrote {}'.format(qafile))
-        
-        
-
-    # Annotate the coadd image and residual files so the simulated sources
-    # are labeled.
-    if extra_plots:
-        for img_name in ('simscoadd','image', 'resid'):
-            qafile = os.path.join(output_dir, 'qa-{}-{}-{}-{:02d}-annot.png'.format(\
-                                  brickname, lobjtype,img_name, int(chunksuffix)))
-            plot_annotated_coadds(simcat, brickname, lobjtype, chunksuffix, \
-                                  indir=cdir,img_name=img_name,qafile=qafile)
-            log.info('Wrote {}'.format(qafile))
 
     # Plotting preferences
     #sns.set(style='white',font_scale=1.6,palette='dark')#,font='fantasy')
@@ -660,53 +733,77 @@ if __name__ == "__main__":
 
     # now operate on concatenated catalogues from multiple chunks
     # Grab flags
-    b_good,b_bad= basic_cut(bigtractor)
+    b_good,b_bad= basic_cut(simtractor)
 
     # mags and colors of ALL injected sources
-    plot_injected_mags(allsimcat, log, qafile=\
-           os.path.join(output_dir, 'qa-{}-{}-injected-mags.png'.format(brickname, lobjtype)))
+    plot_injected_mags(simcat, log, 
+                       qafile= os.path.join(output_dir, 
+                                            'qa-{}-{}-injected-mags.png'.format(
+                                             brickname, objtype)))
    
-    # number of detected sources that are bad, good and number of undetected, binned by r mag
-    plot_good_bad_ugly(allsimcat,bigsimcat,bigsimcat_missing, nmagbin,rminmax, b_good,b_bad, log, qafile=\
-            os.path.join(output_dir, 'qa-{}-{}-N-good-bad-missed.png'.format(brickname, lobjtype)))
+    # number of recovered sources that are bad, good and number of lost, binned by r mag
+    plot_good_bad_ugly(data.simcat['recby_simtractor'],
+                       data.simcat['losby_simtractor'], 
+                       nmagbin,rminmax, b_good,b_bad, 
+                       log, 
+                       qafile= os.path.join(output_dir, 
+                                            'qa-{}-{}-N-good-bad-missed.png'.format(
+                                             brickname, objtype)))
 
     # Flux residuals vs input magnitude
-    plot_tractor_minus_answer(bigsimcat,bigtractor, b_good,rminmax, log, qafile=\
-            os.path.join(output_dir, 'qa-{}-{}-good-flux.png'.format(brickname, lobjtype)))
+    plot_tractor_minus_answer(data.simcat['recby_simtractor'], 
+                              data.simtractor['rec_simcat'], 
+                              b_good,rminmax, log, 
+                              qafile= os.path.join(output_dir, 
+                                                   'qa-{}-{}-good-flux.png'.format(
+                                                    brickname, objtype)))
  
     # chi plots: Flux residual / estimated Flux error
-    plot_chi(bigsimcat,bigtractor, b_good,rminmax, log, qafile=\
-             os.path.join(output_dir, 'qa-{}-{}-chi-good.png'.format(brickname, lobjtype)))
+    plot_chi(data.simcat['recby_simtractor'], 
+             data.simtractor['rec_simcat'], 
+             b_good,rminmax, log, qafile=\
+             os.path.join(output_dir, 'qa-{}-{}-chi-good.png'.format(brickname, objtype)))
    
     # Color residuals
-    plot_color_tractor_minus_answer(bigtractor,bigsimcat, rminmax, brickname,lobjtype, log, qafile =\
-             os.path.join(output_dir, 'qa-{}-{}-color.png'.format(brickname, lobjtype)))
+    plot_color_tractor_minus_answer(data.simcat['recby_simtractor'], 
+                                    data.simtractor['rec_simcat'],
+                                    rminmax, brickname,lobjtype, log, qafile =\
+             os.path.join(output_dir, 'qa-{}-{}-color.png'.format(brickname, objtype)))
 
     # Fraction of recovered sources
-    plot_fraction_recovered(allsimcat,bigsimcat, nmagbin,rminmax, brickname, lobjtype, log, qafile =\
-             os.path.join(output_dir, 'qa-{}-{}-frac.png'.format(brickname, lobjtype)))
+    plot_fraction_recovered(simcat, 
+                            data.simcat['recby_simtractor'], 
+                            nmagbin,rminmax, brickname, objtype, log, qafile =\
+            os.path.join(output_dir, 'qa-{}-{}-frac.png'.format(brickname, objtype)))
 
     # S/N of recovered sources (S/N band vs. AB mag band)
-    plot_sn_recovered(allsimcat,bigsimcat,bigtractor, brickname, lobjtype, log, qafile =\
-             os.path.join(output_dir, 'qa-{}-{}-SN.png'.format(brickname, lobjtype)))
+    plot_sn_recovered(simcat, 
+                      data.simcat['recby_simtractor'],
+                      data.simtractor['rec_simcat'],
+                      brickname, objtype, log, qafile =\
+             os.path.join(output_dir, 'qa-{}-{}-SN.png'.format(brickname, objtype)))
 
     # Distribution of object types for matching sources.
-    plot_recovered_types(bigsimcat,bigtractor, nmagbin,rminmax, objtype,log, qafile =\
-             os.path.join(output_dir, 'qa-{}-{}-type.png'.format(brickname, lobjtype)))
+    plot_recovered_types(data.simcat['recby_simtractor'],
+                      data.simtractor['rec_simcat'],
+                      nmagbin,rminmax, objtype,log, qafile =\
+             os.path.join(output_dir, 'qa-{}-{}-type.png'.format(brickname, objtype)))
 
     # Confusion matrix for distribution of object types
     # Basic cm, use slim=False
-    types= ['PSF ', 'SIMP', 'EXP ', 'DEV ', 'COMP']
-    cm,all_names= create_confusion_matrix(np.array(['PSF ']*bigtractor['ra'].data[b_good].shape[0]),
-                                                            bigtractor['type'].data[b_good], \
-                                                            types=types,slim=False)
-    qafile = os.path.join(output_dir, 'qa-{}-{}-{}-confusion.png'.format(brickname, lobjtype,'good'))
+    types= ['PSF ', 'SIMP', 'EXP ', 'DEV ', 'COMP'] 
+    cm,all_names= create_confusion_matrix(np.array(['PSF ']*len(data.simtractor['rec_simcat'][b_good]),
+                                                   data.simtractor['rec_simcat'].get('type')[b_good], 
+                                                   types=types,slim=False)
+    qafile = os.path.join(output_dir, 'qa-{}-{}-{}-confusion.png'.format(brickname, objtype,'good'))
     plot_confusion_matrix(cm,all_names,all_names, log,qafile)
     
     # Now a stacked confusion matrix
     # Compute a row for each r mag range and stack rows
-    make_stacked_cm(bigsimcat,bigtractor, b_good, log,qafile =\
-             os.path.join(output_dir, 'qa-{}-{}-good-confusion-stack.png'.format(brickname, lobjtype)))
+    make_stacked_cm(data.simcat['recby_simtractor'],
+                    data.simtractor['rec_simcat'],
+                    b_good, log,qafile =\
+             os.path.join(output_dir, 'qa-{}-{}-good-confusion-stack.png'.format(brickname, objtype)))
    
     '''
     # Morphology plots
