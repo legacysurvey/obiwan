@@ -42,6 +42,9 @@ import photutils
 from obiwan.kenobi import get_savedir
 from obiwan.theValidator.catalogues import CatalogueFuncs
 
+class EmptyClass(object):
+    pass
+
 def flux2mag(nanoflux):
     '''converts flux in tractor nanomaggie units to AB mag'''
     return 22.5-2.5*np.log10(nanoflux)
@@ -544,17 +547,31 @@ if __name__ == "__main__":
     # 1) added and found it, 2) added and lost it, 
     # 3) already in image and found it, 4) already in image but missed it for some reason 
     # 5) added near already existing source and found at least one of them, 6) ditto 5 but missed both
+    i_simcat={}
+    i_simtractor={}
+    i_preexist={}
     # Added 
     I,J,d = match_radec(simcat.ra,simcat.dec,
                         simtractor.ra,simtractor.dec,
                         1./3600, nearest=True)
-    i_add_all= np.arange(len(simcat))
-    i_add_fnd= J
-    i_add_lost= list( set(i_added_all).difference(set(i_added_fnd)) )
-    add_fnd= simtractor.copy().cut(i_add_fnd)
-    add_lost= simtractor.copy().cut(i_add_lost)
+    i_simcat_all= np.arange(len(simcat))
+    i_simtractor['rec_simcat']= J #indices of simtractor, where recovered simcat sources
+    i_simtractor['los_simcat']= list( set(i_simcat_all).difference(set(J)) )
+    i_simtractor_all= np.arange(len(simtractor))
+    i_simcat['recby_simtractor']= I #indices of simcat, where recovered by simtractor
+    i_simcat['losby_simtractor']= list( set(i_simtractor_all).difference(set(I)) )
+    #add_fnd= simtractor.copy().cut(i_add_fnd)
+    #add_lost= simtractor.copy().cut(i_add_lost)
     print('Added and found: %d/%d, Added but lost: %d/%d' % 
-          (len(add_fnd),len(simcat),len(add_lost),len(simcat)))
+          (len(i_simtractor['rec_simcat']),len(i_simcat_all),
+           len(i_simtractor['los_simcat']),len(i_simcat_all)))
+
+    tab= EmptyClass()
+    tab.simcat= EmptyClass()
+    tab.simtractor= EmptyClass()
+    tab.simcat.recby_simtractor= simcat.copy().cut( i_simcat['recby_simtractor'] )
+    tab.simtractor.rec_simcat= simtractor.copy().cut( i_simtractor['rec_simcat'] )
+
     
     # Already in image 
     # WARNING: Assumes identical setup as original run
@@ -569,24 +586,38 @@ if __name__ == "__main__":
     print('Exists and found: %d/%d, Exists but lost: %d/%d' % 
           (len(exist_fnd),len(pre_exist),len(exist_lost),len(pre_exist)))
     
+    # Added and Existing source there
+    # I,J,d = match_radec(pre_exist.ra,pre_exist.dec,
+    #                     simcat.ra,simcat.dec,
+    #                     1./3600, nearest=True)
+    # i_add_exist_all= np.arange(len(I))
+    # i_add_exist_fnd= list( set(J).intersection(set(i_add_all)) )
+    # i_exist_lost= list( set(i_exist_all).difference(set(i_exist_fnd)) )
+    # exist_fnd= simtractor.copy().cut(i_exist_fnd)
+    # exist_lost= simtractor.copy().cut(i_exist_lost)
+    # print('Exists and found: %d/%d, Exists but lost: %d/%d' % 
+    #       (len(exist_fnd),len(pre_exist),len(exist_lost),len(pre_exist)))
+    
+
     #good = np.where((np.abs(tractor['decam_flux'][m1,2]/simcat['rflux'][m2]-1)<0.3)*1)
 
     # Get cutouts of the bright matched sources with small/large delta mag 
     if extra_plots:
         for img_name in ['image','resid','simscoadd']:
             # Indices of large and small dmag
-            junk,i_large_dmag,i_small_dmag= bright_dmag_cut(simcat[m2],tractor[m1])
+            junk,i_large_dmag,i_small_dmag= bright_dmag_cut(tab.simcat.recby_simtractor,
+                                                            tab.simtractor.rec_simcat)
             # Large dmag cutouts
             qafile = os.path.join(output_dir, 'qa-{}-{}-{}-bright-large-dmag-{:02d}.png'.format(\
-                                        brickname, lobjtype, img_name, int(chunksuffix)))
-            plot_cutouts_by_index(simcat,i_large_dmag, brickname,lobjtype,chunksuffix, \
+                                  brickname, objtype, img_name)
+            plot_cutouts_by_index(simcat,i_large_dmag, brickname,objtype, \
                                   indir=cdir,img_name=img_name,qafile=qafile)
             log.info('Wrote {}'.format(qafile))
             # Small dmag cutouts
             qafile = os.path.join(output_dir, 'qa-{}-{}-{}-bright-small-dmag-{:02d}.png'.format(\
                                         brickname, lobjtype, img_name, int(chunksuffix)))
             plot_cutouts_by_index(simcat,i_small_dmag, brickname,lobjtype,chunksuffix, \
-                                  indir=cdir,img_name=img_name,qafile=qafile)
+                                  indir=input_dir,img_name=img_name,qafile=qafile)
             log.info('Wrote {}'.format(qafile))
      
     # Get cutouts of the missing sources in each chunk (if any)
