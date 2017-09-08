@@ -471,6 +471,20 @@ class TestData(object):
     fetch_targz(remote_fn,local_fn)
 
 
+class Checks(object):
+  """various sanity checks on obiwan outputs
+  
+  """
+
+  def test_nobj(self,metacat_fn,simcat_fn,skipid_fn):
+    meta= fits_table(metacat_fn)
+    simcat= fits_table(simcat_fn)
+    if os.path.exists(skipid_fn):
+      skipid= fits_table(skipid_fn)
+    else:
+      skipid= []
+    assert(meta['nobj'] == len(simcat) + len(skipid)
+
 class SourceMatcher(object):
     """Does all the matching between injected, recovered, and pre existing sources
 
@@ -679,6 +693,9 @@ if __name__ == "__main__":
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
 
+    metacat_fns= glob( os.path.join(input_dir,
+                                   '*/obiwan/metacat-%s-%s.fits' %
+                                   (args.objtype, args.brick)))
     simcat_fns= glob( os.path.join(input_dir,
                                    '*/obiwan/simcat-%s-%s.fits' %
                                    (args.objtype, args.brick)))
@@ -694,6 +711,14 @@ if __name__ == "__main__":
     print(simcat_fns)
     print(simtractor_fns)
     print(realtractor_fn)
+    raise ValueError('TODO: fns need to be in same order!!')
+
+    # Sanity checks
+    for simcat_fn in simcat_fn:
+      metacat_fn= simcat_fn.replace("simcat","metacat")
+      skipid_fn.replace("simcat","skippedids")
+      Checks().test_nobj(metacat_fn,simcat_fn, skipid_fn)
+   
 
     # Plots for each rs*, skip_rs*
     for simcat_fn, simtractor_fn, realtractor_fn in zip(
