@@ -532,13 +532,16 @@ class SourceMatcher(object):
       (5) added and pre existing near by and found at least one of them
       (6) '' but lost both
     """
-    def __init__(self):
+    def __init__(self,verbose=True):
         """
         Attrs:
+          verbose: True to print stats as go along
           i_catalogue_name: indices for that catalogue
           catalouge_name: that catalogue with those indices applied
           size: dict number sources in each tyep fo catalogue
         """
+        self.verbose= verbose
+        
         self.i_simcat= {}
         self.simcat= {}
         
@@ -573,8 +576,8 @@ class SourceMatcher(object):
             self.simcat[key]= simcat.copy()[ self.i_simcat[key] ]
         for key in self.i_simtractor.keys():
             self.simtractor[key]= simtractor.copy()[ self.i_simtractor[key] ]
-
-        self.print_added()
+        if self.verbose:
+            self.print_added()
 
     def print_added(self):
         assert( hasattr(self,'i_simtractor') )
@@ -609,8 +612,8 @@ class SourceMatcher(object):
             self.realtractor[key]= realtractor.copy()[ self.i_realtractor[key] ]
         for key in self.i_simtractor.keys():
             self.simtractor[key]= simtractor.copy()[ self.i_simtractor[key] ]
-
-        self.print_real()
+        if self.verbose:
+            self.print_real()
 
     def print_real(self):
         assert( hasattr(self,'i_realtractor') )
@@ -774,6 +777,36 @@ if __name__ == "__main__":
     data.added(simcat,simtractor)
     data.already_exist(realtractor,simtractor)
 
+    ###############
+    # Tally for all rs*, skip_rs*
+    temp=EmptyClass()
+    temp.realtractor= fits_table(realtractor_fn)
+    print('-'*40)
+    print('%s %10s %s/%s %s/%s' %
+          (brickname,'chunk','rec','inj','rec','real'))
+    for simcat_fn, simtractor_fn in zip(
+            simcat_fns,simtractor_fns):
+        temp.simcat= fits_table(simcat_fn)
+        temp.simtractor= fits_table(simtractor_fn)
+
+        mat= SourceMatcher(verbose=False)
+        mat.added(temp.simcat,temp.simtractor)
+        mat.already_exist(temp.realtractor,temp.simtractor)
+
+        rs= os.path.basename(simcatfn_to_rs_dir(simcat_fn))
+        print('\t %10s %d/%d %d/%d' %
+              (rs,
+               len(mat.i_simcat['recby_simtractor']), mat.size['simcat'],
+               len(mat.i_realtractor['recby_simtractor']), mat.size['realtractor']))
+    print('\t %10s %d/%d %d/%d' %
+          ('total'.upper(),
+           len(data.i_simcat['recby_simtractor']), data.size['simcat'],
+           len(data.i_realtractor['recby_simtractor']), data.size['realtractor']))
+    print('-'*40)
+    #############
+    raise ValueError
+    
+    
     #good = np.where((np.abs(tractor['decam_flux'][m1,2]/simcat['rflux'][m2]-1)<0.3)*1)
 
     # Plotting preferences
