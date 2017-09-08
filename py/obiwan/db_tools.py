@@ -73,7 +73,7 @@ def getSrcsInBrick(brickname,objtype, db_table='obiwan_elg',
     db.close()
     return T
 
-def reshifts_for_ids(ids, db_table='obiwan_elg_ra175',
+def redshifts_for_ids(ids, db_table='obiwan_elg_ra175',
                      try_with_join=False):
   """Returns the reshifts of randoms in the db having the ids provided
   
@@ -110,7 +110,7 @@ if __name__ == '__main__':
     T= getSrcsInBrick('1765p247','elg', db_table='obiwan_elg_ra175')
 
     simcat= fits_table("/global/cscratch1/sd/kaylanb/obiwan_out/elg_9deg2_ra175/elg/176/1765p247/rs0/obiwan/simcat-elg-1765p247.fits")
-    ids,redshifts= reshifts_for_ids(simcat.id, db_table='obiwan_elg_ra175')
+    ids,redshifts= redshifts_for_ids(simcat.id, db_table='obiwan_elg_ra175')
     for id,z in zip(ids[:10],redshifts[:10]):
       print(id,z)
     
