@@ -42,7 +42,7 @@ class Data(object):
     def fetch(self):
         name='healpix.tar.gz'
         fetch_targz(os.path.join(DOWNLOAD_ROOT,self.drname,name),
-                    os.path.join(self.targz_dir,self.drname,name))
+                    os.path.joni(self.targz_dir,self.drname))
         
     def get_data(self,psf_or_aper,which):
         """read healpix data, RING ordered'
@@ -140,35 +140,22 @@ class footprint_wSFD(object):
 
   def download_sfd98_healpix(self):
     """downloads data if isnt on computer"""
-    tar_name= 'lambda_sfd_ebv.tar.gz'
-    map_name= 'lambda_sfd_ebv.fits'
+    tar_name= 'sfd98.tar.gz'
+    map_name= 'sfd98/lambda_sfd_ebv.fits'
     if not os.path.exists(self.map_dir):
       os.makedirs(self.map_dir)
-        fetch_targz(os.path.join(DOWNLOAD_ROOT,'obiwan/sfd98',tar_name),
-                    os.path.join(self.map_dir,tar_name))
-#      start_dir= os.getcwd()
-#      os.chdir(self.map_dir)
-#      url= "https://lambda.gsfc.nasa.gov/data/foregrounds/SFD/lambda_sfd_ebv.fits"
-#      dobash('wget %s' % url)
-#      os.chdir(start_dir)
+      fetch_targz(os.path.join(DOWNLOAD_ROOT,'obiwan',tar_name),
+                  self.data_dir)
 
   def download_decals_mzls_tiles(self):
     """downloads data if isnt on computer"""
-    tar_name= 'tiles.tar.gz'
+    tar_name= 'svn_tiles.tar.gz'
     mosaic_nm= 'mosaic-tiles_obstatus.fits'
     decals_nm= 'decam-tiles_obstatus.fits'
     if not os.path.exists(self.tile_dir):
       os.makedirs(self.tile_dir)
-      fetch_targz(os.path.join(DOWNLOAD_ROOT,'obiwan/svn_tiles',tar_name),
-                  os.path.join(self.map_dir,tar_name))
-#      start_dir= os.getcwd()
-#      os.chdir(self.tile_dir)
-#      for fn in [mosaic_nm,decals_nm]:
-#        if not os.path.exists(fn):
-#          url= DOWNLOAD_ROOT + 'obiwan/svn_tiles/%s' % fn
-#          dobash('wget %s' % url)
-#      os.chdir(start_dir)
-
+      fetch_targz(os.path.join(DOWNLOAD_ROOT,'obiwan',tar_name),
+                  self.data_dir)
 
 
 class Bricks(object):
