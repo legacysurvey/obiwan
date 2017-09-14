@@ -34,6 +34,7 @@ from astropy.table import vstack, Table
 from astropy import units
 #from astropy.coordinates import SkyCoord
 from astrometry.libkd.spherematch import match_radec
+from astrometry.util.fits import fits_table, merge_tables
 
 # import seaborn as sns
 from PIL import Image, ImageDraw
@@ -51,42 +52,51 @@ def flux2mag(nanoflux):
 
 def basic_cut(tractor):
     '''return boolean indices for which to keep and throw out'''
-    flux= tractor['decam_flux'][:,[1,2,4]]
-    grz_anymask= tractor['decam_anymask'][:,[1,2,4]]
-    grz_nobs= tractor['decam_nobs'][:,[1,2,4]]
-    b_good= np.all((flux[:,0] > 0, flux[:,1] > 0, flux[:,2] > 0, \
-                    grz_anymask[:,0] == 0,grz_anymask[:,1] ==0,grz_anymask[:,2] == 0),axis=0)
-                    #grz_nobs[:,0] > 1,grz_nobs[:,1] > 1,grz_nobs[:,2] > 1,\
+    b_good= ((tractor.flux_g > 0) &
+            (tractor.flux_r > 0) &
+            (tractor.flux_z > 0) &
+            (tractor.allmask_g == 0) &
+             (tractor.allmask_r == 0) &
+            (tractor.allmask_z == 0))
     b_bad= b_good == False
-    return b_good,b_bad
+    return b_good, b_bad
 
-def bright_dmag_cut(matched_simcat,matched_tractor):
-    '''return: 
+def bright_dmag_cut(matched_simcat,matched_tractor,
+                    cut=True):
+    """
+    Args:
+      cut: True to perform good source and very bright source cuts
+
+    Returns: 
     1) median dmag of bright sources
     2) indices of sources that are bright AND |dmag[band]| -|median_dmag[band]| > 0.005 in ANY band
-    3) indices of sources that are bright AND |dmag[band]| -|median_dmag[band]| <= 0.005 in ALL bands'''
+    3) indices of sources that are bright AND |dmag[band]| -|median_dmag[band]| <= 0.005 in ALL bands
+    """
     bright= dict(g=20.,r=19.,z=18.)
     b_good,junk= basic_cut(matched_tractor)
     # Store median dmag of bright sources
     med,b_bright={},{}
-    for band,iband in zip(['g','r','z'],[1,2,4]):
+    for band in ['g','r','z']:
         # Cut to bright and good sources
-        inputflux = matched_simcat[band+'flux']
+        inputflux = matched_simcat.get(band+'flux')
         inputmag = 22.5-2.5*np.log10(inputflux)
-        b_bright[band]= inputmag < bright[band]
-        b_bright[band]= np.all((b_bright[band],b_good),axis=0)
+        if cut:
+            b_bright[band]= inputmag < bright[band]
+            b_bright[band]= np.all((b_bright[band],b_good),axis=0)
+        else:
+            b_bright[band]= np.ones(len(matched_tractor),bool)
         #i_bright= np.where(b_bright)[0]
         #print('type(i_bright)= ',type(i_bright),"i_bright=",i_bright)
         # Compute median for each band
-        inputflux = matched_simcat[band+'flux'][b_bright[band]]
-        tractorflux = matched_tractor['decam_flux'][:, iband][b_bright[band]]
+        inputflux = matched_simcat.get(band+'flux')[b_bright[band]]
+        tractorflux = matched_tractor.get('flux_%s' % band)[b_bright[band]]
         mag_diff= -2.5*np.log10(tractorflux/inputflux)
         med[band]= np.percentile(mag_diff,q=50)
     # Boolean mask for each band
     b={}
-    for band,iband in zip(['g','r','z'],[1,2,4]):
-        inputflux = matched_simcat[band+'flux']
-        tractorflux = matched_tractor['decam_flux'][:, iband]
+    for band in ['g','r','z']:
+        inputflux = matched_simcat.get(band+'flux')
+        tractorflux = matched_tractor.get('flux_%s' % band)
         mag_diff= -2.5*np.log10(tractorflux/inputflux)
         b[band]= np.abs(mag_diff) - abs(med[band]) > 0.001
     # total boolean mask
@@ -95,8 +105,8 @@ def bright_dmag_cut(matched_simcat,matched_tractor):
     b_small_dmag= np.all((b_bright,b_good,b['g']==False,b['r']==False,b['z']==False),axis=0)
     return med,np.where(b_large_dmag)[0],np.where(b_small_dmag)[0]
  
-def plot_cutouts_by_index(simcat,index, brickname,objtype, \
-                          indir=None, img_name='simscoadd',qafile='test.png'):
+def plot_cutouts_by_index(simcat,index, jpeg_fn='simscoadd.jpg',
+                          qafile='test.png'):
     hw = 30 # half-width [pixels]
     rad = 14
     ncols = 5
@@ -107,15 +117,15 @@ def plot_cutouts_by_index(simcat,index, brickname,objtype, \
 
     xpos, ypos = np.meshgrid(np.arange(0, dims[0], hw*2, dtype='int'),
                              np.arange(0, dims[1], hw*2, dtype='int'))
-    im = Image.open( os.path.join(indir, 'qa-{}-{}-{}-{:02d}.jpg'.format(brickname, lobjtype, img_name, int(chunksuffix))) )
+    im = Image.open( jpeg_fn )
     sz = im.size
     iobj = 0
     for ic in range(ncols):
         if iobj >= len(index) or iobj >= ncols*nrows: break
         for ir in range(nrows):
             if iobj >= len(index) or iobj >= ncols*nrows: break
-            xx = int(simcat['X'][index[iobj]])
-            yy = int(sz[1]-simcat['Y'][index[iobj]])
+            xx = int(simcat.x[index[iobj]])
+            yy = int(sz[1]-simcat.y[index[iobj]])
             crop = (xx-hw, yy-hw, xx+hw, yy+hw)
             box = (xpos[ir, ic], ypos[ir, ic])
             thumb = im.crop(crop)
@@ -135,17 +145,19 @@ def plot_cutouts_by_index(simcat,index, brickname,objtype, \
     mosaic.save(qafile)
 
 
-def plot_annotated_coadds(simcat, brickname, lobjtype, chunksuffix,\
-                          indir=None,img_name='simscoadd',qafile='test.png'):
+def plot_annotated_coadds(simcat, jpeg_fn='simscoadd.jpg',
+                          qafile='test.png'):
     rad = 7/0.262
     #imfile = os.path.join(cdir, 'qa-{}-{}-{}-{}.jpg'.format(brickname, lobjtype, suffix, chunksuffix))
     # HARDCODED fix this!!!!!
-    imfile = os.path.join(indir, 'qa-{}-{}-{}-{:02d}.jpg'.format(brickname, lobjtype, img_name, int(chunksuffix)))
-    im = Image.open(imfile)
+    #imfile = os.path.join(indir, 'qa-{}-{}-{}-{}.jpg'.format(brickname, lobjtype, img_name, chunksuffix))
+    im = Image.open(jpeg_fn)
     sz = im.size
     draw = ImageDraw.Draw(im)
-    [draw.ellipse((cat['X']-rad, sz[1]-cat['Y']-rad, cat['X']+rad,
-                   sz[1]-cat['Y']+rad), outline='yellow') for cat in simcat]
+    [draw.ellipse((cat.x - rad, sz[1] - cat.y - rad,
+                   cat.x + rad, sz[1] - cat.y + rad),
+                  outline='yellow')
+     for cat in simcat]
     im.save(qafile)
 
 
@@ -169,12 +181,12 @@ def bin_up(data_bin_by,data_for_percentile, bin_minmax=(18.,26.),nbins=20):
     return vals
 
 def plot_injected_mags(allsimcat, log,qafile='test.png'):
-    gr_sim = -2.5*np.log10(allsimcat['gflux']/allsimcat['rflux'])
-    rz_sim = -2.5*np.log10(allsimcat['rflux']/allsimcat['zflux'])
+    gr_sim = -2.5*np.log10(allsimcat.gflux/allsimcat.rflux)
+    rz_sim = -2.5*np.log10(allsimcat.rflux/allsimcat.zflux)
     grrange = (-0.2, 2.0)
     rzrange = (-0.4, 2.5)
     fig, ax = plt.subplots(2,1,figsize=(6,8))
-    ax[0].hist(22.5-2.5*np.log10(allsimcat['rflux']),bins=20,align='mid')
+    ax[0].hist(22.5-2.5*np.log10(allsimcat.rflux),bins=20,align='mid')
     ax[1].scatter(rz_sim,gr_sim,
                    s=10,edgecolor='b',c='none',lw=1.)
     for i,x_lab,y_lab in zip(range(2),['r AB','r-z'],['N','g-r']):
@@ -187,18 +199,16 @@ def plot_injected_mags(allsimcat, log,qafile='test.png'):
     plt.savefig(qafile,bbox_extra_artists=[xlab,ylab], bbox_inches='tight')
     plt.close()
  
-def plot_good_bad_ugly(bigsimcat,bigsimcat_missing, nmagbin,rminmax, b_good,b_bad, log,qafile='test.png'):
-    #rmaghist, magbins = np.histogram(allsimcat['r'], bins=nmagbin, range=rminmax)
-    bigsimcat_R= flux2mag(bigsimcat['rflux'])
-    bigsimcat_miss_R= flux2mag(bigsimcat_missing['rflux'])
+def plot_good_bad_ugly(bigsimcat,bigsimcat_missing, nmagbin,rminmax, log,qafile='test.png'):
+    #rmaghist, magbins = np.hist a
+    bigsimcat_R= flux2mag(bigsimcat.rflux)
+    bigsimcat_miss_R= flux2mag(bigsimcat_missing.rflux)
     found=dict(good={},bad={},missed={})
-    for index,name in zip([b_good,b_bad],['good','bad']):
-        # bin on true r mag of matched objects, count objects in each bin
-        found[name]= bin_up(bigsimcat_R[index],bigsimcat_R[index], bin_minmax=rminmax,nbins=nmagbin) # bin_edges=magbins)
-    name='missed'
-    found[name]= bin_up(bigsimcat_miss_R,bigsimcat_miss_R, bin_minmax=rminmax,nbins=nmagbin) #bin_edges=magbins)
+    # bin on true r mag of matched objects, count objects in each bin
+    found['rec']= bin_up(bigsimcat_R,bigsimcat_R, bin_minmax=rminmax,nbins=nmagbin) # bin_edges=magbins)
+    found['los']= bin_up(bigsimcat_miss_R,bigsimcat_miss_R, bin_minmax=rminmax,nbins=nmagbin) #bin_edges=magbins)
     fig, ax = plt.subplots(1, figsize=(8,6))
-    for name,color in zip(['good','bad','missed'],['k','b','r']):
+    for name,color in zip(['rec','los'],['b','r']):
         ax.step(found[name]['binc'],found[name]['n'], c=color,lw=2,label=name)
     xlab=ax.set_xlabel('Input r AB')
     ylab=ax.set_ylabel('Number Recovered')
@@ -208,15 +218,16 @@ def plot_good_bad_ugly(bigsimcat,bigsimcat_missing, nmagbin,rminmax, b_good,b_ba
     plt.savefig(qafile, bbox_extra_artists=[leg,xlab,ylab], bbox_inches='tight')
     plt.close()
 
-def plot_tractor_minus_answer(bigsimcat,bigtractor, b_good,rminmax, log,qafile='test.png'):
+def plot_tractor_minus_answer(bigsimcat,bigtractor, rminmax, log,qafile='test.png'):
+    b_good,junk= basic_cut(bigtractor)    
     fig, ax = plt.subplots(3, sharex=True, figsize=(6,8))
 
     col = ['b', 'k', 'c', 'm', 'y', 0.8]
-    rmag = bigsimcat['rflux']
-    for thisax, thiscolor, band, indx in zip(ax, col, ('g','r','z'), (1, 2, 4)):
-        inputflux = bigsimcat[band+'flux']
-        tractorflux = bigtractor['decam_flux'][:, indx]
-        tractorivar = bigtractor['decam_flux_ivar'][:, indx]
+    rmag = bigsimcat.rflux
+    for thisax, thiscolor, band in zip(ax, col, ('g','r','z')):
+        inputflux = bigsimcat.get(band+'flux')
+        tractorflux = bigtractor.get('flux_%s' % band)
+        tractorivar = bigtractor.get('flux_ivar_%s' % band)
         #import pickle
         #fout=open('test.pickle','w')
         #pickle.dump((tractorflux,inputflux,b_good),fout)
@@ -231,10 +242,13 @@ def plot_tractor_minus_answer(bigsimcat,bigtractor, b_good,rminmax, log,qafile='
         thisax.set_xlim(inputmag.min()-0.1, inputmag.max()+0.1)
         thisax.axhline(y=0.0,lw=2,ls='solid',color='gray')
         #arr= np.ma.masked_array(mag_diff, mask= np.isfinite(mag_diff) == False)
-        #med= np.median(arr)
-        #print('arr=',arr)
-        med,junk1,junk2= bright_dmag_cut(bigsimcat,bigtractor)
-        thisax.axhline(y=med[band],lw=2,ls='dashed',color='red',label='Median=%.3f' % med[band])
+        # Compute median
+        inputflux = bigsimcat.get(band+'flux')
+        tractorflux = bigtractor.get('flux_%s' % band)
+        mag_diff= -2.5*np.log10(tractorflux/inputflux)
+        med= np.percentile(mag_diff,q=50)
+        
+        thisax.axhline(y=med,lw=2,ls='dashed',color='red',label='Median=%.3f' % med)
         thisax.legend(loc='upper left',fontsize='x-small')
         #thisax.text(0.05,0.05, band.lower(), horizontalalignment='left',
                     #verticalalignment='bottom',transform=thisax.transAxes,
@@ -248,15 +262,17 @@ def plot_tractor_minus_answer(bigsimcat,bigtractor, b_good,rminmax, log,qafile='
     plt.savefig(qafile,bbox_extra_artists=[xlab,ylab], bbox_inches='tight')
     plt.close()
 
-def plot_chi(bigsimcat,bigtractor, b_good,rminmax, log,qafile='test.png'):
+def plot_chi(bigsimcat,bigtractor, rminmax, log,qafile='test.png'):
+    b_good,junk= basic_cut(bigtractor)
+    
     col = ['b', 'k', 'c', 'm', 'y', 0.8]
     fig, ax = plt.subplots(3, sharex=True, figsize=(6,8))
 
-    rmag = flux2mag(bigsimcat['rflux'])
-    for thisax, thiscolor, band, indx in zip(ax, col, ('g', 'r', 'z'), (1, 2, 4)):
-        simflux = bigsimcat[band+'flux']
-        tractorflux = bigtractor['decam_flux'][:, indx]
-        tractorivar = bigtractor['decam_flux_ivar'][:, indx]
+    rmag = flux2mag(bigsimcat.rflux)
+    for thisax, thiscolor, band in zip(ax, col, ('g', 'r', 'z')):
+        simflux = bigsimcat.get(band+'flux')
+        tractorflux = bigtractor.get('flux_%s' % band)
+        tractorivar = bigtractor.get('flux_ivar_%s' % band)
         #thisax.scatter(rmag[bcut], -2.5*np.log10(tractorflux[bcut]/simflux[bcut]),
         #               s=10,edgecolor=newcol,c='none',lw=1.,label=label)
         thisax.scatter(rmag[b_good], (tractorflux[b_good] - simflux[b_good])*np.sqrt(tractorivar[b_good]),
@@ -281,11 +297,11 @@ def plot_chi(bigsimcat,bigtractor, b_good,rminmax, log,qafile='test.png'):
     plt.close()
  
 def plot_color_tractor_minus_answer(bigsimcat, bigtractor,rminmax, brickname,lobjtype, log,qafile='test.png'):
-    gr_tra = -2.5*np.log10(bigtractor['decam_flux'][:, 1]/bigtractor['decam_flux'][:, 2])
-    rz_tra = -2.5*np.log10(bigtractor['decam_flux'][:, 2]/bigtractor['decam_flux'][:, 4])
-    gr_sim = -2.5*np.log10(bigsimcat['gflux']/bigsimcat['rflux'])
-    rz_sim = -2.5*np.log10(bigsimcat['rflux']/bigsimcat['zflux'])
-    rmag = flux2mag(bigsimcat['rflux'])
+    gr_tra = -2.5*np.log10(bigtractor.flux_g/bigtractor.flux_r)
+    rz_tra = -2.5*np.log10(bigtractor.flux_r/bigtractor.flux_z)
+    gr_sim = -2.5*np.log10(bigsimcat.gflux/bigsimcat.rflux)
+    rz_sim = -2.5*np.log10(bigsimcat.rflux/bigsimcat.zflux)
+    rmag = flux2mag(bigsimcat.rflux)
 
     col = ['b', 'k', 'c', 'm', 'y', 0.8]
     fig, ax = plt.subplots(2,sharex=True,figsize=(6,8))
@@ -307,8 +323,8 @@ def plot_color_tractor_minus_answer(bigsimcat, bigtractor,rminmax, brickname,lob
     plt.close()
 
 def plot_fraction_recovered(allsimcat,bigsimcat, nmagbin,rminmax, brickname, lobjtype, log,qafile='test.png'):
-    allsimcat_R= flux2mag(allsimcat['rflux'])
-    bigsimcat_R= flux2mag(bigsimcat['rflux'])
+    allsimcat_R= flux2mag(allsimcat.rflux)
+    bigsimcat_R= flux2mag(bigsimcat.rflux)
     rmaghist, magbins = np.histogram(allsimcat_R, bins=nmagbin, range=rminmax)
     cmagbins = (magbins[:-1] + magbins[1:]) / 2.0
     ymatch, binsmatch = np.histogram(bigsimcat_R, bins=nmagbin, range=rminmax)
@@ -326,7 +342,7 @@ def plot_fraction_recovered(allsimcat,bigsimcat, nmagbin,rminmax, brickname, lob
     plt.close()
 
 def plot_sn_recovered(allsimcat,bigsimcat,bigtractor, brickname, lobjtype, log,qafile='test.png'):
-    allsimcat_R= flux2mag(allsimcat['rflux'])
+    allsimcat_R= flux2mag(allsimcat.rflux)
     # min,max mag of all bands
     grrange = (-0.2, 2.0)
     rzrange = (-0.4, 2.5)
@@ -334,10 +350,10 @@ def plot_sn_recovered(allsimcat,bigsimcat,bigtractor, brickname, lobjtype, log,q
     mag_min= np.min((rmin,rmin+grrange[0],rmin-rzrange[1]))
     mag_max= np.max((rmax,rmax+grrange[1],rmax-rzrange[0]))
     s2n=dict(g={},r={},z={})
-    for band,ith in zip(['g','r','z'],[1,2,4]):
-        mag= 22.5-2.5*np.log10(bigsimcat[band+'flux'])
+    for band in ['g','r','z']:
+        mag= 22.5-2.5*np.log10(bigsimcat.get(band+'flux'))
         # HARDCODED mag range
-        s2n[band]= bin_up(mag, bigtractor['decam_flux'][:,ith]*np.sqrt(bigtractor['decam_flux_ivar'][:,ith]), \
+        s2n[band]= bin_up(mag, bigtractor.get('flux_%s' % band)*np.sqrt(bigtractor.get('flux_ivar_%s' % band)), \
                           bin_minmax=(18,26),nbins=20) 
     fig, ax = plt.subplots(1, figsize=(8,6))
     xlab=ax.set_xlabel('Input magnitude (AB)')
@@ -355,12 +371,12 @@ def plot_sn_recovered(allsimcat,bigsimcat,bigtractor, brickname, lobjtype, log,q
     plt.close()
 
 def plot_recovered_types(bigsimcat,bigtractor, nmagbin,rminmax, objtype,log,qafile='test.png'):
-    bigsimcat_R= flux2mag(bigsimcat['rflux'])
+    bigsimcat_R= flux2mag(bigsimcat.rflux)
     fig = plt.figure(figsize=(8, 6))
     ax = fig.gca()
     rmaghist, magbins = np.histogram(bigsimcat_R, bins=nmagbin, range=rminmax)
     cmagbins = (magbins[:-1] + magbins[1:]) / 2.0
-    tractortype = np.char.strip(bigtractor['type'].data)
+    tractortype = np.char.strip(bigtractor.get('type'))
     for otype in ['PSF', 'SIMP', 'EXP', 'DEV', 'COMP']:
         these = np.where(tractortype == otype)[0]
         if len(these)>0:
@@ -381,7 +397,7 @@ def plot_recovered_types(bigsimcat,bigtractor, nmagbin,rminmax, objtype,log,qafi
 
 
  
-def create_confusion_matrix(answer_type,predict_type, types=['PSF','SIMP','EXP','DEV','COMP'],slim=True):
+def create_confusion_matrix(answer_type,predict_type, types=['PSF','SIMP','EXP','DEV','COMP','REX'],slim=True):
     '''compares classifications of matched objects, returns 2D array which is conf matrix and xylabels
     return 5x5 confusion matrix and colum/row names
    answer_type,predict_type -- arrays of same length with reference and prediction types'''
@@ -425,7 +441,9 @@ def plot_cm_stack(cm_stack,stack_names,all_names, log, qafile='test.png'):
     stack_names -- list of same len as cm_stack, names for each row of cm_stack'''
     # combine list into single cm
     cm=np.zeros((len(cm_stack),len(all_names)))+np.nan
-    for i in range(cm.shape[0]): cm[i,:]= cm_stack[i]
+    for i in range(cm.shape[0]):
+        if len(cm_stack[i]) > 0:
+            cm[i,:]= cm_stack[i]
     # make usual cm, but labels repositioned
     plt.imshow(cm, interpolation='nearest', cmap=plt.cm.Blues)
     cbar=plt.colorbar()
@@ -448,46 +466,63 @@ def plot_cm_stack(cm_stack,stack_names,all_names, log, qafile='test.png'):
     plt.savefig(qafile, bbox_extra_artists=[xlab,ylab], bbox_inches='tight',dpi=150)
     plt.close()
 
-def make_stacked_cm(bigsimcat,bigtractor, b_good, log,qafile='test.png'):
-    bigsimcat_R= flux2mag(bigsimcat['rflux'])
-    types= ['PSF ', 'SIMP', 'EXP ', 'DEV ', 'COMP']
+def make_stacked_cm(bigsimcat,bigtractor, log,qafile='test.png'):
+    bigsimcat_R= flux2mag(bigsimcat.rflux)
+    types= ['PSF', 'REX','SIMP', 'EXP', 'DEV', 'COMP']
     cm_stack,stack_names=[],[]
     rbins= np.array([18.,20.,22.,23.,24.])
     for rmin,rmax in zip(rbins[:-1],rbins[1:]):
         # master cut
-        br_cut= np.all((bigsimcat_R > rmin,bigsimcat_R <= rmax, b_good),axis=0)
+        br_cut= ((bigsimcat_R > rmin) &
+                 (bigsimcat_R <= rmax))
         stack_names+= ["%d < r <= %d" % (int(rmin),int(rmax))]
-        cm,ans_names,all_names= create_confusion_matrix(np.array(['PSF ']*bigtractor['ra'].data[br_cut].shape[0]),
-                                                        bigtractor['type'].data[br_cut], \
+        cm,ans_names,all_names= create_confusion_matrix(np.array(['PSF']*len(bigtractor))[br_cut],
+                                                        np.char.strip(bigtractor.get('type'))[br_cut], \
                                                         types=types)
         cm_stack+= [cm]
     plot_cm_stack(cm_stack, stack_names,all_names, log, qafile=qafile)
 
 class TestData(object):
-  def fetch(self,download_dir,outdir):
-    name='qa.tar.gz'
-    remote_fn= os.path.join(download_dir,name)
-    local_fn= os.path.join(outdir,name)
-    fetch_targz(remote_fn,local_fn)
+    def fetch(self,download_dir,outdir):
+        name='qa.tar.gz'
+        remote_fn= os.path.join(download_dir,name)
+        fetch_targz(remote_fn,outdir)
 
-
+def simcatfn_to_rs_dir(simcat_fn):
+    """returns abs path to rs* or skip_rs* directory given full path to simcat_fn"""
+    return os.path.dirname( os.path.dirname( simcat_fn))
+    
 class Checks(object):
-  """various sanity checks on obiwan outputs
-  
-  """
+    """various sanity checks on obiwan outputs    
+    """
+    def __init__(self,warn=False):
+        """
+        Args:
+          warn: raise warning instead of error
+        """
+        self.warn= warn
+    
+    def test_nobj(self,metacat_fn,simcat_fn,skipid_fn):
+        meta= fits_table(metacat_fn)
+        simcat= fits_table(simcat_fn)
+        if os.path.exists(skipid_fn):
+            skipid= fits_table(skipid_fn)
+        else:
+            skipid= []
+        print(metacat_fn,simcat_fn,skipid_fn)
+        print(meta.nobj,len(simcat),len(skipid))
+        #if self.warn:
+        #    if meta.nobj != len(simcat) + len(skipid):
+        #        print('WARNING: %d %d %d' %
+        #              (meta.nobj,len(simcat),len(skipid)))
+        #else:
+        # simcat+skipid < 300 if ran out of randoms, 300 otherwise
+        assert(len(simcat) + len(skipid) <= meta.nobj)
 
-  def test_nobj(self,metacat_fn,simcat_fn,skipid_fn):
-    meta= fits_table(metacat_fn)
-    simcat= fits_table(simcat_fn)
-    if os.path.exists(skipid_fn):
-      skipid= fits_table(skipid_fn)
-    else:
-      skipid= []
-    assert(meta['nobj'] == len(simcat) + len(skipid)
 
 class SourceMatcher(object):
     """Does all the matching between injected, recovered, and pre existing sources
-
+    
     There are 6 types of sources. 
       (1) added and recovered 
       (2) added but lost
@@ -496,16 +531,19 @@ class SourceMatcher(object):
       (5) added and pre existing near by and found at least one of them
       (6) '' but lost both
     """
-    def __init__(self):
+    def __init__(self,verbose=True):
         """
         Attrs:
-            i_catalogue_name: indices for that catalogue
-            catalouge_name: that catalogue with those indices applied
-            size: dict number sources in each tyep fo catalogue
+          verbose: True to print stats as go along
+          i_catalogue_name: indices for that catalogue
+          catalouge_name: that catalogue with those indices applied
+          size: dict number sources in each tyep fo catalogue
         """
+        self.verbose= verbose
+        
         self.i_simcat= {}
         self.simcat= {}
-
+        
         self.i_simtractor= {}
         self.simtractor= {}
 
@@ -527,7 +565,6 @@ class SourceMatcher(object):
         I,J,d = match_radec(simcat.ra, simcat.dec,
                             simtractor.ra, simtractor.dec,
                             1./3600, nearest=True)
-
         self.i_simtractor['rec_simcat']= J #indices of simtractor, where recovered simcat sources
         self.i_simcat['recby_simtractor']= I #indices of simcat, where recovered by simtractor
         i_simcat_all= np.arange(self.size['simcat'])
@@ -535,17 +572,17 @@ class SourceMatcher(object):
 
         # Apply
         for key in self.i_simcat.keys():
-            self.simcat[key]= simcat.copy().cut( self.i_simcat[key] )
+            self.simcat[key]= simcat.copy()[ self.i_simcat[key] ]
         for key in self.i_simtractor.keys():
-            self.simtractor[key]= simtractor.copy().cut( self.i_simtractor[key] )
-
-        self.print_added()
+            self.simtractor[key]= simtractor.copy()[ self.i_simtractor[key] ]
+        if self.verbose:
+            self.print_added()
 
     def print_added(self):
         assert( hasattr(self,'i_simtractor') )
         print('Added and recovered: %d/%d, Added but lost: %d/%d' % 
                (len(self.i_simcat['recby_simtractor']), self.size['simcat'],
-                len(i_simcat['losby_simtractor']), self.size['simcat']))
+                len(self.i_simcat['losby_simtractor']), self.size['simcat']))
 
     def already_exist(self,realtractor,simtractor):
         """Source types 3, 4
@@ -571,17 +608,17 @@ class SourceMatcher(object):
 
         # Apply
         for key in self.i_realtractor.keys():
-            self.realtractor[key]= realtractor.copy().cut( self.i_realtractor[key] )
+            self.realtractor[key]= realtractor.copy()[ self.i_realtractor[key] ]
         for key in self.i_simtractor.keys():
-            self.simtractor[key]= simtractor.copy().cut( self.i_simtractor[key] )
-
-        self.print_real()
+            self.simtractor[key]= simtractor.copy()[ self.i_simtractor[key] ]
+        if self.verbose:
+            self.print_real()
 
     def print_real(self):
         assert( hasattr(self,'i_realtractor') )
         print('Real and recovered: %d/%d, Real but lost: %d/%d' % 
                 (len(self.i_realtractor['recby_simtractor']), self.size['realtractor'],
-                 len(self.i_realtractor['losby_butreal']), self.size['realtractor']))
+                 len(self.i_realtractor['losby_simtractor']), self.size['realtractor']))
     
     # Added and Existing source there
     # I,J,d = match_radec(pre_exist.ra,pre_exist.dec,
@@ -596,53 +633,58 @@ class SourceMatcher(object):
     #       (len(exist_fnd),len(pre_exist),len(exist_lost),len(pre_exist)))
   
 def imshow_one_chunk(simcat_fn, simtractor_fn, tractor_fn):
-        simcat= fits_table(simcat_fn)
-        simtractor= fits_table(simtractor_fn)
-        data= SourceMatcher()
-        data.added(simcat,simtractor)
-
-        # Circle added
-        for img_name in ('simscoadd','image', 'resid'):
+    simcat= fits_table(simcat_fn)
+    simtractor= fits_table(simtractor_fn)
+    data= SourceMatcher()
+    data.added(simcat,simtractor)
+    
+    chunk_name= os.path.basename( simcatfn_to_rs_dir(simcat_fn))
+    # Circle added
+    for img_name in ('simscoadd','image', 'resid'):
+        jpeg_fn= os.path.join(simcatfn_to_rs_dir(simcat_fn),
+                              'coadd/legacysurvey-%s-%s.jpg' %
+                              (brickname,img_name))
+        qafile = os.path.join(output_dir, 
+                              'qa_{}_{}_{}_{}_annot.png'.format(brickname, objtype,img_name,chunk_name))
+        plot_annotated_coadds(simcat, jpeg_fn=jpeg_fn, qafile=qafile)    
+        log.info('Wrote {}'.format(qafile))
+    
+    # Stamps added and recovered
+    for img_name in ['image','resid','simscoadd']:
+        jpeg_fn= os.path.join(simcatfn_to_rs_dir(simcat_fn),
+                              'coadd/legacysurvey-%s-%s.jpg' %
+                              (brickname,img_name))
+        qafile = os.path.join(output_dir, 
+                              'qa_{}_{}_{}_bright_large_dmag_{}.png'.format(brickname, objtype, img_name,chunk_name))
+        # Large dmag cutouts
+        junk,i_large_dmag,i_small_dmag= (
+            bright_dmag_cut(data.simcat['recby_simtractor'],
+                            data.simtractor['rec_simcat'],
+                            cut=False) )        
+        plot_cutouts_by_index(simcat,i_large_dmag,
+                              jpeg_fn=jpeg_fn, qafile=qafile)
+        log.info('Wrote {}'.format(qafile))
+        # Small dmag cutouts
+        qafile = os.path.join(output_dir, 
+                              'qa_{}_{}_{}_bright_small_dmag_{}.png'.format(brickname, objtype, img_name,chunk_name))
+        plot_cutouts_by_index(simcat,i_small_dmag,
+                              jpeg_fn=jpeg_fn, qafile=qafile)
+        log.info('Wrote {}'.format(qafile))
+        
+    # Stamps added but lost
+    if len( data.i_simcat['losby_simtractor']) > 0:
+        simcat_R= flux2mag(simcat.rflux)
+        for img_name in ['image']: #,'simscoadd']:
+            jpeg_fn= os.path.join(simcatfn_to_rs_dir(simcat_fn),
+                                  'coadd/legacysurvey-%s-%s.jpg' %
+                                  (brickname,img_name))
             qafile = os.path.join(output_dir, 
-                                  'qa-{}-{}-{}-{:02d}-annot.png'.format(\
-                                  brickname, objtype,img_name))
-            plot_annotated_coadds(simcat, brickname, objtype, \
-                                  indir= input_dir,img_name=img_name,qafile=qafile)
+                                  'qa_{}_{}_{}_missing_{}.png'.format(brickname, objtype, img_name,chunk_name))
+            miss = data.i_simcat['losby_simtractor']
+            plot_cutouts_by_index(simcat,miss,
+                                  jpeg_fn=jpeg_fn, qafile=qafile)
             log.info('Wrote {}'.format(qafile))
-
-        # Stamps added and recovered
-        for img_name in ['image','resid','simscoadd']:
-            # Indices of large and small dmag
-            junk,i_large_dmag,i_small_dmag= 
-                bright_dmag_cut(data.simcat['recby_simtractor'],
-                                data.simtractor['rec_simcat'])
-            # Large dmag cutouts
-            qafile = os.path.join(output_dir, 
-                                  'qa-{}-{}-{}-bright-large-dmag-{:02d}.png'.format(\
-                                  brickname, objtype, img_name)
-            plot_cutouts_by_index(simcat,i_large_dmag, brickname,objtype, \
-                                  indir= input_dir,img_name=img_name,qafile=qafile)
-            log.info('Wrote {}'.format(qafile))
-            # Small dmag cutouts
-            qafile = os.path.join(output_dir, 
-                                  'qa-{}-{}-{}-bright-small-dmag-{:02d}.png'.format(\
-                                   brickname, objtype, img_name)
-            plot_cutouts_by_index(simcat,i_small_dmag, brickname,objtype, \
-                                  indir=input_dir,img_name=img_name,qafile=qafile)
-            log.info('Wrote {}'.format(qafile))
-     
-        # Stamps added but lost
-        if len( data.i_simcat['losby_simtractor']) > 0:
-            simcat_R= flux2mag(simcat.rflux)
-                for img_name in ['image']: #,'simscoadd']:
-                    qafile = os.path.join(output_dir, 
-                                        'qa-{}-{}-{}-missing-{:02d}.png'.format(\
-                                        brickname, objtype, img_name)
-                    miss = data.i_simcat['losby_simtractor']
-                    plot_cutouts_by_index(simcat,miss, brickname,lobjtype,chunksuffix, \
-                                        indir=cdir,img_name=img_name,qafile=qafile)
-                    log.info('Wrote {}'.format(qafile))
-
+        
 
 if __name__ == "__main__":    
     from argparse import ArgumentParser
@@ -651,8 +693,8 @@ if __name__ == "__main__":
     parser.add_argument('--brick',help='process this brick',required=True)
     parser.add_argument('--objtype', type=str, choices=['star','qso','elg','lrg'], help='object type',required=True) 
     parser.add_argument('--output_dir', default='./',help='relative path to output directory',required=False) 
-    parser.add_argument('--extra_plots', action='store_true', 
-                        help='make missing, annotated, coadded plots, dont if many chunks')
+    parser.add_argument('--skip_coadds', action='store_true',default=False, 
+                        help='speed up by not drawing added sources on coadd jpegs')
     parser.add_argument('--verbose', action='store_true', 
                         help='toggle on verbose output')
     args = parser.parse_args()
@@ -662,12 +704,6 @@ if __name__ == "__main__":
     Tdata= TestData()
     Tdata.fetch(DOWNLOAD_ROOT,args.data_dir)
     
-    if args.extra_plots:
-        extra_plots= True
-    else:
-        extra_plots= False
-    print('extra_plots=',extra_plots)
-
     # Set the debugging level
     if args.verbose:
         lvl = logging.DEBUG
@@ -693,52 +729,83 @@ if __name__ == "__main__":
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
 
-    metacat_fns= glob( os.path.join(input_dir,
-                                   '*/obiwan/metacat-%s-%s.fits' %
-                                   (args.objtype, args.brick)))
+    #metacat_fns= glob( os.path.join(input_dir,
+    #                               '*/obiwan/metacat-%s-%s.fits' %
+    #                               (args.objtype, args.brick)))
     simcat_fns= glob( os.path.join(input_dir,
                                    '*/obiwan/simcat-%s-%s.fits' %
                                    (args.objtype, args.brick)))
-    simtractor_fns= glob( os.path.join(input_dir,
-                                       '*/tractor/tractor-%s.fits' %
-                                       (args.brick,)))
+    #simtractor_fns= glob( os.path.join(input_dir,
+    #                                   '*/tractor/tractor-%s.fits' %
+    #                                   (args.brick,)))
     realtractor_fn= os.path.join(args.data_dir,
                              'qa/DR5_out/tractor/%s/tractor-%s.fits' %
                              (args.brick[:3],args.brick) )
     assert( (len(simcat_fns) > 0) &
-            (len(simtractor_fns) > 0) &
             (len(realtractor_fn) > 0) )
-    print(simcat_fns)
-    print(simtractor_fns)
-    print(realtractor_fn)
-    raise ValueError('TODO: fns need to be in same order!!')
+    metacat_fns= [fn.replace('simcat','metacat')
+                  for fn in simcat_fns]
+    skipid_fns= [fn.replace('simcat','skippedids')
+                 for fn in simcat_fns]
+    simtractor_fns= [os.path.dirname(fn).replace(
+                         'obiwan','tractor/tractor-%s.fits' %
+                         args.brick)
+                     for fn in simcat_fns]
 
     # Sanity checks
-    for simcat_fn in simcat_fn:
-      metacat_fn= simcat_fn.replace("simcat","metacat")
-      skipid_fn.replace("simcat","skippedids")
-      Checks().test_nobj(metacat_fn,simcat_fn, skipid_fn)
-   
+    sanity= Checks(warn=False)
+    for metacat_fn, simcat_fn, skipid_fn in zip(
+            metacat_fns, simcat_fns, skipid_fns):
+      sanity.test_nobj(metacat_fn,simcat_fn, skipid_fn)   
 
     # Plots for each rs*, skip_rs*
-    for simcat_fn, simtractor_fn, realtractor_fn in zip(
-                                    simcat_fns, 
-                                    simtractor_fns,
-                                    realtractor_fns):
-        imshow_one_chunk(simcat_fn, simtractor_fn, 
-                         realtractor_fn)
+    if not args.skip_coadds:
+        for simcat_fn, simtractor_fn in zip(
+                simcat_fns,simtractor_fns):
+            imshow_one_chunk(simcat_fn, simtractor_fn, 
+                             realtractor_fn)
 
     # Merge
     simcat= CatalogueFuncs().stack(simcat_fns,textfile=False)
     simtractor= CatalogueFuncs().stack(simtractor_fns,textfile=False)
-    realtractor= fits_table(tractor_fn)
-    print('Injected %d sources, Pre-existing %d sources, Recovered sims + real %d' % 
-          (len(simcat),len(pre_exist),len(simtractor)))
+    realtractor= fits_table(realtractor_fn)
+    print('Injected %d sources, Real %d sources, Recovered sims + real %d' % 
+          (len(simcat),len(realtractor),len(simtractor)))
 
     data= SourceMatcher()
     data.added(simcat,simtractor)
     data.already_exist(realtractor,simtractor)
 
+    ###############
+    # Tally for all rs*, skip_rs*
+    temp=EmptyClass()
+    temp.realtractor= fits_table(realtractor_fn)
+    print('-'*40)
+    print('%s %10s %s/%s %s/%s' %
+          (brickname,'chunk','rec','inj','rec','real'))
+    for simcat_fn, simtractor_fn in zip(
+            simcat_fns,simtractor_fns):
+        temp.simcat= fits_table(simcat_fn)
+        temp.simtractor= fits_table(simtractor_fn)
+
+        mat= SourceMatcher(verbose=False)
+        mat.added(temp.simcat,temp.simtractor)
+        mat.already_exist(temp.realtractor,temp.simtractor)
+
+        rs= os.path.basename(simcatfn_to_rs_dir(simcat_fn))
+        print('\t %10s %d/%d %d/%d' %
+              (rs,
+               len(mat.i_simcat['recby_simtractor']), mat.size['simcat'],
+               len(mat.i_realtractor['recby_simtractor']), mat.size['realtractor']))
+    print('\t %10s %d/%d %d/%d' %
+          ('total'.upper(),
+           len(data.i_simcat['recby_simtractor']), data.size['simcat'],
+           len(data.i_realtractor['recby_simtractor']), data.size['realtractor']))
+    print('-'*40)
+    #############
+    raise ValueError
+    
+    
     #good = np.where((np.abs(tractor['decam_flux'][m1,2]/simcat['rflux'][m2]-1)<0.3)*1)
 
     # Plotting preferences
@@ -751,7 +818,7 @@ if __name__ == "__main__":
     # See priors.py
     mag_limits= dict(elg_rlimit=23.4+1,
                      lrg_zlimit=20.46+1)
-    rminmax = np.array([15., mag_limits['%s_rlimit' % args.objtype])  
+    rminmax = np.array([15., mag_limits['%s_rlimit' % args.objtype]])  
     nmagbin = long((rminmax[1]-rminmax[0])/magbinsz)
 
 
@@ -769,8 +836,7 @@ if __name__ == "__main__":
     # number of recovered sources that are bad, good and number of lost, binned by r mag
     plot_good_bad_ugly(data.simcat['recby_simtractor'],
                        data.simcat['losby_simtractor'], 
-                       nmagbin,rminmax, b_good,b_bad, 
-                       log, 
+                       nmagbin,rminmax, log, 
                        qafile= os.path.join(output_dir, 
                                             'qa-{}-{}-N-good-bad-missed.png'.format(
                                              brickname, objtype)))
@@ -778,7 +844,7 @@ if __name__ == "__main__":
     # Flux residuals vs input magnitude
     plot_tractor_minus_answer(data.simcat['recby_simtractor'], 
                               data.simtractor['rec_simcat'], 
-                              b_good,rminmax, log, 
+                              rminmax, log, 
                               qafile= os.path.join(output_dir, 
                                                    'qa-{}-{}-good-flux.png'.format(
                                                     brickname, objtype)))
@@ -786,13 +852,14 @@ if __name__ == "__main__":
     # chi plots: Flux residual / estimated Flux error
     plot_chi(data.simcat['recby_simtractor'], 
              data.simtractor['rec_simcat'], 
-             b_good,rminmax, log, qafile=\
-             os.path.join(output_dir, 'qa-{}-{}-chi-good.png'.format(brickname, objtype)))
+             rminmax, log,
+             qafile= os.path.join(output_dir,
+                                  'qa-{}-{}-chi-good.png'.format(brickname, objtype)))
    
     # Color residuals
     plot_color_tractor_minus_answer(data.simcat['recby_simtractor'], 
                                     data.simtractor['rec_simcat'],
-                                    rminmax, brickname,lobjtype, log, qafile =\
+                                    rminmax, brickname,objtype, log, qafile =\
              os.path.join(output_dir, 'qa-{}-{}-color.png'.format(brickname, objtype)))
 
     # Fraction of recovered sources
@@ -816,19 +883,19 @@ if __name__ == "__main__":
 
     # Confusion matrix for distribution of object types
     # Basic cm, use slim=False
-    types= ['PSF ', 'SIMP', 'EXP ', 'DEV ', 'COMP'] 
-    cm,all_names= create_confusion_matrix(np.array(['PSF ']*len(data.simtractor['rec_simcat'][b_good]),
-                                                   data.simtractor['rec_simcat'].get('type')[b_good], 
-                                                   types=types,slim=False)
-    qafile = os.path.join(output_dir, 'qa-{}-{}-{}-confusion.png'.format(brickname, objtype,'good'))
+    types= ['PSF','REX', 'SIMP', 'EXP', 'DEV', 'COMP']
+    cm,all_names= create_confusion_matrix(np.array(['PSF']*len(data.simtractor['rec_simcat'])),
+                                          np.char.strip(data.simtractor['rec_simcat'].get('type')), 
+                                          types=types,slim=False)
+    qafile = os.path.join(output_dir, 'qa-{}-{}-confusion.png'.format(brickname, objtype))
     plot_confusion_matrix(cm,all_names,all_names, log,qafile)
     
     # Now a stacked confusion matrix
     # Compute a row for each r mag range and stack rows
     make_stacked_cm(data.simcat['recby_simtractor'],
                     data.simtractor['rec_simcat'],
-                    b_good, log,qafile =\
-             os.path.join(output_dir, 'qa-{}-{}-good-confusion-stack.png'.format(brickname, objtype)))
+                    log,qafile =\
+             os.path.join(output_dir, 'qa-{}-{}-confusion-stack.png'.format(brickname, objtype)))
    
     '''
     # Morphology plots

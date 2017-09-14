@@ -6,10 +6,15 @@ import matplotlib.pyplot as plt
 from scipy.stats import sigmaclip
 from collections import defaultdict
 
+from astropy.coordinates import Galactic,ICRS
+from astropy import units
+
 #from theValidator.catalogues import Matcher,CatalogueFuncs
 from astrometry.libkd.spherematch import match_radec
 from astrometry.util.fits import fits_table, merge_tables
+
 from obiwan.fetch import fetch_targz
+from obiwan.kenobi import dobash
 
 DOWNLOAD_ROOT = "http://portal.nersc.gov/project/desi/users/kburleigh/"
 
@@ -37,7 +42,7 @@ class Data(object):
     def fetch(self):
         name='healpix.tar.gz'
         fetch_targz(os.path.join(DOWNLOAD_ROOT,self.drname,name),
-                    os.path.join(self.targz_dir,self.drname,name))
+                    os.path.joni(self.targz_dir,self.drname))
         
     def get_data(self,psf_or_aper,which):
         """read healpix data, RING ordered'
@@ -65,15 +70,27 @@ class Data(object):
 class EmptyClass(object):
     pass
 
-def footprint_wSFD():
+class footprint_wSFD(object):
+  """makes nice figure showing DECaLS,MzLS,BASS footprint ontop of sfd98 dust
+  
+  Example: 
+    Foot= footprint_wSFD('/home/kaylan/mydata')
+    sfd= Foot.get_footprint_object()
+    Foot.plot_footprint_object()
+  """
+  def __init__(self,data_dir='/home/kaylan/mydata'):
+    self.data_dir= data_dir
+    self.map_dir= os.path.join(data_dir,'sfd98')
+    self.tile_dir= os.path.join(data_dir,'svn_tiles')
+    # Download data
+    self.download_sfd98_healpix()
+    self.download_decals_mzls_tiles()
+
+  def get_footprint_object(self):
+    """Returns footprint object 'sfd'"""
     # work with SFD map and Decals/Mzls tiles
     # lonlat from SFD healpix is in galactic coords, convert this to Celestial
-    from astrometry.util.fits import fits_table, merge_tables
-    from astrometry.libkd.spherematch import match_radec
-    from astropy.coordinates import Galactic,ICRS
-    from astropy import units as u
-    
-    hdu=fitsio.FITS('/home/kaylan/mydata/sfd98/lambda_fds_dust_94GHz.fits')
+    hdu=fitsio.FITS(os.path.join(self.map_dir,'lambda_sfd_ebv.fits'))
     sfd= EmptyClass()
     temp= hdu[1].read()
     sfd.temp= temp['TEMPERATURE'] 
@@ -81,13 +98,13 @@ def footprint_wSFD():
     assert(npix == 512)
     sfd.l_indeg,sfd.b_indeg= hp.pix2ang(512,np.where(sfd.temp > 0)[0],nest=True,lonlat=True)
     #inPlane= np.where((sfd_gal_dec > -20) & (sfd_gal_dec < 20))[0]
-    trans= Galactic(l=sfd.l_indeg * u.degree,
-                    b=sfd.b_indeg * u.degree)
+    trans= Galactic(l=sfd.l_indeg * units.degree,
+                    b=sfd.b_indeg * units.degree)
     radec= trans.transform_to(ICRS)
     sfd.ra,sfd.dec= radec.ra.value, radec.dec.value
     
-    mzls=fits_table("/home/kaylan/mydata/tiles_decam_mosaic/mosaic-tiles_obstatus.fits")
-    decals=fits_table("/home/kaylan/mydata/tiles_decam_mosaic/decam-tiles_obstatus.fits")
+    mzls=fits_table(os.path.join(self.tile_dir,'mosaic-tiles_obstatus.fits'))
+    decals=fits_table(os.path.join(self.tile_dir,'decam-tiles_obstatus.fits'))
     desi= merge_tables([mzls,decals],columns='fillzero')
     desi.cut( (desi.in_desi_orig == 1) |
               (desi.in_desi == 1) |
@@ -113,14 +130,50 @@ def footprint_wSFD():
     sfd.ipix_legsurvey= list(sfd.ipix_legsurvey)
     return sfd
 
-def plot_footprint(sfd):
-    """sfd is what footprint_wSFD() returns"""
-    temp= np.log10(sfd.temp)
-    temp[sfd.ipix_legsurvey]= 2.
-    hp.mollview(temp,nest=True,flip='geo',title='Mollweide Projection, Galactic Coordinates',unit='',max=-0.5)
-    hp.graticule(c='k',lw=1) 
-    plt.savefig('footprint_wSFD.png',dpi=150)
-    
+  def plot_footprint_object(self,footprint_obj):
+      """sfd is what footprint_wSFD() returns"""
+      temp= np.log10(footprint_obj.temp)
+      temp[footprint_obj.ipix_legsurvey]= 2.
+      hp.mollview(temp,nest=True,flip='geo',title='Mollweide Projection, Galactic Coordinates',unit='',max=-0.5)
+      hp.graticule(c='k',lw=1) 
+      plt.savefig('footprint_wSFD.png',dpi=150)
+
+  def modify_healpy_colorbar1():
+  
+  def modify_healpy_colorbar2():
+    x, y, z = np.random.random((3, 30))
+    z = z * 20 + 0.1
+
+    # Set some values in z to 0...
+    z[:5] = 0
+
+    cmap = plt.get_cmap('jet', 20)
+    cmap.set_under('gray')
+
+    fig, ax = plt.subplots()
+    cax = ax.scatter(x, y, c=z, s=100, cmap=cmap, vmin=0.1, vmax=z.max())
+    fig.colorbar(cax, extend='min')
+
+  def download_sfd98_healpix(self):
+    """downloads data if isnt on computer"""
+    tar_name= 'sfd98.tar.gz'
+    map_name= 'sfd98/lambda_sfd_ebv.fits'
+    if not os.path.exists(self.map_dir):
+      os.makedirs(self.map_dir)
+      fetch_targz(os.path.join(DOWNLOAD_ROOT,'obiwan',tar_name),
+                  self.data_dir)
+
+  def download_decals_mzls_tiles(self):
+    """downloads data if isnt on computer"""
+    tar_name= 'svn_tiles.tar.gz'
+    mosaic_nm= 'mosaic-tiles_obstatus.fits'
+    decals_nm= 'decam-tiles_obstatus.fits'
+    if not os.path.exists(self.tile_dir):
+      os.makedirs(self.tile_dir)
+      fetch_targz(os.path.join(DOWNLOAD_ROOT,'obiwan',tar_name),
+                  self.data_dir)
+
+
 class Bricks(object):
     def __init__(self,targz_dir,decals=True):
         self.bricks= fits_table(os.path.join(targz_dir,

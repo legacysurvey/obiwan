@@ -36,6 +36,7 @@ import pandas as pd
 from pandas.plotting import scatter_matrix
 
 from obiwan.common import inJupyter, save_png
+from obiwan.fetch import fetch_targz
 from theValidator.catalogues import CatalogueFuncs,Matcher
 
 DOWNLOAD_ROOT = "http://portal.nersc.gov/project/desi/users/kburleigh/obiwan/"
@@ -70,17 +71,7 @@ class Data(object):
         
     def fetch(self,outdir):
         name= 'priors.tar.gz'
-        self.outdir= os.path.join(outdir,name.replace('.tar.gz',''))
-        if not os.path.exists(self.outdir):
-            os.makedirs(self.outdir)
-        remote_fn= "http://portal.nersc.gov/project/desi/users/kburleigh/obiwan/" + name
-        local_fn= os.path.join(outdir,name)
-        if not os.path.exists(local_fn):
-            print('Retrieving %s, extracting here %s' % (remote_fn,local_fn))
-            urllib.request.urlretrieve(remote_fn, local_fn)
-            tgz = tarfile.open(local_fn)
-            tgz.extractall(path=outdir)
-            tgz.close()
+        fetch_targz(os.path.join(DOWNLOAD_ROOT, name), outdir)
         
     def load_elg(self,DR, rlimit=23.4+1):
         """
