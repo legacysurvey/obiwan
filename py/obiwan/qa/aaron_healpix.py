@@ -103,22 +103,49 @@ class footprint_wSFD(object):
     radec= trans.transform_to(ICRS)
     sfd.ra,sfd.dec= radec.ra.value, radec.dec.value
     
-    mzls=fits_table(os.path.join(self.tile_dir,'mosaic-tiles_obstatus.fits'))
-    decals=fits_table(os.path.join(self.tile_dir,'decam-tiles_obstatus.fits'))
-    desi= merge_tables([mzls,decals],columns='fillzero')
-    desi.cut( (desi.in_desi_orig == 1) |
-              (desi.in_desi == 1) |
-              (desi.in_des == 1) )
-    #legsurvey= merge_tables([mzls,decals],columns='fillzero')
-    #des= merge_tables([mzls,decals],columns='fillzero') 
-    #legsurvey.cut( (legsurvey.in_desi_orig == 1) |
-    #               (legsurvey.in_desi == 1) )
-    #des.cut( (des.in_des == 1) )
+    all_tiles=fits_table(os.path.join(self.tile_dir,'mosaic-tiles_obstatus.fits'))
+    wdes_tiles=fits_table(os.path.join(self.tile_dir,'decam-tiles_obstatus.fits'))
+    
+    inDESI= ( (all_tiles.in_desi_orig == 1) |
+              (all_tiles.in_desi == 1))
+    inDecals= ( (inDESI) &
+                (all_tiles.dec <= 30.)) 
+                #(mzls_decals.in_des == 0))
+    inMzls=   ( (inDESI) &
+                (all_tiles.dec > 30.)) 
+                #(mzls_decals.in_des == 0))
+    inDes= (  (wdes_tiles.in_desi_orig == 1) |
+              (wdes_tiles.in_desi == 1))
+    inDes=    ( (inDes) &
+                (wdes_tiles.in_des == 1))
+    #above30= mzls.dec > 30.
+    #inDESI= ( (mzls.in_desi_orig == 1) |
+    #          (mzls.in_desi == 1))
+    #inMzls= ( (above30) &
+    #          (inDESI))
+
+    #desi= merge_tables([mzls,decals],columns='fillzero')
+    des= wdes_tiles.copy()
+    del wdes_tiles
+    des.cut(inDes)
+    mzls= all_tiles.copy()
+    decals= all_tiles.copy()
+    del all_tiles
+    mzls.cut(inMzls)
+    decals.cut(inDecals)
     
     ps= Healpix().get_pixscale(len(sfd.temp),unit='deg')
     # match_radec(ref,obs): for each point in ref, return matching point in obs
-    I,J,d= match_radec(desi.ra,desi.dec, sfd.ra,sfd.dec, ps*8)
-    sfd.ipix_legsurvey= list( set(J) )
+    print('matching tiles to healpix centers')
+    I,J,d= match_radec(mzls.ra,mzls.dec, sfd.ra,sfd.dec, ps*8)
+    sfd.ipix_mzls= list( set(J) )
+
+    I,J,d= match_radec(decals.ra,decals.dec, sfd.ra,sfd.dec, ps*8)
+    sfd.ipix_decals= list( set(J) )
+
+    I,J,d= match_radec(des.ra,des.dec, sfd.ra,sfd.dec, ps*8)
+    sfd.ipix_des= list( set(J) )
+    
     return sfd
 
     # legasurvey pts fill in in ps*3
@@ -139,20 +166,21 @@ class footprint_wSFD(object):
       plt.savefig('footprint_wSFD.png',dpi=150)
 
   def modify_healpy_colorbar1():
+      pass
   
   def modify_healpy_colorbar2():
-    x, y, z = np.random.random((3, 30))
-    z = z * 20 + 0.1
-
-    # Set some values in z to 0...
-    z[:5] = 0
-
-    cmap = plt.get_cmap('jet', 20)
-    cmap.set_under('gray')
-
-    fig, ax = plt.subplots()
-    cax = ax.scatter(x, y, c=z, s=100, cmap=cmap, vmin=0.1, vmax=z.max())
-    fig.colorbar(cax, extend='min')
+      x, y, z = np.random.random((3, 30))
+      z = z * 20 + 0.1
+      
+      # Set some values in z to 0...
+      z[:5] = 0
+      
+      cmap = plt.get_cmap('jet', 20)
+      cmap.set_under('gray')
+      
+      fig, ax = plt.subplots()
+      cax = ax.scatter(x, y, c=z, s=100, cmap=cmap, vmin=0.1, vmax=z.max())
+      fig.colorbar(cax, extend='min')
 
   def download_sfd98_healpix(self):
     """downloads data if isnt on computer"""
