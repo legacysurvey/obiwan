@@ -138,6 +138,22 @@ class footprint_wSFD(object):
       hp.graticule(c='k',lw=1) 
       plt.savefig('footprint_wSFD.png',dpi=150)
 
+  def modify_healpy_colorbar1():
+  
+  def modify_healpy_colorbar2():
+    x, y, z = np.random.random((3, 30))
+    z = z * 20 + 0.1
+
+    # Set some values in z to 0...
+    z[:5] = 0
+
+    cmap = plt.get_cmap('jet', 20)
+    cmap.set_under('gray')
+
+    fig, ax = plt.subplots()
+    cax = ax.scatter(x, y, c=z, s=100, cmap=cmap, vmin=0.1, vmax=z.max())
+    fig.colorbar(cax, extend='min')
+
   def download_sfd98_healpix(self):
     """downloads data if isnt on computer"""
     tar_name= 'sfd98.tar.gz'
