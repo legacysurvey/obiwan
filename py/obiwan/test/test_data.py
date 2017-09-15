@@ -11,6 +11,9 @@ from glob import glob
 from six.moves import urllib
 import tarfile
 
+from obiwan.fetch import fetch_targz
+
+
 DOWNLOAD_ROOT = "http://portal.nersc.gov/project/desi/users/kburleigh/obiwan/"
 NERSC_ROOT = DOWNLOAD_ROOT.replace("http://portal.nersc.gov/project/",
                                    "/global/project/projectdirs/")\
@@ -19,18 +22,9 @@ NERSC_ROOT = DOWNLOAD_ROOT.replace("http://portal.nersc.gov/project/",
 class TestData(object):    
     def fetch(self,outdir):
         name= 'testdata.tar.gz'
-        self.outdir= os.path.join(outdir,name.replace('.tar.gz',''))
-        if not os.path.exists(self.outdir):
-            os.makedirs(self.outdir)
-        remote_fn= DOWNLOAD_ROOT + name
-        local_fn= os.path.join(outdir,name)
-        if not os.path.exists(local_fn):
-            print('Retrieving %s, extracting here %s' % (remote_fn,local_fn))
-            urllib.request.urlretrieve(remote_fn, local_fn)
-            tgz = tarfile.open(local_fn)
-            tgz.extractall(path=outdir)
-            tgz.close()
-        
+        fetch_targz(os.path.join(DOWNLOAD_ROOT,name),
+                    outdir)
+           
     def get_fn(self,name):
         if name == 'skipids':
             fn= 'skipids_table.fits'

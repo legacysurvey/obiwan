@@ -486,8 +486,7 @@ class TestData(object):
     def fetch(self,download_dir,outdir):
         name='qa.tar.gz'
         remote_fn= os.path.join(download_dir,name)
-        local_fn= os.path.join(outdir,name)
-        fetch_targz(remote_fn,local_fn)
+        fetch_targz(remote_fn,outdir)
 
 def simcatfn_to_rs_dir(simcat_fn):
     """returns abs path to rs* or skip_rs* directory given full path to simcat_fn"""
