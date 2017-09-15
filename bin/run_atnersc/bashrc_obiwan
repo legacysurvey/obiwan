@@ -18,6 +18,7 @@ export DUST_DIR=$obiwan_data/dust
 # Obiwan and imaging pipeline repos
 export PYTHONPATH=$obiwan_code/theValidator:${PYTHONPATH}
 export PYTHONPATH=$obiwan_code/legacypipe/py:${PYTHONPATH}
+export PYTHONPATH=$obiwan_code/legacyzpts/py:${PYTHONPATH}
 export PYTHONPATH=$obiwan_code/obiwan/py:${PYTHONPATH}
 
 # QDO (for Obiwan production runs)
