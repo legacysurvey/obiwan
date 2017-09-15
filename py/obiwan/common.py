@@ -34,7 +34,7 @@ def fits2pandas(tab,attrs=None):
     """
     d={}
     if attrs is None:
-        attrs= tab.get_columns
+        attrs= tab.get_columns()
     for col in attrs:
         d[col]= tab.get(col)
     df= pd.DataFrame(d)
