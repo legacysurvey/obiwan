@@ -35,7 +35,7 @@ import tarfile
 import pandas as pd
 from pandas.plotting import scatter_matrix
 
-from obiwan.common import inJupyter, save_png
+from obiwan.common import inJupyter, save_png, fits2pandas
 from obiwan.fetch import fetch_targz
 from theValidator.catalogues import CatalogueFuncs,Matcher
 
@@ -376,23 +376,6 @@ def load_pickle(outdir,name):
     print("Loaded pickle", path)
     return obj    
 
-def fits2pandas(tab,attrs=None):
-    """converts a fits_table into a pandas DataFrame
-
-    Args:
-      tab: fits_table()
-      attrs: attributes or column names want in the DF
-    """
-    d={}
-    if attrs is None:
-        attrs= tab.get_columns
-    for col in attrs:
-        d[col]= tab.get(col)
-    df= pd.DataFrame(d)
-    # Fix byte ordering from fits
-    # https://stackoverflow.com/questions/18599579/pulling-multiple-non-consecutive-index-values-from-a-pandas-dataframe
-    df= df.apply(lambda x: x.values.byteswap().newbyteorder())
-    return df
  
 
 class KDE_Model(object):
