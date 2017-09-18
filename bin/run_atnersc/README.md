@@ -71,7 +71,11 @@ The second suite does "end to end" tests, currently for datasets DR3 and DR5. Ea
 If the second test suite printed "2 passed" then you can try some production runs.
 
 ### Login to the PostgreSQL DB
-The psql db at NERSC is called "desi". It's hosted at scidb2.nersc.gov and you sign in with user "desi_user. You'll need the ".pgpass" config/password file (email Kaylan for it). Then put the ".pgass" file in $HOME/ on Cori. 
+The psql db at NERSC is called "desi". It's hosted at scidb2.nersc.gov and you sign in with user "desi_user. You'll need the ".pgpass" config/password file (email Kaylan for it). Then put the ".pgpass" file in $HOME/ on Cori and give it user rw permissions.
+```
+cp <path/to/kaylans/.pgpass $HOME/
+chmod u+rw $HOME/.pgpass
+``` 
 
 Make sure the bashrc_obiwan loaded the "postresql" module. Then do
 ```sh
