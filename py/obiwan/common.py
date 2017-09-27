@@ -9,12 +9,13 @@ import pandas as pd
 def inJupyter():
     return 'inline' in matplotlib.get_backend()
     
-def save_png(outdir,fig_id):
+def save_png(outdir,fig_id, tight=True):
     path= os.path.join(outdir,fig_id + ".png")
     if not os.path.isdir(outdir):
         os.makedirs(dirname)
     print("Saving figure", path)
-    plt.tight_layout()
+    if tight:
+      plt.tight_layout()
     plt.savefig(path, format='png', dpi=150)
     #plt.savefig(path, format='png',box_extra_artists=[xlab,ylab],
     #            bbox_inches='tight',dpi=150)
