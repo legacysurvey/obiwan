@@ -10,6 +10,8 @@ export dataset=dr5
 export brick="$1"
 export rowstart="$2"
 export do_skipids="$3"
+export do_more="$4"
+export minid=240001
 export object=elg
 export nobj=300
 
@@ -23,10 +25,19 @@ export LEGACY_SURVEY_DIR=$obiwan_data/legacysurveydir_${dataset}
 export bri=$(echo $brick | head -c 3)
 export outdir=${obiwan_out}/${name_for_run}
 if [ ${do_skipids} == "no" ]; then
-  export log=${outdir}/${object}/${bri}/${brick}/rs${rowstart}/log.${brick}
+  if [ ${do_more} == "no" ]; then
+    export rsdir=rs${rowstart}
+  else
+    export rsdir=more_rs${rowstart}
+  fi
 else
-  export log=${outdir}/${object}/${bri}/${brick}/skip_rs${rowstart}/log.${brick}
+  if [ ${do_more} == "no" ]; then
+    export rsdir=skip_rs${rowstart}
+  else
+    export rsdir=more_skip_rs${rowstart}
+  fi
 fi
+export log=${outdir}/${object}/${bri}/${brick}/${rsdir}/log.${brick}
 mkdir -p $(dirname $log)
 echo Logging to: $log
 
@@ -46,6 +57,7 @@ python obiwan/kenobi.py --dataset ${dataset} -b ${brick} \
                         --outdir $outdir --add_sim_noise  \
                         --threads $threads  \
                         --do_skipids $do_skipids \
+                        --do_more $do_more --minid $minid \
                         >> $log 2>&1
 
 

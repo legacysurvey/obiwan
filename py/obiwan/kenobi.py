@@ -96,14 +96,17 @@ def ptime(text,t0):
 
 
 def get_savedir(**kwargs):
+  outdir= os.path.join(kwargs['decals_sim_dir'],kwargs['objtype'],\
+                       kwargs['brickname'][:3], kwargs['brickname'])
+  # Either rs or skip_rs
   if kwargs['do_skipids'] == 'no':
-    return os.path.join(kwargs['decals_sim_dir'],kwargs['objtype'],\
-                        kwargs['brickname'][:3], kwargs['brickname'],\
-                        "rs%d" % kwargs['rowst'])    
+    final_dir= "rs%d" % kwargs['rowst']
   elif kwargs['do_skipids'] == 'yes':
-    return os.path.join(kwargs['decals_sim_dir'],kwargs['objtype'],\
-                        kwargs['brickname'][:3], kwargs['brickname'],\
-                        "skip_rs%d" % kwargs['rowst'])    
+    final_dir= "skip_rs%d" % kwargs['rowst'] 
+  # if specified minimum id, running more randoms
+  if kwargs['minid']:
+    final_dir= "more_"+final_dir
+  return os.path.join(outdir,final_dir)    
 
 def get_skip_ids(decals_sim_dir, brickname, objtype):
   fns= glob(os.path.join(decals_sim_dir, objtype,
@@ -824,6 +827,8 @@ def get_parser():
     parser.add_argument('-rs', '--rowstart', type=int, default=0, metavar='', 
                         help='zero indexed, row of ra,dec,mags table, after it is cut to brick, to start on')
     parser.add_argument('--do_skipids', type=str, choices=['no','yes'],default='no', help='inject skipped ids for brick, otherwise run as usual')
+    parser.add_argument('--do_more', type=str, choices=['no','yes'],default='no', help='yes if running more randoms b/c TS returns too few targets')
+    parser.add_argument('--minid', type=int, default=None, help='set if do_more==yes, minimum id to consider, useful if adding more randoms mid-run')
     parser.add_argument('--randoms_db', default='obiwan_elg', help='desi db table name for randoms')
     parser.add_argument('--randoms_from_fits', default=None, help='set to read randoms from fits file instead of scidb2.nersc.gov db, set to absolute path of local fits file on computer')
     parser.add_argument('--prefix', type=str, default='', metavar='', 
@@ -1144,7 +1149,6 @@ def main(args=None):
 
     brickname = args.brick
     objtype = args.objtype
-    maxobjs = args.nobj
 
     for obj in ('LSB'):
         if objtype == obj:
@@ -1223,14 +1227,15 @@ def main(args=None):
             #           (Samp.get('%s_n' % objtype) <= 2.) ]
             Samp.set('%s_re' % objtype, np.array([0.5]*len(Samp)))
             Samp.set('%s_n' % objtype, np.array([1.]*len(Samp)))
-        else:
-            # Usual obiwan
-            print('Sorting by sersic n')
-            Samp=Samp[np.argsort( Samp.get('%s_n' % objtype) )]
-        #    # Dont sort by sersic n for deeplearning cutouts
-        #    print('NOT sorting by sersic n')
-        #else:
-    rowst,rowend= args.rowstart,args.rowstart+maxobjs
+    # Apply cuts
+    if args.minid:
+      Samp.cut( Samp.id >= args.minid )
+    # sort by id so first 300 isn't changed if add more ids
+    Samp=(Samp
+          [np.argsort(Samp.id) ]
+          [args.rowstart:args.rowstart + args.nobj])
+    # Performance
+    Samp=Samp[np.argsort( Samp.get('%s_n' % objtype) )]
     if args.cutouts:
         # Gridded ra,dec for args.stamp_size x stamp_size postage stamps 
         size_arcsec= args.stamp_size * 0.262 * 2 #arcsec, 2 for added buffer
@@ -1250,9 +1255,8 @@ def main(args=None):
         Samp.set('ra',ra)
         Samp.set('dec',dec)
     # Rowstart -> Rowend
-    Samp= Samp[args.rowstart:args.rowstart+maxobjs]
-    print('Max sample size=%d, actual sample size=%d' % (maxobjs,len(Samp)))
-    assert(len(Samp) <= maxobjs)
+    print('Max sample size=%d, actual sample size=%d' % (args.nobj,len(Samp)))
+    assert(len(Samp) <= args.nobj)
     t0= ptime('Got input_sample',t0)
 
     # Store args in dict for easy func passing
@@ -1262,9 +1266,9 @@ def main(args=None):
                 brickwcs= brickwcs, \
                 objtype=objtype,\
                 nobj=len(Samp),\
-                maxobjs=maxobjs,\
-                rowst=rowst,\
-                rowend=rowend,\
+                maxobjs=args.nobj,\
+                rowst=args.rowstart,\
+                minid=args.minid,\
                 do_skipids=args.do_skipids,\
                 args=args)
 
@@ -1273,7 +1277,7 @@ def main(args=None):
         fn= get_savedir(**kwargs)+'_exceeded.txt'
         junk= os.system('touch %s' % fn)
         print('Wrote %s' % fn)
-        raise ValueError('starting row=%d exceeds number of artificial sources, quit' % rowst)
+        raise ValueError('starting row=%d exceeds number of artificial sources, quit' % args.rowstart)
     
     # Create simulated catalogues and run Tractor
     create_metadata(kwargs=kwargs)
