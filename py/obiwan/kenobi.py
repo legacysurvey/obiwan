@@ -47,6 +47,7 @@ from legacypipe.survey import LegacySurveyData, wcs_for_brick
 
 import obiwan.priors as priors
 from obiwan.db_tools import getSrcsInBrick 
+from obiwan.common import get_savedir 
 
 from astrometry.util.fits import fits_table, merge_tables
 from astrometry.util.ttime import Time
@@ -93,20 +94,6 @@ def ptime(text,t0):
     print('TIMING:%s ' % text,tnow-t0)
     return tnow
 
-
-
-def get_savedir(**kwargs):
-  outdir= os.path.join(kwargs['decals_sim_dir'],kwargs['objtype'],\
-                       kwargs['brickname'][:3], kwargs['brickname'])
-  # Either rs or skip_rs
-  if kwargs['do_skipids'] == 'no':
-    final_dir= "rs%d" % kwargs['rowst']
-  elif kwargs['do_skipids'] == 'yes':
-    final_dir= "skip_rs%d" % kwargs['rowst'] 
-  # if specified minimum id, running more randoms
-  if kwargs['minid']:
-    final_dir= "more_"+final_dir
-  return os.path.join(outdir,final_dir)    
 
 def get_skip_ids(decals_sim_dir, brickname, objtype):
   fns= glob(os.path.join(decals_sim_dir, objtype,
@@ -916,7 +903,9 @@ def create_metadata(kwargs=None):
 	#    log.info('Random seed = {}'.format(kwargs['args'].seed))
 	#    metacat['SEED'] = kwargs['args'].seed
     #metacat_dir = os.path.join(kwargs['decals_sim_dir'], kwargs['objtype'],kwargs['brickname'][:3],kwargs['brickname'])    
-    metacat_dir = get_savedir(**kwargs)
+    metacat_dir= get_savedir(kwargs['decals_sim_dir'],kwargs['objtype'],
+                             kwargs['brickname'],kwargs['rowst'],
+                             do_skipids=kwargs['do_skipids'],do_more=kwargs['do_more'])
     if not os.path.exists(metacat_dir): 
 	os.makedirs(metacat_dir)
     
@@ -952,7 +941,9 @@ def create_ith_simcat(d=None):
 	#simcat = build_simcat(d['nobj'], d['brickname'], d['brickwcs'], d['metacat'], seed)
 	simcat, skipped_ids = build_simcat(Samp=d['Samp'],brickwcs=d['brickwcs'],meta=d['metacat'])
 	# Simcat 
-	simcat_dir = get_savedir(**d) #os.path.join(d['metacat_dir'],'row%d-%d' % (rowstart,rowend)) #'%3.3d' % ith_chunk)    
+	simcat_dir = get_savedir(d['decals_sim_dir'],d['objtype'],
+                           d['brickname'],d['rowst'],
+                           do_skipids=d['do_skipids'],do_more=d['do_more'])
 	if not os.path.exists(simcat_dir): 
 		os.makedirs(simcat_dir)
 	#simcatfile = os.path.join(simcat_dir, 'simcat-{}-{}-row{}-{}.fits'.format(d['brickname'], d['objtype'],rowstart,rowend)) # chunksuffix))
@@ -1127,6 +1118,8 @@ def main(args=None):
     print('Args:', args)   
     if args.cutouts:
         args.stage = 'tims'
+    if args.do_more == 'yes':
+      assert(not args.minid is None)
     # Setup loggers
     if args.verbose:
         lvl = logging.DEBUG
@@ -1268,13 +1261,17 @@ def main(args=None):
                 nobj=len(Samp),\
                 maxobjs=args.nobj,\
                 rowst=args.rowstart,\
-                minid=args.minid,\
                 do_skipids=args.do_skipids,\
+                do_more=args.do_more,\
+                minid=args.minid,\
                 args=args)
 
     # Stop if starting row exceeds length of radec,color table
     if len(Samp) == 0:
-        fn= get_savedir(**kwargs)+'_exceeded.txt'
+        fn= get_savedir(kwargs['decals_sim_dir'],kwargs['objtype'],
+                        kwargs['brickname'],kwargs['rowst'],
+                        do_skipids=kwargs['do_skipds'],do_more=kwargs['do_more'])
+        fn+= '_exceeded.txt'
         junk= os.system('touch %s' % fn)
         print('Wrote %s' % fn)
         raise ValueError('starting row=%d exceeds number of artificial sources, quit' % args.rowstart)

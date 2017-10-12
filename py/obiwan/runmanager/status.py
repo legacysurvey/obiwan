@@ -8,22 +8,15 @@ from glob import glob
 import re
 from collections import defaultdict
 
+from obiwan.common import get_savedir,dobash
 
 QDO_RESULT= ['running', 'succeeded', 'failed']
 
-def get_brickdir(outdir,obj,brick):
-  return os.path.join(outdir,obj,brick[:3],brick)
 
-def get_logdir(outdir,obj,brick,rowstart,doSkipid='no'):
-  if doSkipid == "no":
-    suffix= 'rs%s' % rowstart
-  elif doSkipid == 'yes':
-    suffix= 'skip_rs%s' % rowstart
-  return os.path.join( get_brickdir(outdir,obj,brick),
-                       '%s' % suffix)
-
-def get_logfile(outdir,obj,brick,rowstart, doSkipid='no'):
-  return os.path.join( get_logdir(outdir,obj,brick,rowstart, doSkipid=doSkipid),
+def get_logfile(outdir,obj,brick,rowstart, 
+                do_skipids='no',do_more='no'):
+  return os.path.join( get_savedir(outdir,obj,brick,rowstart, 
+                                   do_skipids=do_skipids,do_more=do_more),
                        'log.%s' % brick)
 
 def get_slurm_files(outdir):
@@ -61,17 +54,13 @@ class QdoList(object):
       text += '%s= %s\n' % (attr, getattr(self,attr) )
     return text
 
-  def get_tasks_logs_slurms(self):
+  def get_tasks_logs(self):
     """get tasks, logs, slurms for the three types of qdo status
     Running, Succeeded, Failed"""
     # Logs for all Failed tasks
     tasks={}
     ids={}
     logs= defaultdict(list)
-    slurms= defaultdict(list)
-    slurm_fns= get_slurm_files(self.outdir)
-    assert(len(slurm_fns) > 0)
-    print('slurm_fns=',slurm_fns)
     #err= defaultdict(lambda: [])
     print('qdo Que: %s' % self.que_name)
     q = qdo.connect(self.que_name)
@@ -84,43 +73,36 @@ class QdoList(object):
       # Corresponding log, slurm files  
       for task in tasks[res]:
         # Logs
-        brick,rs,doSkipid = task.split(' ')
-        logfn= get_logfile(self.outdir,self.obj,brick,rs, doSkipid=doSkipid)
+        brick,rs,do_skipids,do_more = task.split(' ')
+        logfn= get_logfile(self.outdir,self.obj,brick,rs, 
+                           do_skipids=do_skipids,do_more=do_more)
         logs[res].append( logfn )
-        # Slurms
-        found= False
-        for slurm_fn in slurm_fns:
-          with open(slurm_fn,'r') as foo:
-            text= foo.read()
-          if logfn in text:
-            found=True
-            slurms[res].append( slurm_fn )
-        if not found: 
-            print('didnt find %s in slurms: ' % logfn,slurm_fn)
-    return tasks,ids,logs,slurms
+    return tasks,ids,logs
 
-  def rerun_tasks(self,task_ids, debug=True):
+  def rerun_tasks(self,task_ids, modify=False):
     """set qdo tasks state to Pending for these task_ids
     
     Args:
-      debug: False to actually reset the qdo tasks state AND to delete
-      all output files for that task
+      modify: True to actually reset the qdo tasks state AND to delete
+        all output files for that task
     """
     q = qdo.connect(self.que_name)
-    if not debug:
-      print('resetting state for %d tasks' % len(task_ids))
     for task_id in task_ids:
       try:
-        task_obj= q.tasks(id= task_id)
-        brick,rs,doSkipid = task_obj.task.split(' ')
-        logdir= get_logdir(self.outdir,self.obj,brick,rs, doSkipid=doSkipid)
-        if debug:
-          print('would remove dir %s' % logdir, 'for task obj',task_obj)
-        else:
+        task_obj= q.tasks(id= int(task_id))
+        brick,rs,do_skipids,do_more= task_obj.task.split(' ')
+        logdir= get_savedir(self.outdir,self.obj,brick,rs, 
+                            do_skipids=do_skipids,do_more=do_more)
+        rmcmd= "rm %s/*" % logdir
+        if modify:
           task_obj.set_state(qdo.Task.PENDING)
-          #os.removedirs(logdir)
+          dobash(rmcmd)
+        else:
+          print('would remove id=%d, which corresponds to taks_obj=' % task_id,task_obj)
+          print('by calling dobash(%s)' % rmcmd)
       except ValueError:
         print('cant find task_id=%d' % task_id)
+
 
 class RunStatus(object):
   """Tallys which QDO_RESULTS actually finished, what errors occured, etc.
@@ -146,7 +128,7 @@ class RunStatus(object):
 
   def get_tally(self):
     tally= defaultdict(list)
-    for res in ['succeeded','failed']:
+    for res in ['succeeded','failed','running']:
       if res == 'succeeded':
         for log in self.logs[res]:
           with open(log,'r') as foo:
@@ -155,8 +137,14 @@ class RunStatus(object):
             tally[res].append( 1 )
           else:
             tally[res].append( 0 )
+      elif res == 'running':
+        for log in self.logs[res]:
+          tally[res].append(1)
       elif res == 'failed':
         for log in self.logs[res]:
+          if not os.path.exists(log):
+            tally[res].append('log does not exist')
+            continue
           with open(log,'r') as foo:
             text= foo.read()
           found_err= False
@@ -195,30 +183,46 @@ if __name__ == '__main__':
   from argparse import ArgumentParser
   parser = ArgumentParser()
   parser.add_argument('--qdo_quename',default='obiwan_9deg',help='',required=False)
-  parser.add_argument('--outdir',default='/global/cscratch1/sd/kaylanb/obiwan_out/123/1238p245',help='',required=False)
+  parser.add_argument('--outdir',default='/global/cscratch1/sd/kaylanb/obiwan_out/elg_9deg2_ra175',help='',required=False)
   parser.add_argument('--obj',default='elg',help='',required=False)
+  parser.add_argument('--running_to_pending',action="store_true",default=False,help='set to reset all "running" jobs to "pending"')
+  parser.add_argument('--failed_message_to_pending',action='store',default=None,help='set to message of failed tak and reset all failed tasks with that message to pending')
+  parser.add_argument('--modify',action='store_true',default=False,help='set to actually reset the qdo tasks state AND to delete IFF running_to_pending or failed_message_to_pending are set')
   args = parser.parse_args()
   print(args)
 
   Q= QdoList(args.outdir,args.obj,que_name=args.qdo_quename)
-  tasks,ids,logs,slurms= Q.get_tasks_logs_slurms()
+  tasks,ids,logs= Q.get_tasks_logs()
   
   # Write log fns so can inspect
   for res in logs.keys():
     writelist(logs[res],"%s_%s_logfns.txt" % (args.qdo_quename,res))
-    writelist(slurms[res],"%s_%s_slurmfns.txt" % (args.qdo_quename,res))
 
   R= RunStatus(tasks,logs)
   tally= R.get_tally()
   R.print_tally(tally)
 
-  #err_logs= R.get_logs_for_failed(regex='Other')
-  err_key= 'Other'
-  err_logs= np.array(logs['failed'])[ tally['failed'] == err_key ]
-  writelist(err_logs,"%s_%s_logsfailed.txt" % (args.qdo_quename,err_key))
+  # logs,tasks for each type of failure
+  for err_key in R.regex_errs + ['Other','log does not exist']:
+    err_logs= np.array(logs['failed'])[ tally['failed'] == err_key ]
+    err_tasks= np.array(tasks['failed'])[ tally['failed'] == err_key ]
+    err_string= (err_key[:12]
+                 .replace(" ","_")
+                 .replace(":",""))
+    writelist(err_logs,"logs_%s_%s.txt" % (args.qdo_quename,err_string))
+    writelist(err_tasks,"tasks_%s_%s.txt" % (args.qdo_quename,err_string))
+
+  # Rerun tasks and delete those tasks' outputs
+  if args.running_to_pending:
+    if len(ids['running']) > 0:
+      Q.rerun_tasks(ids['running'], modify=args.modify)
+  if args.failed_message_to_pending:
+    hasMessage= np.where(tally['failed'] == args.failed_message_to_pending)[0]
+    if hasMessage.size > 0:
+      theIds= np.array(ids['failed'])[hasMessage]
+      Q.rerun_tasks(theIds, modify=args.modify)
 
 
-  #Q.rerun_tasks(ids['running'], debug=False)
-  raise ValueError('done')
+  print('done')
 
 

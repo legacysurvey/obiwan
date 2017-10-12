@@ -3,19 +3,24 @@ import os
 from astrometry.util.fits import fits_table, merge_tables
 from astrometry.libkd.spherematch import match_radec
 from obiwan import kenobi
+from obiwan.common import get_savedir
 from obiwan.test.test_data import TestData
 
 def test_output_dir():
-    kwargs=dict(decals_sim_dir= 'hello',
-                objtype='elg',
-                brickname='1238p245',
-                rowst=1,
-                do_skipids='no')
+    kwargs=dict(outdir= 'hello',
+                obj='elg',
+                brick='1238p245',
+                rowstart=1,
+                do_skipids='no',
+                do_more='no')
     ans= 'hello/elg/123/1238p245/rs1'
     assert(kenobi.get_savedir(**kwargs) == ans)
     kwargs.update(do_skipids='yes')
     ans= 'hello/elg/123/1238p245/skip_rs1'
-    assert(kenobi.get_savedir(**kwargs) == ans)
+    assert(get_savedir(**kwargs) == ans)
+    kwargs.update(do_more='yes')
+    ans= 'hello/elg/123/1238p245/more_skip_rs1'
+    assert(get_savedir(**kwargs) == ans)
 
 def test_overlapping_radec():
     data= TestData()
