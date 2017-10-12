@@ -123,8 +123,11 @@ class RunStatus(object):
         'No randoms in brick [0-9]*[pm][0-9]*, e.g. found nothing with db query:',
         'WARING: found nothing with:',
         'File "obiwan/kenobi.py", line 112, in get_skip_ids',
-        'no skippedids.fits files exist for this brick'
-        ]
+        'no skippedids.fits files exist for this brick',
+        "KeyError: 'do_skipds'",
+        'psycopg2.OperationalError: FATAL:  remaining connection slots are reserved',
+        'psycopg2.OperationalError: FATAL:  sorry, too many clients already']
+    self.regex_errs_extra= ['Other','log does not exist']
 
   def get_tally(self):
     tally= defaultdict(list)
@@ -167,7 +170,7 @@ class RunStatus(object):
       if res == 'succeeded':
          print('%d/%d = done' % (len(tally[res]), np.sum(tally[res])))
       elif res == 'failed':
-        for regex in self.regex_errs + ['Other']:
+        for regex in self.regex_errs + self.regex_errs_extra:
           print('%d/%d = %s' % (
                    np.where(tally[res] == regex)[0].size, len(tally[res]), regex))
       elif res == 'running':
@@ -176,7 +179,6 @@ class RunStatus(object):
   def get_logs_for_failed(self,regex='Other'):
     """Returns log and slurm filenames for failed tasks labeled as regex"""
     return self.logs[ tally['failed'] == regex ]
-
 
 
 if __name__ == '__main__':
@@ -203,12 +205,12 @@ if __name__ == '__main__':
   R.print_tally(tally)
 
   # logs,tasks for each type of failure
-  for err_key in R.regex_errs + ['Other','log does not exist']:
+  for err_key in R.regex_errs + R.regex_errs_extra:
     err_logs= np.array(logs['failed'])[ tally['failed'] == err_key ]
     err_tasks= np.array(tasks['failed'])[ tally['failed'] == err_key ]
-    err_string= (err_key[:12]
-                 .replace(" ","_")
-                 .replace(":",""))
+    err_string= (err_key[:12] + err_key[-8:])
+    for rem_str in [" ",":",",","*",'"']:
+      err_string= err_string.replace(rem_str,"_")
     writelist(err_logs,"logs_%s_%s.txt" % (args.qdo_quename,err_string))
     writelist(err_tasks,"tasks_%s_%s.txt" % (args.qdo_quename,err_string))
 

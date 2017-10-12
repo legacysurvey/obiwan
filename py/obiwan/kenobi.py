@@ -1270,7 +1270,7 @@ def main(args=None):
     if len(Samp) == 0:
         fn= get_savedir(kwargs['decals_sim_dir'],kwargs['objtype'],
                         kwargs['brickname'],kwargs['rowst'],
-                        do_skipids=kwargs['do_skipds'],do_more=kwargs['do_more'])
+                        do_skipids=kwargs['do_skipids'],do_more=kwargs['do_more'])
         fn+= '_exceeded.txt'
         junk= os.system('touch %s' % fn)
         print('Wrote %s' % fn)
