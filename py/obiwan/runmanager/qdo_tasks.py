@@ -38,19 +38,19 @@ class Bricks(object):
 class TaskList(object):
   """Creates QDO tasks lists for default,do_skipids, and/or do_more"""
   def __init__(self,ra1=123.3,ra2=124.3,dec1=24.0,dec2=25.0,
-               nobj_per_run=500, nobj_total=2400): 
+               nobj_per_run=500): 
     """bricklist for ra,dec points
     Args:
       ra1,ra2,dec1,dec2: floats, corners of ra dec box
+      nobj_per_run: number of simulated sources to inject per obiwan run
     """
     self.ra1=ra1
     self.ra2=ra2
     self.dec1=dec1
     self.dec2=dec2
     self.nobj_per_run=nobj_per_run
-    self.nobj_total=nobj_total
 
-  def bricks(self):
+  def get_bricks(self):
     """Returns bricks in ra,dec region"""
     b= Bricks()
     self.bricks= b.overlapBox(ra=[self.ra1,self.ra2], dec=[self.dec1,self.dec2])
@@ -62,41 +62,85 @@ class TaskList(object):
       assert(do_more in ['yes','no'])
       return '%s %d %s %s' % (brick,rs,do_skipids,do_more) 
 
-  def tasklist(self,do_skipid='no',do_more='no',minid=None):
-    """for all bricks in a ra,dec box region, write qdo task list for obiwan runs
+  def tasklist_skipids(self,do_more='no',minid=None):
+    """tasklist for skipids runs
     
     Args:
-      nobj_per_run: number of simulated sources to inject per obiwan run
-      nobj_total: total number of randoms in the region running obiwan on
-      do_skipids: yes or no, inject skipped ids for brick
       do_more: yes or no, yes if running more randoms b/c TS returns too few target
       minid: if do_more == yes, this must be an integer for the randoms id to start from
     """
-    if do_skipid == 'no':
-      if do_more == 'no':
-        obj_per_brick= int( self.nobj_total / len(self.bricks))
-      else:
-        assert(not minid is None)
-        obj_per_brick= int( (self.nobj_total - minid) / len(self.bricks))
-    else:
-      obj_per_brick= 2*self.nobj_per_run
+    do_skipids= 'yes'
     tasks= [self.task(brick,rs,do_skipid,do_more) 
             for brick in np.sort(self.bricks.brickname)
-            for rs in np.arange(0,obj_per_brick, self.nobj_per_run)]
+            for rs in np.arange(0,3*self.nobj_per_run, self.nobj_per_run)]
     writelist(tasks, 'tasks_skipid_%s_more_%s_minid_%s.txt' % 
-                     (do_skipid,do_more,str(minid)))
+                     (do_skipids,do_more,str(minid)))
+
+  def tasklist(self,objtype,randoms_db,
+               do_more,minid,outdir):
+    """For each brick, gets all randoms from PSQL db, and finds exact number of rs* tasks needed
+    
+    Args:
+      objtype: elg,lrg
+      randoms_db: name of PSQL db for randoms, e.g. obiwan_elg_ra175
+      do_more: yes or no, yes if running more randoms b/c TS returns too few target
+      minid: None, unless do_more == yes then it is an integer for the randoms id to start from
+      outdir: path/to/obiwan_out/
+    """
+    do_skipids='no'
+    from obiwan.kenobi import get_sample
+    sample_kwargs= {"objtype":objtype,
+                    "randoms_db":randoms_db,
+                    "minid":minid,
+                    "outdir":outdir,
+                    "do_skipids":do_skipids}
+    tasks=[]
+    bricks= np.sort(self.bricks.brickname)
+    not_in_bricks=[]
+    for cnt,brick in enumerate(bricks):
+      if cnt % 10 == 0: print('brick %d/%d' % (cnt+1,len(bricks)))
+      try: 
+        Samp= get_sample(brick=brick,verbose=False,**sample_kwargs)
+      except ValueError as err_obj:
+        if 'No randoms in brick' in str(err_obj):
+          not_in_bricks+= [brick]
+          continue
+        else: 
+          raise ValueError(str(err_obj))
+      tasks+= [self.task(brick,rs,do_skipids,do_more) 
+               for rs in np.arange(0,len(Samp),self.nobj_per_run)]
+    writelist(tasks, 'tasks_skipid_%s_more_%s_minid_%s.txt' % 
+                     (do_skipids,do_more,str(minid)))
+    print('number not in bricks = %d' % len(not_in_bricks))
+    print(not_in_bricks[:30])
 
 
 if __name__ == '__main__':
-  # 4 possible qdo task lists
-  T= TaskList(ra1=173.5,ra2=176.5, dec1=23.0,dec2=26.0,
-              nobj_total=960000, nobj_per_run=300)
-  T.bricks()
-  #T.tasklist(do_skipid='no',do_more='no',minid=None)
-  #T.tasklist(do_skipid='yes',do_more='no',minid=None)
-  minid=240001
-  T.tasklist(do_skipid='no',do_more='yes',minid=minid)
-  #T.tasklist(do_skipid='yes',do_more='yes',minid=minid)
+  do_skipids='no'
+  do_more='yes'
+  if do_more == 'yes':
+    minid=240001
+  else:
+    minid=None
+  ###
+  ra1=173.5
+  ra2=176.5
+  dec1=23.0
+  dec2=26.0
+  randoms_db='obiwan_elg_ra175'
+  outdir='/global/cscratch1/sd/kaylanb/obiwan_out/elg_9deg2_ra175'
+  nobj_per_run=300
+  objtype='elg'
+  # Initialize
+  T= TaskList(ra1=ra1,ra2=ra2, dec1=dec1,dec2=dec2,
+              nobj_per_run=nobj_per_run)
+  T.get_bricks()
+  # Write tasks
+  if do_skipids == 'no':
+    T.tasklist(objtype,randoms_db,
+               do_more,minid,outdir)
+  else:
+    T.tasklist_skipids(do_more=do_more,minid=minid)
   # Qdo "skip_ids" task list for a given list of bricks
   #brick_list_fn= '/global/cscratch1/sd/kaylanb/obiwan_code/obiwan/bricks_ready_skip.txt'
   #write_qdo_tasks_skipids(brick_list_fn, nobj_per_run=300)

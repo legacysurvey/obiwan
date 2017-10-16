@@ -1103,6 +1103,83 @@ def get_sample_fn(brick,decals_sim_dir,prefix=''):
     return fn
     #return os.path.join(decals_sim_dir,'softlinked_table') #'sample-merged.fits')
 
+def get_sample(objtype,brick,outdir,randoms_db,
+               minid=None,do_skipids='no',
+               verbose=True,
+               randoms_from_fits='',cutouts=False,stamp_size=64):
+    """Gets all simulated randoms for a brick from PSQl db, and applies all relevant cuts
+
+    Args:
+        objtype: elg,lrg
+        brick:
+        outdir: path/to/obiwan_out/
+        randoms_db: name of PSQL db for randoms, e.g. obiwan_elg_ra175
+        minid: None, unless do_more == yes then it is an integer for the randoms id to start from
+        do_skipids: yes or no, rerunning on all skipped randoms?
+        verbose: True or False, print db query commands
+        skip_ids: None, unless do_skipids==yes then list of ids for the randoms to use
+        randoms_from_fits: None or filename of fits_table to use for randoms
+        cutouts: True or False, make postage stamp of drawn randoms?
+        stamp_size: size for cutouts
+    
+    Returns:
+        sample fits_table
+    """
+    assert(do_skipids in ['yes','no'])
+    if randoms_from_fits:
+        Samp= fits_table(randoms_from_fits)
+        Samp.rename('%s_rhalf' % objtype,'%s_re' % objtype)
+    else:
+      if do_skipids == 'no':
+        Samp= getSrcsInBrick(brick,objtype, db_table=randoms_db)
+      elif do_skipids == 'yes':
+        skip_ids= get_skip_ids(outdir, brick, objtype)
+        Samp= getSrcsInBrick(brick,objtype, db_table=randoms_db,
+                             skipped_ids= skip_ids)
+    if verbose:
+      print('%d samples, for brick %s' % (len(Samp),brick))
+      print('First 2 sources have: ')
+      for sam in Samp[:2]:
+          print('ra=%f, dec=%f' % (sam.ra,sam.dec))
+    # Already did these cuts in decals_sim_radeccolors 
+    #r0,r1,d0,d1= brickwcs.radec_bounds()
+    #Samp.cut( (Samp.ra >= r0)*(Samp.ra <= r1)*\
+    #          (Samp.dec >= d0)*(Samp.dec <= d1) )
+    # Sort by Sersic n low -> high (if elg or lrg)
+    if objtype in ['elg','lrg']:
+        if cutouts:
+            # rhalf ~ 1-2'' at z ~ 1, n~1 
+            #Samp=Samp[ (Samp.get('%s_re' % objtype) <= 10.)*\
+            #           (Samp.get('%s_n' % objtype) <= 2.) ]
+            Samp.set('%s_re' % objtype, np.array([0.5]*len(Samp)))
+            Samp.set('%s_n' % objtype, np.array([1.]*len(Samp)))
+    # Apply cuts
+    if minid:
+      Samp.cut( Samp.id >= minid )
+    # sort by id so first 300 isn't changed if add more ids
+    Samp= Samp[np.argsort(Samp.id) ]
+    if cutouts:
+        # Gridded ra,dec for args.stamp_size x stamp_size postage stamps 
+        size_arcsec= stamp_size * 0.262 * 2 #arcsec, 2 for added buffer
+        # 20x20 grid
+        dd= size_arcsec / 2. * np.arange(1,21,2).astype(float) #'' offsect from center
+        dd= np.concatenate((-dd[::-1],dd))
+        dd/= 3600. #arcsec -> deg
+        # Don't exceed brick half width - 100''
+        assert(dd.max() <= 0.25/2 - 100./3600)
+        brickc_ra,brickc_dec= radec_center[0],radec_center[1]
+        dec,ra = np.meshgrid(dd+ brickc_dec, dd+ brickc_ra) 
+        dec= dec.flatten()
+        ra= ra.flatten()
+        assert(len(Samp) >= dec.size)
+        keep= np.arange(dec.size)
+        Samp.cut(keep)
+        Samp.set('ra',ra)
+        Samp.set('dec',dec)
+    return Samp
+
+
+
 def main(args=None):
     """Main routine which parses the optional inputs."""
     t0= Time()
@@ -1187,70 +1264,23 @@ def main(args=None):
     #    chunk_list= range(nchunk)
     #chunk_list= [ int((args.rowstart)/maxobjs) ]
 
-    # Ra,dec,mag table
-    print('before PSQL')
-    if args.randoms_from_fits:
-        # Non PSQL way
-        #fn= get_sample_fn(brickname,decals_sim_dir,prefix=args.prefix)
-        #fn=os.path.join(decals_sim_dir,
-        #                'elg_randoms/rank_1_seed_1.fits') 
-        Samp= fits_table(args.randoms_from_fits)
-        Samp.rename('%s_rhalf' % objtype,'%s_re' % objtype)
-    else:
-      if args.do_skipids == 'no':
-        Samp= getSrcsInBrick(brickname,objtype, db_table=args.randoms_db)
-      elif args.do_skipids == 'yes':
-        skip_ids= get_skip_ids(decals_sim_dir, brickname, objtype)
-        Samp= getSrcsInBrick(brickname,objtype, db_table=args.randoms_db,
-                             skipped_ids= skip_ids)
-    print('after PSQL') 
-    print('%d samples, for brick %s' % (len(Samp),brickname))
-    print('First 2 sources have: ')
-    for sam in Samp[:2]:
-        print('ra=%f, dec=%f' % (sam.ra,sam.dec))
-    # Already did these cuts in decals_sim_radeccolors 
-    #r0,r1,d0,d1= brickwcs.radec_bounds()
-    #Samp.cut( (Samp.ra >= r0)*(Samp.ra <= r1)*\
-    #          (Samp.dec >= d0)*(Samp.dec <= d1) )
-    # Sort by Sersic n low -> high (if elg or lrg)
-    if objtype in ['elg','lrg']:
-        if args.cutouts:
-            # rhalf ~ 1-2'' at z ~ 1, n~1 
-            #Samp=Samp[ (Samp.get('%s_re' % objtype) <= 10.)*\
-            #           (Samp.get('%s_n' % objtype) <= 2.) ]
-            Samp.set('%s_re' % objtype, np.array([0.5]*len(Samp)))
-            Samp.set('%s_n' % objtype, np.array([1.]*len(Samp)))
-    # Apply cuts
-    if args.minid:
-      Samp.cut( Samp.id >= args.minid )
-    # sort by id so first 300 isn't changed if add more ids
-    Samp=(Samp
-          [np.argsort(Samp.id) ]
-          [args.rowstart:args.rowstart + args.nobj])
+    # SAMPLE table
+    sample_kwargs= {"objtype":args.objtype,
+                    "brick":args.brick,
+                    "outdir":args.outdir,
+                    "randoms_db":args.randoms_db,
+                    "minid":args.minid,
+                    "do_skipids":args.do_skipids,
+                    "randoms_from_fits":args.randoms_from_fits,
+                    "cutouts":args.cutouts,
+                    "stamp_size":args.stamp_size}
+    Samp= get_sample(**sample_kwargs)
+    Samp= Samp[args.rowstart:args.rowstart + args.nobj]
     # Performance
     Samp=Samp[np.argsort( Samp.get('%s_n' % objtype) )]
-    if args.cutouts:
-        # Gridded ra,dec for args.stamp_size x stamp_size postage stamps 
-        size_arcsec= args.stamp_size * 0.262 * 2 #arcsec, 2 for added buffer
-        # 20x20 grid
-        dd= size_arcsec / 2. * np.arange(1,21,2).astype(float) #'' offsect from center
-        dd= np.concatenate((-dd[::-1],dd))
-        dd/= 3600. #arcsec -> deg
-        # Don't exceed brick half width - 100''
-        assert(dd.max() <= 0.25/2 - 100./3600)
-        brickc_ra,brickc_dec= radec_center[0],radec_center[1]
-        dec,ra = np.meshgrid(dd+ brickc_dec, dd+ brickc_ra) 
-        dec= dec.flatten()
-        ra= ra.flatten()
-        assert(len(Samp) >= dec.size)
-        keep= np.arange(dec.size)
-        Samp.cut(keep)
-        Samp.set('ra',ra)
-        Samp.set('dec',dec)
-    # Rowstart -> Rowend
     print('Max sample size=%d, actual sample size=%d' % (args.nobj,len(Samp)))
     assert(len(Samp) <= args.nobj)
-    t0= ptime('Got input_sample',t0)
+    t0= ptime('Got randoms sample',t0)
 
     # Store args in dict for easy func passing
     kwargs=dict(Samp=Samp,\
