@@ -46,6 +46,12 @@ Load the randoms into the desi database at scidb2.nersc.gov
 bash $obiwan_code/obiwan/bin/run_fits2db.sh obiwan_elg_ra175 /global/cscratch1/sd/kaylanb/obiwan_out/randoms/elg_9deg2_ra175/rank_1_seed_1.fits
 ```
 
+If you are loading additional randoms mid-run, use the above command to load the additional randoms into a new table called test, insert that test tables rows into the main table, then delete the test table
+```
+desi=> insert into obiwan_elg_ra175 select * from obiwan_test;
+desi=> drop table obiwan_test;
+```
+
 Index and cluster the db table for fast ra,dec querying
 ```sh
 cd $obiwan_code/obiwan/etc
@@ -74,11 +80,14 @@ desi=> \i /global/cscratch1/sd/kaylanb/obiwan_code/obiwan/etc/cluster_bricks
 
 ### Prepare QDO runs
 
+*1) Make the QDO task list*
 Generate the qdo tasks to run, which includes the list of bricks taht touch your radec region and how many randoms to inject per task 
 ```sh
-python
-from obiwan.runmanager.qdo_tasks import write_qdo_tasks_normal
-write_qdo_tasks_normal(ra1=173.5,ra2=176.5, dec1=23.0,dec2=26.0, nobj_total=240000, nobj_per_run=300)
+>>> from obiwan.runmanager.qdo_tasks import TaskList
+>>> T= TaskList(ra1=173.5,ra2=176.5, dec1=23.0,dec2=26.0,
+                nobj_total=240000, nobj_per_run=300)
+>>> T.bricks()
+>>> T.tasklist(do_skipid='no',do_more='no')
 ```
 where ra1,ra2,dec1,dec2 are the corners of your region. nobj_total is the total number of randoms in the psql randoms db for your region, and nobj_per_run is how many randoms to inject per obiwan run.
 
@@ -89,6 +98,24 @@ Create the qdo queue
 qdo create obiwan_ra175 
 qdo load obiwan_ra175 tasks_inregion.txt
 ```
+
+If you added more randoms then you make a task list for just those. Do this
+```sh
+>>> from obiwan.runmanager.qdo_tasks import TaskList
+>>> T= TaskList(ra1=173.5,ra2=176.5, dec1=23.0,dec2=26.0,
+                nobj_total=240000, nobj_per_run=300)
+>>> T.bricks()
+>>> minid=240001
+>>> T.tasklist(do_skipid='no',do_more='yes',minid=minid)
+```
+
+Then create that qdo queue
+```sh
+qdo create obiwan_ra175_domore
+qdo load obiwan_ra175_dormore tasks_skipid_no_more_yes_minid_240001.txt
+```
+
+*2) configure the slurm job*
 
 Make a copy of "qdo_job.sh" and "slurm_job.sh",
 ```sh
@@ -101,6 +128,7 @@ and the following fields in both job files need to be updated (`do_skipids` only
 export name_for_run=elg_9deg2_ra175
 export randoms_db=elg_9deg2_ra175
 export do_skipids=no
+export do_more=no
 ```
 Additonally, the following fields may need to be updated depending on your run
 ```sh

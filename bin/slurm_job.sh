@@ -2,19 +2,20 @@
 
 #SBATCH -p debug
 #SBATCH -N 1
-#SBATCH -t 00:05:00
+#SBATCH -t 00:30:00
 #SBATCH --account=desi
 #SBATCH -J obiwan
 #SBATCH -L SCRATCH,project
 #SBATCH -C haswell
 
-export name_for_run=obiwan_elg_9deg
-export randoms_db=obiwan_elg_9deg
+export name_for_run=elg_9deg2_ra175
+export randoms_db=obiwan_elg_ra175
 export dataset=dr5
-export brick=1238p245
+export brick=1763p240
 export rowstart=0
-#export do_skipids=no
-export do_skipids=yes
+export do_skipids=no
+export do_more=yes
+export minid=240001
 export object=elg
 export nobj=300
 
@@ -30,10 +31,19 @@ export LEGACY_SURVEY_DIR=$obiwan_data/legacysurveydir_${dataset}
 export bri=$(echo $brick | head -c 3)
 export outdir=${obiwan_out}/${name_for_run}
 if [ ${do_skipids} == "no" ]; then
-  export log=${outdir}/${object}/${bri}/${brick}/rs${rowstart}/log.${brick}
+  if [ ${do_more} == "no" ]; then
+    export rsdir=rs${rowstart}
+  else
+    export rsdir=more_rs${rowstart}
+  fi
 else
-  export log=${outdir}/${object}/${bri}/${brick}/skip_rs${rowstart}/log.${brick}
+  if [ ${do_more} == "no" ]; then
+    export rsdir=skip_rs${rowstart}
+  else
+    export rsdir=more_skip_rs${rowstart}
+  fi
 fi
+export log=${outdir}/${object}/${bri}/${brick}/${rsdir}/log.${brick}
 mkdir -p $(dirname $log)
 echo Logging to: $log
 
@@ -52,5 +62,6 @@ srun -n 1 -c $usecores python obiwan/kenobi.py --dataset ${dataset} -b ${brick} 
                        --outdir $outdir --add_sim_noise \
                        --threads $threads  \
                        --do_skipids $do_skipids \
+                       --do_more $do_more --minid $minid \
                        >> $log 2>&1
 

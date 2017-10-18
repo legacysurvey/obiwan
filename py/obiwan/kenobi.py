@@ -47,6 +47,7 @@ from legacypipe.survey import LegacySurveyData, wcs_for_brick
 
 import obiwan.priors as priors
 from obiwan.db_tools import getSrcsInBrick 
+from obiwan.common import get_savedir 
 
 from astrometry.util.fits import fits_table, merge_tables
 from astrometry.util.ttime import Time
@@ -94,16 +95,6 @@ def ptime(text,t0):
     return tnow
 
 
-
-def get_savedir(**kwargs):
-  if kwargs['do_skipids'] == 'no':
-    return os.path.join(kwargs['decals_sim_dir'],kwargs['objtype'],\
-                        kwargs['brickname'][:3], kwargs['brickname'],\
-                        "rs%d" % kwargs['rowst'])    
-  elif kwargs['do_skipids'] == 'yes':
-    return os.path.join(kwargs['decals_sim_dir'],kwargs['objtype'],\
-                        kwargs['brickname'][:3], kwargs['brickname'],\
-                        "skip_rs%d" % kwargs['rowst'])    
 def get_skip_ids(decals_sim_dir, brickname, objtype):
   fns= glob(os.path.join(decals_sim_dir, objtype,
                          brickname[:3], brickname,
@@ -828,6 +819,8 @@ def get_parser():
     parser.add_argument('-rs', '--rowstart', type=int, default=0, metavar='', 
                         help='zero indexed, row of ra,dec,mags table, after it is cut to brick, to start on')
     parser.add_argument('--do_skipids', type=str, choices=['no','yes'],default='no', help='inject skipped ids for brick, otherwise run as usual')
+    parser.add_argument('--do_more', type=str, choices=['no','yes'],default='no', help='yes if running more randoms b/c TS returns too few targets')
+    parser.add_argument('--minid', type=int, default=None, help='set if do_more==yes, minimum id to consider, useful if adding more randoms mid-run')
     parser.add_argument('--randoms_db', default='obiwan_elg', help='desi db table name for randoms')
     parser.add_argument('--randoms_from_fits', default=None, help='set to read randoms from fits file instead of scidb2.nersc.gov db, set to absolute path of local fits file on computer')
     parser.add_argument('--prefix', type=str, default='', metavar='', 
@@ -915,7 +908,9 @@ def create_metadata(kwargs=None):
 	#    log.info('Random seed = {}'.format(kwargs['args'].seed))
 	#    metacat['SEED'] = kwargs['args'].seed
     #metacat_dir = os.path.join(kwargs['decals_sim_dir'], kwargs['objtype'],kwargs['brickname'][:3],kwargs['brickname'])    
-    metacat_dir = get_savedir(**kwargs)
+    metacat_dir= get_savedir(kwargs['decals_sim_dir'],kwargs['objtype'],
+                             kwargs['brickname'],kwargs['rowst'],
+                             do_skipids=kwargs['do_skipids'],do_more=kwargs['do_more'])
     if not os.path.exists(metacat_dir): 
 	os.makedirs(metacat_dir)
     
@@ -951,7 +946,9 @@ def create_ith_simcat(d=None):
 	#simcat = build_simcat(d['nobj'], d['brickname'], d['brickwcs'], d['metacat'], seed)
 	simcat, skipped_ids = build_simcat(Samp=d['Samp'],brickwcs=d['brickwcs'],meta=d['metacat'])
 	# Simcat 
-	simcat_dir = get_savedir(**d) #os.path.join(d['metacat_dir'],'row%d-%d' % (rowstart,rowend)) #'%3.3d' % ith_chunk)    
+	simcat_dir = get_savedir(d['decals_sim_dir'],d['objtype'],
+                           d['brickname'],d['rowst'],
+                           do_skipids=d['do_skipids'],do_more=d['do_more'])
 	if not os.path.exists(simcat_dir): 
 		os.makedirs(simcat_dir)
 	#simcatfile = os.path.join(simcat_dir, 'simcat-{}-{}-row{}-{}.fits'.format(d['brickname'], d['objtype'],rowstart,rowend)) # chunksuffix))
@@ -1111,6 +1108,83 @@ def get_sample_fn(brick,decals_sim_dir,prefix=''):
     return fn
     #return os.path.join(decals_sim_dir,'softlinked_table') #'sample-merged.fits')
 
+def get_sample(objtype,brick,outdir,randoms_db,
+               minid=None,do_skipids='no',
+               verbose=True,
+               randoms_from_fits='',cutouts=False,stamp_size=64):
+    """Gets all simulated randoms for a brick from PSQl db, and applies all relevant cuts
+
+    Args:
+        objtype: elg,lrg
+        brick:
+        outdir: path/to/obiwan_out/
+        randoms_db: name of PSQL db for randoms, e.g. obiwan_elg_ra175
+        minid: None, unless do_more == yes then it is an integer for the randoms id to start from
+        do_skipids: yes or no, rerunning on all skipped randoms?
+        verbose: True or False, print db query commands
+        skip_ids: None, unless do_skipids==yes then list of ids for the randoms to use
+        randoms_from_fits: None or filename of fits_table to use for randoms
+        cutouts: True or False, make postage stamp of drawn randoms?
+        stamp_size: size for cutouts
+    
+    Returns:
+        sample fits_table
+    """
+    assert(do_skipids in ['yes','no'])
+    if randoms_from_fits:
+        Samp= fits_table(randoms_from_fits)
+        Samp.rename('%s_rhalf' % objtype,'%s_re' % objtype)
+    else:
+      if do_skipids == 'no':
+        Samp= getSrcsInBrick(brick,objtype, db_table=randoms_db)
+      elif do_skipids == 'yes':
+        skip_ids= get_skip_ids(outdir, brick, objtype)
+        Samp= getSrcsInBrick(brick,objtype, db_table=randoms_db,
+                             skipped_ids= skip_ids)
+    if verbose:
+      print('%d samples, for brick %s' % (len(Samp),brick))
+      print('First 2 sources have: ')
+      for sam in Samp[:2]:
+          print('ra=%f, dec=%f' % (sam.ra,sam.dec))
+    # Already did these cuts in decals_sim_radeccolors 
+    #r0,r1,d0,d1= brickwcs.radec_bounds()
+    #Samp.cut( (Samp.ra >= r0)*(Samp.ra <= r1)*\
+    #          (Samp.dec >= d0)*(Samp.dec <= d1) )
+    # Sort by Sersic n low -> high (if elg or lrg)
+    if objtype in ['elg','lrg']:
+        if cutouts:
+            # rhalf ~ 1-2'' at z ~ 1, n~1 
+            #Samp=Samp[ (Samp.get('%s_re' % objtype) <= 10.)*\
+            #           (Samp.get('%s_n' % objtype) <= 2.) ]
+            Samp.set('%s_re' % objtype, np.array([0.5]*len(Samp)))
+            Samp.set('%s_n' % objtype, np.array([1.]*len(Samp)))
+    # Apply cuts
+    if minid:
+      Samp.cut( Samp.id >= minid )
+    # sort by id so first 300 isn't changed if add more ids
+    Samp= Samp[np.argsort(Samp.id) ]
+    if cutouts:
+        # Gridded ra,dec for args.stamp_size x stamp_size postage stamps 
+        size_arcsec= stamp_size * 0.262 * 2 #arcsec, 2 for added buffer
+        # 20x20 grid
+        dd= size_arcsec / 2. * np.arange(1,21,2).astype(float) #'' offsect from center
+        dd= np.concatenate((-dd[::-1],dd))
+        dd/= 3600. #arcsec -> deg
+        # Don't exceed brick half width - 100''
+        assert(dd.max() <= 0.25/2 - 100./3600)
+        brickc_ra,brickc_dec= radec_center[0],radec_center[1]
+        dec,ra = np.meshgrid(dd+ brickc_dec, dd+ brickc_ra) 
+        dec= dec.flatten()
+        ra= ra.flatten()
+        assert(len(Samp) >= dec.size)
+        keep= np.arange(dec.size)
+        Samp.cut(keep)
+        Samp.set('ra',ra)
+        Samp.set('dec',dec)
+    return Samp
+
+
+
 def main(args=None):
     """Main routine which parses the optional inputs."""
     t0= Time()
@@ -1126,6 +1200,8 @@ def main(args=None):
     print('Args:', args)   
     if args.cutouts:
         args.stage = 'tims'
+    if args.do_more == 'yes':
+      assert(not args.minid is None)
     # Setup loggers
     if args.verbose:
         lvl = logging.DEBUG
@@ -1148,7 +1224,6 @@ def main(args=None):
 
     brickname = args.brick
     objtype = args.objtype
-    maxobjs = args.nobj
 
     for obj in ('LSB'):
         if objtype == obj:
@@ -1194,70 +1269,23 @@ def main(args=None):
     #    chunk_list= range(nchunk)
     #chunk_list= [ int((args.rowstart)/maxobjs) ]
 
-    # Ra,dec,mag table
-    print('before PSQL')
-    if args.randoms_from_fits:
-        # Non PSQL way
-        #fn= get_sample_fn(brickname,decals_sim_dir,prefix=args.prefix)
-        #fn=os.path.join(decals_sim_dir,
-        #                'elg_randoms/rank_1_seed_1.fits') 
-        Samp= fits_table(args.randoms_from_fits)
-        Samp.rename('%s_rhalf' % objtype,'%s_re' % objtype)
-    else:
-      if args.do_skipids == 'no':
-        Samp= getSrcsInBrick(brickname,objtype, db_table=args.randoms_db)
-      elif args.do_skipids == 'yes':
-        skip_ids= get_skip_ids(decals_sim_dir, brickname, objtype)
-        Samp= getSrcsInBrick(brickname,objtype, db_table=args.randoms_db,
-                             skipped_ids= skip_ids)
-    print('after PSQL') 
-    print('%d samples, for brick %s' % (len(Samp),brickname))
-    print('First 2 sources have: ')
-    for sam in Samp[:2]:
-        print('ra=%f, dec=%f' % (sam.ra,sam.dec))
-    # Already did these cuts in decals_sim_radeccolors 
-    #r0,r1,d0,d1= brickwcs.radec_bounds()
-    #Samp.cut( (Samp.ra >= r0)*(Samp.ra <= r1)*\
-    #          (Samp.dec >= d0)*(Samp.dec <= d1) )
-    # Sort by Sersic n low -> high (if elg or lrg)
-    if objtype in ['elg','lrg']:
-        if args.cutouts:
-            # rhalf ~ 1-2'' at z ~ 1, n~1 
-            #Samp=Samp[ (Samp.get('%s_re' % objtype) <= 10.)*\
-            #           (Samp.get('%s_n' % objtype) <= 2.) ]
-            Samp.set('%s_re' % objtype, np.array([0.5]*len(Samp)))
-            Samp.set('%s_n' % objtype, np.array([1.]*len(Samp)))
-        else:
-            # Usual obiwan
-            print('Sorting by sersic n')
-            Samp=Samp[np.argsort( Samp.get('%s_n' % objtype) )]
-        #    # Dont sort by sersic n for deeplearning cutouts
-        #    print('NOT sorting by sersic n')
-        #else:
-    rowst,rowend= args.rowstart,args.rowstart+maxobjs
-    if args.cutouts:
-        # Gridded ra,dec for args.stamp_size x stamp_size postage stamps 
-        size_arcsec= args.stamp_size * 0.262 * 2 #arcsec, 2 for added buffer
-        # 20x20 grid
-        dd= size_arcsec / 2. * np.arange(1,21,2).astype(float) #'' offsect from center
-        dd= np.concatenate((-dd[::-1],dd))
-        dd/= 3600. #arcsec -> deg
-        # Don't exceed brick half width - 100''
-        assert(dd.max() <= 0.25/2 - 100./3600)
-        brickc_ra,brickc_dec= radec_center[0],radec_center[1]
-        dec,ra = np.meshgrid(dd+ brickc_dec, dd+ brickc_ra) 
-        dec= dec.flatten()
-        ra= ra.flatten()
-        assert(len(Samp) >= dec.size)
-        keep= np.arange(dec.size)
-        Samp.cut(keep)
-        Samp.set('ra',ra)
-        Samp.set('dec',dec)
-    # Rowstart -> Rowend
-    Samp= Samp[args.rowstart:args.rowstart+maxobjs]
-    print('Max sample size=%d, actual sample size=%d' % (maxobjs,len(Samp)))
-    assert(len(Samp) <= maxobjs)
-    t0= ptime('Got input_sample',t0)
+    # SAMPLE table
+    sample_kwargs= {"objtype":args.objtype,
+                    "brick":args.brick,
+                    "outdir":args.outdir,
+                    "randoms_db":args.randoms_db,
+                    "minid":args.minid,
+                    "do_skipids":args.do_skipids,
+                    "randoms_from_fits":args.randoms_from_fits,
+                    "cutouts":args.cutouts,
+                    "stamp_size":args.stamp_size}
+    Samp= get_sample(**sample_kwargs)
+    Samp= Samp[args.rowstart:args.rowstart + args.nobj]
+    # Performance
+    Samp=Samp[np.argsort( Samp.get('%s_n' % objtype) )]
+    print('Max sample size=%d, actual sample size=%d' % (args.nobj,len(Samp)))
+    assert(len(Samp) <= args.nobj)
+    t0= ptime('Got randoms sample',t0)
 
     # Store args in dict for easy func passing
     kwargs=dict(Samp=Samp,\
@@ -1266,18 +1294,22 @@ def main(args=None):
                 brickwcs= brickwcs, \
                 objtype=objtype,\
                 nobj=len(Samp),\
-                maxobjs=maxobjs,\
-                rowst=rowst,\
-                rowend=rowend,\
+                maxobjs=args.nobj,\
+                rowst=args.rowstart,\
                 do_skipids=args.do_skipids,\
+                do_more=args.do_more,\
+                minid=args.minid,\
                 args=args)
 
     # Stop if starting row exceeds length of radec,color table
     if len(Samp) == 0:
-        fn= get_savedir(**kwargs)+'_exceeded.txt'
+        fn= get_savedir(kwargs['decals_sim_dir'],kwargs['objtype'],
+                        kwargs['brickname'],kwargs['rowst'],
+                        do_skipids=kwargs['do_skipids'],do_more=kwargs['do_more'])
+        fn+= '_exceeded.txt'
         junk= os.system('touch %s' % fn)
         print('Wrote %s' % fn)
-        raise ValueError('starting row=%d exceeds number of artificial sources, quit' % rowst)
+        raise ValueError('starting row=%d exceeds number of artificial sources, quit' % args.rowstart)
     
     # Create simulated catalogues and run Tractor
     create_metadata(kwargs=kwargs)

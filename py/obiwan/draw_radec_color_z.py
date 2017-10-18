@@ -818,6 +818,8 @@ def get_parser():
     parser.add_argument('--kdedir', type=str, default='dir continaing *kde.pickle files', help='Output directory.')
     parser.add_argument('--outdir', type=str, default='dir to write randoms to', help='Output directory.')
     parser.add_argument('--nproc', type=int, default=1, help='Number of CPUs to use.')
+    parser.add_argument('--seed', type=int, default=1, help='seed for nproc=1')
+    parser.add_argument('--startid', type=int, default=1, help='if generating additional randoms mid-run, will want to start from a specific id')
     return parser 
 
 if __name__ == "__main__":
@@ -851,7 +853,7 @@ if __name__ == "__main__":
     else:
         ndraws= args.ndraws
     print('ndraws= %d' % ndraws)
-    unique_ids= np.arange(1,ndraws+1)
+    unique_ids= np.arange(args.startid,ndraws+args.startid)
 
     # Draws per mpi task
     if args.nproc > 1:
@@ -967,7 +969,7 @@ if __name__ == "__main__":
     else:
         if not os.path.exists(args.outdir):
             os.makedirs(args.outdir)
-        seed= 1
+        seed= args.seed
         #cnt=1
         #while os.path.exists(get_fn(args.outdir,seed)):
         #    print('skipping, exists: %s' % get_fn(args.outdir,seed))
