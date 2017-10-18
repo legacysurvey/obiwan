@@ -56,7 +56,12 @@ class QdoList(object):
 
   def get_tasks_logs(self):
     """get tasks, logs, slurms for the three types of qdo status
-    Running, Succeeded, Failed"""
+    Running, Succeeded, Failed
+    
+    Args:
+      one_result: only get logs slurms etc for one of succeeded, failed, running
+      getslurms: set to False to skip finding slurm.out file
+    """
     # Logs for all Failed tasks
     tasks={}
     ids={}
@@ -64,7 +69,12 @@ class QdoList(object):
     #err= defaultdict(lambda: [])
     print('qdo Que: %s' % self.que_name)
     q = qdo.connect(self.que_name)
-    for res in QDO_RESULT:
+    if one_result:
+      assert(one_result in QDO_RESULT)
+      all_results= [one_result]
+    else:
+      all_results= QDO_RESULT
+    for res in all_results:
       # List of "brick rs" for each QDO_RESULT  
       tasks[res] = [a.task 
                     for a in q.tasks(state= getattr(qdo.Task, res.upper()))]

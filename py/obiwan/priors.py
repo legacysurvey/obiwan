@@ -35,7 +35,8 @@ import tarfile
 import pandas as pd
 from pandas.plotting import scatter_matrix
 
-from obiwan.common import inJupyter, save_png
+from obiwan.common import inJupyter, save_png, fits2pandas
+from obiwan.fetch import fetch_targz
 from theValidator.catalogues import CatalogueFuncs,Matcher
 
 DOWNLOAD_ROOT = "http://portal.nersc.gov/project/desi/users/kburleigh/obiwan/"
@@ -70,17 +71,7 @@ class Data(object):
         
     def fetch(self,outdir):
         name= 'priors.tar.gz'
-        self.outdir= os.path.join(outdir,name.replace('.tar.gz',''))
-        if not os.path.exists(self.outdir):
-            os.makedirs(self.outdir)
-        remote_fn= "http://portal.nersc.gov/project/desi/users/kburleigh/obiwan/" + name
-        local_fn= os.path.join(outdir,name)
-        if not os.path.exists(local_fn):
-            print('Retrieving %s, extracting here %s' % (remote_fn,local_fn))
-            urllib.request.urlretrieve(remote_fn, local_fn)
-            tgz = tarfile.open(local_fn)
-            tgz.extractall(path=outdir)
-            tgz.close()
+        fetch_targz(os.path.join(DOWNLOAD_ROOT, name), outdir)
         
     def load_elg(self,DR, rlimit=23.4+1):
         """
@@ -385,23 +376,6 @@ def load_pickle(outdir,name):
     print("Loaded pickle", path)
     return obj    
 
-def fits2pandas(tab,attrs=None):
-    """converts a fits_table into a pandas DataFrame
-
-    Args:
-      tab: fits_table()
-      attrs: attributes or column names want in the DF
-    """
-    d={}
-    if attrs is None:
-        attrs= tab.get_columns
-    for col in attrs:
-        d[col]= tab.get(col)
-    df= pd.DataFrame(d)
-    # Fix byte ordering from fits
-    # https://stackoverflow.com/questions/18599579/pulling-multiple-non-consecutive-index-values-from-a-pandas-dataframe
-    df= df.apply(lambda x: x.values.byteswap().newbyteorder())
-    return df
  
 
 class KDE_Model(object):
