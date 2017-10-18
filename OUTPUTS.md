@@ -18,17 +18,19 @@ where bri is the first three letters of each brick.
 For example, brick=1757p240 has outputs in
 `obiwan_out/elg_9deg2_ra175/elg/175/1757p240/`
 * `rs{0,300,600,...}/`: outputs from injecting first 300 randoms, next 300, etc.
-* `skip_rs{0,300}/`: outputs from injecting first 300 randoms **that were skipped** because withthin 5 arcsec of another random in all `rs{0,300,600,...}/` directories above
+* `skip_rs{0,300}/`: outputs from injecting first 300 randoms *that were skipped* because withthin 5 arcsec of another random in all `rs{0,300,600,...}/` directories above
+* `more_rs{0,300,600,...}/`: same as rs*/ but for randoms that were added to the randoms DB *after* the rs*/ runs completed. These "more_" prefixes will appear whenever there are less randoms that 10x target density.
+* `more_skip_rs{0,300,600,...}/`: same as skip_rs*/ but for the more_rs*/ directories.
 
-The `rs*/` and `skip_rs*/` directories have the same files, for example
+All `*rs*/` directories have the same data model. For example,
 `obiwan_out/elg_9deg2_ra175/elg/175/1757p240/rs0`
 * `log.1757p240`: log file for this run
 * `obiwan/`: obiwan metadata
 * `coadd/, metrics/, tractor/, tractor-i/`: usual imaging pipeline outputs
 
-Note, `coadd/` is the largest output so only the rs0/coadd/ directory is kept. All other `rs*` and all `skip_rs*` only have the .jpg files in their coadd/ directory
+Note, `coadd/` is the largest output so only the `rs0/coadd/` directory has model, chi2, etc. images. All other `*rs*/coadd/` directories do not have these; they only have the much smaller .jpg files.
 
-The new directory to the usual imaging pipeline is `obiwan/`, for example
+Within the `*rs*/` directories, the data model is *identical* to the Data Releases except for one additional directory `obiwan/`. For example,
 `obiwan_out/elg_9deg2_ra175/elg/175/1757p240/rs0/obiwan/`
 * `metacat-elg-1757p240.fits`: info about how obiwan was run (e.g. brickname)
 * `simcat-elg-1757p240.fits`: binary table with 1 row for each random that was injected, colums are: id, seed, ra, dec, grz flux, and other source properties 

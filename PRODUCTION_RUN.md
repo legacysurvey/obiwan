@@ -41,15 +41,9 @@ export outdir=$CSCRATCH/obiwan_out/randoms/elg_9deg2_ra175
 python $obiwan_code/obiwan/py/obiwan/draw_radec_color_z.py --dowhat sample --obj elg --ra1  --ra2 ${ra2} --dec1 ${dec1} --dec2 ${dec2} --ndraws 240000 --kdedir ${kdedir} --outdir ${outdir}
 ```
 
-Load the randoms into the desi database at scidb2.nersc.gov
+Load the randoms into the desi database at nerscdb03 (the scidb2.nersc.gov server is no more)
 ```
 bash $obiwan_code/obiwan/bin/run_fits2db.sh obiwan_elg_ra175 /global/cscratch1/sd/kaylanb/obiwan_out/randoms/elg_9deg2_ra175/rank_1_seed_1.fits
-```
-
-If you are loading additional randoms mid-run, use the above command to load the additional randoms into a new table called test, insert that test tables rows into the main table, then delete the test table
-```
-desi=> insert into obiwan_elg_ra175 select * from obiwan_test;
-desi=> drop table obiwan_test;
 ```
 
 Index and cluster the db table for fast ra,dec querying
@@ -97,16 +91,6 @@ Create the qdo queue
 ```sh
 qdo create obiwan_ra175 
 qdo load obiwan_ra175 tasks_inregion.txt
-```
-
-If you added more randoms then you make a task list for just those. Do this
-```sh
->>> from obiwan.runmanager.qdo_tasks import TaskList
->>> T= TaskList(ra1=173.5,ra2=176.5, dec1=23.0,dec2=26.0,
-                nobj_total=240000, nobj_per_run=300)
->>> T.bricks()
->>> minid=240001
->>> T.tasklist(do_skipid='no',do_more='yes',minid=minid)
 ```
 
 Then create that qdo queue
@@ -160,6 +144,41 @@ export qdo_quename=obiwan_ra175
 qdo launch ${qdo_quename} 40 --cores_per_worker 4 --batchqueue regular --walltime 05:00:00 --script $obiwan_code/obiwan/bin/qdo_job_9deg.sh --keep_env
 ```
 
+### Add more randoms mid-run
+Eventually you'll need to add more randoms. For instance if after finishing all QDO runs, the randoms you recover in the simulated tractor catalogues have less than 10x target density.
+
+To add more randoms repeat previous instructions but add the "--startid" option. `240,000` randoms were added initially. Each gets a primary key from 1 to the number of randoms. So the randoms you add mid-run need to have primary keys that start at `240,001`. Lets make `720,000` more
+```sh
+export startid=240001
+python $obiwan_code/obiwan/py/obiwan/draw_radec_color_z.py --dowhat sample --obj elg --ra1  --ra2 ${ra2} --dec1 ${dec1} --dec2 ${dec2} --ndraws 240000 --kdedir ${kdedir} --outdir ${outdir} --startid ${startid}
+```
+
+It is easiest to load the additional randoms to a new temporary table in the DB then insert that table's rows into the randoms DB. If your new randoms fits table is `/global/cscratch1/sd/kaylanb/obiwan_out/randoms/elg_9deg2_ra175/more.fits` then 
+```sh
+bash $obiwan_code/obiwan/bin/run_fits2db.sh obiwan_test /global/cscratch1/sd/kaylanb/obiwan_out/randoms/elg_9deg2_ra175/more.fits
+```
+
+Now add `obiwan_test` to the end of the randoms table and delete `obiwan_test`
+```sh
+desi=> insert into obiwan_elg_ra175 select * from obiwan_test;
+desi=> drop table obiwan_test;
+```
+
+Make a QDO task list for your additional randoms. Specify `minid` to skip all primary keys below your 240,001
+```sh
+>>> from obiwan.runmanager.qdo_tasks import TaskList
+>>> T= TaskList(ra1=173.5,ra2=176.5, dec1=23.0,dec2=26.0,
+                nobj_per_run=300,
+                nobj_total=240000 + 720000)
+>>> T.bricks()
+>>> T.tasklist(do_skipid='no',do_more='yes',minid=240001)
+```
+then run these randoms from a new QDO queue
+```sh
+qdo create obiwan_ra175_domore
+qdo load obiwan_ra175_dormore tasks_skipid_no_more_yes_minid_240001.txt
+```
+
 ### Managing your qdo production run
 Manage your qdo production run with `obiwan/py/obiwan/runmanager/status.py`. To get a list of all log.<brickname> and slurm-<slurmid>.out files, sorted by status of "succeeded, failed, running" in the qdo db, and a tally of each error that occurred, do
 ```sh
@@ -183,7 +202,7 @@ qdo create ${qdo_quename}
 qdo load ${qdo_quename} tasks_skipids.txt
 ```
 
-The qdo tasks automatically set the do_skipid flag, so you dont need to edit the qdo_job_9deg.sh file. Just run it with your new qdo que_name
+The qdo tasks automatically set the `do_skipid` flag, so you dont need to edit the `qdo_job_9deg.sh` file. Just run it with your new qdo `que_name`
 ```sh
 cd $obiwan_out/${name_for_run}
 qdo launch ${qdo_quename} 40 --cores_per_worker 4 --batchqueue regular --walltime 05:00:00 --script $obiwan_code/obiwan/bin/qdo_job_9deg.sh --keep_env
