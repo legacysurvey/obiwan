@@ -35,9 +35,9 @@ class Data(object):
     def __init__(self,targz_dir, allDR5=False):
         self.targz_dir= targz_dir
         if allDR5:
-          self.drname='dr5_qa_70k'
+            self.drname='dr5_qa_70k'
         else:
-          self.drname='dr5_qa'
+            self.drname='dr5_qa'
 
     def fetch(self):
         name='healpix.tar.gz'
@@ -48,12 +48,12 @@ class Data(object):
         """read healpix data, RING ordered'
 
         Args:
-          psf_or_aper: choices ['psf','aper']
-          which: choices ['ddec','dra','g','r','z']
+            psf_or_aper: choices ['psf','aper']
+            which: choices ['ddec','dra','g','r','z']
 
         Returns:
-          data: healpix array for data
-          nmatch: healpix array for number ps1 matches in each pixel
+            data: healpix array for data
+            nmatch: healpix array for number ps1 matches in each pixel
         """
         fn='%s/healpix/decam-ps1-0128-%s.fits' % (psf_or_aper,which)
         hdu=fitsio.FITS(os.path.join(self.targz_dir,self.drname,fn))
@@ -71,135 +71,135 @@ class EmptyClass(object):
     pass
 
 class footprint_wSFD(object):
-  """makes nice figure showing DECaLS,MzLS,BASS footprint ontop of sfd98 dust
-  
-  Example: 
-    Foot= footprint_wSFD('/home/kaylan/mydata')
-    sfd= Foot.get_footprint_object()
-    Foot.plot_footprint_object()
-  """
-  def __init__(self,data_dir='/home/kaylan/mydata'):
-    self.data_dir= data_dir
-    self.map_dir= os.path.join(data_dir,'sfd98')
-    self.tile_dir= os.path.join(data_dir,'svn_tiles')
-    # Download data
-    self.download_sfd98_healpix()
-    self.download_decals_mzls_tiles()
+    """makes nice figure showing DECaLS,MzLS,BASS footprint ontop of sfd98 dust
 
-  def get_footprint_object(self):
-    """Returns footprint object 'sfd'"""
-    # work with SFD map and Decals/Mzls tiles
-    # lonlat from SFD healpix is in galactic coords, convert this to Celestial
-    hdu=fitsio.FITS(os.path.join(self.map_dir,'lambda_sfd_ebv.fits'))
-    sfd= EmptyClass()
-    temp= hdu[1].read()
-    sfd.temp= temp['TEMPERATURE'] 
-    npix= Healpix().get_nside(len(sfd.temp))
-    assert(npix == 512)
-    sfd.l_indeg,sfd.b_indeg= hp.pix2ang(512,np.where(sfd.temp > 0)[0],nest=True,lonlat=True)
-    #inPlane= np.where((sfd_gal_dec > -20) & (sfd_gal_dec < 20))[0]
-    trans= Galactic(l=sfd.l_indeg * units.degree,
-                    b=sfd.b_indeg * units.degree)
-    radec= trans.transform_to(ICRS)
-    sfd.ra,sfd.dec= radec.ra.value, radec.dec.value
-    
-    all_tiles=fits_table(os.path.join(self.tile_dir,'mosaic-tiles_obstatus.fits'))
-    wdes_tiles=fits_table(os.path.join(self.tile_dir,'decam-tiles_obstatus.fits'))
-    
-    inDESI= ( (all_tiles.in_desi_orig == 1) |
-              (all_tiles.in_desi == 1))
-    inDecals= ( (inDESI) &
-                (all_tiles.dec <= 30.)) 
-                #(mzls_decals.in_des == 0))
-    inMzls=   ( (inDESI) &
-                (all_tiles.dec > 30.)) 
-                #(mzls_decals.in_des == 0))
-    inDes= (  (wdes_tiles.in_desi_orig == 1) |
-              (wdes_tiles.in_desi == 1))
-    inDes=    ( (inDes) &
-                (wdes_tiles.in_des == 1))
-    #above30= mzls.dec > 30.
-    #inDESI= ( (mzls.in_desi_orig == 1) |
-    #          (mzls.in_desi == 1))
-    #inMzls= ( (above30) &
-    #          (inDESI))
+    Example: 
+        Foot= footprint_wSFD('/home/kaylan/mydata')
+        sfd= Foot.get_footprint_object()
+        Foot.plot_footprint_object()
+    """
+    def __init__(self,data_dir='/home/kaylan/mydata'):
+        self.data_dir= data_dir
+        self.map_dir= os.path.join(data_dir,'sfd98')
+        self.tile_dir= os.path.join(data_dir,'svn_tiles')
+        # Download data
+        self.download_sfd98_healpix()
+        self.download_decals_mzls_tiles()
 
-    #desi= merge_tables([mzls,decals],columns='fillzero')
-    des= wdes_tiles.copy()
-    del wdes_tiles
-    des.cut(inDes)
-    mzls= all_tiles.copy()
-    decals= all_tiles.copy()
-    del all_tiles
-    mzls.cut(inMzls)
-    decals.cut(inDecals)
-    
-    ps= Healpix().get_pixscale(len(sfd.temp),unit='deg')
-    # match_radec(ref,obs): for each point in ref, return matching point in obs
-    print('matching tiles to healpix centers')
-    I,J,d= match_radec(mzls.ra,mzls.dec, sfd.ra,sfd.dec, ps*8)
-    sfd.ipix_mzls= list( set(J) )
+    def get_footprint_object(self):
+        """Returns footprint object 'sfd'"""
+        # work with SFD map and Decals/Mzls tiles
+        # lonlat from SFD healpix is in galactic coords, convert this to Celestial
+        hdu=fitsio.FITS(os.path.join(self.map_dir,'lambda_sfd_ebv.fits'))
+        sfd= EmptyClass()
+        temp= hdu[1].read()
+        sfd.temp= temp['TEMPERATURE'] 
+        npix= Healpix().get_nside(len(sfd.temp))
+        assert(npix == 512)
+        sfd.l_indeg,sfd.b_indeg= hp.pix2ang(512,np.where(sfd.temp > 0)[0],nest=True,lonlat=True)
+        #inPlane= np.where((sfd_gal_dec > -20) & (sfd_gal_dec < 20))[0]
+        trans= Galactic(l=sfd.l_indeg * units.degree,
+                        b=sfd.b_indeg * units.degree)
+        radec= trans.transform_to(ICRS)
+        sfd.ra,sfd.dec= radec.ra.value, radec.dec.value
 
-    I,J,d= match_radec(decals.ra,decals.dec, sfd.ra,sfd.dec, ps*8)
-    sfd.ipix_decals= list( set(J) )
+        all_tiles=fits_table(os.path.join(self.tile_dir,'mosaic-tiles_obstatus.fits'))
+        wdes_tiles=fits_table(os.path.join(self.tile_dir,'decam-tiles_obstatus.fits'))
 
-    I,J,d= match_radec(des.ra,des.dec, sfd.ra,sfd.dec, ps*8)
-    sfd.ipix_des= list( set(J) )
-    
-    return sfd
+        inDESI= ( (all_tiles.in_desi_orig == 1) |
+                  (all_tiles.in_desi == 1))
+        inDecals= ( (inDESI) &
+                    (all_tiles.dec <= 30.)) 
+                    #(mzls_decals.in_des == 0))
+        inMzls=   ( (inDESI) &
+                    (all_tiles.dec > 30.)) 
+                    #(mzls_decals.in_des == 0))
+        inDes= (  (wdes_tiles.in_desi_orig == 1) |
+                  (wdes_tiles.in_desi == 1))
+        inDes=    ( (inDes) &
+                    (wdes_tiles.in_des == 1))
+        #above30= mzls.dec > 30.
+        #inDESI= ( (mzls.in_desi_orig == 1) |
+        #          (mzls.in_desi == 1))
+        #inMzls= ( (above30) &
+        #          (inDESI))
 
-    # legasurvey pts fill in in ps*3
-    I,J,d= match_radec(legsurvey.ra,legsurvey.dec, sfd.ra,sfd.dec, ps*3)
-    sfd.ipix_legsurvey= set(J)
-    # des fills in with ps*8
-    I,J,d= match_radec(des.ra,des.dec, sfd.ra,sfd.dec, ps*8)
-    sfd.ipix_legsurvey.union( set(J) )
-    sfd.ipix_legsurvey= list(sfd.ipix_legsurvey)
-    return sfd
+        #desi= merge_tables([mzls,decals],columns='fillzero')
+        des= wdes_tiles.copy()
+        del wdes_tiles
+        des.cut(inDes)
+        mzls= all_tiles.copy()
+        decals= all_tiles.copy()
+        del all_tiles
+        mzls.cut(inMzls)
+        decals.cut(inDecals)
 
-  def plot_footprint_object(self,footprint_obj):
-      """sfd is what footprint_wSFD() returns"""
-      temp= np.log10(footprint_obj.temp)
-      temp[footprint_obj.ipix_legsurvey]= 2.
-      hp.mollview(temp,nest=True,flip='geo',title='Mollweide Projection, Galactic Coordinates',unit='',max=-0.5)
-      hp.graticule(c='k',lw=1) 
-      plt.savefig('footprint_wSFD.png',dpi=150)
+        ps= Healpix().get_pixscale(len(sfd.temp),unit='deg')
+        # match_radec(ref,obs): for each point in ref, return matching point in obs
+        print('matching tiles to healpix centers')
+        I,J,d= match_radec(mzls.ra,mzls.dec, sfd.ra,sfd.dec, ps*8)
+        sfd.ipix_mzls= list( set(J) )
 
-  def modify_healpy_colorbar1():
-      pass
-  
-  def modify_healpy_colorbar2():
-      x, y, z = np.random.random((3, 30))
-      z = z * 20 + 0.1
-      
-      # Set some values in z to 0...
-      z[:5] = 0
-      
-      cmap = plt.get_cmap('jet', 20)
-      cmap.set_under('gray')
-      
-      fig, ax = plt.subplots()
-      cax = ax.scatter(x, y, c=z, s=100, cmap=cmap, vmin=0.1, vmax=z.max())
-      fig.colorbar(cax, extend='min')
+        I,J,d= match_radec(decals.ra,decals.dec, sfd.ra,sfd.dec, ps*8)
+        sfd.ipix_decals= list( set(J) )
 
-  def download_sfd98_healpix(self):
-    """downloads data if isnt on computer"""
-    tar_name= 'sfd98.tar.gz'
-    map_name= 'sfd98/lambda_sfd_ebv.fits'
-    if not os.path.exists(self.map_dir):
-      os.makedirs(self.map_dir)
-      fetch_targz(os.path.join(DOWNLOAD_ROOT,'obiwan',tar_name),
-                  self.data_dir)
+        I,J,d= match_radec(des.ra,des.dec, sfd.ra,sfd.dec, ps*8)
+        sfd.ipix_des= list( set(J) )
 
-  def download_decals_mzls_tiles(self):
-    """downloads data if isnt on computer"""
-    tar_name= 'svn_tiles.tar.gz'
-    mosaic_nm= 'mosaic-tiles_obstatus.fits'
-    decals_nm= 'decam-tiles_obstatus.fits'
-    if not os.path.exists(self.tile_dir):
-      os.makedirs(self.tile_dir)
-      fetch_targz(os.path.join(DOWNLOAD_ROOT,'obiwan',tar_name),
-                  self.data_dir)
+        return sfd
+
+        # legasurvey pts fill in in ps*3
+        I,J,d= match_radec(legsurvey.ra,legsurvey.dec, sfd.ra,sfd.dec, ps*3)
+        sfd.ipix_legsurvey= set(J)
+        # des fills in with ps*8
+        I,J,d= match_radec(des.ra,des.dec, sfd.ra,sfd.dec, ps*8)
+        sfd.ipix_legsurvey.union( set(J) )
+        sfd.ipix_legsurvey= list(sfd.ipix_legsurvey)
+        return sfd
+
+    def plot_footprint_object(self,footprint_obj):
+        """sfd is what footprint_wSFD() returns"""
+        temp= np.log10(footprint_obj.temp)
+        temp[footprint_obj.ipix_legsurvey]= 2.
+        hp.mollview(temp,nest=True,flip='geo',title='Mollweide Projection, Galactic Coordinates',unit='',max=-0.5)
+        hp.graticule(c='k',lw=1) 
+        plt.savefig('footprint_wSFD.png',dpi=150)
+
+    def modify_healpy_colorbar1():
+        pass
+
+    def modify_healpy_colorbar2():
+        x, y, z = np.random.random((3, 30))
+        z = z * 20 + 0.1
+
+        # Set some values in z to 0...
+        z[:5] = 0
+
+        cmap = plt.get_cmap('jet', 20)
+        cmap.set_under('gray')
+
+        fig, ax = plt.subplots()
+        cax = ax.scatter(x, y, c=z, s=100, cmap=cmap, vmin=0.1, vmax=z.max())
+        fig.colorbar(cax, extend='min')
+
+    def download_sfd98_healpix(self):
+        """downloads data if isnt on computer"""
+        tar_name= 'sfd98.tar.gz'
+        map_name= 'sfd98/lambda_sfd_ebv.fits'
+        if not os.path.exists(self.map_dir):
+            os.makedirs(self.map_dir)
+            fetch_targz(os.path.join(DOWNLOAD_ROOT,'obiwan',tar_name),
+                        self.data_dir)
+
+    def download_decals_mzls_tiles(self):
+        """downloads data if isnt on computer"""
+        tar_name= 'svn_tiles.tar.gz'
+        mosaic_nm= 'mosaic-tiles_obstatus.fits'
+        decals_nm= 'decam-tiles_obstatus.fits'
+        if not os.path.exists(self.tile_dir):
+            os.makedirs(self.tile_dir)
+            fetch_targz(os.path.join(DOWNLOAD_ROOT,'obiwan',tar_name),
+                        self.data_dir)
 
 
 class Bricks(object):
@@ -350,51 +350,50 @@ def get_DR5_ccds(bricknames):
 #    T=merge_tables([T,ccd],fill=zero) 
 
 if __name__ == '__main__':
-  from argparse import ArgumentParser
-  parser = ArgumentParser()
-  parser.add_argument('--targz_dir', type=str, default='/home/kaylan/mydata/dr5_qa',help='where wget data to')
-  parser.add_argument('--outdir', type=str, default=None, help='where save plots and fits tables to')
-  parser.add_argument('--psf_or_aper', type=str, choices=['psf','aper'],default='psf')
-  parser.add_argument('--which', type=str, choices=['ddec','dra','g','r','z'],default='ddec')
-  parser.add_argument('--allDR5', action="store_true", default=False,help='only on NERSC, load GB sized healpix maps with data from all of DR5')
-  args = parser.parse_args()
-  print(args)
-  
-  d= Data(args.targz_dir, allDR5=args.allDR5)
-  d.fetch()
-  data,nmatch= d.get_data(psf_or_aper=args.psf_or_aper,
+    from argparse import ArgumentParser
+    parser = ArgumentParser()
+    parser.add_argument('--targz_dir', type=str, default='/home/kaylan/mydata/dr5_qa',help='where wget data to')
+    parser.add_argument('--outdir', type=str, default=None, help='where save plots and fits tables to')
+    parser.add_argument('--psf_or_aper', type=str, choices=['psf','aper'],default='psf')
+    parser.add_argument('--which', type=str, choices=['ddec','dra','g','r','z'],default='ddec')
+    parser.add_argument('--allDR5', action="store_true", default=False,help='only on NERSC, load GB sized healpix maps with data from all of DR5')
+    args = parser.parse_args()
+    print(args)
+
+    d= Data(args.targz_dir, allDR5=args.allDR5)
+    d.fetch()
+    data,nmatch= d.get_data(psf_or_aper=args.psf_or_aper,
                           which=args.which)
-  #nside= Healpix().get_nside( len(data) )
-  #deg_per_healpix= get_pixscale(npix,unit='deg')
-  
-  p= Plots(close=False,outdir=args.outdir)
-  ra,dec,cut_data= d.get_radec(data, keep= data != 0)
-  p.mollzoom(ra,dec,np.abs(cut_data),'test',
+    #nside= Healpix().get_nside( len(data) )
+    #deg_per_healpix= get_pixscale(npix,unit='deg')
+
+    p= Plots(close=False,outdir=args.outdir)
+    ra,dec,cut_data= d.get_radec(data, keep= data != 0)
+    p.mollzoom(ra,dec,np.abs(cut_data),'test',
              ralim=[ra.min(),ra.max()],declim=[dec.min(),dec.max()],
              vlim=(0.01,0.1))
 
-  # Find closest brick to each of 5 largest deviations
-  hi_to_low= np.sort(np.abs(cut_data))[::-1]
-  worst= defaultdict(list)
-  for data_val in hi_to_low[:10]:
-      i= np.where( np.abs(cut_data) == data_val)[0]
-      worst['dev'].append( data_val )
-      worst['ra'].append( ra[i][0] )
-      worst['dec'].append( dec[i][0] )
+    # Find closest brick to each of 5 largest deviations
+    hi_to_low= np.sort(np.abs(cut_data))[::-1]
+    worst= defaultdict(list)
+    for data_val in hi_to_low[:10]:
+        i= np.where( np.abs(cut_data) == data_val)[0]
+        worst['dev'].append( data_val )
+        worst['ra'].append( ra[i][0] )
+        worst['dec'].append( dec[i][0] )
 
-  B= Bricks(args.targz_dir)
-  worst['brick']= B.get_nearest_bricks(worst['ra'],worst['dec'])
-  with open('worst_%s_%s.txt' % (args.psf_or_aper,args.which),'w') as f:
-      for dev,ra,dec,brick in zip(worst['dev'],
-                                  worst['ra'],worst['dec'],worst['brick']):
-          f.write('%.2f %.2f %.2f %s\n' % (dev,ra,dec,brick))
+    B= Bricks(args.targz_dir)
+    worst['brick']= B.get_nearest_bricks(worst['ra'],worst['dec'])
+    with open('worst_%s_%s.txt' % (args.psf_or_aper,args.which),'w') as f:
+        for dev,ra,dec,brick in zip(worst['dev'],
+                                    worst['ra'],worst['dec'],worst['brick']):
+            f.write('%.2f %.2f %.2f %s\n' % (dev,ra,dec,brick))
         
-  
-  
-  #orig_code(data,nmatch)
-  #b=fits_table("/global/cscratch1/sd/kaylanb/dr5_qa/brick_table_psfhealpixdecam-ps1-0128-ddec.fits")
-  #get_DR5_ccds(b.brickname)    
-  #raise ValueError
+
+    #orig_code(data,nmatch)
+    #b=fits_table("/global/cscratch1/sd/kaylanb/dr5_qa/brick_table_psfhealpixdecam-ps1-0128-ddec.fits")
+    #get_DR5_ccds(b.brickname)    
+    #raise ValueError
 
 
 
