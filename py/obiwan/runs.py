@@ -53,36 +53,36 @@ def rm_duplicates(T):
     return keep
 
 if __name__ == "__main__":
-  eboss_fns= glob(os.path.join(NERSC_ROOT,'configs/dr3eBOSS/additional_ccds',
+    eboss_fns= glob(os.path.join(NERSC_ROOT,'configs/dr3eBOSS/additional_ccds',
                                "survey-ccds-*.fits.gz"))
-  dr3_fns= glob(os.path.join(NERSC_ROOT,'configs/dr3eBOSS/dr3',
+    dr3_fns= glob(os.path.join(NERSC_ROOT,'configs/dr3eBOSS/dr3',
                              "survey-ccds-*.fits.gz"))
-  assert(len(eboss_fns) > 0)
-  assert(len(dr3_fns) > 0)
+    assert(len(eboss_fns) > 0)
+    assert(len(dr3_fns) > 0)
 
-  dr3= CatalogueFuncs().stack(dr3_fns,textfile=False)
-  eboss= CatalogueFuncs().stack(eboss_fns,textfile=False)
+    dr3= CatalogueFuncs().stack(dr3_fns,textfile=False)
+    eboss= CatalogueFuncs().stack(eboss_fns,textfile=False)
 
-  dr3.set('pid', add_str_arrays([dr3.expnum.astype(str),
+    dr3.set('pid', add_str_arrays([dr3.expnum.astype(str),
                                  np.char.strip(dr3.image_filename)]))
-  eboss.set('pid', add_str_arrays([eboss.expnum.astype(str),
+    eboss.set('pid', add_str_arrays([eboss.expnum.astype(str),
                                    np.char.strip(eboss.image_filename)]))
-  dr3.cut( in_eboss(dr3))
-  eboss.cut( in_eboss(eboss))
+    dr3.cut( in_eboss(dr3))
+    eboss.cut( in_eboss(eboss))
 
-  T=  merge_tables([dr3,eboss], columns='fillzero')
-  keep= rm_duplicates(T)
-  T.cut(keep)
-  name='survey-ccds-ebossDR3.fits'
-  T.writeto(name)
-  print('Wrote %s' % name)
+    T=  merge_tables([dr3,eboss], columns='fillzero')
+    keep= rm_duplicates(T)
+    T.cut(keep)
+    name='survey-ccds-ebossDR3.fits'
+    T.writeto(name)
+    print('Wrote %s' % name)
 
-  a=set(dr3.pid).union(set(eboss.pid))
-  fn=[lin.split("decam/")[1] for lin in a]
-  name='eboss_image_list.txt'
-  with open(name,'w') as foo:
-    for f in fn:
-      foo.write('%s\n' % f)
-  print('Wrote %s' % name) 
+    a=set(dr3.pid).union(set(eboss.pid))
+    fn=[lin.split("decam/")[1] for lin in a]
+    name='eboss_image_list.txt'
+    with open(name,'w') as foo:
+        for f in fn:
+            foo.write('%s\n' % f)
+    print('Wrote %s' % name) 
 
  

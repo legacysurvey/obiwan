@@ -867,19 +867,19 @@ def create_metadata(kwargs=None):
     TODO: One metacat table per brick, instead of one per `rs*` directory?
     
     Args:
-      kwargs: configuration-like params for the simulated sources
-        {'brickname': which chunk of sky
-        'objtype': star,elg,lrg,qso
-        'nobj': number of simulated sources for this run
-        'stamp_size': pixels, width and height of simulated images
-        'cutouts': whether .npy cutouts of every simulated source were written
-        'bright_galaxies': whether bright_galaxies flag is set
-        }
+        kwargs: configuration-like params for the simulated sources
+            {'brickname': which chunk of sky
+            'objtype': star,elg,lrg,qso
+            'nobj': number of simulated sources for this run
+            'stamp_size': pixels, width and height of simulated images
+            'cutouts': whether .npy cutouts of every simulated source were written
+            'bright_galaxies': whether bright_galaxies flag is set
+            }
     
     Returns:
-      Nothing
-      writes the 'metacat' fits_table to disk and stores it
-      in the kwargs input arg
+        Nothing
+        writes the 'metacat' fits_table to disk and stores it
+        in the kwargs input arg
     """
     assert(kwargs is not None)
     log = logging.getLogger('decals_sim')
@@ -927,15 +927,15 @@ def create_metadata(kwargs=None):
 def create_ith_simcat(d=None):
     """Write 'simcat' and 'skipped_ids' tables for a given sample of sources
 
-        Args:
-          d: {'Samp': fits_table for the properties of sources in the brick
-         'brickwcs': WCS object for the brick
-         'metacat': fits_table with configuration params for the simulated sources
-             }
+    Args:
+        d: {'Samp': fits_table for the properties of sources in the brick
+            'brickwcs': WCS object for the brick
+            'metacat': fits_table with configuration params for the simulated sources
+            }
         
-        Returns:
-      Nothing, saves the 'simcat' and 'skipped_ids' tables
-      Adds 'simcat' table to dict 'd'
+    Returns:
+        Nothing, saves the 'simcat' and 'skipped_ids' tables
+        Adds 'simcat' table to dict 'd'
     """
     assert(d is not None)
     log = logging.getLogger('decals_sim')
@@ -974,17 +974,17 @@ def get_runbrick_setup(**kwargs):
     """Convert runbrick.py cmd line options into `**kwargs` for run_brick()
     
     The command line options depend on the Data Release (e.g. the
-      legacypipe code version. The cmd line options associated with 
-      each DR get modified and repackaged into a dict in 
-      legacypipe.runbrick so this converter is required to call run_brick
-      appropriately
+        legacypipe code version. The cmd line options associated with 
+        each DR get modified and repackaged into a dict in 
+        legacypipe.runbrick so this converter is required to call run_brick
+        appropriately
     
     Args:
-      **kwargs: dict of the cmd line options to obiwan.kenobi.py
+        **kwargs: dict of the cmd line options to obiwan.kenobi.py
     
     Returns:
-      dict to use when calling legacypipe.runbrick.run_brick like
-        run_brick(brickname, survey, `**dict`)      
+        dict to use when calling legacypipe.runbrick.run_brick like
+            run_brick(brickname, survey, `**dict`)      
     """
     dataset= kwargs['dataset']
     assert(dataset in ['DR5','DR3','DR3_eBOSS'])
@@ -1019,16 +1019,16 @@ def do_one_chunk(d=None):
     """Runs the legacypipe/Tractor pipeline on images with simulated sources
     
     Args:
-      d: {'args': obiwan.kenobi.py cmd line argparse.Namespace object
-          'brickname': chunk of sky
-          'metacat': fits_table configuration params for the simulated sources
-          'simcat': fits_table simulated source catalog for a given brick (not CCD).
+        d: {'args': obiwan.kenobi.py cmd line argparse.Namespace object
+            'brickname': chunk of sky
+            'metacat': fits_table configuration params for the simulated sources
+            'simcat': fits_table simulated source catalog for a given brick (not CCD).
     
     Note:
-      runb_brick() is 'main' for the legacypipe/Tractor pipeline
+        runb_brick() is 'main' for the legacypipe/Tractor pipeline
     
     Returns:
-      Nothing, but this func end ups writing out all the obiwan results 
+        Nothing, but this func end ups writing out all the obiwan results 
     """
     assert(d is not None)
     simdecals = SimDecals(dataset=d['args'].dataset,\
@@ -1037,10 +1037,9 @@ def do_one_chunk(d=None):
               image_eq_model=d['args'].image_eq_model)
     # Use Tractor to just process the blobs containing the simulated sources.
     if d['args'].all_blobs:
-    blobxy = None
+        blobxy = None
     else:
-    blobxy = zip(d['simcat'].get('x'), d['simcat'].get('y'))
-    
+        blobxy = zip(d['simcat'].get('x'), d['simcat'].get('y'))
     # Default runbrick call sequence
     obiwan_kwargs= vars(d['args']) 
     runbrick_kwargs= get_runbrick_setup(**obiwan_kwargs)
