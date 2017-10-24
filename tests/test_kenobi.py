@@ -4,7 +4,8 @@ from astrometry.util.fits import fits_table, merge_tables
 from astrometry.libkd.spherematch import match_radec
 from obiwan import kenobi
 from obiwan.common import get_savedir
-from obiwan.test.test_data import TestData
+
+from test_data import TestData
 
 def test_output_dir():
     kwargs=dict(outdir= 'hello',
@@ -23,9 +24,11 @@ def test_output_dir():
     assert(get_savedir(**kwargs) == ans)
 
 def test_overlapping_radec():
+    outdir= os.path.join(os.path.dirname(__file__),
+                         'testdata')
     data= TestData()
-    data.fetch(outdir= os.path.dirname(__file__))
-    fn= data.get_fn('skipids')
+    data.fetch(outdir)
+    fn= data.get_fn('skipids',outdir)
     Samp= fits_table(fn)
     for iter in range(5):
         keep,rem= kenobi.flag_nearest_neighbors(Samp, radius_in_deg=5./3600)

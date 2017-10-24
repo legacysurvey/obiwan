@@ -19,18 +19,18 @@ NERSC_ROOT = DOWNLOAD_ROOT.replace("http://portal.nersc.gov/project/",
                                    "/global/project/projectdirs/")\
                           .replace("/users/","/www/users/")
 
-class TestData(object):    
+class TestData(object):  
     def fetch(self,outdir):
         name= 'testdata.tar.gz'
         fetch_targz(os.path.join(DOWNLOAD_ROOT,name),
                     outdir)
            
-    def get_fn(self,name):
+    def get_fn(self,name,outdir):
         if name == 'skipids':
             fn= 'skipids_table.fits'
         else:
             raise ValueError('name=%s not supported' % name)
-        return os.path.join(self.outdir,fn)
+        return os.path.join(outdir,fn)
     
 
     

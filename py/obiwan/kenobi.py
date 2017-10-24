@@ -355,7 +355,7 @@ class SimImage(DecamImage):
                 # Stamp ivar can get messed up at edges
                 # especially when needed stamp smaller than args.stamp_size
                 cent= int( min(ivarstamp.array.shape)/2 )
-                    med= np.median(ivarstamp.array[cent-2:cent+2,cent-2:cent+2].flatten() )
+                med= np.median(ivarstamp.array[cent-2:cent+2,cent-2:cent+2].flatten() )
                 # 100x median fainter gets majority of star,qso OR elg,lrg profile
                 ivarstamp.array[ ivarstamp.array > 100 * med ] = 0.
                 # Add stamp to image
@@ -896,7 +896,7 @@ def create_metadata(kwargs=None):
     #metacat = Table(np.zeros(1, dtype=metacols))
     metacat = fits_table()
     for key in ['brickname','objtype']: #,'nchunk']:
-    metacat.set(key, np.array( [kwargs[key]] ))
+        metacat.set(key, np.array( [kwargs[key]] ))
     metacat.set('nobj', np.array( [kwargs['args'].nobj] ))
     metacat.set('zoom', np.array( [kwargs['args'].zoom] ))
     metacat.set('cutouts', np.array( [kwargs['args'].cutouts] ))
@@ -911,14 +911,12 @@ def create_metadata(kwargs=None):
                              kwargs['brickname'],kwargs['rowst'],
                              do_skipids=kwargs['do_skipids'],do_more=kwargs['do_more'])
     if not os.path.exists(metacat_dir): 
-    os.makedirs(metacat_dir)
-    
+        os.makedirs(metacat_dir)
     metafile = os.path.join(metacat_dir, 'metacat'+get_fnsuffix(**kwargs))
     log.info('Writing {}'.format(metafile))
     if os.path.isfile(metafile):
-    os.remove(metafile)
+        os.remove(metafile)
     metacat.writeto(metafile)
-    
     # Store new stuff
     kwargs['metacat']=metacat
     kwargs['metacat_dir']=metacat_dir

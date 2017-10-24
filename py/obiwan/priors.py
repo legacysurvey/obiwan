@@ -178,15 +178,15 @@ class Data(object):
     	tab.set('z_wdust', decals.get('decam_mag_wdust')[:,4])
     	tab.set('w1_wdust', decals.get('wise_mag_wdust')[:,0])
     	tab.set('r_nodust', decals.get('decam_mag_nodust')[:,2])
-            tab.set('z_nodust', decals.get('decam_mag_nodust')[:,4])
-            # DR3 shape info
-            for key in ['type','shapeexp_r','shapedev_r']:
-                tab.set(key, decals.get(key))
-            # Add tractor shapes
+        tab.set('z_nodust', decals.get('decam_mag_nodust')[:,4])
+        # DR3 shape info
+        for key in ['type','shapeexp_r','shapedev_r']:
+            tab.set(key, decals.get(key))
+        # Add tractor shapes
     	dic= self.get_tractor_shapes(tab)
     	tab.set('tractor_re', dic['re'])
     	tab.set('tractor_n', dic['n'])
-            return tab
+        return tab
 
     # def load_lrg_acs(self,DR,zlimit):
     #     cosmos= self.load_lrg(DR,zlimit)
@@ -913,86 +913,6 @@ class FDR_elg(object):
     				   tab.oii_3727 > oiicut1),axis=0)
     	return keep 		 
     
-    def plot_redshift(self):
-    	rz,gr,r_nodust,r_wdust,redshift= self.get_elgs_FDR_cuts()
-    	ts= TSBox(src='ELG')
-    	xrange,yrange= xyrange['x_elg'],xyrange['y_elg']
-    	# Plot
-    	fig,ax = plt.subplots(3,2,sharex=True,sharey=True,figsize=(10,12))
-    	plt.subplots_adjust(wspace=0.25,hspace=0.15)
-    	# Plot data
-    	zbins=np.linspace(0.8,1.4,num=6)
-    	mysvm,mynn,categors={},{},{}
-    	# Plot, Predict, Predict
-    	# Discrete Color Map
-    	cmap = mpl.colors.ListedColormap(['m','r', 'y', 'g','b', 'c'])
-    	bounds = zbins
-    	norm = mpl.colors.BoundaryNorm(bounds, cmap.N)
-    	# Make plots
-    	for cnt,key,ti in zip(range(2),
-    			      ['goodz_oiibright','goodz_oiifaint'],\
-    			      [r'$z=(0.8,1.4) [OII]>8\times10^{-17}$',r'$z=(0.8,1.4) [OII]<8\times10^{-17}$']):
-    	    print('Learning redshifts for sample=%s' % key)
-    	    # Add box
-    	    ts.add_ts_box(ax[0,cnt], xlim=xrange,ylim=yrange)
-    	    # Scatter
-    	    axobj= ax[0,cnt].scatter(rz[key],gr[key],c=redshift[key],marker='o',\
-    				     cmap=cmap,norm=norm,\
-    				     vmin=bounds.min(),vmax=bounds.max())
-    	    title=ax[0,cnt].set_title(ti)
-    	    divider3 = make_axes_locatable(ax[0,cnt])
-    	    cax3 = divider3.append_axes("right", size="5%", pad=0.1)
-    	    cbar3 = plt.colorbar(axobj, cax=cax3,\
-    				 cmap=cmap, norm=norm, boundaries=bounds, ticks=bounds)
-    	    cbar3.set_label('redshift')
-    	    #cbar = fig.colorbar(axobj, orientation='vertical')
-    	    # Train & Predict
-    	    categors[key]= np.zeros(len(redshift[key])).astype(int)
-    	    for ithbin,lft,rt in zip(range(len(zbins)-1),zbins[:-1],zbins[1:]):
-    		categors[key][ (redshift[key] > lft)*(redshift[key] <= rt) ]= ithbin+1
-    		X= np.array([rz[key],gr[key]]).T
-    		mysvm[key]= RedshiftPredictor(X=X, y=categors[key])
-    		mysvm[key].svm(kernel='rbf',C=1.,degree=3)
-    		# FIX!!!! ADD 5 color color bar, len(zbins)-1, 
-    		axobj= ax[1,cnt].scatter(rz[key],gr[key],c=mysvm[key].predict(X),\
-    					 marker='o',\
-    					 cmap=cmap,norm=norm,\
-    					 vmin=bounds.min(),vmax=bounds.max())
-    		#cbar = fig.colorbar(axobj, orientation='vertical')
-    		divider3 = make_axes_locatable(ax[1,cnt])
-    		cax3 = divider3.append_axes("right", size="5%", pad=0.1)
-    		cbar3 = plt.colorbar(axobj, cax=cax3,\
-    				     cmap=cmap, norm=norm, boundaries=bounds, ticks=bounds)
-    		cbar3.set_label('redshift')
-    		# FIX add lines dividing the two samples, see sklearn doc plot examples
-    		# Train & Predict
-    		mynn[key]= RedshiftPredictor(X=X,y=categors[key])
-                    mynn[key].nn(nn=3)
-    		# FIX!!!! ADD 5 color color bar, len(zbins)-1, 
-    		axobj= ax[2,cnt].scatter(rz[key],gr[key],c=mynn[key].predict(X),\
-    					 marker='o',\
-    					 cmap=cmap,norm=norm,\
-    					 vmin=bounds.min(),vmax=bounds.max())
-    		#cbar = fig.colorbar(axobj, orientation='vertical')
-    		divider3 = make_axes_locatable(ax[2,cnt])
-    		cax3 = divider3.append_axes("right", size="5%", pad=0.1)
-    		cbar3 = plt.colorbar(axobj, cax=cax3,\
-    				     cmap=cmap, norm=norm, boundaries=bounds, ticks=bounds)
-    		cbar3.set_label('redshift')
-    	    # Finish axes
-    	    for row in range(3):
-    		ylab= ax[row,0].set_ylabel('g-r')
-    		for col in range(2):
-    		    ax[row,col].set_xlim(xrange)
-    		    ax[row,col].set_ylim(yrange)
-    		    xlab= ax[2,col].set_xlabel('r-z')
-    	    # Save
-    	    name='dr%d_ELG_redshifts.png' % self.DR
-    	    kwargs= dict(bbox_extra_artists=[cbar3,title,xlab,ylab]) #, bbox_inches='tight',dpi=150)
-    	    if self.savefig:
-    		plt.savefig(name, **kwargs)
-    		plt.close()
-    		print('Wrote {}'.format(name))
         
     def plot_FDR(self):
     	tab= self.get_dr3_deep2()
@@ -1003,7 +923,7 @@ class FDR_elg(object):
     	# Add box
     	ts= TSBox(src='ELG')
     	xrange,yrange= xyrange['x_elg'],xyrange['y_elg']
-            ts.add_ts_box(ax, xlim=xrange,ylim=yrange)
+        ts.add_ts_box(ax, xlim=xrange,ylim=yrange)
     	# Add points
     	for cut_name,lab,color,marker in zip(['lowz','medz_lowO2','medz_hiO2','hiz_hiO2'],
     					    [r'$z<0.6$',r'$z>0.6, [OII]<8\times10^{-17}$',
