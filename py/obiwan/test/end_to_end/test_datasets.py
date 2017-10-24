@@ -11,7 +11,7 @@ def run_dataset(dataset):
     """run a single dataset's test problem
 
     Args:
-      dataset: string, 'DR3', 'DR5', etc
+        dataset: string, 'DR3', 'DR5', etc
     """
     assert(dataset in DATASETS)
     print('testing dataset: %s' % dataset)
@@ -29,7 +29,7 @@ def run_dataset(dataset):
               '--randoms_from_fits', randoms_from_fits]
     parser= get_parser()
     args = parser.parse_args(args=cmd_line)
-    
+
     main(args=args)
     assert(True)
 #fn = os.path.join(outdir, 'tractor', '110', 'tractor-1102p240.fits')
@@ -54,7 +54,7 @@ def test_dataset_DR5():
 
 
 if __name__ == "__main__":
-  test_dataset_DR3()
-  test_dataset_DR5() 
+    test_dataset_DR3()
+    test_dataset_DR5() 
 
     

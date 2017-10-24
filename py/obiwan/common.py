@@ -15,7 +15,7 @@ def save_png(outdir,fig_id, tight=True):
         os.makedirs(dirname)
     print("Saving figure", path)
     if tight:
-      plt.tight_layout()
+        plt.tight_layout()
     plt.savefig(path, format='png', dpi=150)
     #plt.savefig(path, format='png',box_extra_artists=[xlab,ylab],
     #            bbox_inches='tight',dpi=150)
@@ -23,15 +23,15 @@ def save_png(outdir,fig_id, tight=True):
         plt.close()
 
 def dobash(cmd):
-  print('UNIX cmd: %s' % cmd)
-  if os.system(cmd): raise ValueError
+    print('UNIX cmd: %s' % cmd)
+    if os.system(cmd): raise ValueError
 
 def fits2pandas(tab,attrs=None):
     """converts a fits_table into a pandas DataFrame
 
     Args:
-      tab: fits_table()
-      attrs: attributes or column names want in the DF
+        tab: fits_table()
+        attrs: attributes or column names want in the DF
     """
     d={}
     if attrs is None:
@@ -45,18 +45,18 @@ def fits2pandas(tab,attrs=None):
     return df
 
 def get_brickdir(outdir,obj,brick):
-  return os.path.join(outdir,obj,brick[:3],brick)
+    return os.path.join(outdir,obj,brick[:3],brick)
 
 def get_savedir(outdir,obj,brick,rowstart,
                 do_skipids='no',do_more='yes'):
-  # Either rs or skip_rs
-  if do_skipids == 'no':
-    final_dir= "rs%s" % str(rowstart)
-  elif do_skipids == 'yes':
-    final_dir= "skip_rs%s" % str(rowstart) 
-  # if specified minimum id, running more randoms
-  if do_more == 'yes':
-    final_dir= "more_"+final_dir
-  return os.path.join(get_brickdir(outdir,obj,brick),
+    # Either rs or skip_rs
+    if do_skipids == 'no':
+        final_dir= "rs%s" % str(rowstart)
+    elif do_skipids == 'yes':
+        final_dir= "skip_rs%s" % str(rowstart) 
+    # if specified minimum id, running more randoms
+    if do_more == 'yes':
+        final_dir= "more_"+final_dir
+    return os.path.join(get_brickdir(outdir,obj,brick),
                       final_dir)
 

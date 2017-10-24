@@ -21,7 +21,7 @@ python obiwan/kenobi.py -b 1238p245 -n 2 --DR 5 -o elg --add_sim_noise --zoom 15
 num_fils=`find ${DECALS_SIM_DIR}/elg -type f|wc -l`
 # 0 is True, 1 if False
 if [ "${num_fils}" == "34" ]; then
-  exit 0
+    exit 0
 else
-  exit 42
+    exit 42
 fi

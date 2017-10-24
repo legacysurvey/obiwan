@@ -96,13 +96,13 @@ def ptime(text,t0):
 
 
 def get_skip_ids(decals_sim_dir, brickname, objtype):
-  fns= glob(os.path.join(decals_sim_dir, objtype,
+    fns= glob(os.path.join(decals_sim_dir, objtype,
                          brickname[:3], brickname,
                          '*','obiwan','skippedids-*.fits'))
-  if len(fns) == 0:
-    raise ValueError("no skippedids.fits files exist for this brick %s" % brickname)
-  T= CatalogueFuncs().stack(fns, textfile=False)
-  return T.ids.astype(str)
+    if len(fns) == 0:
+        raise ValueError("no skippedids.fits files exist for this brick %s" % brickname)
+    T= CatalogueFuncs().stack(fns, textfile=False)
+    return T.ids.astype(str)
 
 def get_fnsuffix(**kwargs):
     return '-{}-{}.fits'.format(kwargs['objtype'], kwargs['brickname'])
@@ -112,85 +112,85 @@ class SimDecals(LegacySurveyData):
     """Top level object that specifying which data to run through pipeline
     
     Same behavior as legacypipe.runs.Dr3DecalsSurvey which chooses which
-      CCDs to include. But this also stores all the relevant obiwan
-      objects
+        CCDs to include. But this also stores all the relevant obiwan
+        objects
     
     Args:
-      dataset: see definition in 
-        https://github.com/legacysurvey/obiwan/blob/master/py/obiwan/test/end_to_end/README.md 
-      survey_dir: as used by legacypipe.runbrick.run_brick()
-        Defaults to $LEGACY_SURVEY_DIR environment variable.  Where to look for
-        files including calibration files, tables of CCDs and bricks, image data
-      metacat: fits_table 
-        configuration-like params for the simulated sources
-      simcat: fits_table
-        simulated source catalog for a given brick (not CCD).
-      output_dir: legacypipe's outdir
-      add_sim_noise: add Poisson noise from the simulated source to the image 
-      folding_threshold: how close the simulated source flux is to the requested flux
-        make smaller to increase simulated source flux/requested flux
-      image_eq_model: referred to as 'testA'
-        wherever add a simulated source, replace both image and invvar of the image
-        with that of the simulated source only
+        dataset: see definition in 
+            https://github.com/legacysurvey/obiwan/blob/master/py/obiwan/test/end_to_end/README.md 
+        survey_dir: as used by legacypipe.runbrick.run_brick()
+            Defaults to $LEGACY_SURVEY_DIR environment variable.  Where to look for
+            files including calibration files, tables of CCDs and bricks, image data
+        metacat: fits_table 
+            configuration-like params for the simulated sources
+        simcat: fits_table
+            simulated source catalog for a given brick (not CCD).
+        output_dir: legacypipe's outdir
+        add_sim_noise: add Poisson noise from the simulated source to the image 
+        folding_threshold: how close the simulated source flux is to the requested flux
+            make smaller to increase simulated source flux/requested flux
+        image_eq_model: referred to as 'testA'
+            wherever add a simulated source, replace both image and invvar of the image
+            with that of the simulated source only
 
     Attributes:
-      DR: see above 
-      metacat: fits_table 
-        configuration-like params for the simulated sources
-      simcat: fits_table
-        simulated source catalog for a given brick (not CCD).
-      output_dir: legacypipe's outdir
-      add_sim_noise: add Poisson noise from the simulated source to the image 
-      folding_threshold: how close the simulated source flux is to the requested flux
-        make smaller to increase simulated source flux/requested flux
-      image_eq_model: referred to as 'testA'
-        wherever add a simulated source, replace both image and invvar of the image
-        with that of the simulated source only
+        DR: see above 
+        metacat: fits_table 
+            configuration-like params for the simulated sources
+        simcat: fits_table
+            simulated source catalog for a given brick (not CCD).
+        output_dir: legacypipe's outdir
+        add_sim_noise: add Poisson noise from the simulated source to the image 
+        folding_threshold: how close the simulated source flux is to the requested flux
+            make smaller to increase simulated source flux/requested flux
+        image_eq_model: referred to as 'testA'
+            wherever add a simulated source, replace both image and invvar of the image
+            with that of the simulated source only
     """
     
-    def __init__(self, dataset=None, survey_dir=None, metacat=None, simcat=None, output_dir=None,\
-         add_sim_noise=False, folding_threshold=1.e-5, image_eq_model=False):
+    def __init__(self, dataset=None, survey_dir=None, metacat=None, simcat=None, 
+                 output_dir=None,add_sim_noise=False, folding_threshold=1.e-5, 
+                 image_eq_model=False):
         super(SimDecals, self).__init__(survey_dir=survey_dir, output_dir=output_dir)
-    self.dataset= dataset
-    self.metacat = metacat
-    self.simcat = simcat
-    # Additional options from command line
+        self.dataset= dataset
+        self.metacat = metacat
+        self.simcat = simcat
+        # Additional options from command line
         self.add_sim_noise= add_sim_noise
         self.folding_threshold= folding_threshold
-    self.image_eq_model= image_eq_model
-    print('SimDecals: self.image_eq_model=',self.image_eq_model)
+        self.image_eq_model= image_eq_model
+        print('SimDecals: self.image_eq_model=',self.image_eq_model)
         
     def get_image_object(self, t):
-    return SimImage(self, t)
+        return SimImage(self, t)
     
-    #######
-    # see legacypipe/runs.py
     def filter_ccds_files(self, fns):
+        """see legacypipe/runs.py"""
         if self.dataset == 'DR3':
             return [fn for fn in fns if
                     ('survey-ccds-decals.fits.gz' in fn  or
                      'survey-ccds-nondecals.fits.gz' in fn or
                      'survey-ccds-extra.fits.gz' in fn)]
-    #elif self.dataset == 'DR4':
-        #   return [fn for fn in fns if
-        #           ('survey-ccds-dr4-90prime.fits.gz' in fn or
-        #           'survey-ccds-dr4-mzlsv2.fits.gz' in fn)]
-    elif self.dataset == 'DR5':
-        return fns
+        #elif self.dataset == 'DR4':
+            #   return [fn for fn in fns if
+            #           ('survey-ccds-dr4-90prime.fits.gz' in fn or
+            #           'survey-ccds-dr4-mzlsv2.fits.gz' in fn)]
+        elif self.dataset == 'DR5':
+            return fns
     
     def ccds_for_fitting(self, brick, ccds):
-    if self.dataset in ['DR3','DR5']:
-        return np.flatnonzero(ccds.camera == 'decam')
-    #elif self.dataset == 'DR4':
-        #   return np.flatnonzero(np.logical_or(ccds.camera == 'mosaic',
-    #                         ccds.camera == '90prime'))
+        if self.dataset in ['DR3','DR5']:
+            return np.flatnonzero(ccds.camera == 'decam')
+        #elif self.dataset == 'DR4':
+            #   return np.flatnonzero(np.logical_or(ccds.camera == 'mosaic',
+        #                         ccds.camera == '90prime'))
     
     def filter_ccd_kd_files(self, fns):
-    """introduced in DR5"""
-    return []
+        """see legacypipe/runs.py"""
+        return []
     
 def get_srcimg_invvar(stamp_ivar,img_ivar):
-    '''stamp_ivar, img_ivar -- galsim Image objects'''
+    """stamp_ivar, img_ivar -- galsim Image objects"""
     # Use img_ivar when stamp_ivar == 0, both otherwise
     use_img_ivar= np.ones(img_ivar.array.shape).astype(bool)
     use_img_ivar[ stamp_ivar.array > 0 ] = False
@@ -245,12 +245,12 @@ class SimImage(DecamImage):
     def __init__(self, survey, t):
         super(SimImage, self).__init__(survey, t)
         self.t = t
-                if self.survey.dataset in ['DR3','DR3_eBOSS']:
-                    assert('arawgain' in self.t.get_columns())
-                    assert(not 'gain' in self.t.get_columns())
-                    self.t.rename('arawgain', 'gain')
-                elif self.survey.dataset in ['DR5']:
-                    assert 'gain' in self.t.get_columns()
+        if self.survey.dataset in ['DR3','DR3_eBOSS']:
+            assert('arawgain' in self.t.get_columns())
+            assert(not 'gain' in self.t.get_columns())
+            self.t.rename('arawgain', 'gain')
+        elif self.survey.dataset in ['DR5']:
+            assert 'gain' in self.t.get_columns()
                     
 
     def get_tractor_image(self, **kwargs):
@@ -507,8 +507,7 @@ class BuildStamp():
         #    self.gsdeviate = galsim.BaseDeviate()
         #else:
         #    self.gsdeviate = galsim.BaseDeviate(seed)
-
-                self.wcs = tim.getWcs()
+        self.wcs = tim.getWcs()
         self.psf = tim.getPsf()
         # Tractor wcs object -> galsim wcs object
         temp_hdr = FITSHDR()
@@ -551,11 +550,11 @@ class BuildStamp():
     def addGaussNoise(self, stamp):
         """Adds gaussian noise to perfect source (in place)
 
-                STAMP and IVARSTAMP are in units of nanomaggies and 
-                  1/nanomaggies**2, respectively.
-        
-                Returns:
-                  invvar for the stamp
+        STAMP and IVARSTAMP are in units of nanomaggies and 
+            1/nanomaggies**2, respectively.
+
+        Returns:
+            invvar for the stamp
         """
         #stamp= stamp_backup.copy()
         #ivarstamp= ivarstamp_backup.copy()
