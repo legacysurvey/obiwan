@@ -857,6 +857,8 @@ def get_parser():
                         help='if using mpi4py, $LEGACY_SURVEY_DIR/bricklist')
     parser.add_argument('--nproc', type=int,action='store',default=1,\
                         help='if using mpi4py')
+    parser.add_argument('--all_blobs', action='store_true',default=False,
+                        help='fit models to all blobs, not just those containing sim sources')
     parser.add_argument('-v', '--verbose', action='store_true', help='toggle on verbose output')
     return parser
  
