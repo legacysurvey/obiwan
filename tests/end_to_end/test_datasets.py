@@ -32,6 +32,33 @@ def run_dataset(dataset):
 
     main(args=args)
     assert(True)
+
+def run_testcase(name='testcase_DR5_z',dataset='DR5'):
+    """run a single dataset's test problem
+
+    Args:
+        dataset: string, 'DR3', 'DR5', etc
+    """
+    assert(dataset in DATASETS)
+    print('testcase: %s' % name)
+    obj='elg'
+    brick='1741p242'
+    os.environ["LEGACY_SURVEY_DIR"]= os.path.join(os.path.dirname(__file__), 
+                                                  name)
+    outdir = os.path.join(os.path.dirname(__file__),
+                          'out_%s' % name)
+    randoms_from_fits= os.path.join(os.path.dirname(__file__), 
+                                    'name','randoms_testcase_DR5_z.fits')
+
+    cmd_line=['--dataset', dataset, '-b', brick, '-n', '4', 
+              '-o', 'elg', '--outdir', outdir, '--add_sim_noise',
+              '--randoms_from_fits', randoms_from_fits]
+    parser= get_parser()
+    args = parser.parse_args(args=cmd_line)
+
+    main(args=args)
+    assert(True)
+
 #fn = os.path.join(outdir, 'tractor', '110', 'tractor-1102p240.fits')
 #assert(os.path.exists(fn))
 #T = fits_table(fn)
@@ -52,9 +79,15 @@ def test_dataset_DR5():
     run_dataset('DR5')
     assert(True)
 
+def test_cases():
+    run_testcase('testcase_DR5_z','DR5')
+    assert(True)
+
+
 
 if __name__ == "__main__":
-    test_dataset_DR3()
-    test_dataset_DR5() 
+    #test_dataset_DR3()
+    #test_dataset_DR5() 
+    test_cases()
 
     
