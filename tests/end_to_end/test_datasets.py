@@ -2,10 +2,23 @@
 
 from __future__ import print_function
 import os
+import fitsio
+import matplotlib.pyplot as plt
 
 from obiwan.kenobi import main,get_parser
+from obiwan.qa.visual import plotImage, readImage
 
 DATASETS= ['DR3','DR5','DR3_eBOSS']
+
+def plots_for_testcase(outdir,blobs,img_jpg,model_jpg,resid_jpg):
+    fig,ax=plt.subplots(2,2,figsize=(6,6))
+    plotImage().imshow(blobs,ax[0,0],qs=None)
+    plotImage().imshow(img_jpg,ax[0,1],qs=None)
+    plotImage().imshow(model_jpg,ax[1,0],qs=None)
+    plotImage().imshow(resid_jpg,ax[1,1],qs=None)
+    fn=os.path.join(outdir,'blob_img_mod_res.png')
+    plt.savefig(fn,dpi=150)
+    print('Wrote %s' % fn)
 
 def run_dataset(dataset):
     """run a single dataset's test problem
@@ -44,7 +57,10 @@ def run_testcase(name='testcase_DR5_z',dataset='DR5',
     assert(dataset in DATASETS)
     print('testcase: %s' % name)
     obj='elg'
-    brick='1741p242'
+    if '_grz_' in name:
+        brick='0285m165' 
+    else:
+        brick='1741p242'
     os.environ["LEGACY_SURVEY_DIR"]= os.path.join(os.path.dirname(__file__), 
                                                   name)
 
@@ -57,7 +73,7 @@ def run_testcase(name='testcase_DR5_z',dataset='DR5',
     outdir = os.path.join(os.path.dirname(__file__),
                           'out_%s%s' % (name,extra_outdir))
     randoms_from_fits= os.path.join(os.path.dirname(__file__), 
-                                    name,'randoms_testcase_DR5_z.fits')
+                                    name,'randoms.fits')
 
     cmd_line=['--dataset', dataset, '-b', brick, '-n', '4', 
               '--zoom', str(zoom[0]), str(zoom[1]), str(zoom[2]), str(zoom[3]),
@@ -67,7 +83,21 @@ def run_testcase(name='testcase_DR5_z',dataset='DR5',
     args = parser.parse_args(args=cmd_line)
 
     main(args=args)
-    assert(True)
+    # Make plots
+    idir='elg/%s/%s/rs0' % (brick[:3],brick)
+    blobs= fitsio.FITS(os.path.join(outdir,idir,
+                        'metrics/blobs-%s.fits.gz' % brick))[0].read()
+    img_jpg= readImage(os.path.join(outdir,idir,
+                        'coadd/legacysurvey-%s-image.jpg' % brick),
+                       jpeg=True)
+    model_jpg= readImage(os.path.join(outdir,idir,
+                        'coadd/legacysurvey-%s-model.jpg' % brick),
+                         jpeg=True)
+    resid_jpg= readImage(os.path.join(outdir,idir,
+                        'coadd/legacysurvey-%s-resid.jpg' % brick),
+                         jpeg=True)
+    plots_for_testcase(outdir,blobs,img_jpg,model_jpg,resid_jpg)
+
 
 #fn = os.path.join(outdir, 'tractor', '110', 'tractor-1102p240.fits')
 #assert(os.path.exists(fn))
@@ -91,10 +121,14 @@ def test_dataset_DR5():
 
 def test_cases():
     #run_testcase('testcase_DR5_z','DR5',zoom=[90, 290, 2773, 2973])
-    run_testcase('testcase_DR5_z','DR5',zoom=[90, 290, 2773, 2973],
-                 all_blobs=True)
-    #run_testcase('testcase_DR5_z_200x200','DR5',zoom=[90, 290, 2773, 2973])
+    #run_testcase('testcase_DR5_z','DR5',zoom=[90, 290, 2773, 2973],
+    #             all_blobs=True)
+    run_testcase('testcase_DR5_z_200x200','DR5',zoom=[90, 290, 2773, 2973])
     #run_testcase('testcase_DR5_z_200x200','DR5',zoom=[90, 290, 2773, 2973],
+    #             all_blobs=True)
+    
+    #run_testcase('testcase_DR5_grz_200x200','DR5',zoom=[3077, 3277, 2576, 2776])
+    #run_testcase('testcase_DR5_grz_200x200','DR5',zoom=[3077, 3277, 2576, 2776],
     #             all_blobs=True)
     assert(True)
 
