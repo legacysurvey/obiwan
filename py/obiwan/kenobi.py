@@ -328,9 +328,8 @@ class SimImage(DecamImage):
                 ,t0)
 
             stamp_nonoise= stamp.copy()
-            if self.survey.add_sim_noise:
-                #stamp2,stamp3= objstamp.addGaussNoise(stamp, ivarstamp)
-                ivarstamp= objstamp.addGaussNoise(stamp)
+            ivarstamp= objstamp.addGaussNoise(stamp, 
+                                              add_noise=self.survey.add_sim_noise)
             # Add source if EVEN 1 pix falls on the CCD
             overlap = stamp.bounds & tim_image.bounds
             add_source = overlap.area() > 0
@@ -340,7 +339,7 @@ class SimImage(DecamImage):
                 add_source= stamp.bounds == overlap
             if add_source:
                 print('Stamp overlaps tim: id=%d band=%s' % (obj.id,objstamp.band))      
-                stamp = stamp[overlap]      
+                stamp = stamp[overlap]   
                 ivarstamp = ivarstamp[overlap]      
                 stamp_nonoise= stamp_nonoise[overlap]
                 
@@ -543,11 +542,29 @@ class BuildStamp():
         psfim = self.psf.getPointSourcePatch(self.xpos, self.ypos).getImage()
         #plt.imshow(psfim) ; plt.show()
         
+        #########################
+        # Normalize to 1 at 7''
+        if True:
+            # Normalize to 1
+            psfim /= psfim.sum()
+            # Now make sum to 1 at 7''
+            psfim= galsim.Image(psfim,wcs=self.galsim_wcs)
+            apers= photutils.CircularAperture((psfim.trueCenter().x,psfim.trueCenter().y), 
+                                               r=3.5/0.262) #KEY is to harcode this # pix
+            apy_table = photutils.aperture_photometry(psfim.array, apers)
+            flux_in_7= np.array(apy_table['aperture_sum'])[0]
+            frac_in_7= flux_in_7 / psfim.array.sum()
+            #print('flux_in_7=',flux_in_7)
+            #psfim /= flux_in_7
+            psfim /= frac_in_7
+        #################
+
+
         # make galsim PSF object
         self.localpsf = galsim.InterpolatedImage(galsim.Image(psfim), wcs=self.galsim_wcs,\
                                                  gsparams=self.gsparams)
 
-    def addGaussNoise(self, stamp):
+    def addGaussNoise(self, stamp, add_noise=True):
         """Adds gaussian noise to perfect source (in place)
 
         STAMP and IVARSTAMP are in units of nanomaggies and 
@@ -570,9 +587,10 @@ class BuildStamp():
         stamp_var.setOrigin(galsim.PositionI(stamp.xmin, stamp.ymin))
 
         # Add Poisson noise
-        noise = galsim.VariableGaussianNoise(self.gsdeviate, stamp_var)
-        #stamp2= stamp.copy()
-        stamp.addNoise(noise)
+        if add_noise:
+            noise = galsim.VariableGaussianNoise(self.gsdeviate, stamp_var)
+            #stamp2= stamp.copy()
+            stamp.addNoise(noise)
         #stamp3= stamp2.copy()
         #c=np.random.normal(loc=0,scale=np.sqrt(objvar.array),size=objvar.array.shape)
         #noise = galsim.Image(c, wcs=self.galsim_wcs)
@@ -622,7 +640,22 @@ class BuildStamp():
         else:
             stamp = obj.drawImage(offset=self.offset, wcs=self.localwcs,method='no_pixel',\
                                   nx=self.stamp_size,ny=self.stamp_size)
-        
+
+        #########################
+        # Normalize to 1 at 7''
+        apers= photutils.CircularAperture((stamp.trueCenter().x,stamp.trueCenter().y), 
+                                           r=3.5/0.262) #KEY is to harcode this # pix
+        apy_table = photutils.aperture_photometry(stamp.array, apers)
+        flux_in_7= np.array(apy_table['aperture_sum'])[0]
+        print(stamp.trueCenter())
+        print('flux_in_7=',flux_in_7)
+        frac_in_7= flux_in_7 / stamp.array.sum()
+        #print('flux_in_7=',flux_in_7)
+        print('frac_in_7=',frac_in_7)
+        stamp /= frac_in_7
+        #################
+
+
         #except SystemExit:
         #except BaseException:
         #    #logging.error(traceback.format_exc())
@@ -633,6 +666,7 @@ class BuildStamp():
         #    print("Unexpected error:", sys.exc_info()[0])
         #    raise
         stamp.setCenter(self.xpos, self.ypos)
+
         return stamp
 
     def star(self,obj):
@@ -692,6 +726,7 @@ class BuildStamp():
         except:
             raise ValueError 
         galobj = galobj.shear(q=float(obj.get('ba')), beta=float(obj.get('phi'))*galsim.degrees)
+
         stamp = self.convolve_and_draw(galobj)
         return stamp
 
