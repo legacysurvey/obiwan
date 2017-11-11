@@ -120,16 +120,18 @@ def test_dataset_DR5():
     assert(True)
 
 def test_cases():
-    #run_testcase('testcase_DR5_z','DR5',zoom=[90, 290, 2773, 2973])
-    #run_testcase('testcase_DR5_z','DR5',zoom=[90, 290, 2773, 2973],
-    #             all_blobs=True)
-    run_testcase('testcase_DR5_z_200x200','DR5',zoom=[90, 290, 2773, 2973])
-    #run_testcase('testcase_DR5_z_200x200','DR5',zoom=[90, 290, 2773, 2973],
-    #             all_blobs=True)
+    # Two: z, grz, Possibly modifications: can add sim galaxies at diff 
+    #   seaprations (currnetly 4 sep by 12''), Or can can run w/ or wout/ 
+    #   all_blobs, etc
+    d= dict(name='testcase_DR5_z',dataset='DR5',
+            zoom=[90, 290, 2773, 2973])
+    #run_testcase(**d)
+    run_testcase(all_blobs=True,**d)
     
-    #run_testcase('testcase_DR5_grz_200x200','DR5',zoom=[3077, 3277, 2576, 2776])
-    #run_testcase('testcase_DR5_grz_200x200','DR5',zoom=[3077, 3277, 2576, 2776],
-    #             all_blobs=True)
+    #d= dict(name='testcase_DR5_grz',dataset='DR5',
+    #        zoom=[3077, 3277, 2576, 2776])
+    #run_testcase(**d)
+    #run_testcase(all_blobs=True,**d)
     assert(True)
 
 
