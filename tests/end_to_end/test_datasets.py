@@ -48,7 +48,7 @@ def run_dataset(dataset):
 
 def run_testcase(name='testcase_DR5_z',dataset='DR5',
                  zoom=[90, 290, 2773, 2973],
-                 all_blobs=False):
+                 all_blobs=False,add_noise=True):
     """run a single dataset's test problem
 
     Args:
@@ -64,11 +64,13 @@ def run_testcase(name='testcase_DR5_z',dataset='DR5',
     os.environ["LEGACY_SURVEY_DIR"]= os.path.join(os.path.dirname(__file__), 
                                                   name)
 
+    extra_cmd_line = []
+    if add_noise:
+        extra_cmd_line += ['--add_sim_noise']
     if all_blobs:
-        extra_cmd_line = ['--all_blobs']
+        extra_cmd_line += ['--all_blobs']
         extra_outdir= '_allblobs'
     else:
-        extra_cmd_line = []
         extra_outdir= ''
     outdir = os.path.join(os.path.dirname(__file__),
                           'out_%s%s' % (name,extra_outdir))
@@ -77,7 +79,7 @@ def run_testcase(name='testcase_DR5_z',dataset='DR5',
 
     cmd_line=['--dataset', dataset, '-b', brick, '-n', '4', 
               '--zoom', str(zoom[0]), str(zoom[1]), str(zoom[2]), str(zoom[3]),
-              '-o', 'elg', '--outdir', outdir, '--add_sim_noise',
+              '-o', 'elg', '--outdir', outdir,
               '--randoms_from_fits', randoms_from_fits] + extra_cmd_line
     parser= get_parser()
     args = parser.parse_args(args=cmd_line)
@@ -126,7 +128,7 @@ def test_cases():
     d= dict(name='testcase_DR5_z',dataset='DR5',
             zoom=[90, 290, 2773, 2973])
     #run_testcase(**d)
-    run_testcase(all_blobs=True,**d)
+    run_testcase(add_noise=False,all_blobs=True,**d)
     
     #d= dict(name='testcase_DR5_grz',dataset='DR5',
     #        zoom=[3077, 3277, 2576, 2776])
