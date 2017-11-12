@@ -289,8 +289,8 @@ class SimImage(DecamImage):
             # Print timing
             t0= Time()
             if objtype in ['lrg','elg']:
-                strin= 'Drawing 1 %s: sersicn=%.2f, rhalf=%.2f, ba=%.2f, phi=%.2f' % \
-                        (objtype.upper(), obj.sersicn,obj.rhalf,obj.ba,obj.phi)
+                strin= 'Drawing 1 %s: sersicn=%.2f, rhalf=%.2f, e1=%.2f, e2=%.2f' % \
+                        (objtype.upper(), obj.sersicn,obj.rhalf,obj.e1,obj.e2)
                 print(strin)
             # Before drawing we can check if the obj is near CCD
             #if self.survey.metacat.cutouts[0]: 
@@ -702,8 +702,8 @@ class BuildStamp():
         #try:
         # TRIAL: galaxy profile
         gal = galsim.Sersic(float(obj.get('sersicn')), half_light_radius=float(obj.get('rhalf')),\
-                            flux=1., gsparams=self.gsparams) 
-        gal = gal.shear(q=float(obj.get('ba')), beta=float(obj.get('phi'))*galsim.degrees)
+                            flux=1., gsparams=self.gsparams)
+        gal = gal.shear(e1=float(obj.get('e1')), e2=float(obj.get('e2')))
         # flux need to be so that 1 within 7''
         gal = gal.drawImage(wcs=self.localwcs,method='no_pixel')
         apers= photutils.CircularAperture((gal.trueCenter().x,gal.trueCenter().y), 
@@ -713,7 +713,7 @@ class BuildStamp():
         # NORMED: galaxy profile
         gal = galsim.Sersic(float(obj.get('sersicn')), half_light_radius=float(obj.get('rhalf')),\
                             flux=1./flux_in_7, gsparams=self.gsparams) 
-        gal = gal.shear(q=float(obj.get('ba')), beta=float(obj.get('phi'))*galsim.degrees)
+        gal = gal.shear(e1=float(obj.get('e1')), e2=float(obj.get('e2')))
         # Convolve with normed-psf
         gal = self.convolve_and_draw(gal)
         #Normalize to 1 at 7''
@@ -824,7 +824,7 @@ def build_simcat(Samp=None,brickwcs=None, meta=None):
             cat.set('%sflux' % key, 1E9*10**(-0.4*Samp.get('%s_%s' % (typ,key))) ) # [nanomaggies]
         # Galaxy Properties
     if typ in ['elg','lrg']:
-        for key,tab_key in zip(['sersicn','rhalf','ba','phi'],['n','re','ba','pa']):
+        for key,tab_key in zip(['sersicn','rhalf','e1','e2'],['n','re','e1','e2']):
             cat.set(key, Samp.get('%s_%s'%(typ,tab_key) ))
         # Sersic n: GALSIM n = [0.3,6.2] for numerical stability,see
         # https://github.com/GalSim-developers/GalSim/issues/{325,450}

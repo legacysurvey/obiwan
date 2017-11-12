@@ -128,11 +128,11 @@ def test_cases():
     d= dict(name='testcase_DR5_z',dataset='DR5',
             zoom=[90, 290, 2773, 2973])
     #run_testcase(add_noise=False,**d)
-    #run_testcase(add_noise=False,all_blobs=True,**d)
+    run_testcase(add_noise=False,all_blobs=True,**d)
     
-    d= dict(name='testcase_DR5_grz',dataset='DR5',
-            zoom=[3077, 3277, 2576, 2776])
-    run_testcase(add_noise=False,**d)
+    #d= dict(name='testcase_DR5_grz',dataset='DR5',
+    #        zoom=[3077, 3277, 2576, 2776])
+    #run_testcase(add_noise=False,**d)
     #run_testcase(add_noise=False,all_blobs=True,**d)
     assert(True)
 
