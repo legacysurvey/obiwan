@@ -85,9 +85,12 @@ class GaussianMixtureModel(object):
                 
         def prob_map(means_,covars_,weights_,\
                      xrng=(0.,1.),yrng=(0.,1.),npts=2**10):
-            """returns 
-            -pmap: 2d probability map, with requirement that integral(pdf d2x) within 1% of 1
-            -xvec,yvec: vectors where x[ix] and y[ix] data points have probability pmap[ix,iy]"""
+            """
+
+            Returns :
+                pmap: 2d probability map, with requirement that integral(pdf d2x) within 1% of 1
+                xvec,yvec: vectors where x[ix] and y[ix] data points have probability pmap[ix,iy]
+            """
             assert(xrng[1] > xrng[0] and yrng[1] > yrng[0])
             xstep= (xrng[1]-xrng[0])/float(npts-1)
             ystep= (yrng[1]-yrng[0])/float(npts-1)

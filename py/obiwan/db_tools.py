@@ -18,11 +18,11 @@ class PsqlWorker(object):
 
 def getSrcsInBrick(brickname,objtype, db_table='obiwan_elg',
                    skipped_ids=None):
-    '''returns a fit_table of PSQL query
+    """returns a fit_table of PSQL query
     
     Args:
-      skipped_ids: array or list of strings of ids if not None, the db ids
-    '''
+        skipped_ids: array or list of strings of ids if not None, the db ids
+    """
     db= PsqlWorker()
     cmd= "select brickname,ra1,ra2,dec1,dec2 from obiwan_bricks where brickname = '%s'" % brickname
     print('cmd= %s' % cmd)
@@ -75,36 +75,36 @@ def getSrcsInBrick(brickname,objtype, db_table='obiwan_elg',
 
 def redshifts_for_ids(ids, db_table='obiwan_elg_ra175',
                      try_with_join=False):
-  """Returns the reshifts of randoms in the db having the ids provided
-  
-  Args:
-    ids: list or array, ids generally come from obiwan 'simcat*.fits' table, for example
-    db_table: table name in psql db 'desi' hosted at 'scidb2.nersc.gov'
-    try_with_join: to use equivalent sql select that uses join 
-  """
-  db= PsqlWorker()
-  # Simplest
-  cmd= "SELECT id,elg_redshift FROM %s WHERE id in (" % db_table
-  for i in ids[:-1]:
-    cmd+= "%d," % i
-  cmd+= "%d)" % ids[-1]
-  if try_with_join:
-    # Equvialent but diff speed 
-    vals=""
+    """Returns the reshifts of randoms in the db having the ids provided
+
+    Args:
+        ids: list or array, ids generally come from obiwan 'simcat*.fits' table, for example
+        db_table: table name in psql db 'desi' hosted at 'scidb2.nersc.gov'
+        try_with_join: to use equivalent sql select that uses join 
+    """
+    db= PsqlWorker()
+    # Simplest
+    cmd= "SELECT id,elg_redshift FROM %s WHERE id in (" % db_table
     for i in ids[:-1]:
-      vals+= "(%d)," % i
-    vals+= "(%d)" % ids[-1]
-    cmd= ("SELECT db.id,db.elg_redshift FROM %s as db RIGHT JOIN (values %s) " 
-          % (db_table,vals) 
-          + 
-          "as v(id) on (db.id=v.id)")
-  print('cmd= %s' % cmd)
-  db.cur.execute(cmd)
-  a= db.cur.fetchall() #list of tuples (id,reshift)
-  #a= zip(*a)
-  #sql_ids,sql_redshift= a[0],a[1]
-  sql_ids,sql_redshift= zip(*a)
-  return np.array(sql_ids),np.array(sql_redshift)
+        cmd+= "%d," % i
+    cmd+= "%d)" % ids[-1]
+    if try_with_join:
+        # Equvialent but diff speed 
+        vals=""
+        for i in ids[:-1]:
+            vals+= "(%d)," % i
+        vals+= "(%d)" % ids[-1]
+        cmd= ("SELECT db.id,db.elg_redshift FROM %s as db RIGHT JOIN (values %s) " 
+              % (db_table,vals) 
+              + 
+              "as v(id) on (db.id=v.id)")
+    print('cmd= %s' % cmd)
+    db.cur.execute(cmd)
+    a= db.cur.fetchall() #list of tuples (id,reshift)
+    #a= zip(*a)
+    #sql_ids,sql_redshift= a[0],a[1]
+    sql_ids,sql_redshift= zip(*a)
+    return np.array(sql_ids),np.array(sql_redshift)
 
 if __name__ == '__main__':
     T= getSrcsInBrick('1765p247','elg', db_table='obiwan_elg_ra175')
@@ -112,5 +112,5 @@ if __name__ == '__main__':
     simcat= fits_table("/global/cscratch1/sd/kaylanb/obiwan_out/elg_9deg2_ra175/elg/176/1765p247/rs0/obiwan/simcat-elg-1765p247.fits")
     ids,redshifts= redshifts_for_ids(simcat.id, db_table='obiwan_elg_ra175')
     for id,z in zip(ids[:10],redshifts[:10]):
-      print(id,z)
+        print(id,z)
     
