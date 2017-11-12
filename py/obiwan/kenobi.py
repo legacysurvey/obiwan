@@ -359,7 +359,7 @@ class SimImage(DecamImage):
                 ivarstamp.array[ ivarstamp.array > 100 * med ] = 0.
                 # Add stamp to image
                 back= tim_image[overlap].copy()
-                tim_image[overlap] = back.copy() + stamp.copy()
+                tim_image[overlap] += stamp #= back.copy() + stamp.copy()
                 # Add variances
                 back_ivar= tim_invvar[overlap].copy()
                 tot_ivar= get_srcimg_invvar(ivarstamp, back_ivar)
@@ -541,19 +541,19 @@ class BuildStamp():
         # Get the local PSF
         psf = self.psf.getPointSourcePatch(self.xpos, self.ypos)
         psf= galsim.Image(psf.getImage(),wcs=self.galsim_wcs)
-        psf /= psf.array.sum()
+        if True:
+            psf /= psf.array.sum()
         #plt.imshow(psfim) ; plt.show()
         
         #########################
         # Normalize to 1 at 7''
-        pxscale=0.262
-        if False: 
-            pxscale=self.wcs.pixscale_at(self.xpos,self.ypos)
-        apers= photutils.CircularAperture((psf.trueCenter().x,psf.trueCenter().y), 
-                                           r=3.5/pxscale) #KEY is to harcode this # pix
-        apy_table = photutils.aperture_photometry(psf.array, apers)
-        flux_in_7= np.array(apy_table['aperture_sum'])[0]
-        psf /= flux_in_7
+        if True:
+            pxscale=0.262
+            apers= photutils.CircularAperture((psf.trueCenter().x,psf.trueCenter().y), 
+                                               r=3.5/pxscale) #KEY is to harcode this # pix
+            apy_table = photutils.aperture_photometry(psf.array, apers)
+            flux_in_7= np.array(apy_table['aperture_sum'])[0]
+            psf /= flux_in_7
         #frac_in_7= flux_in_7 / psfim.array.sum()
         #psfim /= frac_in_7
         #################
@@ -677,7 +677,8 @@ class BuildStamp():
         # Incrase flux so input flux contained in aperture
         flux = obj.get(self.band+'flux')*(2.-apflux/stamp.added_flux) # [nanomaggies]
         psf = self.localpsf.withFlux(flux)
-        if self.stamp_size is None:
+        #if self.stamp_size is None:
+        if True:
             stamp = psf.drawImage(offset=self.offset, wcs=self.localwcs, method='no_pixel')
         else:
             stamp = psf.drawImage(offset=self.offset, wcs=self.localwcs, method='no_pixel',\
@@ -704,18 +705,21 @@ class BuildStamp():
         gal = galsim.Sersic(float(obj.get('sersicn')), half_light_radius=float(obj.get('rhalf')),\
                             flux=1., gsparams=self.gsparams)
         gal = gal.shear(e1=float(obj.get('e1')), e2=float(obj.get('e2')))
-        # flux need to be so that 1 within 7''
-        gal = gal.drawImage(wcs=self.localwcs,method='no_pixel')
-        apers= photutils.CircularAperture((gal.trueCenter().x,gal.trueCenter().y), 
-                                          r=3.5/0.262)
-        apy_table = photutils.aperture_photometry(gal.array, apers)
-        flux_in_7= np.array(apy_table['aperture_sum'])[0]
-        # NORMED: galaxy profile
-        gal = galsim.Sersic(float(obj.get('sersicn')), half_light_radius=float(obj.get('rhalf')),\
-                            flux=1./flux_in_7, gsparams=self.gsparams) 
-        gal = gal.shear(e1=float(obj.get('e1')), e2=float(obj.get('e2')))
+        if True:
+            # flux need to be so that 1 within 7''
+            gal = gal.drawImage(wcs=self.localwcs,method='no_pixel')
+            apers= photutils.CircularAperture((gal.trueCenter().x,gal.trueCenter().y), 
+                                              r=3.5/0.262)
+            apy_table = photutils.aperture_photometry(gal.array, apers)
+            flux_in_7= np.array(apy_table['aperture_sum'])[0]
+            # NORMED: galaxy profile
+            gal = galsim.Sersic(float(obj.get('sersicn')), half_light_radius=float(obj.get('rhalf')),\
+                                flux=1./flux_in_7, gsparams=self.gsparams) 
+            gal = gal.shear(e1=float(obj.get('e1')), e2=float(obj.get('e2')))
         # Convolve with normed-psf
         gal = self.convolve_and_draw(gal)
+        if False:
+            gal /= gal.array.sum()
         #Normalize to 1 at 7''
         if True:
             pxscale=0.262
