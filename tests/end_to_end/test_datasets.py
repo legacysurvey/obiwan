@@ -57,7 +57,7 @@ def run_testcase(name='testcase_DR5_z',dataset='DR5',
     assert(dataset in DATASETS)
     print('testcase: %s' % name)
     obj='elg'
-    if '_grz_' in name:
+    if '_grz' in name:
         brick='0285m165' 
     else:
         brick='1741p242'
@@ -127,13 +127,13 @@ def test_cases():
     #   all_blobs, etc
     d= dict(name='testcase_DR5_z',dataset='DR5',
             zoom=[90, 290, 2773, 2973])
-    run_testcase(add_noise=False,**d)
+    #run_testcase(add_noise=False,**d)
     #run_testcase(add_noise=False,all_blobs=True,**d)
     
-    #d= dict(name='testcase_DR5_grz',dataset='DR5',
-    #        zoom=[3077, 3277, 2576, 2776])
-    #run_testcase(**d)
-    #run_testcase(all_blobs=True,**d)
+    d= dict(name='testcase_DR5_grz',dataset='DR5',
+            zoom=[3077, 3277, 2576, 2776])
+    run_testcase(add_noise=False,**d)
+    #run_testcase(add_noise=False,all_blobs=True,**d)
     assert(True)
 
 
