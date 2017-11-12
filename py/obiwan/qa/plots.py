@@ -65,12 +65,12 @@ def bright_dmag_cut(matched_simcat,matched_tractor,
                     cut=True):
     """
     Args:
-      cut: True to perform good source and very bright source cuts
+        cut: True to perform good source and very bright source cuts
 
     Returns: 
-    1) median dmag of bright sources
-    2) indices of sources that are bright AND |dmag[band]| -|median_dmag[band]| > 0.005 in ANY band
-    3) indices of sources that are bright AND |dmag[band]| -|median_dmag[band]| <= 0.005 in ALL bands
+        1) median dmag of bright sources
+        2) indices of sources that are bright AND |dmag[band]| -|median_dmag[band]| > 0.005 in ANY band
+        3) indices of sources that are bright AND |dmag[band]| -|median_dmag[band]| <= 0.005 in ALL bands
     """
     bright= dict(g=20.,r=19.,z=18.)
     b_good,junk= basic_cut(matched_tractor)
@@ -400,7 +400,7 @@ def plot_recovered_types(bigsimcat,bigtractor, nmagbin,rminmax, objtype,log,qafi
 def create_confusion_matrix(answer_type,predict_type, types=['PSF','SIMP','EXP','DEV','COMP','REX'],slim=True):
     '''compares classifications of matched objects, returns 2D array which is conf matrix and xylabels
     return 5x5 confusion matrix and colum/row names
-   answer_type,predict_type -- arrays of same length with reference and prediction types'''
+    answer_type,predict_type -- arrays of same length with reference and prediction types'''
     for typ in set(answer_type): assert(typ in types)
     for typ in set(predict_type): assert(typ in types)
     # if a type was not in answer (training) list then don't put in cm
@@ -498,7 +498,7 @@ class Checks(object):
     def __init__(self,warn=False):
         """
         Args:
-          warn: raise warning instead of error
+            warn: raise warning instead of error
         """
         self.warn= warn
     
@@ -524,20 +524,20 @@ class SourceMatcher(object):
     """Does all the matching between injected, recovered, and pre existing sources
     
     There are 6 types of sources. 
-      (1) added and recovered 
-      (2) added but lost
-      (3) pre existng from previous DR and recovered even when simulated sources injected, 
-      (4) '' but lost for whatever reason,  
-      (5) added and pre existing near by and found at least one of them
-      (6) '' but lost both
+        (1) added and recovered 
+        (2) added but lost
+        (3) pre existng from previous DR and recovered even when simulated sources injected, 
+        (4) '' but lost for whatever reason,  
+        (5) added and pre existing near by and found at least one of them
+        (6) '' but lost both
     """
     def __init__(self,verbose=True):
         """
         Attrs:
-          verbose: True to print stats as go along
-          i_catalogue_name: indices for that catalogue
-          catalouge_name: that catalogue with those indices applied
-          size: dict number sources in each tyep fo catalogue
+            verbose: True to print stats as go along
+            i_catalogue_name: indices for that catalogue
+            catalouge_name: that catalogue with those indices applied
+            size: dict number sources in each tyep fo catalogue
         """
         self.verbose= verbose
         
@@ -588,7 +588,7 @@ class SourceMatcher(object):
         """Source types 3, 4
         
         WARNING: assumes the obiwan run used identical in put ccds and code to 
-          the data release that realtractor comes from
+            the data release that realtractor comes from
 
         Args:
             realtractor: tractor catalogue from a data release

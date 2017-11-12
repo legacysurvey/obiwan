@@ -6,8 +6,8 @@ def fetch_targz(targz_url, outdir):
     """downloads targz_url file to outdir, then untars it
 
     Args:
-      targz_url: like 'http://www.google.com/path/to/data.tar.gz'
-      outdir: where to download the tar.gz file to
+        targz_url: like 'http://www.google.com/path/to/data.tar.gz'
+        outdir: where to download the tar.gz file to
     """
     name= os.path.basename(targz_url)
     outfn= os.path.join(outdir, name)
