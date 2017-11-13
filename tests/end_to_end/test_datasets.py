@@ -142,7 +142,7 @@ class AnalyzeTestcase(Testcase):
         # Tolerances
         if '_grz' in self.name:
             self.tol={'apsims_p_apsky_m_aptractor':0.2, #nanomags
-                      'simcat_p_apsky_m_aptractor':0.5}
+                      'simcat_p_apsky_m_aptractor':0.3}
         else:
             self.tol={'apsims_p_apsky_m_aptractor':0.2, #nanomags
                       'simcat_p_apsky_m_aptractor':0.5}
@@ -194,6 +194,27 @@ class AnalyzeTestcase(Testcase):
         self.simcat.set('x',x - self.zoom[0])
         self.simcat.set('y',y - self.zoom[2])
 
+    def match_simcat_tractor(self):
+        """matches sim and real sources to tractor cat
+
+        Returns:
+            isim,itrac: indices into simcat,tractor 
+            ireal: inices into tractor
+        """
+        # sims to tractor
+        rad= 10. * self.brickwcs.pixel_scale() / 3600 #deg
+        isim,itrac,d= match_radec(self.simcat.ra, self.simcat.dec, 
+                                  self.obitractor.ra, self.obitractor.dec,          
+                                  rad,nearest=True)
+        # real galaxy to tractor 
+        ra_real,dec_real= self.brickwcs.pixelxy2radec(
+                                [self.zoom[0] + 100.],
+                                [self.zoom[2] + 100.])
+        _,ireal,d= match_radec(ra_real, dec_real, 
+                               self.obitractor.ra, self.obitractor.dec,          
+                               rad,nearest=True)
+        return isim,itrac,ireal
+
     def plots(self):
         """outdir: where write plots to """
         fig,ax=plt.subplots(2,2,figsize=(6,6))
@@ -224,27 +245,15 @@ class AnalyzeTestcase(Testcase):
 
     def numeric_tests(self):
         """T: TestcaseOutputs() object """
-        # match sims to tractor and central galaxy to tractor
-        rad= 10. * self.brickwcs.pixel_scale() / 3600 #deg
-        isim,itrac,d= match_radec(self.simcat.ra, self.simcat.dec, 
-                                  self.obitractor.ra, self.obitractor.dec,          
-                                  rad,nearest=True)
+        isim,itrac,ireal= self.match_simcat_tractor()
         assert((len(isim) == 4) & (len(itrac) == 4))
-
-        # real source at center
-        ra_real,dec_real= self.brickwcs.pixelxy2radec(
-                                [self.zoom[0] + 100.],
-                                [self.zoom[2] + 100.])
-        _,ireal,d= match_radec(ra_real, dec_real, 
-                               self.obitractor.ra, self.obitractor.dec,          
-                               rad,nearest=True)
-        #dpix= np.sqrt((self.obitractor.bx - x_real)**2 + 
-        #              (self.obitractor.by - y_real)**2)       
-        #ireal= [np.argmin(dpix)]
         if self.all_blobs:
             assert(len(ireal) ==1) # found the real galaxy
         else:
-            assert(len(ireal) == 0)
+            if '_grz' in self.name:
+                assert(len(ireal) == 1) # central galaxy in blob on a sim
+            else:
+                assert(len(ireal) == 0)
 
         # Tractor apflux is nearly bang on to my apflux for sims coadd 
         # plus my apflux for sky in coadd
@@ -260,42 +269,59 @@ class AnalyzeTestcase(Testcase):
             sky_apflux= img_apflux - sims_apflux
             # tractor apflux vs. my apflux sims + sky 
             obitractor_apflux= self.obitractor[itrac].get('apflux_'+b)[:,5]
+            simcat_flux= self.simcat.get(b+'flux') 
             assert(np.all(np.abs(sims_apflux + 
                                  sky_apflux - obitractor_apflux) 
                                 < self.tol['apsims_p_apsky_m_aptractor'])) 
             # tractor apflux vs. simcat table + sky
-            assert(np.all(np.abs(self.simcat.zflux  + 
+            assert(np.all(np.abs(simcat_flux + 
                                  sky_apflux - obitractor_apflux) 
                                 < self.tol['simcat_p_apsky_m_aptractor'])) 
         print('passed')
 
 
-def test_cases():
+def test_cases(z=True,
+               grz=True):
+    """
+    Args:
+        z_band: z-band testcase?
+        grz_band: grz-band testcase?
+    """
     # Two: z, grz, Possibly modifications: can add sim galaxies at diff 
     #   seaprations (currnetly 4 sep by 12''), Or can can run w/ or wout/ 
     #   all_blobs, etc
-    d= dict(name='testcase_DR5_z',dataset='DR5')
-    d.update(add_noise=False,all_blobs=False)
-    T= Testcase(**d)
-    T.run()
+    d= dict(name='testcase_DR5_z',dataset='DR5',
+            add_noise=False)
     
-    #d= dict(name='testcase_DR5_grz',dataset='DR5',
-    #        zoom=[3077, 3277, 2576, 2776])
-    #run_testcase(add_noise=False,**d)
-    #run_testcase(add_noise=False,all_blobs=True,**d)
+    if z:
+        for all_blobs in [True,False]:
+            d.update(all_blobs=all_blobs)
+            T= Testcase(**d)
+            T.run()
 
-    # Analyze outputs
-    A= AnalyzeTestcase(**d)
-    A.load_outputs()
-    A.simcat_xy()
-    A.plots()
-    A.numeric_tests()
+            A= AnalyzeTestcase(**d)
+            A.load_outputs()
+            A.simcat_xy()
+            A.plots()
+            A.numeric_tests()
 
+    if grz:
+        d.update(name='testcase_DR5_grz')
+        for all_blobs in [True,False]:
+            d.update(all_blobs=all_blobs)
+            T= Testcase(**d)
+            T.run()
 
+            A= AnalyzeTestcase(**d)
+            A.load_outputs()
+            A.simcat_xy()
+            A.plots()
+            A.numeric_tests() 
 
 if __name__ == "__main__":
     #test_dataset_DR3()
     #test_dataset_DR5() 
-    test_cases()
+    test_cases(z=True,
+               grz=False)
 
     
