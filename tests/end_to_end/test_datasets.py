@@ -2,81 +2,20 @@
 
 from __future__ import print_function
 import os
-import fitsio
 import matplotlib.pyplot as plt
+import numpy as np
+
+import fitsio
 import photutils
 
 from astrometry.libkd.spherematch import match_radec
+from astrometry.util.fits import fits_table
+from legacypipe.survey import LegacySurveyData, wcs_for_brick
 
 from obiwan.kenobi import main,get_parser
 from obiwan.qa.visual import plotImage, readImage
-from obiwan.qa.visual import TestcaseOutputs
 
 DATASETS= ['DR3','DR5','DR3_eBOSS']
-
-def plots_for_testcase(outdir,T):
-    """T: TestcaseOutputs() object """
-    fig,ax=plt.subplots(2,2,figsize=(6,6))
-    plotImage().imshow(T.blobs,ax[0,0],qs=None)
-    plotImage().imshow(T.img_jpg,ax[0,1],qs=None)
-    plotImage().imshow(T.model_jpg,ax[1,0],qs=None)
-    plotImage().imshow(T.resid_jpg,ax[1,1],qs=None)
-    fn=os.path.join(outdir,'blob_img_mod_res.png')
-    plt.savefig(fn,dpi=150)
-    print('Wrote %s' % fn)
-    plt.close()
-
-    fig,ax=plt.subplots(3,3,figsize=(7,6))
-    for i,b in enumerate(T.bands) :
-        plotImage().imshow(T.img_fits[b],ax[0,i])
-        plotImage().imshow(T.sims_fits[b],ax[1,i],qs=None)
-        plotImage().circles(T.obitractor.bx,T.obitractor.by,ax[1,i],
-                            img_shape=T.sims_fits[b].shape,
-                            r_pixels=5./0.262,color='y')
-        plotImage().circles(T.simcat.x,T.simcat.y,ax[1,i],
-                            img_shape=T.sims_fits[b].shape,
-                            r_pixels=4./0.262,color='m')
-        plotImage().imshow(T.img_fits[b] - T.sims_fits[b],ax[2,i])
-    fn=os.path.join(outdir,'fits_coadd_img_sims_res.png')
-    plt.savefig(fn,dpi=150)
-    print('Wrote %s' % fn)
-    plt.close()
-
-def numeric_tests(T):
-    """T: TestcaseOutputs() object """
-    # match sims to tractor and central galaxy to tractor
-    rad= 10. * t.brickwcs.pixel_scale() / 3600 #deg
-    isim,itrac,d= match_radec(t.simcat.ra, t.simcat.dec, t.obitractor.ra, t.obitractor.dec,          
-                              rad,nearest=True)
-
-    # real source at center
-    x_real,y_real= 100.,100.
-    dpix= np.sqrt((t.obitractor.bx - x_real)**2 + (t.obitractor.by - y_real)**2)       
-    ireal= [np.argmin(dpix)]
-    assert((len(isim) == 4) & (len(itrac) == 4) & (len(ireal) ==1))
-
-    # tractor cat apflux giving correct flux in coadd fits, but model flux
-    # is computing based on something else and currently wrong
-    assert()
-    # Also, tractor apflux is nearly bang on to my apflux for sims coadd 
-    # plus my apflux for sky in coadd, which is what eventually have when
-    # tractor model fluxes are correct
-    apers= photutils.CircularAperture((T.simcat.x,T.simcat.y), 
-                                       r=3.5/T.brickwcs.pixel_scale())
-    for b in T.bands: 
-        apy_table = photutils.aperture_photometry(T.img_fits[b], apers)
-        img_apflux= np.array(apy_table['aperture_sum'])
-        apy_table = photutils.aperture_photometry(T.sims_fits[b], apers)
-        sims_apflux= np.array(apy_table['aperture_sum'])
-        sky_apflux= img_apflux - 
-        # measured flux should be sims + sky
-        np.all(np.abs(sims_apflux + 
-                      sky_apflux - T.obitractor[itrac].get('apflux_'+b)[:,5]) 
-                    < 0.5) #nanomags
-        # ditto for flux in simcat table
-        np.all(np.abs(T.simcat.zflux  + 
-                      sky_apflux - T.obitractor[itrac].get('apflux_'+b)[:,5]) 
-                    < 1.) #nanomags
 
 
 def run_dataset(dataset):
@@ -105,69 +44,6 @@ def run_dataset(dataset):
     main(args=args)
     assert(True)
 
-def run_testcase(name='testcase_DR5_z',dataset='DR5',
-                 zoom=[90, 290, 2773, 2973],
-                 all_blobs=False,add_noise=True):
-    """run a single dataset's test problem
-
-    Args:
-        dataset: string, 'DR3', 'DR5', etc
-    """
-    assert(dataset in DATASETS)
-    print('testcase: %s' % name)
-    obj='elg'
-    if '_grz' in name:
-        brick='0285m165' 
-    else:
-        brick='1741p242'
-    os.environ["LEGACY_SURVEY_DIR"]= os.path.join(os.path.dirname(__file__), 
-                                                  name)
-    outname= name
-    if all_blobs:
-        outname += '_allblobs' 
-
-    extra_cmd_line = []
-    if add_noise:
-        extra_cmd_line += ['--add_sim_noise']
-    if all_blobs:
-        extra_cmd_line += ['--all_blobs']
-
-    outdir = os.path.join(os.path.dirname(__file__),
-                          outname)
-    randoms_from_fits= os.path.join(os.path.dirname(__file__), 
-                                    name,'randoms.fits')
-
-    cmd_line=['--dataset', dataset, '-b', brick, '-n', '4', 
-              '--zoom', str(zoom[0]), str(zoom[1]), str(zoom[2]), str(zoom[3]),
-              '-o', 'elg', '--outdir', outdir,
-              '--randoms_from_fits', randoms_from_fits] + extra_cmd_line
-    parser= get_parser()
-    args = parser.parse_args(args=cmd_line)
-
-    main(args=args)
-
-    # Load outputs
-    t= TestcaseOutputs(outname)
-    t.load()
-    t.simcat_xy()
-
-    # Make plots
-    # idir='elg/%s/%s/rs0' % (brick[:3],brick)
-    # blobs= fitsio.FITS(os.path.join(outdir,idir,
-    #                     'metrics/blobs-%s.fits.gz' % brick))[0].read()
-    # img_jpg= readImage(os.path.join(outdir,idir,
-    #                     'coadd/legacysurvey-%s-image.jpg' % brick),
-    #                    jpeg=True)
-    # model_jpg= readImage(os.path.join(outdir,idir,
-    #                     'coadd/legacysurvey-%s-model.jpg' % brick),
-    #                      jpeg=True)
-    # resid_jpg= readImage(os.path.join(outdir,idir,
-    #                     'coadd/legacysurvey-%s-resid.jpg' % brick),
-    #                      jpeg=True)
-    plots_for_testcase(outdir,t)
-
-    # Quantitative
-    numeric_tests(t)
 
 
 #fn = os.path.join(outdir, 'tractor', '110', 'tractor-1102p240.fits')
@@ -190,20 +66,230 @@ def test_dataset_DR5():
     run_dataset('DR5')
     assert(True)
 
+
+class Testcase(object):
+    """Initialize and run a testcase
+
+    Args:
+        name: testcase name
+        dataset: string, 'DR3', 'DR5', etc
+        zoom: the zoom array pass to runbrick
+        all_blobs,add_noise: booleans
+    """
+    def __init__(self, name='testcase_DR5_z',dataset='DR5',
+                 all_blobs=False,add_noise=True):
+        assert(dataset in DATASETS)
+        self.name= name
+        self.dataset= dataset
+        self.all_blobs= all_blobs
+        self.add_noise= add_noise
+        self.outname= 'out_'+self.name
+        if self.all_blobs:
+            self.outname += '_allblobs'
+        self.outdir= os.path.join(os.path.dirname(__file__), 
+                                  self.outname)
+        
+        if '_grz' in self.name:
+            self.brick='0285m165' 
+            self.bands= ['g','r','z']
+            self.zoom= [3077, 3277, 2576, 2776]
+        else:
+            self.brick='1741p242'
+            self.bands= ['z']
+            self.zoom= [90, 290, 2773, 2973]
+
+        os.environ["LEGACY_SURVEY_DIR"]= os.path.join(os.path.dirname(__file__), 
+                                                      self.name)
+         
+    def run(self):
+        """run it"""
+        print('Running testcase: %s' % self.name)
+        extra_cmd_line = []
+        if self.add_noise:
+            extra_cmd_line += ['--add_sim_noise']
+        if self.all_blobs:
+            extra_cmd_line += ['--all_blobs']
+
+        randoms_from_fits= os.path.join(os.environ["LEGACY_SURVEY_DIR"], 
+                                        'randoms.fits')
+
+        cmd_line=['--dataset', self.dataset, '-b', self.brick, '-n', '4', 
+                  '--zoom', str(self.zoom[0]), str(self.zoom[1]), 
+                            str(self.zoom[2]), str(self.zoom[3]),
+                  '-o', 'elg', '--outdir', self.outdir,
+                  '--randoms_from_fits', randoms_from_fits] + extra_cmd_line
+        parser= get_parser()
+        args = parser.parse_args(args=cmd_line)
+
+        main(args=args)
+
+
+class AnalyzeTestcase(Testcase):
+    """Automatically loads the relevant outputs for a given testcase_DR_*
+
+    Args:
+        name: like 'testcase_DR5_z_allblobs'
+
+    Attributes:
+        brick:
+        bands:
+        zoom:
+        brickwcs:
+    """
+    def __init__(self, **kwargs):
+        super(AnalyzeTestcase, self).__init__(**kwargs)
+
+        # Tolerances
+        if '_grz' in self.name:
+            self.tol={'apsims_p_apsky_m_aptractor':0.2, #nanomags
+                      'simcat_p_apsky_m_aptractor':0.5}
+        else:
+            self.tol={'apsims_p_apsky_m_aptractor':0.2, #nanomags
+                      'simcat_p_apsky_m_aptractor':0.5}
+
+        survey = LegacySurveyData()
+        brickinfo = survey.get_brick_by_name(self.brick)
+        self.brickwcs = wcs_for_brick(brickinfo)
+
+        self.outdir= os.path.join(os.environ['HOME'],
+                           'myrepo/obiwan/tests/end_to_end',
+                            self.outname,'elg/%s/%s/rs0/' % \
+                             (self.brick[:3],self.brick)
+                         )
+    
+    def load_outputs(self):
+        """Each output from the testcase becomes an attribute
+
+        Attributes:
+            simcat, obitractor:
+            jpg_coadds:
+            fits_coadds
+        """
+        self.simcat= fits_table(os.path.join(self.outdir,'obiwan/simcat-elg-%s.fits' % self.brick))
+        self.obitractor= fits_table(os.path.join(self.outdir,'tractor/tractor-%s.fits' % self.brick))
+
+        self.blobs= fitsio.FITS(os.path.join(self.outdir,'metrics/blobs-%s.fits.gz' % self.brick))[0].read()
+
+        self.img_jpg= readImage(os.path.join(self.outdir,'coadd/legacysurvey-%s-image.jpg' % self.brick),
+                           jpeg=True)
+        self.model_jpg= readImage(os.path.join(self.outdir,'coadd/legacysurvey-%s-model.jpg' % self.brick),
+                             jpeg=True)
+        self.resid_jpg= readImage(os.path.join(self.outdir,'coadd/legacysurvey-%s-resid.jpg' % self.brick),
+                             jpeg=True)
+
+        self.img_fits,self.ivar_fits,self.sims_fits= {},{},{}
+        for b in self.bands:
+            self.img_fits[b]= readImage(os.path.join(self.outdir,'coadd/legacysurvey-%s-image-%s.fits.fz' % \
+                                             (self.brick,b)))
+            self.ivar_fits[b]= readImage(os.path.join(self.outdir,'coadd/legacysurvey-%s-invvar-%s.fits.fz' % \
+                                              (self.brick,b)))
+            self.sims_fits[b]= readImage(os.path.join(self.outdir,'coadd/legacysurvey-%s-sims-%s.fits.fz' % \
+                                              (self.brick,b)))
+            
+    def simcat_xy(self):
+        """x,y of each simulated source in the fits coadd. Just like the
+            bx,by of tractor catalogues
+        """
+        _,x,y=self.brickwcs.radec2pixelxy(self.simcat.ra,self.simcat.dec)
+        self.simcat.set('x',x - self.zoom[0])
+        self.simcat.set('y',y - self.zoom[2])
+
+    def plots(self):
+        """outdir: where write plots to """
+        fig,ax=plt.subplots(2,2,figsize=(6,6))
+        plotImage().imshow(self.blobs,ax[0,0],qs=None)
+        plotImage().imshow(self.img_jpg,ax[0,1],qs=None)
+        plotImage().imshow(self.model_jpg,ax[1,0],qs=None)
+        plotImage().imshow(self.resid_jpg,ax[1,1],qs=None)
+        fn=os.path.join(self.outdir,'blob_img_mod_res.png')
+        plt.savefig(fn,dpi=150)
+        print('Wrote %s' % fn)
+        plt.close()
+
+        fig,ax=plt.subplots(3,3,figsize=(7,6))
+        for i,b in enumerate(self.bands) :
+            plotImage().imshow(self.img_fits[b],ax[0,i])
+            plotImage().imshow(self.sims_fits[b],ax[1,i],qs=None)
+            plotImage().circles(self.obitractor.bx,self.obitractor.by,ax[1,i],
+                                img_shape=self.sims_fits[b].shape,
+                                r_pixels=5./0.262,color='y')
+            plotImage().circles(self.simcat.x,self.simcat.y,ax[1,i],
+                                img_shape=self.sims_fits[b].shape,
+                                r_pixels=4./0.262,color='m')
+            plotImage().imshow(self.img_fits[b] - self.sims_fits[b],ax[2,i])
+        fn=os.path.join(self.outdir,'fits_coadd_img_sims_res.png')
+        plt.savefig(fn,dpi=150)
+        print('Wrote %s' % fn)
+        plt.close()
+
+    def numeric_tests(self):
+        """T: TestcaseOutputs() object """
+        # match sims to tractor and central galaxy to tractor
+        rad= 10. * self.brickwcs.pixel_scale() / 3600 #deg
+        isim,itrac,d= match_radec(self.simcat.ra, self.simcat.dec, 
+                                  self.obitractor.ra, self.obitractor.dec,          
+                                  rad,nearest=True)
+        assert((len(isim) == 4) & (len(itrac) == 4))
+
+        # real source at center
+        ra_real,dec_real= self.brickwcs.pixelxy2radec(
+                                [self.zoom[0] + 100.],
+                                [self.zoom[2] + 100.])
+        _,ireal,d= match_radec(ra_real, dec_real, 
+                               self.obitractor.ra, self.obitractor.dec,          
+                               rad,nearest=True)
+        #dpix= np.sqrt((self.obitractor.bx - x_real)**2 + 
+        #              (self.obitractor.by - y_real)**2)       
+        #ireal= [np.argmin(dpix)]
+        if self.all_blobs:
+            assert(len(ireal) ==1) # found the real galaxy
+        else:
+            assert(len(ireal) == 0)
+
+        # Tractor apflux is nearly bang on to my apflux for sims coadd 
+        # plus my apflux for sky in coadd
+        # However, Tractor model flux is does not agree with fits coadd counts
+        # so its computing on something else and is currently wrong for sim sources
+        apers= photutils.CircularAperture((self.simcat.x,self.simcat.y), 
+                                           r=3.5/self.brickwcs.pixel_scale())
+        for b in self.bands: 
+            apy_table = photutils.aperture_photometry(self.img_fits[b], apers)
+            img_apflux= np.array(apy_table['aperture_sum'])
+            apy_table = photutils.aperture_photometry(self.sims_fits[b], apers)
+            sims_apflux= np.array(apy_table['aperture_sum'])
+            sky_apflux= img_apflux - sims_apflux
+            # tractor apflux vs. my apflux sims + sky 
+            obitractor_apflux= self.obitractor[itrac].get('apflux_'+b)[:,5]
+            assert(np.all(np.abs(sims_apflux + 
+                                 sky_apflux - obitractor_apflux) 
+                                < self.tol['apsims_p_apsky_m_aptractor'])) 
+            # tractor apflux vs. simcat table + sky
+            assert(np.all(np.abs(self.simcat.zflux  + 
+                                 sky_apflux - obitractor_apflux) 
+                                < self.tol['simcat_p_apsky_m_aptractor'])) 
+        print('passed')
+
+
 def test_cases():
     # Two: z, grz, Possibly modifications: can add sim galaxies at diff 
     #   seaprations (currnetly 4 sep by 12''), Or can can run w/ or wout/ 
     #   all_blobs, etc
-    d= dict(name='testcase_DR5_z',dataset='DR5',
-            zoom=[90, 290, 2773, 2973])
-    #run_testcase(add_noise=False,**d)
-    run_testcase(add_noise=False,all_blobs=True,**d)
+    d= dict(name='testcase_DR5_z',dataset='DR5')
+    d.update(add_noise=False,all_blobs=False)
+    T= Testcase(**d)
+    T.run()
     
     #d= dict(name='testcase_DR5_grz',dataset='DR5',
     #        zoom=[3077, 3277, 2576, 2776])
     #run_testcase(add_noise=False,**d)
     #run_testcase(add_noise=False,all_blobs=True,**d)
-    assert(True)
+
+    # Analyze outputs
+    A= AnalyzeTestcase(**d)
+    A.load_outputs()
+    A.simcat_xy()
+    A.plots()
+    A.numeric_tests()
 
 
 
