@@ -6,9 +6,6 @@ import os
 import skimage.io
 import fitsio
 
-from astrometry.util.fits import fits_table
-from legacypipe.survey import LegacySurveyData, wcs_for_brick
-
 class plotImage(object):
     """Helper functions for displaying image and overlaying circles around sources
     
@@ -89,77 +86,4 @@ def sliceImage(img,
 def flux2mag(flux):
     return -2.5*np.log10(1e-9 * flux)
 
-
-
-class TestcaseOutputs(object):
-    """Automatically loads the relevant outputs for a given testcase_DR_*
-
-    Args:
-        name: like 'testcase_DR5_z_allblobs'
-
-    Attributes:
-        brick:
-        bands:
-        zoom:
-        brickwcs:
-    """
-    def __init__(self,name):
-        self.name= name
-        if '_grz' in name:
-            self.brick='0285m165' 
-            self.bands= ['g','r','z']
-            self.zoom= [3077, 3277, 2576, 2776]
-        else:
-            self.brick='1741p242'
-            self.bands= ['z']
-            self.zoom= [90, 290, 2773, 2973]
-        os.environ["LEGACY_SURVEY_DIR"]= os.path.join(os.environ['HOME'],
-                                            'myrepo/obiwan/tests/end_to_end',
-                                            name.replace('_allblobs',''))
-
-        survey = LegacySurveyData()
-        brickinfo = survey.get_brick_by_name(self.brick)
-        self.brickwcs = wcs_for_brick(brickinfo)
-    
-    def load(self):
-        """Each output from the testcase becomes an attribute
-
-        Attributes:
-            simcat, obitractor:
-            jpg_coadds:
-            fits_coadds
-        """
-        OUT_DIR= os.path.join(os.environ['HOME'],
-                           'myrepo/obiwan/tests/end_to_end',
-                           'out_'+self.name,'elg/%s/%s/rs0/' % \
-                             (self.brick[:3],self.brick)
-                         )
-        self.simcat= fits_table(os.path.join(OUT_DIR,'obiwan/simcat-elg-%s.fits' % self.brick))
-        self.obitractor= fits_table(os.path.join(OUT_DIR,'tractor/tractor-%s.fits' % self.brick))
-
-        self.blobs= fitsio.FITS(os.path.join(OUT_DIR,'metrics/blobs-%s.fits.gz' % self.brick))[0].read()
-
-        self.img_jpg= readImage(os.path.join(OUT_DIR,'coadd/legacysurvey-%s-image.jpg' % self.brick),
-                           jpeg=True)
-        self.model_jpg= readImage(os.path.join(OUT_DIR,'coadd/legacysurvey-%s-model.jpg' % self.brick),
-                             jpeg=True)
-        self.fresid_jpg= readImage(os.path.join(OUT_DIR,'coadd/legacysurvey-%s-resid.jpg' % self.brick),
-                             jpeg=True)
-
-        self.img_fits,self.ivar_fits,self.sims_fits= {},{},{}
-        for b in self.bands:
-            self.img_fits[b]= readImage(os.path.join(OUT_DIR,'coadd/legacysurvey-%s-image-%s.fits.fz' % \
-                                             (self.brick,b)))
-            self.ivar_fits[b]= readImage(os.path.join(OUT_DIR,'coadd/legacysurvey-%s-invvar-%s.fits.fz' % \
-                                              (self.brick,b)))
-            self.sims_fits[b]= readImage(os.path.join(OUT_DIR,'coadd/legacysurvey-%s-sims-%s.fits.fz' % \
-                                              (self.brick,b)))
-            
-    def simcat_xy(self):
-        """x,y of each simulated source in the fits coadd. Just like the
-            bx,by of tractor catalogues
-        """
-        _,x,y=self.brickwcs.radec2pixelxy(self.simcat.ra,self.simcat.dec)
-        self.simcat.set('x',x - self.zoom[0])
-        self.simcat.set('y',y - self.zoom[2])
 
