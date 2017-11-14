@@ -127,8 +127,6 @@ class SimDecals(LegacySurveyData):
             simulated source catalog for a given brick (not CCD).
         output_dir: legacypipe's outdir
         add_sim_noise: add Poisson noise from the simulated source to the image 
-        folding_threshold: how close the simulated source flux is to the requested flux
-            make smaller to increase simulated source flux/requested flux
         image_eq_model: referred to as 'testA'
             wherever add a simulated source, replace both image and invvar of the image
             with that of the simulated source only
@@ -141,15 +139,13 @@ class SimDecals(LegacySurveyData):
             simulated source catalog for a given brick (not CCD).
         output_dir: legacypipe's outdir
         add_sim_noise: add Poisson noise from the simulated source to the image 
-        folding_threshold: how close the simulated source flux is to the requested flux
-            make smaller to increase simulated source flux/requested flux
         image_eq_model: referred to as 'testA'
             wherever add a simulated source, replace both image and invvar of the image
             with that of the simulated source only
     """
     
     def __init__(self, dataset=None, survey_dir=None, metacat=None, simcat=None, 
-                 output_dir=None,add_sim_noise=False, folding_threshold=1.e-5, 
+                 output_dir=None,add_sim_noise=False, 
                  image_eq_model=False):
         super(SimDecals, self).__init__(survey_dir=survey_dir, output_dir=output_dir)
         self.dataset= dataset
@@ -157,7 +153,6 @@ class SimDecals(LegacySurveyData):
         self.simcat = simcat
         # Additional options from command line
         self.add_sim_noise= add_sim_noise
-        self.folding_threshold= folding_threshold
         self.image_eq_model= image_eq_model
         print('SimDecals: self.image_eq_model=',self.image_eq_model)
         
@@ -265,9 +260,7 @@ class SimImage(DecamImage):
         #    seed = None
 
         objtype = self.survey.metacat.get('objtype')[0]
-        objstamp = BuildStamp(tim, gain=self.t.gain, \
-                      folding_threshold=self.survey.folding_threshold,\
-                      stamp_size= self.survey.metacat.stamp_size)
+        objstamp = BuildStamp(tim, gain=self.t.gain)
 
         # Grab the data and inverse variance images [nanomaggies!]
         tim_image = galsim.Image(tim.getImage())
@@ -292,21 +285,6 @@ class SimImage(DecamImage):
                 strin= 'Drawing 1 %s: sersicn=%.2f, rhalf=%.2f, e1=%.2f, e2=%.2f' % \
                         (objtype.upper(), obj.sersicn,obj.rhalf,obj.e1,obj.e2)
                 print(strin)
-            # Before drawing we can check if the obj is near CCD
-            #if self.survey.metacat.cutouts[0]: 
-            #    #draw_it= isNearCCD(tim,obj,
-            #    junk,xx,yy = tim.wcs.wcs.radec2pixelxy(obj.ra,obj.dec)
-            #    xx,yy= int(xx),int(yy)
-            #    min_stamp_pixels= 16  # 200. / 3600. # arcsec -> deg
-            #    obj_bounds= galsim.BoundsI(xmin= xx - min_stamp_pixels/2,\
-            #                            xmax= xx + min_stamp_pixels/2,\
-            #                            ymin= yy - min_stamp_pixels/2,\
-            #                            ymax= yy + min_stamp_pixels/2)
-            #    overlap = obj_bounds & tim_image.bounds
-            #    # Even the SMALLEST stamp fits entirely within image
-            #    # High prob teh full size stamp will  
-            #    draw_it= obj_bounds == overlap
-            #    #x1, y1 = tim.wcs.positionToPixel(RaDecPos(obj.ra-max_stamp_size/2, obj.dec-max_stamp_size/2))
 
             if objtype == 'star':
                 stamp = objstamp.star(obj)
@@ -328,16 +306,12 @@ class SimImage(DecamImage):
                 ,t0)
 
             stamp_nonoise= stamp.copy()
-            ivarstamp= objstamp.addGaussNoise(stamp, 
-                                              add_noise=self.survey.add_sim_noise)
+            if self.survey.add_sim_noise:
+                stamp += noise_for_galaxy(stamp,objstamp.nano2e)
+            ivarstamp= ivar_for_galaxy(stamp,objstamp.nano2e)
             # Add source if EVEN 1 pix falls on the CCD
             overlap = stamp.bounds & tim_image.bounds
-            add_source = overlap.area() > 0
-            # For Deep learning: only add source if entire thing fits on image
-            if self.survey.metacat.cutouts[0]:
-                # this is a deep learning run
-                add_source= stamp.bounds == overlap
-            if add_source:
+            if overlap.area() > 0:
                 print('Stamp overlaps tim: id=%d band=%s' % (obj.id,objstamp.band))      
                 stamp = stamp[overlap]   
                 ivarstamp = ivarstamp[overlap]      
@@ -373,71 +347,6 @@ class SimImage(DecamImage):
                 #tim.sims_radec[ii, :] = [obj.ra,obj.dec]
                 tim.sims_id[ii] = obj.id
                 tim.sims_added_flux[ii] = added_flux
-
-                # For cutouts we only care about src, background, var (not ivar)
-                if self.survey.metacat.cutouts[0]:
-                    # Data for training: src+noise (cutout) and backgrn (cutout,var,badpix)
-                    data= np.zeros((stamp.array.shape[0],stamp.array.shape[1],4))
-                    # FIX ME, add extra rotations for galaxies?
-                    data[:,:,0]= stamp.array.copy() # src+noise
-                    #data[:,:,1]= np.sqrt( np.power(stamp.array.copy(),2) )#src+noise var  #ivarstamp.array.copy() 
-                    data[:,:,1]= back.array.copy() # back
-                    data[:,:,2]= tim_dq[overlap].array.copy() # bad pix
-                    data[:,:,3]= stamp_nonoise.array.copy() # Stamp w/out noise, sanity check
-                    #data[:,:,2]= ivar_to_var(back_ivar.array.copy(),nano2e=objstamp.nano2e) # back var
-                    #data[:,:,3]= tim_image[overlap].array.copy() # src+noise+background
-                    #data[:,:,4]= tim_invvar[overlap].array.copy() # src+noise+background_ nvvar
-                    # Save fn
-                    brick= os.path.basename(os.path.dirname(self.survey.output_dir))
-                    hdf5_fn= '%s_%s.hdf5' % (objtype,brick)  #'%s_%d_%s' % (tim.band,obj.id,expid)
-                    hdf5_fn= os.path.join(self.survey.output_dir,hdf5_fn)
-                    expid=str(tim.imobj).strip().replace(' ','')
-                    node= '%s/%s/%s' % (obj.id,tim.band,expid)
-                    fobj = h5py.File(hdf5_fn, "a")
-                    dset = fobj.create_dataset(node, data=data,chunks=True)
-                    for name,val,dtype in zip(\
-                            ['id','flux_added'],\
-                            [obj.id,added_flux],\
-                            [np.int32,np.float32]):
-                        dset.attrs.create(name,val,dtype=dtype)
-                    #if objtype in ['lrg','elg']:
-                    #    for name,val in zip(\
-                    #            ['rhalf','sersicn','phi','ba'],\
-                    #            [obj.rhalf,obj.sersicn,obj.phi,obj.ba]):
-                    #        dset.attrs.create(name,val,dtype=np.float32)
-                        #d.update(dict(rhalf=obj.rhalf,\
-                        #              sersicn=obj.sersicn,\
-                        #              phi=obj.phi,\
-                        #              ba=obj.ba))
-                    print('Saved %s to %s' % (node,hdf5_fn))
-                    #np.save(fn+'.npy',data,allow_pickle=False)
-                    # Save enough metadata to classify image quality later
-                    #x1,x2,y1,y2= tuple(tim.sims_xy[ii,:])
-                    #xc,yc= tuple(tim.sims_xyc[ii,:])
-                    #d = dict(band=tim.band,\
-                    #        expid=expid,\
-                    #         addedflux= added_flux,\
-                    #         id=obj.id,\
-                    #         ra=obj.ra,\
-                    #         dec=obj.dec)
-                             #xc=xc,yc=yc,\
-                             #(x1=x1,x2=x2,y1=y1,y2=y2,\
-                             #gflux=obj.gflux,\
-                             #rflux=obj.rflux,\
-                             #zflux=obj.zflux)
-                    #write_dict(fn+'.csv',d)
-                    # Write sanity checks if they don't exists
-                    #fns= glob(os.path.join(self.survey.output_dir,'*_src.fits'))
-                    #if len(fns) == 0:
-                    #    # Also write fits file for easier image stretching
-                    #    fitsio.write(fn+'_src.fits',data[...,0],clobber=True)
-                    #    fitsio.write(fn+'_src_invvar.fits',data[...,1],clobber=True)
-                    #    fitsio.write(fn+'_img.fits',data[...,2],clobber=True)
-                    #    fitsio.write(fn+'_img_invvar.fits',data[...,3],clobber=True)
-                    #    fitsio.write(fn+'_srcimg.fits',data[...,4],clobber=True)
-                    #    fitsio.write(fn+'_srcimg_invvar.fits',data[...,5],clobber=True)
-                    #    # Draw Radial Profiles
-                    #    plot_radial_profs(fn+'_profiles.png',rad_profs)
                 
                 #Extra
                 sims_image[overlap] += stamp.copy() 
@@ -469,19 +378,47 @@ class SimImage(DecamImage):
         #import pdb ; pdb.set_trace()
         return tim
 
+def noise_for_galaxy(gal,nano2e):
+    """Returns numpy array of noise in Img count units for gal in image cnt units"""
+    # Noise model + no negative image vals when compute noise
+    one_std_per_pix= gal.array.copy() # nanomaggies
+    one_std_per_pix[one_std_per_pix < 0]=0
+    # rescale
+    one_std_per_pix *= nano2e # e-
+    one_std_per_pix= np.sqrt(one_std_per_pix)
+    num_stds= np.random.randn(one_std_per_pix.shape[0],one_std_per_pix.shape[1])
+    #one_std_per_pix.shape, num_stds.shape
+    noise= one_std_per_pix * num_stds
+    # rescale
+    noise /= nano2e #nanomaggies
+    return noise
+
+def ivar_for_galaxy(gal,nano2e):
+    """Adds gaussian noise to perfect source
+
+    Args:
+        gal: galsim.Image() for source, UNITS: nanomags
+        nano2e: factor to convert to e- (gal * nano2e has units e-)
+
+    Returns:
+        galsim.Image() of invvar for the source, UNITS: nanomags
+    """
+    var= gal.copy() * nano2e #e^2
+    var.applyNonlinearity(np.abs)
+    var /= nano2e**2 #nanomag^2
+    var.invertSelf()
+    return var
+
+
 class BuildStamp():
     """Does the drawing of simulated sources on a single exposure
 
     Args: 
         tim: Tractor Image Object for a specific CCD
         gain: gain of the CCD
-        folding_threshold: how close the simulated source flux is to the requested flux
-            make smaller to increase simulated source flux/requested flux
-        stamp_size: pixels, width and height of simulated images
 
     Attributes:
         band: g,r,z
-        stamp_size: pixels, width and height of simulated images
         gsparams: galsim object that configures how accurate simulated source will be
         gsdeviate: galsim object that configures its random number generator
         wcs: WCS from tim
@@ -491,15 +428,12 @@ class BuildStamp():
         nano2e: conversion factor 'nanomaggies' to 'e-'
     """
 
-    def __init__(self,tim, gain=4.0, folding_threshold=1.e-5, stamp_size=None):
+    def __init__(self,tim, gain=4.0):
         self.band = tim.band.strip()
-        self.stamp_size = stamp_size
         # GSParams should be used when galsim object is initialized
-        # MAX size for sersic: 
+        # MAX size for sersic n < 6.2 
         # https://github.com/GalSim-developers/GalSim/pull/450/commits/755bcfdca25afe42cccfd6a7f8660da5ecda2a65
-        MAX_FFT_SIZE=1048576L #2^16=65536
-        self.gsparams = galsim.GSParams(maximum_fft_size=MAX_FFT_SIZE,\
-                                        folding_threshold=folding_threshold) 
+        self.gsparams = galsim.GSParams(maximum_fft_size=65536)
         #print('FIX ME!!!!!!!!!!!!!!!!!!!!!!!!!!!!')
         self.gsdeviate = galsim.BaseDeviate()
         #if seed is None:
@@ -562,139 +496,26 @@ class BuildStamp():
         self.localpsf = galsim.InterpolatedImage(psf, wcs=self.galsim_wcs,\
                                                  gsparams=self.gsparams)
 
-    def addGaussNoise(self, stamp, add_noise=True):
-        """Adds gaussian noise to perfect source (in place)
-
-        STAMP and IVARSTAMP are in units of nanomaggies and 
-            1/nanomaggies**2, respectively.
-
-        Returns:
-            invvar for the stamp
-        """
-        #stamp= stamp_backup.copy()
-        #ivarstamp= ivarstamp_backup.copy()
-
-        
-        #varstamp = ivarstamp.copy()
-        #ivarstamp.invertSelf() # input data, convert to variance
-        #ivarstamp *= self.nano2e**2 # [electron^2]
-             
-        # Add the variance of the object to the variance image (in electrons).
-        stamp *= self.nano2e       # [noiseless stamp, electron]
-        stamp_var = galsim.Image(np.sqrt(stamp.array**2), wcs=self.galsim_wcs) 
-        stamp_var.setOrigin(galsim.PositionI(stamp.xmin, stamp.ymin))
-
-        # Add Poisson noise
-        if add_noise:
-            noise = galsim.VariableGaussianNoise(self.gsdeviate, stamp_var)
-            #stamp2= stamp.copy()
-            stamp.addNoise(noise)
-        #stamp3= stamp2.copy()
-        #c=np.random.normal(loc=0,scale=np.sqrt(objvar.array),size=objvar.array.shape)
-        #noise = galsim.Image(c, wcs=self.galsim_wcs)
-        #noise.setOrigin(galsim.PositionI(stamp.xmin, stamp.ymin))
-        #stamp3+= noise
-        
-        # Variance of stamp+noise
-        stamp_var = stamp.copy()
-        stamp_var.fill(0.)
-        stamp_var+= np.abs( stamp.array.copy() )
-        
-        #imshow_stamp(stamp,fn='std.png')
-        #imshow_stamp(stamp_backup,'img.png')
-        
-        #b = galsim.Image(np.zeros(stamp.array.shape), wcs=self.galsim_wcs) 
-        #b.array+= stamp.array.copy() 
-        #b.array+= stamp_backup.array.copy() 
-        #b= stamp.array.copy() + stamp_backup.array.copy()
-        #b= stamp.copy()
-        #b.drawImage(stamp_backup.copy(),add_to_image=True)
-        #imshow_stamp(b,fn='std_img.png')
-        # hists
-        #for data,nam in zip([stamp.array.copy(),stamp_backup.array.copy(),b],['std','img','std_img']):
-        #    j=plt.hist(data)
-        #    plt.savefig(nam+'_hist.png')
-        #    plt.close(nam+'_hist.png')
-        # Convert back to [nanomaggies]
-        stamp /= self.nano2e      
-        #stamp2 /= self.nano2e      
-        #stamp3 /= self.nano2e      
-        stamp_var /= self.nano2e**2
-
-        #ivarstamp = varstamp.copy()
-        stamp_var.invertSelf()
-        # Remask pixels that were masked in the original inverse variance stamp.
-        #ivarstamp *= mask
-        # This is now inv variance
-        return stamp_var
-
-    def convolve_and_draw(self,gal):
-        """Convolve the object with the PSF and then draw it."""
-        gal = galsim.Convolve([gal, self.localpsf], gsparams=self.gsparams)
-        # drawImage() requires local wcs
-        #try:
-        if self.stamp_size is None:
-            gal = gal.drawImage(offset=self.offset, wcs=self.localwcs,method='no_pixel')
-        else:
-            gal = gal.drawImage(offset=self.offset, wcs=self.localwcs,method='no_pixel',\
-                                  nx=self.stamp_size,ny=self.stamp_size)
-        #except SystemExit:
-        #except BaseException:
-        #    #logging.error(traceback.format_exc())
-        #    print('got back drawImage!')
-        #    raise ValueError
-        #try: 
-        #except:
-        #    print("Unexpected error:", sys.exc_info()[0])
-        #    raise
-        return gal
-
     def star(self,obj):
         """Render a star (PSF)."""
         log = logging.getLogger('decals_sim')
         # Use input flux as the 7'' aperture flux
         self.setlocal(obj)
-        psf = self.localpsf.withFlux(1.)
-        if self.stamp_size is None:
-            stamp = psf.drawImage(offset=self.offset, wcs=self.localwcs, method='no_pixel')
-        else:
-            stamp = psf.drawImage(offset=self.offset, wcs=self.localwcs, method='no_pixel',\
-                                  nx=self.stamp_size,ny=self.stamp_size)
-        # Fraction flux in 7'', FIXED pixelscale
-        diam = 7/0.262
-        # Aperture fits on stamp
-        width= stamp.bounds.xmax-stamp.bounds.xmin
-        height= stamp.bounds.ymax-stamp.bounds.ymin
-        if diam > width and diam > height:
-            nxy= int(diam)+2
-            stamp = psf.drawImage(nx=nxy,ny=nxy, offset=self.offset, wcs=self.localwcs, method='no_pixel')
-        assert(diam <= float(stamp.bounds.xmax-stamp.bounds.xmin))
-        assert(diam <= float(stamp.bounds.ymax-stamp.bounds.ymin))
-        # Aperture photometry
-        apers= photutils.CircularAperture((stamp.trueCenter().x,stamp.trueCenter().y), r=diam/2)
-        apy_table = photutils.aperture_photometry(stamp.array, apers)
-        apflux= np.array(apy_table['aperture_sum'])[0]
-        # Incrase flux so input flux contained in aperture
-        flux = obj.get(self.band+'flux')*(2.-apflux/stamp.added_flux) # [nanomaggies]
-        psf = self.localpsf.withFlux(flux)
-        #if self.stamp_size is None:
-        if True:
-            stamp = psf.drawImage(offset=self.offset, wcs=self.localwcs, method='no_pixel')
-        else:
-            stamp = psf.drawImage(offset=self.offset, wcs=self.localwcs, method='no_pixel',\
-                                  nx=self.stamp_size,ny=self.stamp_size)
-        # stamp looses less than 0.01% of requested flux
-        if stamp.added_flux/flux <= 0.9999:
-            log.warning('stamp lost more than 0.01 percent of requested flux, stamp_flux/flux=%.7f',stamp.added_flux/flux)
-        # test if obj[self.band+'FLUX'] really is in the 7'' aperture
-        #apers= photutils.CircularAperture((stamp.trueCenter().x,stamp.trueCenter().y), r=diam/2)
-        #apy_table = photutils.aperture_photometry(stamp.array, apers)
-        #apflux= np.array(apy_table['aperture_sum'])[0]
-        #print("7'' flux/input flux= ",apflux/obj[self.band+'FLUX'])
-        
-        # Convert stamp's center to its corresponding center on full tractor image
+        psf = self.localpsf.copy()
+        stamp = psf.drawImage(offset=self.offset, wcs=self.localwcs, method='no_pixel')      
+        # Scale to desired flux
+        stamp *= float(obj.get(self.band+'flux')) # [nanomaggies]
+        # position in observed image
         stamp.setCenter(self.xpos, self.ypos)
-        return stamp 
+        return stamp
+
+
+    def convolve_and_draw(self,gal):
+        """Convolve the object with the PSF and then draw it."""
+        gal = galsim.Convolve([gal, self.localpsf], gsparams=self.gsparams)
+        # drawImage() requires local wcs
+        gal = gal.drawImage(offset=self.offset, wcs=self.localwcs,method='no_pixel')
+        return gal 
 
     def elg(self,obj):
         """Create an ELG (disk-like) galaxy."""
@@ -880,7 +701,6 @@ def get_parser():
     #parser.add_argument('--rmag-range', nargs=2, type=float, default=(18, 26), metavar='', 
     #                    help='r-band magnitude range')
     parser.add_argument('--add_sim_noise', action="store_true", help="set to add noise to simulated sources")
-    parser.add_argument('--folding_threshold', type=float,default=1.e-5,action="store", help="for galsim.GSParams")
     parser.add_argument('-testA','--image_eq_model', action="store_true", help="set to set image,inverr by model only (ignore real image,invvar)")
     parser.add_argument('--all-blobs', action='store_true', 
                         help='Process all the blobs, not just those that contain simulated sources.')
@@ -888,10 +708,6 @@ def get_parser():
                         type=str, default=None, metavar='', help='Run up to the given stage')
     parser.add_argument('--early_coadds', action='store_true',default=False,
                         help='add this option to make the JPGs before detection/model fitting')
-    parser.add_argument('--cutouts', action='store_true',default=False,
-                        help='Stop after stage tims and save .npy cutouts of every simulated source')
-    parser.add_argument('--stamp_size', type=int,action='store',default=64,\
-                        help='Stamp/Cutout size in pixels')
     parser.add_argument('--bright_galaxies', action='store_true',
                         help='Galaxies get stellar colors for DEEP Obiwan training')
     parser.add_argument('--bricklist',action='store',default='bricks-eboss-ngc.txt',\
@@ -914,8 +730,6 @@ def create_metadata(kwargs=None):
             {'brickname': which chunk of sky
             'objtype': star,elg,lrg,qso
             'nobj': number of simulated sources for this run
-            'stamp_size': pixels, width and height of simulated images
-            'cutouts': whether .npy cutouts of every simulated source were written
             'bright_galaxies': whether bright_galaxies flag is set
             }
     
@@ -942,8 +756,6 @@ def create_metadata(kwargs=None):
         metacat.set(key, np.array( [kwargs[key]] ))
     metacat.set('nobj', np.array( [kwargs['args'].nobj] ))
     metacat.set('zoom', np.array( [kwargs['args'].zoom] ))
-    metacat.set('cutouts', np.array( [kwargs['args'].cutouts] ))
-    metacat.set('stamp_size', np.array( [kwargs['args'].stamp_size] ))
     metacat.set('bright_galaxies', np.array( [kwargs['args'].bright_galaxies] ))
     #metacat['RMAG_RANGE'] = kwargs['args'].rmag_range
     #if not kwargs['args'].seed:
@@ -1074,7 +886,7 @@ def do_one_chunk(d=None):
     assert(d is not None)
     simdecals = SimDecals(dataset=d['args'].dataset,\
               metacat=d['metacat'], simcat=d['simcat'], output_dir=d['simcat_dir'], \
-              add_sim_noise=d['args'].add_sim_noise, folding_threshold=d['args'].folding_threshold,\
+              add_sim_noise=d['args'].add_sim_noise,\
               image_eq_model=d['args'].image_eq_model)
     # Use Tractor to just process the blobs containing the simulated sources.
     if d['args'].all_blobs:
@@ -1150,7 +962,7 @@ def get_sample_fn(brick,decals_sim_dir,prefix=''):
 def get_sample(objtype,brick,outdir,randoms_db,
                minid=None,do_skipids='no',
                verbose=True,
-               randoms_from_fits='',cutouts=False,stamp_size=64):
+               randoms_from_fits=''):
     """Gets all simulated randoms for a brick from PSQl db, and applies all relevant cuts
 
     Args:
@@ -1163,8 +975,6 @@ def get_sample(objtype,brick,outdir,randoms_db,
         verbose: True or False, print db query commands
         skip_ids: None, unless do_skipids==yes then list of ids for the randoms to use
         randoms_from_fits: None or filename of fits_table to use for randoms
-        cutouts: True or False, make postage stamp of drawn randoms?
-        stamp_size: size for cutouts
     
     Returns:
         sample fits_table
@@ -1190,36 +1000,11 @@ def get_sample(objtype,brick,outdir,randoms_db,
     #Samp.cut( (Samp.ra >= r0)*(Samp.ra <= r1)*\
     #          (Samp.dec >= d0)*(Samp.dec <= d1) )
     # Sort by Sersic n low -> high (if elg or lrg)
-    if objtype in ['elg','lrg']:
-        if cutouts:
-            # rhalf ~ 1-2'' at z ~ 1, n~1 
-            #Samp=Samp[ (Samp.get('%s_re' % objtype) <= 10.)*\
-            #           (Samp.get('%s_n' % objtype) <= 2.) ]
-            Samp.set('%s_re' % objtype, np.array([0.5]*len(Samp)))
-            Samp.set('%s_n' % objtype, np.array([1.]*len(Samp)))
     # Apply cuts
     if minid:
       Samp.cut( Samp.id >= minid )
     # sort by id so first 300 isn't changed if add more ids
     Samp= Samp[np.argsort(Samp.id) ]
-    if cutouts:
-        # Gridded ra,dec for args.stamp_size x stamp_size postage stamps 
-        size_arcsec= stamp_size * 0.262 * 2 #arcsec, 2 for added buffer
-        # 20x20 grid
-        dd= size_arcsec / 2. * np.arange(1,21,2).astype(float) #'' offsect from center
-        dd= np.concatenate((-dd[::-1],dd))
-        dd/= 3600. #arcsec -> deg
-        # Don't exceed brick half width - 100''
-        assert(dd.max() <= 0.25/2 - 100./3600)
-        brickc_ra,brickc_dec= radec_center[0],radec_center[1]
-        dec,ra = np.meshgrid(dd+ brickc_dec, dd+ brickc_ra) 
-        dec= dec.flatten()
-        ra= ra.flatten()
-        assert(len(Samp) >= dec.size)
-        keep= np.arange(dec.size)
-        Samp.cut(keep)
-        Samp.set('ra',ra)
-        Samp.set('dec',dec)
     return Samp
 
 
@@ -1237,8 +1022,6 @@ def main(args=None):
         pass 
     # Print calling sequence
     print('Args:', args)   
-    if args.cutouts:
-        args.stage = 'tims'
     if args.do_more == 'yes':
       assert(not args.minid is None)
     # Setup loggers
@@ -1263,11 +1046,6 @@ def main(args=None):
 
     brickname = args.brick
     objtype = args.objtype
-
-    for obj in ('LSB'):
-        if objtype == obj:
-            log.warning('{} objtype not yet supported!'.format(objtype))
-            return 0
 
     # Output dir
     decals_sim_dir = args.outdir
@@ -1315,9 +1093,7 @@ def main(args=None):
                     "randoms_db":args.randoms_db,
                     "minid":args.minid,
                     "do_skipids":args.do_skipids,
-                    "randoms_from_fits":args.randoms_from_fits,
-                    "cutouts":args.cutouts,
-                    "stamp_size":args.stamp_size}
+                    "randoms_from_fits":args.randoms_from_fits}
     Samp= get_sample(**sample_kwargs)
     Samp= Samp[args.rowstart:args.rowstart + args.nobj]
     # Performance
@@ -1363,9 +1139,8 @@ def main(args=None):
     do_one_chunk(d=kwargs)
     t0= ptime('do_one_chunk',t0)
     # Clean up output
-    if args.cutouts == False:
-        do_ith_cleanup(d=kwargs)
-        t0= ptime('do_ith_cleanup',t0)
+    do_ith_cleanup(d=kwargs)
+    t0= ptime('do_ith_cleanup',t0)
     log.info('All done!')
     return 0
      

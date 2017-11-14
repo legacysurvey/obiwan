@@ -86,6 +86,8 @@ class Testcase(object):
         self.outname= 'out_'+self.name
         if self.all_blobs:
             self.outname += '_allblobs'
+        if self.add_noise:
+            self.outname += '_addnoise'
         self.outdir= os.path.join(os.path.dirname(__file__), 
                                   self.outname)
         
@@ -144,8 +146,12 @@ class AnalyzeTestcase(Testcase):
             self.tol={'apsims_p_apsky_m_aptractor':0.2, #nanomags
                       'simcat_p_apsky_m_aptractor':0.3}
         else:
-            self.tol={'apsims_p_apsky_m_aptractor':0.2, #nanomags
-                      'simcat_p_apsky_m_aptractor':0.5}
+            if self.add_noise:
+                self.tol={'apsims_p_apsky_m_aptractor':0.2, 
+                          'simcat_p_apsky_m_aptractor':0.7}
+            else:
+                self.tol={'apsims_p_apsky_m_aptractor':0.2, 
+                          'simcat_p_apsky_m_aptractor':0.5}
 
         survey = LegacySurveyData()
         brickinfo = survey.get_brick_by_name(self.brick)
@@ -165,6 +171,7 @@ class AnalyzeTestcase(Testcase):
             jpg_coadds:
             fits_coadds
         """
+        print('Loading from %s' % self.outdir)
         self.simcat= fits_table(os.path.join(self.outdir,'obiwan/simcat-elg-%s.fits' % self.brick))
         self.obitractor= fits_table(os.path.join(self.outdir,'tractor/tractor-%s.fits' % self.brick))
 
@@ -269,13 +276,17 @@ class AnalyzeTestcase(Testcase):
             sky_apflux= img_apflux - sims_apflux
             # tractor apflux vs. my apflux sims + sky 
             obitractor_apflux= self.obitractor[itrac].get('apflux_'+b)[:,5]
-            simcat_flux= self.simcat.get(b+'flux') 
-            assert(np.all(np.abs(sims_apflux + 
-                                 sky_apflux - obitractor_apflux) 
+            simcat_flux= self.simcat.get(b+'flux')
+            diff= sims_apflux + \
+                    sky_apflux - obitractor_apflux
+            print(diff) 
+            assert(np.all(np.abs(diff) 
                                 < self.tol['apsims_p_apsky_m_aptractor'])) 
             # tractor apflux vs. simcat table + sky
-            assert(np.all(np.abs(simcat_flux + 
-                                 sky_apflux - obitractor_apflux) 
+            diff= simcat_flux + \
+                    sky_apflux - obitractor_apflux
+            print(diff,self.add_noise,self.tol['simcat_p_apsky_m_aptractor'])
+            assert(np.all(np.abs(diff) 
                                 < self.tol['simcat_p_apsky_m_aptractor'])) 
         print('passed')
 
@@ -294,7 +305,7 @@ def test_cases(z=True,
             add_noise=False)
     
     if z:
-        for all_blobs in [True,False]:
+        for all_blobs in [False]: #,True]:
             d.update(all_blobs=all_blobs)
             T= Testcase(**d)
             T.run()
