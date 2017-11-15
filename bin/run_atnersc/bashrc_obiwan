@@ -25,7 +25,8 @@ export PYTHONPATH=$obiwan_code/obiwan/py:${PYTHONPATH}
 export QDO_BATCH_PROFILE=$NERSC_HOST
 export QDO_BACKEND=postgres
 export QDO_DB_NAME=desirun
-export QDO_DB_HOST=scidb2.nersc.gov
+#export QDO_DB_HOST=scidb2.nersc.gov
+export QDO_DB_HOST=nerscdb03.nersc.gov
 export QDO_DB_USER=desirun_admin
 # directory from "which qdo" but without the trailing /bin/qdo, eg which qdo should give
 export QDO_DIR=$CSCRATCH/obiwan_desiconda_add_pytest/conda
