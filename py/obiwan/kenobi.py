@@ -615,7 +615,7 @@ def build_simcat(Samp=None,brickwcs=None, meta=None):
     if typ in ['elg','lrg']:
         # Convert to e1,e2 if given ba,pa
         if (typ+'_ba' in Samp.get_columns()) & (typ+'_pa' in Samp.get_columns()):
-            e1,e2= get_e1_e2(Samp.get(typ+'_ba'),Samp.get(typ+'_pa')
+            e1,e2= get_e1_e2(Samp.get(typ+'_ba'),Samp.get(typ+'_pa'))
             Samp.set(typ+'_e1',e1) 
             Samp.set(typ+'_e2',e2) 
         for key,tab_key in zip(['sersicn','rhalf','e1','e2'],['n','re','e1','e2']):
