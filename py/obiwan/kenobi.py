@@ -270,11 +270,6 @@ class SimImage(DecamImage):
         sims_image = tim_image.copy() 
         sims_image.fill(0.0)
         sims_ivar = sims_image.copy()
-        # To make cutout for deeplearning
-        tim.sims_xy = np.zeros((len(self.survey.simcat),4))-1 
-        tim.sims_xyc = np.zeros((len(self.survey.simcat),2))-1
-        tim.sims_id = np.zeros(len(self.survey.simcat)).astype(np.int32)-1
-        tim.sims_added_flux = np.zeros(len(self.survey.simcat)).astype(float)-1
 
         # Store simulated galaxy images in tim object 
         # Loop on each object.
@@ -294,16 +289,9 @@ class SimImage(DecamImage):
                 stamp = objstamp.lrg(obj)
             elif objtype == 'qso':
                 stamp = objstamp.qso(obj)
-            #print('I predict we draw it',draw_it)
-            # Save radial profiles after draw, addNoise, etc. for unit tests
-            #rad_profs=np.zeros((stamp.array.shape[0],3))
-            #rad_profs[:,0]= stamp.array.copy()[ stamp.array.shape[0]/2,: ]
-            # Want to save flux actually added too
-            added_flux= stamp.added_flux
             t0= ptime('Finished Drawing %s: id=%d band=%s dbflux=%f addedflux=%f' % 
                 (objtype.upper(), obj.id,objstamp.band, 
-                 obj.get(objstamp.band+'flux'),added_flux)
-                ,t0)
+                 obj.get(objstamp.band+'flux'),stamp.array.sum()), t0)
 
             stamp_nonoise= stamp.copy()
             if self.survey.add_sim_noise:
@@ -317,20 +305,11 @@ class SimImage(DecamImage):
                 ivarstamp = ivarstamp[overlap]      
                 stamp_nonoise= stamp_nonoise[overlap]
                 
-                #rad_profs[:,1]= stamp.array.copy()[ stamp.array.shape[0]/2,: ]
-
                 # Zero out invvar where bad pixel mask is flagged (> 0)
                 keep = np.ones(tim_dq[overlap].array.shape)
                 keep[ tim_dq[overlap].array > 0 ] = 0.
                 ivarstamp *= keep
-                #tim_invvar[overlap] *= keep # don't modify tim_invvar unless adding stamp ivar
 
-                # Stamp ivar can get messed up at edges
-                # especially when needed stamp smaller than args.stamp_size
-                cent= int( min(ivarstamp.array.shape)/2 )
-                med= np.median(ivarstamp.array[cent-2:cent+2,cent-2:cent+2].flatten() )
-                # 100x median fainter gets majority of star,qso OR elg,lrg profile
-                ivarstamp.array[ ivarstamp.array > 100 * med ] = 0.
                 # Add stamp to image
                 back= tim_image[overlap].copy()
                 tim_image[overlap] += stamp #= back.copy() + stamp.copy()
@@ -338,32 +317,16 @@ class SimImage(DecamImage):
                 back_ivar= tim_invvar[overlap].copy()
                 tot_ivar= get_srcimg_invvar(ivarstamp, back_ivar)
                 tim_invvar[overlap] = tot_ivar.copy()
-
-                #rad_profs[:,2]= tim_image[overlap].array.copy()[ stamp.array.shape[0]/2,: ]
-                # Save sims info
-                tim.sims_xy[ii, :] = [overlap.xmin-1, overlap.xmax-1,
-                                      overlap.ymin-1, overlap.ymax-1] # galsim 1st index is 1
-                tim.sims_xyc[ii, :] = [overlap.trueCenter().x-1, overlap.trueCenter().y-1]
-                #tim.sims_radec[ii, :] = [obj.ra,obj.dec]
-                tim.sims_id[ii] = obj.id
-                tim.sims_added_flux[ii] = added_flux
                 
                 #Extra
                 sims_image[overlap] += stamp.copy() 
                 sims_ivar[overlap] += ivarstamp.copy()
                 
-                    
-                #print('HACK!!!')
-                #galsim.fits.write(stamp, 'stamp-{:02d}.fits'.format(ii), clobber=True)
-                #galsim.fits.write(ivarstamp, 'ivarstamp-{:02d}.fits'.format(ii), clobber=True)
-
                 if np.min(sims_ivar.array) < 0:
                     log.warning('Negative invvar!')
                     import pdb ; pdb.set_trace()
         tim.sims_image = sims_image.array
         tim.sims_inverr = np.sqrt(sims_ivar.array)
-        tim.sims_xy = tim.sims_xy.astype(int)
-        tim.sims_xyc = tim.sims_xyc.astype(int)
         # Can set image=model, ivar=1/model for testing
         if self.survey.image_eq_model:
             tim.data = sims_image.array.copy()
@@ -372,10 +335,6 @@ class SimImage(DecamImage):
         else:
             tim.data = tim_image.array
             tim.inverr = np.sqrt(tim_invvar.array)
-         
-        #print('HACK!!!')
-        #galsim.fits.write(invvar, 'invvar.fits'.format(ii), clobber=True)
-        #import pdb ; pdb.set_trace()
         return tim
 
 def noise_for_galaxy(gal,nano2e):
@@ -641,26 +600,18 @@ def build_simcat(Samp=None,brickwcs=None, meta=None):
     typ=meta.get('objtype')[0]
     # Mags
     for key in ['g','r','z']:
-        if (meta.bright_galaxies[0]) and (typ in ['elg','lrg']):
-            # Galaxies get stellar flux, so they are easy to see in images
-            cat.set('%sflux' % key, 1E9*10**(-0.4*Samp.get('%s_%s' % ('star',key))) ) # [nanomaggies]
-        else:
-            # Actual galaxy colors
-            cat.set('%sflux' % key, 1E9*10**(-0.4*Samp.get('%s_%s' % (typ,key))) ) # [nanomaggies]
-        # Galaxy Properties
+        # nanomags
+        cat.set('%sflux' % key, 1E9*10**(-0.4*Samp.get('%s_%s' % (typ,key))) ) 
+    # Galaxy Properties
     if typ in ['elg','lrg']:
         for key,tab_key in zip(['sersicn','rhalf','e1','e2'],['n','re','e1','e2']):
             cat.set(key, Samp.get('%s_%s'%(typ,tab_key) ))
         # Sersic n: GALSIM n = [0.3,6.2] for numerical stability,see
         # https://github.com/GalSim-developers/GalSim/issues/{325,450}
-        # I'll use [0.4,6.1]
         vals= cat.sersicn
         vals[cat.sersicn < 0.4] = 0.4
         vals[cat.sersicn > 6.1] = 6.1
         cat.set('sersicn',vals)
-        #cat['R50_1'] = Column(Samp.rhalf, dtype='f4')
-        #cat['BA_1'] = Column(Samp.ba, dtype='f4')
-        #cat['PHI_1'] = Column(Samp.phi, dtype='f4')
     return cat, skipping_ids
 
 
@@ -686,20 +637,12 @@ def get_parser():
     parser.add_argument('--randoms_from_fits', default=None, help='set to read randoms from fits file instead of scidb2.nersc.gov db, set to absolute path of local fits file on computer')
     parser.add_argument('--prefix', type=str, default='', metavar='', 
                         help='tells which input sample to use')
-    #parser.add_argument('-ic', '--ith_chunk', type=long, default=None, metavar='', 
-    #                    help='run the ith chunk, 0-999')
-    #parser.add_argument('-c', '--nchunk', type=long, default=1, metavar='', 
-    #                    help='run chunks 0 to nchunk')
     parser.add_argument('-t', '--threads', type=int, default=1, metavar='', 
                         help='number of threads to use when calling The Tractor')
-    #parser.add_argument('-s', '--seed', type=long, default=None, metavar='', 
-    #                    help='random number seed, determines chunk seeds 0-999')
     parser.add_argument('-z', '--zoom', nargs=4, default=(0, 3600, 0, 3600), type=int, metavar='', 
                         help='see runbrick.py; (default is 0 3600 0 3600)')
     parser.add_argument('-survey-dir', '--survey_dir', metavar='', 
                         help='Location of survey-ccds*.fits.gz')
-    #parser.add_argument('--rmag-range', nargs=2, type=float, default=(18, 26), metavar='', 
-    #                    help='r-band magnitude range')
     parser.add_argument('--add_sim_noise', action="store_true", help="set to add noise to simulated sources")
     parser.add_argument('-testA','--image_eq_model', action="store_true", help="set to set image,inverr by model only (ignore real image,invvar)")
     parser.add_argument('--all-blobs', action='store_true', 
@@ -708,8 +651,6 @@ def get_parser():
                         type=str, default=None, metavar='', help='Run up to the given stage')
     parser.add_argument('--early_coadds', action='store_true',default=False,
                         help='add this option to make the JPGs before detection/model fitting')
-    parser.add_argument('--bright_galaxies', action='store_true',
-                        help='Galaxies get stellar colors for DEEP Obiwan training')
     parser.add_argument('--bricklist',action='store',default='bricks-eboss-ngc.txt',\
                         help='if using mpi4py, $LEGACY_SURVEY_DIR/bricklist')
     parser.add_argument('--nproc', type=int,action='store',default=1,\
@@ -730,7 +671,6 @@ def create_metadata(kwargs=None):
             {'brickname': which chunk of sky
             'objtype': star,elg,lrg,qso
             'nobj': number of simulated sources for this run
-            'bright_galaxies': whether bright_galaxies flag is set
             }
     
     Returns:
@@ -756,7 +696,6 @@ def create_metadata(kwargs=None):
         metacat.set(key, np.array( [kwargs[key]] ))
     metacat.set('nobj', np.array( [kwargs['args'].nobj] ))
     metacat.set('zoom', np.array( [kwargs['args'].zoom] ))
-    metacat.set('bright_galaxies', np.array( [kwargs['args'].bright_galaxies] ))
     #metacat['RMAG_RANGE'] = kwargs['args'].rmag_range
     #if not kwargs['args'].seed:
     #    log.info('Random seed = {}'.format(kwargs['args'].seed))
