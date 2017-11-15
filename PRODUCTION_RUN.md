@@ -1,9 +1,23 @@
 # Instructions for doing a production run
 
-### Completed production runs
+### Completed production runs (newest -> oldest)
 
-(1) elg_9deg2_ra125:
-9deg2 region centered at ra,dec= 124.8,24.5
+(1) 100deg2 region, dataset:DR5, ra:[135,235], dec:[-1,10]
+* name_for_run: elg_100deg2
+* kdedir for randoms: $CSCRATCH/obiwan_out/randoms
+* outdir for randoms: $CSCRATCH/obiwan_out/randoms/elg_100deg2
+* psql db, desi, table for randoms: obiwan_elg_100deg2
+* psql db, qdo, table for tasks: obiwan_elg_100deg2
+
+(2) 9deg2 region centered at ra,dec= 175.0,24.5
+* name_for_run: elg_9deg2_ra175
+* region: ra1,ra2, dec1,dec2= 173.5,176.5, 23.0,26.0
+* kdedir for randoms: $CSCRATCH/obiwan_out/randoms
+* outdir for randoms: $CSCRATCH/obiwan_out/randoms/elg_9deg2_ra175
+* psql db, desi, table for randoms: obiwan_elg_ra175
+* psql db, qdo, table for tasks: obiwan_ra175, obiwan_ra175_doskip
+
+(3) 9deg2 region centered at ra,dec= 124.8,24.5
 * name_for_run: elg_9deg2_ra125
 * region: ra1,ra2, dec1,dec2= 122.3,125.3, 23.0,26.0
 * kdedir for randoms: $CSCRATCH/obiwan_out/randoms
@@ -11,14 +25,7 @@
 * psql db, desi, table for randoms: obiwan_elg_9deg
 * psql db, qdo, table for tasks: obiwan_9deg, obiwan_9deg_doskip
 
-(2) elg_9deg2_ra175:
-9deg2 region centered at ra,dec= 175.0,24.5
-* name_for_run: elg_9deg2_ra175
-* region: ra1,ra2, dec1,dec2= 173.5,176.5, 23.0,26.0
-* kdedir for randoms: $CSCRATCH/obiwan_out/randoms
-* outdir for randoms: $CSCRATCH/obiwan_out/randoms/elg_9deg2_ra175
-* psql db, desi, table for randoms: obiwan_elg_ra175
-* psql db, qdo, table for tasks: obiwan_ra175, obiwan_ra175_doskip
+
 
 The rest of this markdown is for `elg_9deg2_ra175`.
 
@@ -30,16 +37,8 @@ ls $obiwan_out/randoms
 elg-kde.pickle lrg-kde.pickle
 ```
 
-Generate "ndraws" random ra,dec points on the unit sphere each point also sampling the KDE model. Note the followinging can be run with mpi4py if millions of randoms. 
-```sh
-export ra1=173.5
-export ra2=176.5
-export dec1=23.0
-export dec2=26.0
-export kdedir=$CSCRATCH/obiwan_out/randoms
-export outdir=$CSCRATCH/obiwan_out/randoms/elg_9deg2_ra175
-python $obiwan_code/obiwan/py/obiwan/draw_radec_color_z.py --dowhat sample --obj elg --ra1  --ra2 ${ra2} --dec1 ${dec1} --dec2 ${dec2} --ndraws 240000 --kdedir ${kdedir} --outdir ${outdir}
-```
+Generate "ndraws" random ra,dec points on the unit sphere each point also sampling the KDE model. Run with multiple core if > 1 Million randoms. Either way fill in and submit this slurm job:
+https://github.com/legacysurvey/obiwan/blob/master/bin/slurm_job_randoms.sh
 
 Load the randoms into the desi database at nerscdb03 (the scidb2.nersc.gov server is no more)
 ```
@@ -50,7 +49,7 @@ Index and cluster the db table for fast ra,dec querying
 ```sh
 cd $obiwan_code/obiwan/etc
 cat cluster_randoms | sed s#name#obiwan_elg_ra175#g > cluster_temp
-psql -U desi_admin -d desi -h scidb2.nersc.gov
+psql -U desi_admin -d desi -h nerscdb03.nersc.gov
 desi=> \i /global/cscratch1/sd/kaylanb/obiwan_code/obiwan/etc/cluster_temp
 ```
 
@@ -75,19 +74,17 @@ desi=> \i /global/cscratch1/sd/kaylanb/obiwan_code/obiwan/etc/cluster_bricks
 ### Prepare QDO runs
 
 *1) Make the QDO task list*
-Generate the qdo tasks to run, which includes the list of bricks taht touch your radec region and how many randoms to inject per task 
+Generate the qdo tasks to run, which includes the list of bricks that are in your radec region AND have at least one random in the pslq db. This requires querying the `randoms_db` for the number of randoms in each brick, so can take awhile. DB performance is okay for up to 20-30 simultaneous connections, so use this mpi4py wrapper of the `qdo_tasks.py` script:
+https://github.com/legacysurvey/obiwan/blob/master/py/obiwan/runmanager/qdo_tasks_mpi4py.py
+to create the tasklist. Run from an NX terminal using the Cori dedicated queue. 
 ```sh
->>> from obiwan.runmanager.qdo_tasks import TaskList
->>> T= TaskList(ra1=173.5,ra2=176.5, dec1=23.0,dec2=26.0,
-                nobj_total=240000, nobj_per_run=300)
->>> T.bricks()
->>> T.tasklist(do_skipid='no',do_more='no')
+# NX terminal
+salloc -N 1 -C haswell --qos=interactive -t 00:30:00
+source $CSCRATCH/obiwan_code/obiwan/bin/run_atnersc/bashrc_obiwan
+srun -n 32 -c 1 python $obiwan_code/obiwan/py/obiwan/runmanager/qdo_tasks_mpi4py.py --ra1 135. --ra2 235. --dec1 "-1" --dec2 10 --nobj_per_run 1000 --obj elg --randoms_db obiwan_elg_100deg2 --outdir --do_more 'no' --minid 1
 ```
-where ra1,ra2,dec1,dec2 are the corners of your region. nobj_total is the total number of randoms in the psql randoms db for your region, and nobj_per_run is how many randoms to inject per obiwan run.
 
-Note, there are 240000 randoms in the db and we are configuring the qdo task list so that 300 objects are injected every time obiwan runs
-
-Create the qdo queue
+Now create the qdo queue
 ```sh
 qdo create obiwan_ra175 
 qdo load obiwan_ra175 tasks_inregion.txt
