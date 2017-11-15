@@ -548,6 +548,15 @@ def flag_nearest_neighbors(Samp, radius_in_deg=5./3600):
   keep= list( set(all_indices).difference(flag_set) )
   return keep, list(flag_set)
 
+def get_ellip(q):
+    """Given minor to major axis ratio (q) Returns ellipticity"""
+    return (1-q**2)/(1+q**2)
+
+def get_e1_e2(q,beta):
+    """Given minor to major axis ratio (q) and postion angle (beta), Returns e1,e2 tuple"""
+    e= ellip(q)
+    return e*np.cos(2*beta), e*np.sin(2*beta)
+
 #def build_simcat(nobj=None, brickname=None, brickwcs=None, meta=None, seed=None, noOverlap=True):
 def build_simcat(Samp=None,brickwcs=None, meta=None):
     """Creates the simulated source catalog for a given brick (not CCD).
@@ -604,6 +613,11 @@ def build_simcat(Samp=None,brickwcs=None, meta=None):
         cat.set('%sflux' % key, 1E9*10**(-0.4*Samp.get('%s_%s' % (typ,key))) ) 
     # Galaxy Properties
     if typ in ['elg','lrg']:
+        # Convert to e1,e2 if given ba,pa
+        if (typ+'_ba' in Samp.get_columns()) & (typ+'_pa' in Samp.get_columns()):
+            e1,e2= get_e1_e2(Samp.get(typ+'_ba'),Samp.get(typ+'_pa')
+            Samp.set(typ+'_e1',e1) 
+            Samp.set(typ+'_e2',e2) 
         for key,tab_key in zip(['sersicn','rhalf','e1','e2'],['n','re','e1','e2']):
             cat.set(key, Samp.get('%s_%s'%(typ,tab_key) ))
         # Sersic n: GALSIM n = [0.3,6.2] for numerical stability,see
@@ -898,27 +912,29 @@ def get_sample_fn(brick,decals_sim_dir,prefix=''):
     return fn
     #return os.path.join(decals_sim_dir,'softlinked_table') #'sample-merged.fits')
 
-def get_sample(objtype,brick,outdir,randoms_db,
-               minid=None,do_skipids='no',
-               verbose=True,
-               randoms_from_fits=''):
+def get_sample(objtype,brick,randoms_db,
+               minid=None,randoms_from_fits='',
+               do_skipids='no',outdir=None,
+               verbose=True):
     """Gets all simulated randoms for a brick from PSQl db, and applies all relevant cuts
 
     Args:
         objtype: elg,lrg
         brick:
-        outdir: path/to/obiwan_out/
         randoms_db: name of PSQL db for randoms, e.g. obiwan_elg_ra175
         minid: None, unless do_more == yes then it is an integer for the randoms id to start from
+        randoms_from_fits: None or filename of fits_table to use for randoms
         do_skipids: yes or no, rerunning on all skipped randoms?
+        outdir: None if do_skipids='no'; otherwise path like $CSCRATCH/obiwan_out/elg_9deg2_ra175
         verbose: True or False, print db query commands
         skip_ids: None, unless do_skipids==yes then list of ids for the randoms to use
-        randoms_from_fits: None or filename of fits_table to use for randoms
     
     Returns:
         sample fits_table
     """
     assert(do_skipids in ['yes','no'])
+    if do_skipids == 'yes':
+        assert(not outdir is None)
     if randoms_from_fits:
         Samp= fits_table(randoms_from_fits)
         Samp.rename('%s_rhalf' % objtype,'%s_re' % objtype)

@@ -90,28 +90,28 @@ class QdoList(object):
         return tasks,ids,logs
 
     def rerun_tasks(self,task_ids, modify=False):
-    """set qdo tasks state to Pending for these task_ids
+        """set qdo tasks state to Pending for these task_ids
 
-    Args:
-        modify: True to actually reset the qdo tasks state AND to delete
-            all output files for that task
-    """
-    q = qdo.connect(self.que_name)
-    for task_id in task_ids:
-        try:
-            task_obj= q.tasks(id= int(task_id))
-            brick,rs,do_skipids,do_more= task_obj.task.split(' ')
-            logdir= get_savedir(self.outdir,self.obj,brick,rs, 
-                                do_skipids=do_skipids,do_more=do_more)
-            rmcmd= "rm %s/*" % logdir
-            if modify:
-                task_obj.set_state(qdo.Task.PENDING)
-                dobash(rmcmd)
-            else:
-                print('would remove id=%d, which corresponds to taks_obj=' % task_id,task_obj)
-                print('by calling dobash(%s)' % rmcmd)
-        except ValueError:
-            print('cant find task_id=%d' % task_id)
+        Args:
+            modify: True to actually reset the qdo tasks state AND to delete
+                all output files for that task
+        """
+        q = qdo.connect(self.que_name)
+        for task_id in task_ids:
+            try:
+                task_obj= q.tasks(id= int(task_id))
+                brick,rs,do_skipids,do_more= task_obj.task.split(' ')
+                logdir= get_savedir(self.outdir,self.obj,brick,rs, 
+                                    do_skipids=do_skipids,do_more=do_more)
+                rmcmd= "rm %s/*" % logdir
+                if modify:
+                    task_obj.set_state(qdo.Task.PENDING)
+                    dobash(rmcmd)
+                else:
+                    print('would remove id=%d, which corresponds to taks_obj=' % task_id,task_obj)
+                    print('by calling dobash(%s)' % rmcmd)
+            except ValueError:
+                print('cant find task_id=%d' % task_id)
 
 
 class RunStatus(object):

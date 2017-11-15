@@ -11,29 +11,29 @@ SURVEY_BRICKS= os.path.join(os.environ['obiwan_data'],
 assert(os.path.exists(SURVEY_BRICKS))
 
 class Bricks(object):
-def __init__(self):
-    self.bricks= fits_table(SURVEY_BRICKS)
+    def __init__(self):
+        self.bricks= fits_table(SURVEY_BRICKS)
 
-def overlapBox(self,ra=[100,101],dec=[20,21]):
-    """approx: bricks within radius of hypotenjuse of box of box center"""
-    box_center=dict(ra= np.average(ra),
-                    dec= np.average(dec))
-    rad_deg= np.sqrt((box_center['ra'] - ra[0])**2 + \
-                     (box_center['dec'] - dec[0])**2)
-    print('box_center=',box_center,'rad_deg=',rad_deg)
-    I,J,d = match_radec(self.bricks.ra, self.bricks.dec, 
-                        box_center['ra'],box_center['dec'],
-                        rad_deg, nearest=True)
-    return self.bricks[I].copy()
-    #for corn_ra,corn_dec in zip([(ra[0],dec[0]),
-    #                             (ra[1],dec[0]),
-    #                             (ra[0],dec[1]),
-    #                             (ra[1],dec[1])]):
-    #keep= np.logical_or.reduce((self.bricks.ra1 >= ra[0],
-    #                             self.bricks.ra2 <= ra[1],
-    #                             self.bricks.dec1 >= dec[0],
-    #                             self.bricks.dec2 <= dec[1]))
-    #return self.bricks[keep].copy()
+    def overlapBox(self,ra=[100,101],dec=[20,21]):
+        """approx: bricks within radius of hypotenjuse of box of box center"""
+        box_center=dict(ra= np.average(ra),
+                        dec= np.average(dec))
+        rad_deg= np.sqrt((box_center['ra'] - ra[0])**2 + \
+                         (box_center['dec'] - dec[0])**2)
+        print('box_center=',box_center,'rad_deg=',rad_deg)
+        I,J,d = match_radec(self.bricks.ra, self.bricks.dec, 
+                            box_center['ra'],box_center['dec'],
+                            rad_deg, nearest=True)
+        return self.bricks[I].copy()
+        #for corn_ra,corn_dec in zip([(ra[0],dec[0]),
+        #                             (ra[1],dec[0]),
+        #                             (ra[0],dec[1]),
+        #                             (ra[1],dec[1])]):
+        #keep= np.logical_or.reduce((self.bricks.ra1 >= ra[0],
+        #                             self.bricks.ra2 <= ra[1],
+        #                             self.bricks.dec1 >= dec[0],
+        #                             self.bricks.dec2 <= dec[1]))
+        #return self.bricks[keep].copy()
 
 class TaskList(object):
     """Creates QDO tasks lists for default,do_skipids, and/or do_more
@@ -55,7 +55,7 @@ class TaskList(object):
         """Returns bricks in ra,dec region"""
         b= Bricks()
         self.bricks= b.overlapBox(ra=[self.ra1,self.ra2], dec=[self.dec1,self.dec2])
-        writelist(np.sort(self.bricks.brickname), 'bricks_inregion.txt')
+        #writelist(np.sort(self.bricks.brickname), 'bricks_inregion.txt')
 
     def task(self,brick,rs,do_skipids,do_more):
         """returns a single QDO task as a string"""
@@ -86,18 +86,13 @@ class TaskList(object):
         Args:
             objtype: elg,lrg
             randoms_db: name of PSQL db for randoms, e.g. obiwan_elg_ra175
-            do_more: yes or no, yes if running more randoms b/c TS returns too few target
             minid: None, unless do_more == yes then it is an integer for the randoms id to start from
-            outdir: $CSCRATCH/obiwan_out/elg_9deg2_ra175
             bricks: array like list of bricks to get qdo tasks for, if None all bricks found
         """
-        do_skipids='no'
         from obiwan.kenobi import get_sample
         sample_kwargs= {"objtype":objtype,
                         "randoms_db":randoms_db,
-                        "minid":minid,
-                        "outdir":outdir,
-                        "do_skipids":do_skipids}
+                        "minid":minid}
         tasks=[]
         if bricks is None:
             bricks= np.sort(self.bricks.brickname)
@@ -119,7 +114,7 @@ class TaskList(object):
         return tasks, not_in_bricks
 
     def writetasks(self,tasks,not_in_bricks,
-                   do_skipids,do_more,minid):
+                   do_more='no',minid=1,do_skipids='no'):
         """Write task list to file"""
         writelist(tasks, 'tasks_skipid_%s_more_%s_minid_%s.txt' % 
                     (do_skipids,do_more,str(minid)))
@@ -131,9 +126,9 @@ if __name__ == '__main__':
     do_skipids='no'
     do_more='yes'
     if do_more == 'yes':
-    minid=240001
+        minid=240001
     else:
-    minid=None
+        minid=None
     ###
     ra1=173.5
     ra2=176.5
