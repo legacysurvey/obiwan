@@ -554,7 +554,7 @@ def get_ellip(q):
 
 def get_e1_e2(q,beta):
     """Given minor to major axis ratio (q) and postion angle (beta), Returns e1,e2 tuple"""
-    e= ellip(q)
+    e= get_ellip(q)
     return e*np.cos(2*beta), e*np.sin(2*beta)
 
 #def build_simcat(nobj=None, brickname=None, brickwcs=None, meta=None, seed=None, noOverlap=True):
