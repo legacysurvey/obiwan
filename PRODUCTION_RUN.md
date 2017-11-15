@@ -73,7 +73,7 @@ desi=> \i /global/cscratch1/sd/kaylanb/obiwan_code/obiwan/etc/cluster_bricks
 
 ### Prepare QDO runs
 
-*1) Make the QDO task list*
+**1) Make the QDO task list**
 Generate the qdo tasks to run, which includes the list of bricks that are in your radec region AND have at least one random in the pslq db. This requires querying the `randoms_db` for the number of randoms in each brick, so can take awhile. DB performance is okay for up to 20-30 simultaneous connections, so use this mpi4py wrapper of the `qdo_tasks.py` script:
 https://github.com/legacysurvey/obiwan/blob/master/py/obiwan/runmanager/qdo_tasks_mpi4py.py
 to create the tasklist. Run from an NX terminal using the Cori dedicated queue. 
@@ -81,7 +81,7 @@ to create the tasklist. Run from an NX terminal using the Cori dedicated queue.
 # NX terminal
 salloc -N 1 -C haswell --qos=interactive -t 00:30:00
 source $CSCRATCH/obiwan_code/obiwan/bin/run_atnersc/bashrc_obiwan
-srun -n 32 -c 1 python $obiwan_code/obiwan/py/obiwan/runmanager/qdo_tasks_mpi4py.py --ra1 135. --ra2 235. --dec1 "-1" --dec2 10 --nobj_per_run 1000 --obj elg --randoms_db obiwan_elg_100deg2 --outdir --do_more 'no' --minid 1
+srun -n 32 -c 1 python $obiwan_code/obiwan/py/obiwan/runmanager/qdo_tasks_mpi4py.py --ra1 135. --ra2 235. --dec1 "-1" --dec2 10 --nobj_per_run 1000 --obj elg --randoms_db obiwan_elg_100deg2 --do_more 'no' --minid 1
 ```
 
 Now create the qdo queue
@@ -90,55 +90,55 @@ qdo create obiwan_ra175
 qdo load obiwan_ra175 tasks_inregion.txt
 ```
 
-Then create that qdo queue
-```sh
-qdo create obiwan_ra175_domore
-qdo load obiwan_ra175_dormore tasks_skipid_no_more_yes_minid_240001.txt
-```
+**2) Run a single brick to test that everything works**
 
-*2) configure the slurm job*
-
-Make a copy of "qdo_job.sh" and "slurm_job.sh",
+Go to your output directory and copy over the template slurm job script
 ```sh
-cd $obiwan_code/bin
-cp qdo_job.sh qdo_job_9deg.sh
-cp slurm_job.sh slurm_job_9deg.sh
+export outdir=$CSCRATCH/obiwan_out/elg_100deg2
+cd $outdir
+cp $obiwan_code/obiwan/bin/slurm_job.sh ./slurm_job_100deg2.sh
 ```
-and the following fields in both job files need to be updated (`do_skipids` only needs to be updated for slurm_job.sh, its auotmatic for qdo_job.sh)
+Modify the relevant fields for the run, namely
 ```sh
 export name_for_run=elg_9deg2_ra175
 export randoms_db=elg_9deg2_ra175
 export do_skipids=no
 export do_more=no
-```
-Additonally, the following fields may need to be updated depending on your run
-```sh
 export dataset=dr5
 export brick=1750p225
 export object=elg
 export nobj=300
 ```
-
-### Run a 5 min debug job to test that everything works on the compute nodes
+Run it as a 30 min debug job
 ```sh
-export outdir=$obiwan_out/${name_for_run}
-cd $outdir
-sbatch $obiwan_code/obiwan/bin/slurm_job_9deg.sh
+sbatch slurm_job_100deg2.sh
 ```
-when it finishes, grep the open the resulting `slurm*.out` file, find the file it says it is "logging to", and grep that file for the success string
+When it finishes, grep the open the resulting `slurm*.out` file, find the file it says it is "logging to", and grep that file for the success string
 ```sh
 grep "decals_sim:All done!" <logging to file>
 ```
-If it finds it, then it work and you can remove the output directory
+If the success string is there, cleanup the testrun outputs, add the new slurm job script to the obiwan repo, and being the production run
 ```
 rm -r $obiwan_out/${name_for_run}/elg/${bri}/${brick}/rs0
+cp slurm_job_100deg2.sh $obiwan_code/obiwan/bin/
+# cd to obiwan repo and git add, git commit
 ```
 
-### Finally, launch with QDO
+**3) Production runs with QDO**
+Copy over the template qdo job script, 
 ```sh
-cd $obiwan_out/${name_for_run}
-export qdo_quename=obiwan_ra175
-qdo launch ${qdo_quename} 40 --cores_per_worker 4 --batchqueue regular --walltime 05:00:00 --script $obiwan_code/obiwan/bin/qdo_job_9deg.sh --keep_env
+cd $outdir
+cp $obiwan_code/obiwan/bin/qdo_job.sh ./qdo_job_100deg2.sh
+```
+and edit the relevant fileds as before. Now launch the qdo jobs
+```sh
+export qdo_quename=obiwan_elg_100deg
+qdo launch ${qdo_quename} 40 --cores_per_worker 4 --batchqueue regular --walltime 05:00:00 --script $outdir/qdo_job_100deg2.sh --keep_env
+```
+Once you see successful runs, 
+```sh
+cp qdo_job_100deg2.sh $obiwan_code/obiwan/bin/
+# cd to obiwan repo and git add, git commit
 ```
 
 ### Add more randoms mid-run
