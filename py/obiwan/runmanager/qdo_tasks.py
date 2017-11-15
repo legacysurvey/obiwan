@@ -77,8 +77,10 @@ class TaskList(object):
         writelist(tasks, 'tasks_skipid_%s_more_%s_minid_%s.txt' % 
                          (do_skipids,do_more,str(minid)))
 
-    def tasklist(self,objtype,randoms_db,
-                 do_more,minid,outdir):
+
+    def get_tasklist(self,objtype='elg',randoms_db='obiwan_elg_ra175',
+                     do_more='no',minid=1,outdir=None,
+                     bricks=None):
         """For each brick, gets all randoms from PSQL db, and finds exact number of rs* tasks needed
 
         Args:
@@ -86,7 +88,8 @@ class TaskList(object):
             randoms_db: name of PSQL db for randoms, e.g. obiwan_elg_ra175
             do_more: yes or no, yes if running more randoms b/c TS returns too few target
             minid: None, unless do_more == yes then it is an integer for the randoms id to start from
-            outdir: path/to/obiwan_out/
+            outdir: $CSCRATCH/obiwan_out/elg_9deg2_ra175
+            bricks: array like list of bricks to get qdo tasks for, if None all bricks found
         """
         do_skipids='no'
         from obiwan.kenobi import get_sample
@@ -96,7 +99,10 @@ class TaskList(object):
                         "outdir":outdir,
                         "do_skipids":do_skipids}
         tasks=[]
-        bricks= np.sort(self.bricks.brickname)
+        if bricks is None:
+            bricks= np.sort(self.bricks.brickname)
+        else:
+            bricks= np.sort(bricks)
         not_in_bricks=[]
         for cnt,brick in enumerate(bricks):
             if cnt % 10 == 0: print('brick %d/%d' % (cnt+1,len(bricks)))
@@ -110,10 +116,15 @@ class TaskList(object):
                     raise ValueError(str(err_obj))
             tasks+= [self.task(brick,rs,do_skipids,do_more) 
                      for rs in np.arange(0,len(Samp),self.nobj_per_run)]
+        return tasks, not_in_bricks
+
+    def writetasks(self,tasks,not_in_bricks,
+                   do_skipids,do_more,minid):
+        """Write task list to file"""
         writelist(tasks, 'tasks_skipid_%s_more_%s_minid_%s.txt' % 
-                         (do_skipids,do_more,str(minid)))
-        print('number not in bricks = %d' % len(not_in_bricks))
-        print(not_in_bricks[:30])
+                    (do_skipids,do_more,str(minid)))
+        print('Number of bricks without randoms: %d' % len(not_in_bricks))
+        print('First 10 are',not_in_bricks[:10])
 
 
 if __name__ == '__main__':
