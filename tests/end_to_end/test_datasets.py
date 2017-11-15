@@ -327,7 +327,12 @@ def test_cases(z=True,
             A.load_outputs()
             A.simcat_xy()
             A.plots()
-            A.numeric_tests() 
+            A.numeric_tests()
+
+def test_main():
+    """travis CI"""
+    test_cases(z=True,
+               grz=False)
 
 if __name__ == "__main__":
     #test_dataset_DR3()
