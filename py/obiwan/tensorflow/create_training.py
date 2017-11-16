@@ -33,11 +33,14 @@ class BrickStamps(object):
             zoom: if legacypipe was run with zoom option
         """
         self.get_brickwcs(brick)
-        rs_dirs= glob(os.path.join(self.obj_dir,'elg/%s/%s/*rs0*' % \
+        rs_dirs= glob(os.path.join(self.obj_dir,'elg/%s/%s/*rs*' % \
                                    (brick[:3],brick)))
         assert(len(rs_dirs) > 0)
+        # coadd fits images must exist
+        coadd_fns= glob(os.path.join(rs_dirs[0],'coadd/*-image-*.fits.fz'))
+        assert(len(coadd_fns) > 0)
         # set of bands in this brick
-        self.bands= (pd.Series( glob(os.path.join(rs_dirs[0],'coadd/*-image-*.fits.fz')) )
+        self.bands= (pd.Series(coadd_fns)
                      .str.replace('.fits.fz','')
                      .str[-1].values)
         assert(self.bands.size > 0)
@@ -48,6 +51,9 @@ class BrickStamps(object):
         hdf5_fn= os.path.join(self.obj_dir,
                               'elg/%s/%s/' % (brick[:3],brick),
                               'img_ivar_%s.hdf5' % self.bands_str)
+        if os.path.exists(hdf5_fn):
+            print('Skipping %s, hdf5 already exists: %s' % (brick,hdf5_fn))
+            return None
         self.hdf5_obj = h5py.File(hdf5_fn, "w")
         # Many rs*/ dirs per brick
         for rs_dir in rs_dirs:
@@ -97,7 +103,9 @@ class BrickStamps(object):
         for cat in self.simcat:
             xslc= slice(int(cat.x)-hw,int(cat.x)+hw)
             yslc= slice(int(cat.y)-hw,int(cat.y)+hw)
-            # N x N x Number of bands                                                        
+            # N x N x Number of bands
+            zero_img= galsim.Image(np.zeros((2*hw+1,2*hw+1,len(self.bands_str))))
+            zero_ivar= galsim.Image(np.zeros((2*hw+1,2*hw+1,len(self.bands_str))))
             _ = self.hdf5_obj.create_dataset(str(cat.id)+'/img', 
                                              chunks=True, \
                 data= np.array([sliceImage(self.img_fits[band],
