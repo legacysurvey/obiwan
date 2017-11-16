@@ -9,6 +9,8 @@ from astrometry.util.fits import fits_table
 from legacypipe.survey import LegacySurveyData, wcs_for_brick
 from obiwan.qa.visual import readImage,sliceImage
 
+import galsim
+
 HDF5_KEYS= ['g','r','z','gr','gz','rz','grz']
 
 class BrickStamps(object):
@@ -51,16 +53,21 @@ class BrickStamps(object):
         hdf5_fn= os.path.join(self.obj_dir,
                               'elg/%s/%s/' % (brick[:3],brick),
                               'img_ivar_%s.hdf5' % self.bands_str)
+        hdf5_fn_onedge= hdf5_fn.replace('.hdf5','_onedge.hdf5')
         if os.path.exists(hdf5_fn):
             print('Skipping %s, hdf5 already exists: %s' % (brick,hdf5_fn))
             return None
         self.hdf5_obj = h5py.File(hdf5_fn, "w")
+        self.hdf5_obj_onedge = h5py.File(hdf5_fn_onedge, "w")
         # Many rs*/ dirs per brick
         for rs_dir in rs_dirs:
             self.load_brick(rs_dir,brick)
             self.simcat_xy(zoom=zoom)
             self.extract()
         self.hdf5_obj.close()
+        self.hdf5_obj_onedge.close()
+        print('Wrote %s' % hdf5_fn)
+        print('Wrote %s'% hdf5_fn_onedge)
         
     def load_brick(self,rs_dir,brick):
         """loads all necessary info for each brick,rs_dir combination
@@ -72,12 +79,17 @@ class BrickStamps(object):
         self.simcat= fits_table(os.path.join(rs_dir,'obiwan/simcat-elg-%s.fits' % brick))
         self.obitractor= fits_table(os.path.join(rs_dir,'tractor/tractor-%s.fits' % brick))
 
-        self.img_fits,self.ivar_fits,self.sims_fits= {},{},{} 
+        self.img_fits,self.ivar_fits= {},{}
         for b in self.bands: 
             self.img_fits[b]= readImage(os.path.join(rs_dir,'coadd/legacysurvey-%s-image-%s.fits.fz' % \
                                              (brick,b)))
             self.ivar_fits[b]= readImage(os.path.join(rs_dir,'coadd/legacysurvey-%s-invvar-%s.fits.fz' % \
                                               (brick,b)))
+        # galsim.Image() so can determine overlap w/cutouts
+        self.img_gs,self.ivar_gs= {},{}
+        for b in self.bands:
+            self.img_gs[b]= galsim.Image(self.img_fits[b])
+            self.ivar_gs[b]= galsim.Image(self.ivar_fits[b])
 
     def get_brickwcs(self,brick):
         brickinfo = self.survey.get_brick_by_name(brick)
@@ -104,22 +116,51 @@ class BrickStamps(object):
             xslc= slice(int(cat.x)-hw,int(cat.x)+hw)
             yslc= slice(int(cat.y)-hw,int(cat.y)+hw)
             # N x N x Number of bands
-            zero_img= galsim.Image(np.zeros((2*hw+1,2*hw+1,len(self.bands_str))))
-            zero_ivar= galsim.Image(np.zeros((2*hw+1,2*hw+1,len(self.bands_str))))
-            _ = self.hdf5_obj.create_dataset(str(cat.id)+'/img', 
-                                             chunks=True, \
-                data= np.array([sliceImage(self.img_fits[band],
-                                           xslice=xslc,yslice=yslc)
-                                for band in self.bands_str]).T)
-            _ = self.hdf5_obj.create_dataset(str(cat.id)+'/ivar', 
-                                             chunks=True, \
-                data= np.array([sliceImage(self.ivar_fits[band],
-                                           xslice=xslc,yslice=yslc)
-                                for band in self.bands_str]).T)
+            test_img= galsim.Image(np.zeros((2*hw+1,2*hw+1)))
+            # y,x because numpy indexing
+            test_img.setCenter(int(cat.x),int(cat.y))
+            olap= test_img.bounds & self.img_gs[self.bands[0]].bounds
+            assert(olap.area() > 0)
+            if olap.numpyShape() == test_img.array.shape:
+                # Grab from fits image b/c aligned better
+                _ = self.hdf5_obj.create_dataset(str(cat.id)+'/img', 
+                                                 chunks=True, \
+                    data= np.array([sliceImage(self.img_fits[band],
+                                               xslice=xslc,yslice=yslc)
+                                    for band in self.bands_str]).T)
+                _ = self.hdf5_obj.create_dataset(str(cat.id)+'/ivar', 
+                                                 chunks=True, \
+                    data= np.array([sliceImage(self.ivar_fits[band],
+                                               xslice=xslc,yslice=yslc)
+                                    for band in self.bands_str]).T)
+
+                # _ = self.hdf5_obj.create_dataset(str(cat.id)+'/img', 
+                #                                  chunks=True, \
+                #     data= np.array([self.img_fits[band][olap].array
+                #                     for band in self.bands_str]).T)
+                # _ = self.hdf5_obj.create_dataset(str(cat.id)+'/ivar', 
+                #                                  chunks=True, \
+                #     data= np.array([self.ivar_fits[band][olap].array
+                #                     for band in self.bands_str]).T)
+
+            else:
+                # galsim.Image() cannot be 3D
+                img= [test_img.copy()]*len(self.bands)
+                ivar= [test_img.copy()]*len(self.bands)
+                for i,band in enumerate(self.bands_str):
+                    img[i][olap] += self.img_gs[band][olap]
+                    ivar[i][olap] += self.ivar_gs[band][olap]
+
+                _ = self.hdf5_obj_onedge.create_dataset(str(cat.id)+'/img', 
+                                                        chunks=True, \
+                    data= np.array([d.array for d in img]).T)
+                _ = self.hdf5_obj_onedge.create_dataset(str(cat.id)+'/ivar', 
+                                                        chunks=True, \
+                    data= np.array([d.array for d in ivar]).T)
 
 
 if __name__ == '__main__':
-    name= 'testcase_DR5_grz'
+    name= 'testcase_DR5_z'
     if '_grz' in name:
         brick='0285m165' 
         zoom= [3077, 3277, 2576, 2776]
@@ -131,7 +172,7 @@ if __name__ == '__main__':
     ls_dir= os.path.join(repo_dir,
                          'tests/end_to_end',name)
     obj_dir= os.path.join(repo_dir,
-                         'tests/end_to_end','out_'+name)
+                         'tests/end_to_end','out_'+name+'_onedge')
     
     Stamps= BrickStamps(ls_dir=ls_dir, obj_dir=obj_dir)
     for brick in [brick]:
