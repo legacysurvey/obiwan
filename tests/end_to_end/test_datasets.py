@@ -72,22 +72,25 @@ class Testcase(object):
 
     Args:
         name: testcase name
-        dataset: string, 'DR3', 'DR5', etc
+        dataset: string, 'DR3', 'DR5', 
+        obj: elg,star
         add_noise: to add Poisson noise to simulated galaxy profiles
         all_blobs: to fit models to all blobs, not just the blobs containing sims
         onedge: to add randoms at edge of region, not well within the boundaries
     """
 
     def __init__(self, name='testcase_DR5_z',dataset='DR5',
+                 obj='elg',
                  add_noise=False,all_blobs=False,
                  onedge=False):
         assert(dataset in DATASETS)
         self.name= name
         self.dataset= dataset
+        self.obj= obj
         self.all_blobs= all_blobs
         self.add_noise= add_noise
         self.onedge= onedge
-        self.outname= 'out_'+self.name
+        self.outname= 'out_%s_%s' % (self.name,self.obj)
         if self.all_blobs:
             self.outname += '_allblobs'
         if self.add_noise:
@@ -119,14 +122,14 @@ class Testcase(object):
             extra_cmd_line += ['--all_blobs']
 
         randoms_fn= os.path.join(os.environ["LEGACY_SURVEY_DIR"], 
-                                 'randoms.fits')
+                                 'randoms_%s.fits' % self.obj)
         if self.onedge:
             randoms_fn= randoms_fn.replace('.fits','_onedge.fits')
 
         cmd_line=['--dataset', self.dataset, '-b', self.brick, '-n', '4', 
                   '--zoom', str(self.zoom[0]), str(self.zoom[1]), 
                             str(self.zoom[2]), str(self.zoom[3]),
-                  '-o', 'elg', '--outdir', self.outdir,
+                  '-o', self.obj, '--outdir', self.outdir,
                   '--randoms_from_fits', randoms_fn] + extra_cmd_line
         parser= get_parser()
         args = parser.parse_args(args=cmd_line)
@@ -167,8 +170,8 @@ class AnalyzeTestcase(Testcase):
 
         self.outdir= os.path.join(os.environ['HOME'],
                            'myrepo/obiwan/tests/end_to_end',
-                            self.outname,'elg/%s/%s/rs0/' % \
-                             (self.brick[:3],self.brick)
+                            self.outname,'%s/%s/%s/rs0/' % \
+                             (self.obj,self.brick[:3],self.brick)
                          )
     
     def load_outputs(self):
@@ -180,7 +183,7 @@ class AnalyzeTestcase(Testcase):
             fits_coadds
         """
         print('Loading from %s' % self.outdir)
-        self.simcat= fits_table(os.path.join(self.outdir,'obiwan/simcat-elg-%s.fits' % self.brick))
+        self.simcat= fits_table(os.path.join(self.outdir,'obiwan/simcat-%s-%s.fits' % (self.obj,self.brick)))
         self.obitractor= fits_table(os.path.join(self.outdir,'tractor/tractor-%s.fits' % self.brick))
 
         self.blobs= fitsio.FITS(os.path.join(self.outdir,'metrics/blobs-%s.fits.gz' % self.brick))[0].read()
@@ -303,6 +306,7 @@ class AnalyzeTestcase(Testcase):
 
 
 def test_cases(z=True,grz=True,
+               obj='elg',
                add_noise=False,all_blobs=False,
                onedge=False,
                dataset='DR5'):
@@ -314,7 +318,8 @@ def test_cases(z=True,grz=True,
         onedge: to add randoms at edge of region, not well within the boundaries
         dataset: no reason to be anything other than DR5 for these tests
     """
-    d= dict(add_noise=add_noise,all_blobs=all_blobs,
+    d= dict(obj=obj,
+            add_noise=add_noise,all_blobs=all_blobs,
             onedge=onedge,dataset=dataset)    
     if z:
         d.update(name='testcase_DR5_z')
@@ -346,7 +351,8 @@ def test_main():
 if __name__ == "__main__":
     #test_dataset_DR3()
     #test_dataset_DR5() 
-    test_cases(z=True,grz=False,
-               onedge=True)
+    test_cases(z=False,grz=True,
+               obj='elg',
+               all_blobs=False,onedge=False)
 
     
