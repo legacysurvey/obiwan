@@ -82,7 +82,8 @@ class Testcase(object):
     def __init__(self, name='testcase_DR5_z',dataset='DR5',
                  obj='elg',
                  add_noise=False,all_blobs=False,
-                 onedge=False):
+                 onedge=False,
+                 early_coadds=False):
         assert(dataset in DATASETS)
         self.name= name
         self.dataset= dataset
@@ -90,6 +91,7 @@ class Testcase(object):
         self.all_blobs= all_blobs
         self.add_noise= add_noise
         self.onedge= onedge
+        self.early_coadds= early_coadds
         self.outname= 'out_%s_%s' % (self.name,self.obj)
         if self.all_blobs:
             self.outname += '_allblobs'
@@ -97,6 +99,8 @@ class Testcase(object):
             self.outname += '_addnoise'
         if self.onedge:
             self.outname += '_onedge'
+        if self.early_coadds:
+            self.outname += '_coadds'
         self.outdir= os.path.join(os.path.dirname(__file__), 
                                   self.outname)
         
@@ -120,6 +124,8 @@ class Testcase(object):
             extra_cmd_line += ['--add_sim_noise']
         if self.all_blobs:
             extra_cmd_line += ['--all_blobs']
+        if self.early_coadds:
+            extra_cmd_line += ['--early_coadds']
 
         randoms_fn= os.path.join(os.environ["LEGACY_SURVEY_DIR"], 
                                  'randoms_%s.fits' % self.obj)
@@ -308,7 +314,7 @@ class AnalyzeTestcase(Testcase):
 def test_cases(z=True,grz=True,
                obj='elg',
                add_noise=False,all_blobs=False,
-               onedge=False,
+               onedge=False, early_coadds=False,
                dataset='DR5'):
     """
     Args:
@@ -316,11 +322,13 @@ def test_cases(z=True,grz=True,
         all_blobs: to fit models to all blobs, not just the blobs containing sims
         add_noise: to add Poisson noise to simulated galaxy profiles
         onedge: to add randoms at edge of region, not well within the boundaries
+        early_coadds: write coadds before model fitting and stop there
         dataset: no reason to be anything other than DR5 for these tests
     """
     d= dict(obj=obj,
             add_noise=add_noise,all_blobs=all_blobs,
-            onedge=onedge,dataset=dataset)    
+            onedge=onedge,early_coadds=early_coadds,
+            dataset=dataset)    
     if z:
         d.update(name='testcase_DR5_z')
         T= Testcase(**d)
@@ -353,6 +361,7 @@ if __name__ == "__main__":
     #test_dataset_DR5() 
     test_cases(z=False,grz=True,
                obj='elg',
-               all_blobs=False,onedge=False)
+               all_blobs=True,onedge=False,
+               early_coadds=True)
 
     
