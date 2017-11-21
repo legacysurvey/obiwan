@@ -917,9 +917,10 @@ def do_ith_cleanup(d=None):
     try:
         dobash('rsync -av %s/coadd/%s/%s/* %s/coadd/' % 
                 (outdir,bri,brick, outdir))
-        for name in ['metrics','tractor','tractor-i']:
-            dobash('rsync -av %s/%s/%s/* %s/%s/' % 
-                    (outdir,name,bri, outdir,name))
+        if not d['args'].early_coadds:
+            for name in ['metrics','tractor','tractor-i']:
+                dobash('rsync -av %s/%s/%s/* %s/%s/' % 
+                        (outdir,name,bri, outdir,name))
         dobash('mkdir -p %s/obiwan' % outdir)
         dobash('rsync -av %s/*.fits %s/obiwan/' % 
                 (outdir,outdir))
@@ -928,8 +929,9 @@ def do_ith_cleanup(d=None):
 
     # If here, then safe to remove originals
     dobash('rm -r %s/coadd/%s' % (outdir,bri))
-    for name in ['metrics','tractor','tractor-i']:
-        dobash('rm -r %s/%s/%s' % (outdir,name,bri))
+    if not d['args'].early_coadds:
+        for name in ['metrics','tractor','tractor-i']:
+            dobash('rm -r %s/%s/%s' % (outdir,name,bri))
     dobash('rm %s/*.fits' % outdir)
     # Only "rowstars 0" keeps its coadds
     if d['rowst'] != 0:
