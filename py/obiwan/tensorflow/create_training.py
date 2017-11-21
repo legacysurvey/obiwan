@@ -24,7 +24,8 @@ class BrickStamps(object):
 
     def __init__(self,ls_dir=None,obj_dir=None):
         self.obj_dir= obj_dir
-        os.environ["LEGACY_SURVEY_DIR"]= ls_dir
+        if ls_dir:
+            os.environ["LEGACY_SURVEY_DIR"]= ls_dir
         self.survey = LegacySurveyData()
  
     def write_hdf5_for_brick(self,brick, zoom=None):
@@ -159,7 +160,7 @@ class BrickStamps(object):
                     data= np.array([d.array for d in ivar]).T)
 
 
-if __name__ == '__main__':
+def testcase_main(): 
     name= 'testcase_DR5_z'
     if '_grz' in name:
         brick='0285m165' 
@@ -177,4 +178,20 @@ if __name__ == '__main__':
     Stamps= BrickStamps(ls_dir=ls_dir, obj_dir=obj_dir)
     for brick in [brick]:
         Stamps.write_hdf5_for_brick(brick, zoom=zoom)
+
+def mpi_main():
+    from mpi4py.MPI import COMM_WORLD as comm
+    bricks= np.loadtxt('bricks_all.txt',dtype=str)
+    obj_dir= os.path.join('/global/cscratch1/sd/kaylanb/obiwan_out/elg_100deg2')
+
+    rank_bricks= np.array_split(bricks, comm.size)[comm.rank]
+    Stamps= BrickStamps(ls_dir=None, obj_dir=obj_dir)
+    for brick in rank_bricks:
+        print('rank %d working on brick %s' % (comm.rank,brick))
+        Stamps.write_hdf5_for_brick(brick)
+
+
+if __name__ == '__main__':
+    #testcase_main()
+    mpi_main()
 
