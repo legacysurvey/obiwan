@@ -189,17 +189,18 @@ class AnalyzeTestcase(Testcase):
             fits_coadds
         """
         print('Loading from %s' % self.outdir)
+        if not self.early_coadds:
+            self.obitractor= fits_table(os.path.join(self.outdir,'tractor/tractor-%s.fits' % self.brick))
+            self.blobs= fitsio.FITS(os.path.join(self.outdir,'metrics/blobs-%s.fits.gz' % self.brick))[0].read()
+            self.model_jpg= readImage(os.path.join(self.outdir,'coadd/legacysurvey-%s-model.jpg' % self.brick),
+                                 jpeg=True)
+            self.resid_jpg= readImage(os.path.join(self.outdir,'coadd/legacysurvey-%s-resid.jpg' % self.brick),
+                                 jpeg=True)
+        
         self.simcat= fits_table(os.path.join(self.outdir,'obiwan/simcat-%s-%s.fits' % (self.obj,self.brick)))
-        self.obitractor= fits_table(os.path.join(self.outdir,'tractor/tractor-%s.fits' % self.brick))
-
-        self.blobs= fitsio.FITS(os.path.join(self.outdir,'metrics/blobs-%s.fits.gz' % self.brick))[0].read()
-
+        
         self.img_jpg= readImage(os.path.join(self.outdir,'coadd/legacysurvey-%s-image.jpg' % self.brick),
                            jpeg=True)
-        self.model_jpg= readImage(os.path.join(self.outdir,'coadd/legacysurvey-%s-model.jpg' % self.brick),
-                             jpeg=True)
-        self.resid_jpg= readImage(os.path.join(self.outdir,'coadd/legacysurvey-%s-resid.jpg' % self.brick),
-                             jpeg=True)
 
         self.img_fits,self.ivar_fits,self.sims_fits= {},{},{}
         for b in self.bands:
@@ -334,22 +335,24 @@ def test_cases(z=True,grz=True,
         T= Testcase(**d)
         T.run()
 
-        A= AnalyzeTestcase(**d)
-        A.load_outputs()
-        A.simcat_xy()
-        A.plots()
-        A.numeric_tests()
+        if not early_coadds:
+            A= AnalyzeTestcase(**d)
+            A.load_outputs()
+            A.simcat_xy()
+            A.plots()
+            A.numeric_tests()
 
     if grz:
         d.update(name='testcase_DR5_grz')
         T= Testcase(**d)
         T.run()
 
-        A= AnalyzeTestcase(**d)
-        A.load_outputs()
-        A.simcat_xy()
-        A.plots()
-        A.numeric_tests()
+        if not early_coadds:
+            A= AnalyzeTestcase(**d)
+            A.load_outputs()
+            A.simcat_xy()
+            A.plots()
+            A.numeric_tests()
 
 def test_main():
     """travis CI"""
