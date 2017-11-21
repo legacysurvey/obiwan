@@ -692,8 +692,8 @@ def get_parser():
     parser.add_argument('-testA','--image_eq_model', action="store_true", help="set to set image,inverr by model only (ignore real image,invvar)")
     parser.add_argument('--all-blobs', action='store_true', 
                         help='Process all the blobs, not just those that contain simulated sources.')
-    parser.add_argument('--stage', choices=['tims', 'image_coadds', 'srcs', 'fitblobs', 'coadds'],
-                        type=str, default=None, metavar='', help='Run up to the given stage')
+    #parser.add_argument('--stage', choices=['tims', 'image_coadds', 'srcs', 'fitblobs', 'coadds'],
+    #                    type=str, default=None, metavar='', help='Run up to the given stage')
     parser.add_argument('--early_coadds', action='store_true',default=False,
                         help='add this option to make the JPGs before detection/model fitting')
     parser.add_argument('--bricklist',action='store',default='bricks-eboss-ngc.txt',\
@@ -832,9 +832,9 @@ def get_runbrick_setup(**kwargs):
            '--zoom','%d' % zm[0],'%d' % zm[1],'%d' % zm[2],'%d' % zm[3],
            '--no-wise', '--threads','%d' % kwargs['threads']]
     if kwargs['early_coadds']:
-        cmd_line += ['--early-coadds']
-    if kwargs['stage']:
-        cmd_line += ['--stage', '%s' % kwargs['stage']]
+        cmd_line += ['--early-coadds', '--stage', 'image_coadds']
+    #if kwargs['stage']:
+    #    cmd_line += ['--stage', '%s' % kwargs['stage']]
     if dataset == 'DR3':
         #cmd_line += ['--run', 'dr3', '--hybrid-psf','--nsigma', '6']
         cmd_line += ['--run', 'dr3','--nsigma', '6']
