@@ -8,6 +8,7 @@ from astrometry.util.fits import fits_table
 
 from legacypipe.survey import LegacySurveyData, wcs_for_brick
 from obiwan.qa.visual import readImage,sliceImage
+from obiwan.common import dobash
 
 import galsim
 
@@ -29,7 +30,7 @@ class BrickStamps(object):
             os.environ["LEGACY_SURVEY_DIR"]= ls_dir
         self.survey = LegacySurveyData()
 
-    def run(self,brick,rs_dirs=[],cat_fn=None,
+    def run(self,brick,rs_dirs=[],isTractor=True,
             savedir=None, zoom=None):
         """Write the hdf5 image files for all rs/* in this brick
 
@@ -37,15 +38,16 @@ class BrickStamps(object):
             brick:
             rs_dirs: list of dirs to the coadd/,tractor/ dirs for this brick
                 For obiwan, this is many rs*/ dirs, for DR5 this is a single dir
-            cat_fn: name of catalogue relative to the rs_dirs, e.g. for simcat its
-                'obiwan/simcat-elg-%s.fits' % brick
+            isTractor: boolean, is the catalouge a Tractor cat or a simcat cat?
             savedir: where to write the hdf5 cutouts 
             zoom: if legacypipe was run with zoom option
         """
         self.get_brickwcs(brick)
         assert(len(rs_dirs) > 0)
         # coadd fits images must exist
-        coadd_fns= glob(os.path.join(rs_dirs[0],'coadd/*-image-*.fits.fz'))
+        coadd_fns= glob(os.path.join(rs_dirs[0],'coadd',
+                                     brick[:3],brick,'*-image-*.fits.fz'))
+        print('rs_dirs[0]=',rs_dirs[0])
         assert(len(coadd_fns) > 0)
         # set of bands in this brick
         self.bands= (pd.Series(coadd_fns)
@@ -66,15 +68,16 @@ class BrickStamps(object):
         self.hdf5_obj_onedge = h5py.File(hdf5_fn_onedge, "w")
         # Many rs*/ dirs per brick
         for rs_dir in rs_dirs:
-            self.load_brick(brick=brick,rs_dir=rs_dir,cat_fn=cat_fn)
+            self.load_brick(brick=brick,rs_dir=rs_dir,isTractor=isTractor)
             self.add_xyid(zoom=zoom)
+            self.apply_cuts()
             self.extract()
         self.hdf5_obj.close()
         self.hdf5_obj_onedge.close()
         print('Wrote %s' % hdf5_fn)
         print('Wrote %s'% hdf5_fn_onedge)
         
-    def load_brick(self,brick,rs_dir,cat_fn):
+    def load_brick(self,brick,rs_dir,isTractor=True):
         """loads all necessary info for each brick,rs_dir combination
 
         Args:
@@ -84,14 +87,19 @@ class BrickStamps(object):
                 'obiwan/simcat-elg-%s.fits' % brick
         """
         print('Loading from %s' % rs_dir)
-        self.cat= fits_table(os.path.join(rs_dir,cat_fn))
+        if isTractor:
+            self.cat= fits_table(os.path.join(rs_dir,'tractor',
+                                 brick[:3],'tractor-%s.fits' % brick))
+        else:
+            self.cat= fits_table(os.path.join(rs_dir,'obiwan',
+                                              brick[:3],brick,'simcat.fits'))
 
         self.img_fits,self.ivar_fits= {},{}
         for b in self.bands: 
-            self.img_fits[b]= readImage(os.path.join(rs_dir,'coadd/legacysurvey-%s-image-%s.fits.fz' % \
-                                             (brick,b)))
-            self.ivar_fits[b]= readImage(os.path.join(rs_dir,'coadd/legacysurvey-%s-invvar-%s.fits.fz' % \
-                                              (brick,b)))
+            self.img_fits[b]= readImage(os.path.join(rs_dir,'coadd',brick[:3],brick,
+                                        'legacysurvey-%s-image-%s.fits.fz' % (brick,b)))
+            self.ivar_fits[b]= readImage(os.path.join(rs_dir,'coadd',brick[:3],brick,
+                                        'legacysurvey-%s-invvar-%s.fits.fz' % (brick,b)))
         # galsim.Image() so can determine overlap w/cutouts
         self.img_gs,self.ivar_gs= {},{}
         for b in self.bands:
@@ -106,6 +114,11 @@ class BrickStamps(object):
         # Require x,y,id columns in self.simcat and x,y are ints
         for col in ['x','y','id']:
             assert(col in self.cat.get_columns())
+
+    def apply_cuts(self):
+        print('len(cat) b4 cut: %d' % len(self.cat))
+        self.cat.cut(np.ones(len(self.cat),bool))
+        print('len(cat) after cut: %d' % len(self.cat))
 
     def extract(self,hw=20):
         """For each id,x,y in self.cat, extracts image cutout
@@ -166,12 +179,11 @@ class SimcatStamps(BrickStamps):
         super(SimcatStamps,self).__init__(ls_dir=ls_dir,
                                           obj_dir=obj_dir)
 
-    def run(self,brick,zoom=None):
+    def run(self,brick,savedir=None,zoom=None):
         d=dict(rs_dirs=glob(os.path.join(self.obj_dir,'elg/%s/%s/*rs*' % \
                                    (brick[:3],brick))),
-               cat_fn='obiwan/simcat-elg-%s.fits' % brick,
-               savedir=os.path.join(self.obj_dir,
-                         'elg/%s/%s/' % (brick[:3],brick)),
+               isTractor=False,
+               savedir=savedir,
                zoom=zoom,
                )
         super(SimcatStamps,self).run(brick,**d)
@@ -184,21 +196,21 @@ class SimcatStamps(BrickStamps):
         self.cat.set('x',x.astype(int))
         self.cat.set('y',y.astype(int))
 
-    
+def flux2mag(nmgy):
+    return -2.5 * (np.log10(nmgy) - 9)
 
 class TractorStamps(BrickStamps):
     def __init__(self,ls_dir=None,obj_dir=None):
         super(TractorStamps,self).__init__(ls_dir=ls_dir,
                                            obj_dir=obj_dir)
 
-    def run(self,brick,zoom=None):
+    def run(self,brick,savedir=None,zoom=None):
         d=dict(rs_dirs= [self.obj_dir],
-               cat_fn='tractor/tractor-%s.fits' % brick,
-               savedir=os.path.join(obj_dir,
-                         'elg/%s/%s/' % (brick[:3],brick)),
+               isTractor=True,
+               savedir=savedir,
                zoom=zoom,
                )
-        super(SimcatStamps,self).run(brick,**d)
+        super(TractorStamps,self).run(brick,**d)
 
     def add_xyid(self,zoom=None):
         x,y=self.cat.bx,self.cat.by
@@ -207,11 +219,24 @@ class TractorStamps(BrickStamps):
             y -= zoom[2]
         self.cat.set('x',x.astype(int))
         self.cat.set('y',y.astype(int))
+        # ID
+        self.cat.set('id',self.cat.objid)
 
+    def apply_cuts(self):
+        print('len(cat) b4 cut: %d' % len(self.cat))
+        self.cat.cut((self.cat.brick_primary) &
+                     (self.cat.nobs_g >= 1) &
+                     (self.cat.nobs_r >= 1) &
+                     (self.cat.nobs_z >= 1) & 
+                     (self.cat.allmask_g == 0) & 
+                     (self.cat.allmask_r == 0) & 
+                     (self.cat.allmask_z == 0)) 
+        print('len(cat) after cut: %d' % len(self.cat))
+        self.cat.cut((flux2mag(self.cat.flux_g) > 20.) &
+                     (flux2mag(self.cat.flux_r) > 20.) &
+                     (flux2mag(self.cat.flux_z) > 19.))
+        print('len(cat) after cut: %d' % len(self.cat))
 
-
-
-    
 
 def testcase_main(): 
     name= 'testcase_DR5_grz'
@@ -237,18 +262,34 @@ def testcase_main():
         Sim.run(brick, zoom=zoom)
 
 def mpi_main():
-    from mpi4py.MPI import COMM_WORLD as comm
-    bricks= np.loadtxt('bricks_all.txt',dtype=str)
-    obj_dir= os.path.join('/global/cscratch1/sd/kaylanb/obiwan_out/elg_100deg2')
+    #from mpi4py.MPI import COMM_WORLD as comm
+    #bricks= np.loadtxt('bricks_all.txt',dtype=str)
+    tractor=True
+    if not tractor:
+        obj_dir= '/global/cscratch1/sd/kaylanb/obiwan_out/elg_100deg2'
+    else:
+        obj_dir= '/global/project/projectdirs/cosmo/data/legacysurvey/dr5'
+        my_dir= '/global/cscratch1/sd/kaylanb/obiwan_out/elg_100deg2'
 
-    rank_bricks= np.array_split(bricks, comm.size)[comm.rank]
-    Sim= SimcatStamps(ls_dir=None, obj_dir=obj_dir)
-    for brick in rank_bricks:
-        print('rank %d working on brick %s' % (comm.rank,brick))
-        Sim.run(brick)
+    #rank_bricks= np.array_split(bricks, comm.size)[comm.rank]
+    #Sim= SimcatStamps(ls_dir=None, obj_dir=obj_dir)
+    Trac= TractorStamps(ls_dir=None, obj_dir=obj_dir)
+    #for brick in rank_bricks:
+    for brick in ['3381m007']:
+        #print('rank %d working on brick %s' % (comm.rank,brick))
+        if not tractor:
+            savedir= os.path.join(obj_dir,'elg',brick[:3],brick)
+        else:
+            savedir= os.path.join(my_dir,'hdf5',brick[:3],brick)
+        try:
+            dobash('mkdir -p %s' % savedir)
+        except ValueError:
+            print('dir already exists %s' % savedir)
+        #Sim.run(brick,savedir=savedir)
+        Trac.run(brick,savedir=savedir)
 
 
 if __name__ == '__main__':
-    testcase_main()
-    #mpi_main()
+    #testcase_main()
+    mpi_main()
 
