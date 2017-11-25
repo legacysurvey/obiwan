@@ -15,107 +15,128 @@ Write n_bricks fits files containing these various ra,dec
 
 from __future__ import division, print_function
 
-import matplotlib.pyplot as plt
-import matplotlib as mpl
-from mpl_toolkits.axes_grid1 import make_axes_locatable
 import os
 import argparse
 import numpy as np
-from glob import glob
 from astrometry.util.ttime import Time
 import datetime
 import sys
-import pickle
+from scipy import spatial
 
 from astrometry.util.fits import fits_table, merge_tables
-from theValidator.catalogues import CatalogueFuncs
 
-from legacypipe.survey import LegacySurveyData, wcs_for_brick
+from obiwan.common import fits2pandas
 
-######## 
-## Ted's
-import time
-from contextlib import contextmanager
-
-@contextmanager
-def stdouterr_redirected(to=os.devnull, comm=None):
-    """Based on http://stackoverflow.com/questions/5081657
+class GaussianMixtureModel(object):
     """
-    sys.stdout.flush()
-    sys.stderr.flush()
-    fd = sys.stdout.fileno()
-    fde = sys.stderr.fileno()
+    John's class to read, write, and sample from a mixture model.
+    
+    Args: 
+        weights,means,covars: array-like, from mixture fit
+        covar_type: usually 'full'
+        py: one of ['27','36']
+    """
+    def __init__(self, weights, means, covars, 
+                 py=None,covar_type='full',is1D=False):
+        assert(py in ['27','36'])
+        self.py= py
+        self.is1D= is1D
+        self.weights_ = weights
+        self.means_ = means
+        self.covariances_ = covars
+        if self.is1D:
+            self.weights_ = self.weights_.reshape(-1,1)
+            self.means_ = self.means_.reshape(-1,1)
+            self.covariances_ = self.covariances_.reshape(-1,1,1)
+        #    self.n_components, self.n_dimensions = self.means_.shape[0],1
+        #else:
+        self.n_components, self.n_dimensions = self.means_.shape
+        #print(self.weights_.shape,self.covariances_.shape,len(self.covariances_.shape))
+        self.covariance_type= covar_type
+    
+    @staticmethod
+    def save(model, filename):
+        for name,data in zip(['means','weights','covars'],
+                     [model.means_, model.weights_,
+                      model.covariances_]):
+            fn= '%s_%s.txt' % (filename,name)
+            np.savetxt(fn,data,delimiter=',')
+            print('Wrote %s' % fn)
 
-    ##### assert that Python and C stdio write using the same file descriptor
-    ####assert libc.fileno(ctypes.c_void_p.in_dll(libc, "stdout")) == fd == 1
-
-    def _redirect_stdout(to):
-        sys.stdout.close() # + implicit flush()
-        os.dup2(to.fileno(), fd) # fd writes to 'to' file
-        sys.stdout = os.fdopen(fd, 'w') # Python writes to fd
-        sys.stderr.close() # + implicit flush()
-        os.dup2(to.fileno(), fde) # fd writes to 'to' file
-        sys.stderr = os.fdopen(fde, 'w') # Python writes to fd
+    @staticmethod
+    def load(name,py=None,is1D=False,indir='./'):
+        """name: prefix to _weights.txt or _means.txt"""
+        assert(obj in ['elg','star'])
+        d={name:np.loadtxt(os.path.join(indir,name+'_%s.txt' % param),
+                           delimiter=',')
+           for param in ['means','weights','covars']}
+        return GaussianMixtureModel(
+                    d['weights'],d['means'],d['covars'],
+                    covar_type='full',py=py,is1D=is1D)
+    
+    def sample(self, n_samples=1, random_state=None):
+        assert(n_samples >= 1)
+        self.n_samples= n_samples
+        if random_state is None:
+            random_state = np.random.RandomState()
+        self.rng= random_state
         
-    with os.fdopen(os.dup(fd), 'w') as old_stdout:
-        if (comm is None) or (comm.rank == 0):
-            print("Begin log redirection to {} at {}".format(to, time.asctime()))
-        sys.stdout.flush()
-        sys.stderr.flush()
-        pto = to
-        if comm is None:
-            if not os.path.exists(os.path.dirname(pto)):
-                os.makedirs(os.path.dirname(pto))
-            with open(pto, 'w') as file:
-                _redirect_stdout(to=file)
+        if self.py == '2.7':
+            X= self.sample_py2()
         else:
-            pto = "{}_{}".format(to, comm.rank)
-            with open(pto, 'w') as file:
-                _redirect_stdout(to=file)
+            X,Y= self.sample_py3()
+        return X
+    
+    def sample_py2(self):
+        weight_cdf = np.cumsum(self.weights_)
+        X = np.empty((self.n_samples, self.n_components))
+        rand = self.rng.rand(self.n_samples)
+        # decide which component to use for each sample
+        comps = weight_cdf.searchsorted(rand)
+        # for each component, generate all needed samples
+        for comp in range(self.n_components):
+            # occurrences of current component in X
+            comp_in_X = (comp == comps)
+            # number of those occurrences
+            num_comp_in_X = comp_in_X.sum()
+            if num_comp_in_X > 0:
+                X[comp_in_X] = self.rng.multivariate_normal(
+                    self.means_[comp], self.covariances_[comp], num_comp_in_X)
+        return X
+    
+    def sample_py3(self):
+        """Copied from sklearn's mixture.GaussianMixture().sample()"""
+        print(self.weights_.shape)
         try:
-            yield # allow code to be run with the redirected stdout
-        finally:
-            sys.stdout.flush()
-            sys.stderr.flush()
-            _redirect_stdout(to=old_stdout) # restore stdout.
-                                            # buffering and flags such as
-                                            # CLOEXEC may be different
-            if comm is not None:
-                # concatenate per-process files
-                comm.barrier()
-                if comm.rank == 0:
-                    with open(to, 'w') as outfile:
-                        for p in range(comm.size):
-                            outfile.write("================= Process {} =================\n".format(p))
-                            fname = "{}_{}".format(to, p)
-                            with open(fname) as infile:
-                                outfile.write(infile.read())
-                            os.remove(fname)
-                comm.barrier()
+            n_samples_comp = self.rng.multinomial(self.n_samples, self.weights_)
+        except ValueError:
+            self.weights_= np.reshape(self.weights_,len(self.weights_))
+            n_samples_comp = self.rng.multinomial(self.n_samples, self.weights_)
+        if self.covariance_type == 'full':
+            X = np.vstack([
+                self.rng.multivariate_normal(mean, covariance, int(sample))
+                for (mean, covariance, sample) in zip(
+                    self.means_, self.covariances_, n_samples_comp)])
+        elif self.covariance_type == "tied":
+            X = np.vstack([
+                self.rng.multivariate_normal(mean, self.covariances_, int(sample))
+                for (mean, sample) in zip(
+                    self.means_, n_samples_comp)])
+        else:
+            X = np.vstack([
+                mean + self.rng.randn(sample, n_features) * np.sqrt(covariance)
+                for (mean, covariance, sample) in zip(
+                    self.means_, self.covariances_, n_samples_comp)])
 
-            if (comm is None) or (comm.rank == 0):
-                print("End log redirection to {} at {}".format(to, time.asctime()))
-            sys.stdout.flush()
-            sys.stderr.flush()
-            
-    return
-##############
+        y = np.concatenate([j * np.ones(sample, dtype=int)
+                           for j, sample in enumerate(n_samples_comp)])
+
+        return (X, y)
 
 def ptime(text,t0):
     tnow=Time()
     print('TIMING:%s ' % text,tnow-t0)
     return tnow
-
-def read_lines(fn):
-    fin=open(fn,'r')
-    lines=fin.readlines()
-    fin.close()
-    if len(lines) < 1: raise ValueError('lines not read properly from %s' % fn)
-    return np.array( list(np.char.strip(lines)) )
-
-def dobash(cmd):
-    print('UNIX cmd: %s' % cmd)
-    if os.system(cmd): raise ValueError
 
 def get_area(radec):
     '''returns area on sphere between ra1,ra2,dec2,dec1
@@ -162,178 +183,8 @@ def get_radec(radec,\
     RA   = ramin + u1*(ramax-ramin)
     DEC  = 90-np.arccos(cmin+u2*(cmax-cmin))*180./np.pi
     return RA,DEC
+		raise ValueError('objecttype= %s, not supported' % self.objtype)
 
-class KdeSample(object):
-	"""Sample color + redshift + morphology from each galaxy KDE
-
-	Note: 
-		uses saved KDE from obiwan.priors.KernelOfTruth()	
-
-	Args:
-		objtype: star,elg,lrg,qso
-		pickle_dir: where the fit KDE was written
-
-	Attributes:
-		objtype: star,elg,lrg,qso
-		pickle_dir: where the fit KDE was written
-		kde: fit KDE
-	"""
-		
-	def __init__(self,objtype='star',pickle_dir='./'):
-		self.objtype= objtype
-		self.kdefn=os.path.join(pickle_dir,'%s-kde.pickle' % self.objtype)
-		self.kde= self.get_kde()
-
-	def get_kde(self):
-		fout=open(self.kdefn,'r')
-		kde= pickle.load(fout)
-		fout.close()
-		return kde
-
-	def get_sample(self,ndraws=1,random_state=np.random.RandomState()):
-		samp= self.kde.sample(n_samples=ndraws,random_state=random_state)
-		if self.objtype == 'star':
-			#labels=['r wdust','r-z','g-r']
-			r= samp[:,0]
-			z= r- samp[:,1]
-			g= r+ samp[:,2]
-			return g,r,z
-		elif self.objtype == 'qso':
-			#labels=['r wdust','r-z','g-r']
-			r= samp[:,0]
-			z= r- samp[:,1]
-			g= r+ samp[:,2]
-			redshift= samp[:,3]
-			return g,r,z,redshift
-		elif self.objtype == 'elg':
-			#labels=['r wdust','r-z','g-r'] 
-			r= samp[:,0]
-			z= r- samp[:,1]
-			g= r+ samp[:,2]
-			redshift= samp[:,3]
-			rhalf= samp[:,4]
-			return g,r,z,redshift,rhalf
-		elif self.objtype == 'lrg':
-			#labels=['z wdust','r-z','r-W1','g wdust']
-			z= samp[:,0]
-			r= z+ samp[:,1]
-			w1= r - samp[:,2]
-			redshift= samp[:,3]
-			g= samp[:,4]
-			rhalf= samp[:,5]
-			return g,r,z,w1,redshift,rhalf
-		else: 
-			raise ValueError('objecttype= %s, not supported' % self.objtype)
-
-
-
-class KDEColors(object):
-	"""Sample color + redshift from each galaxy KDE
-
-	Note: 
-		uses saved KDE from obiwan.priors.KernelOfTruth()	
-
-	Args:
-		objtype: star,elg,lrg,qso
-		pickle_dir: where the fit KDE was written
-
-	Attributes:
-		objtype: star,elg,lrg,qso
-		pickle_dir: where the fit KDE was written
-		kde: fit KDE
-	"""
-	def __init__(self,objtype='star',pickle_dir='./'):
-		self.objtype= objtype
-		self.kdefn=os.path.join(pickle_dir,'%s-kde.pickle' % self.objtype)
-		self.kde= self.get_kde()
-
-	def get_kde(self):
-		fout=open(self.kdefn,'r')
-		kde= pickle.load(fout)
-		fout.close()
-		return kde
-
-	def get_colors(self,ndraws=1,random_state=np.random.RandomState()):
-		samp= self.kde.sample(n_samples=ndraws,random_state=random_state)
-		if self.objtype == 'star':
-			#labels=['r wdust','r-z','g-r']
-			r= samp[:,0]
-			z= r- samp[:,1]
-			g= r+ samp[:,2]
-			return g,r,z
-		elif self.objtype == 'qso':
-			#labels=['r wdust','r-z','g-r']
-			r= samp[:,0]
-			z= r- samp[:,1]
-			g= r+ samp[:,2]
-			redshift= samp[:,3]
-			return g,r,z,redshift
-		elif self.objtype == 'elg':
-			#labels=['r wdust','r-z','g-r'] 
-			r= samp[:,0]
-			z= r- samp[:,1]
-			g= r+ samp[:,2]
-			redshift= samp[:,3]
-			return g,r,z,redshift
-		elif self.objtype == 'lrg':
-			#labels=['z wdust','r-z','r-W1','g wdust']
-			z= samp[:,0]
-			r= z+ samp[:,1]
-			redshift= samp[:,3]
-			g= samp[:,4]
-			return g,r,z,redshift
-		else: 
-			raise ValueError('objecttype= %s, not supported' % self.objtype)
-
-class KDEshapes(object):
-	"""Sample morphology from each galaxy KDE
-
-	Note: 
-		uses saved KDE from obiwan.priors.KernelOfTruth()	
-
-	Args:
-		objtype: star,elg,lrg,qso
-		pickle_dir: where the fit KDE was written
-
-	Attributes:
-		objtype: star,elg,lrg,qso
-		pickle_dir: where the fit KDE was written
-		kde: fit KDE
-	"""
-	def __init__(self,objtype='elg',pickle_dir='./'):
-		assert(objtype in ['lrg','elg'])
-		self.objtype= objtype
-		self.kdefn=os.path.join(pickle_dir,'%s-kde.pickle' % self.objtype)
-		self.kde= self.get_kde()
-
-	def get_kde(self):
-		fout=open(self.kdefn,'r')
-		kde= pickle.load(fout)
-		fout.close()
-		return kde
-
-	def get_shapes(self,ndraws=1,random_state=np.random.RandomState()):
-		samp= self.kde.sample(n_samples=ndraws,random_state=random_state)
-		# Same for elg,lrg
-		re= samp[:,0]
-		n=  samp[:,1]
-		ba= samp[:,2]
-		pa= samp[:,3]
-		# pa ~ flat PDF
-		pa=  random_state.uniform(0., 180., ndraws)
-		# ba can be [1,1.2] due to KDE algorithm, make these 1
-		ba[ ba < 0.1 ]= 0.1
-		ba[ ba > 1 ]= 1.
-		# Sanity Check
-		assert(np.all(re > 0))
-		assert(np.all((n > 0)*\
-					  (n < 10)))
-		assert(np.all((ba > 0)*\
-					  (ba <= 1.)))
-		assert(np.all((pa >= 0)*\
-					  (pa <= 180)))
-		
-		return re,n,ba,pa
 
 def get_sample_dir(outdir,obj):
     return outdir
@@ -364,61 +215,21 @@ def write_calling_seq(d):
     print('Wrote %s' % fn)
 
 
-def get_bybrick_dir(outdir='.'): 
-    dr= get_sample_dir(outdir=outdir)
-    return os.path.join(dr,'bybrick')
-
 def get_sample_fn(seed=None,prefix=''):
     return '%srank_%d_seed_%d.fits' % (prefix,seed,seed)
 
-def get_sample_fns(outdir=None,prefix=''):
-    dr= get_sample_dir(outdir=outdir)
-    fn= get_sample_fn(seed=1,prefix=prefix)
-    fn= fn.replace('sample_1.fits','sample_*.fits')
-    fns=glob(os.path.join(dr,fn) )
-    if not len(fns) > 0: raise ValueError('no fns found')
-    return fns
+def get_mog_dir():
+    """path to Mixture of Gaussian directory, containing the fitted params"""
+    return os.path.join(os.path.dirname(__file__),
+                        '../../','etc')
 
-def get_brick_sample_fn(brickname=None,seed=None,prefix=None):
-    fn= get_sample_fn(seed=seed,prefix=prefix)
-    return fn.replace('sample_','sample_%s_' % brickname)
-
-def get_brick_sample_fns(brickname=None,outdir='./',prefix=None):
-    dr= get_bybrick_dir(outdir=outdir)
-    fn= get_brick_sample_fn(brickname=brickname,seed=239,prefix=prefix)
-    fn= os.path.join(dr,fn)
-    if os.path.exists(fn):
-        # Haven't been deleted yet, so glob for all of them
-        fn= os.path.join(dr,fn.replace('239.fits','*.fits') )
-        fns=glob(fn )
-    else: return None
-    if not len(fns) > 0: 
-        print('no fns found with wildcard: %s' % fn)
-        with open(os.path.join(outdir,'nofns_wildcard.txt'),'a') as foo:
-            foo.write('%s\n' % fn)
-        return None
-    return fns
-
-def get_brick_merged_fn(brickname=None,outdir='./',prefix=None):
-    dr= get_bybrick_dir(outdir=outdir)
-    fn= get_brick_sample_fn(brickname=brickname,seed=1,prefix=prefix)
-    fn= os.path.join(dr,fn.replace('_1.fits','.fits') )
-    return fn
+def get_py_version():
+    return '%s%s' % (sys.version_info[0],
+                     sys.version_info[1])
 
 
-def survey_bricks_cut2radec(radec):
-    #fn=os.path.join(os.getenv('LEGACY_SURVEY_DIR'),'survey-bricks-5rows-eboss-ngc.fits.gz')
-    fn=os.path.join(os.getenv('LEGACY_SURVEY_DIR'),'survey-bricks.fits.gz')
-    tab= fits_table(fn)
-    tab.cut( (tab.ra >= radec['ra1'])*(tab.ra <= radec['ra2'])*\
-             (tab.dec >= radec['dec1'])*(tab.dec <= radec['dec2'])
-           )
-    print('%d bricks, cutting to radec' % len(tab))
-    return tab
-            
 def draw_points(radec,unique_ids,obj='star',seed=1,
-                kdedir='./',outdir='./',
-                prefix=''):
+                outdir='./',prefix=''):
     """
 	Args:
 		radec: dict with keys ra1,ra2,dec1,dec2
@@ -426,7 +237,6 @@ def draw_points(radec,unique_ids,obj='star',seed=1,
 		unique_ids: list of unique integers for each draw
 		obj: star,elg,lrg,qso
 		seed: to initialize random number generator
-		kdedir: dir containing the kde.pickle files
 		outdir: dir to write randoms to
 
 	Returns:
@@ -437,49 +247,36 @@ def draw_points(radec,unique_ids,obj='star',seed=1,
     ndraws= len(unique_ids)
     random_state= np.random.RandomState(seed)
     ra,dec= get_radec(radec,ndraws=ndraws,random_state=random_state)
-    # Joint Sample
-    mags={}
-    print('KdeSample')
-    kde_obj= KdeSample(objtype=obj, pickle_dir=kdedir)
-    if obj == 'star':
-        mags['%s_g'%obj],mags['%s_r'%obj],mags['%s_z'%obj]= \
-                    kde_obj.get_colors(ndraws=ndraws,random_state=random_state)
-    elif obj == 'elg':
-        mags['%s_g'%obj],mags['%s_r'%obj],mags['%s_z'%obj],\
-        mags['%s_redshift'%obj], mags['%s_rhalf'%obj]= \
-                    kde_obj.get_sample(ndraws=ndraws,random_state=random_state)
-    elif obj == 'lrg':
-        mags['%s_g'%obj],mags['%s_r'%obj],mags['%s_z'%obj],mags['%s_w1'%obj],\
-        mags['%s_redshift'%obj], mags['%s_rhalf'%obj]= \
-                    kde_obj.get_sample(ndraws=ndraws,random_state=random_state)
-    elif obj == 'qso':
-        mags['%s_g'%obj],mags['%s_r'%obj],mags['%s_z'%obj],mags['%s_redshift'%obj]= \
-                    kde_obj.get_colors(ndraws=ndraws,random_state=random_state)
-    # Add n,ba,pa to sample
-    if obj in ['elg','lrg']:
-        mags['%s_n'%obj] = np.ones(ndraws)
-        mags['%s_ba'%obj] = np.random.uniform(0.2,1.,size=ndraws)
-        mags['%s_pa'%obj] = np.random.uniform(0.,180.,size=ndraws)
-    # Shapes
-    #gfit={}
-    #for obj in ['lrg','elg']:
-    #    kde_obj= KDEshapes(objobje=obj,pickle_dir=outdir)
-    #    gfit['%s_re'%obj],gfit['%s_n'%obj],gfit['%s_ba'%obj],gfit['%s_pa'%obj]= \
-    #                kde_obj.get_shapes(ndraws=ndraws,random_state=random_state)
-    # Create Sample table
+    # Load joint sample
+    sample_5d_10k=fits_table(os.path.join(get_mog_dir(),
+                                'elg_sample_5dim_10k.fits'))
+    sample_5d_10k= fits2pandas(sample_5d_10k)
+    tree = spatial.KDTree(sample_5d_10k['redshift'].values.reshape(-1,1))
+    # Sample from n(z) and take the nearest z in joint sample
+    model= GaussianMixtureModel.load(name=obj+'_nz',indir=get_mog_dir(),
+                                     py=get_py_version(),is1D=True)
+    redshifts= model.sample(ndraws)
+    _,ind= tree.query(redshifts)
+    boot= sample_5d_10k.iloc[ind]
+
     T=fits_table()
     T.set('id',unique_ids)
-    T.set('seed',np.zeros(ndraws).astype(int)+seed)
     # PSQL "integer" is 4 bytes
-    for key in ['id','seed']:
+    for key in ['id']:
         T.set(key, T.get(key).astype(np.int32))
     T.set('ra',ra)
     T.set('dec',dec)
-    for key in mags.keys():
-        T.set(key,mags[key])
-    #for key in gfit.keys():
-    #    T.set(key,gfit[key])
-    # Save table
+    #redshifts change each draw, not sample_5d_10k's redshift
+    T.set('redshift',redshifts) 
+    T.set('id_5d10k_sample',boot['id'].values)
+    for col in ['g', 'r','z','rhalf']: 
+        T.set(col,boot[col].values)
+    # fixed priors
+    if obj in ['elg','lrg']:
+        T.set('n',np.ones(ndraws))
+        T.set('ba', np.random.uniform(0.2,1.,size=ndraws))
+        t.set('pa', np.random.uniform(0.,180.,size=ndraws))
+    # Save
     fn= os.path.join(get_sample_dir(outdir,obj),get_sample_fn(seed,prefix=prefix) )
     if os.path.exists(fn):
         os.remove(fn)
@@ -487,323 +284,7 @@ def draw_points(radec,unique_ids,obj='star',seed=1,
     T.writeto(fn)
     print('Wrote %s' % fn)
 
-def organize_by_brick(sample_fns,sbricks,outdir=None,seed=None,prefix=None):
-    '''
-    For each sample_fn, split into bricks
-    get  brick sample fn for that brick and sample
-    write it if does not exist
-    sample_fn -- sample_seed.fits file assigned to that mpi task
-    sbricks -- survey bricks table cut to radec region
-    '''
-    dr= get_bybrick_dir(outdir=outdir)
-    for sample_fn in sample_fns:
-        # Skip if already looped over bricks for this sample
-        check_done= os.path.join(dr, get_sample_fn(seed=seed,prefix=prefix) )
-        check_done= check_done.replace('.fits','_done.txt')
-        if os.path.exists(check_done):
-            print('check_done exists: %s' % check_done)
-            continue
-        # 
-        sample= fits_table(sample_fn)
-        print('sample min,max ra,dec= %f %f %f %f' % (sample.ra.min(),sample.ra.max(),\
-                                                      sample.dec.min(),sample.dec.max()))
-        # Loop over survey bricks
-        survey = LegacySurveyData()
-        for sbrick in sbricks:
-            # Get output fn for this brick and sample
-            fn= os.path.join(dr, get_brick_sample_fn(brickname=sbrick.brickname,seed=seed,prefix=prefix) )
-            if os.path.exists(fn):
-                continue
-            # Cut sample by brick's bounds
-            brickinfo = survey.get_brick_by_name(sbrick.brickname)
-            brickwcs = wcs_for_brick(brickinfo)
-            ra1,ra2,dec1,dec2= brickwcs.radec_bounds()
-            keep=  (sample.ra >= ra1)*(sample.ra <= ra2)*\
-                   (sample.dec >= dec1)*(sample.dec <= dec2)
-            sample2= sample.copy()
-            if np.where(keep)[0].size > 0:
-                sample2.cut(keep)
-                sample2.writeto(fn)
-                print('Wrote %s' % fn)
-            else: 
-                print('WARNING: sample=%s has no ra,dec in brick=%s' % (sample_fn,sbrick.brickname))
-        # This sample is done
-        with open(check_done,'w') as foo:
-            foo.write('done')
-
-def merge_bybrick(bricks,outdir='',prefix='',cleanup=False):
-    for brick in bricks:
-        outfn= get_brick_merged_fn(brickname=brick,outdir=outdir,prefix=prefix) 
-        if cleanup:
-            if os.path.exists(outfn):
-                # Safe to remove the pieces that went into outfn
-                rm_fns= get_brick_sample_fns(brickname=brick,outdir=outdir,prefix=prefix)
-                if not rm_fns is None:
-                    print('removing files like: %s' % rm_fns[0])
-                    try:
-                        for rm_fn in rm_fns: os.remove(rm_fn)
-                    except OSError:
-                        pass
-            continue 
-        elif os.path.exists(outfn):
-            # We are creating outfn, don't spend time deleting
-            continue
-        else:
-            print('outfn=%s' % outfn)
-            fns= get_brick_sample_fns(brickname=brick,outdir=outdir,prefix=prefix)
-            if fns is None:
-                # Wildcard found nothing see outdir/nofns_wildcard.txt
-                continue 
-            cats=[]
-            for i,fn in enumerate(fns):
-                print('reading %d/%d' % (i+1,len(fns)))
-                try: 
-                    tab= fits_table(fn) 
-                    cats.append( tab )
-                except IOError:
-                    print('Fits file does not exist: %s' % fn)
-            cat= merge_tables(cats, columns='fillzero') 
-            cat.writeto(outfn)
-            print('Wrote %s' % outfn)
         
-        
-
-#def merge_draws(outdir='./',prefix=''):
-#    '''merges all fits tables created by draw_points()'''
-#    # Btable has 5 rows: bricks for the run,ra1,ra2,dec1,dec2 
-#    btable= get_bricks_fn(outdir)
-#    print('Merging sample tables for %d brick directories' % len(btable))
-#    for brick in btable.brickname:
-#        T= CatalogueFuncs().stack(fns,textfile=False)
-#        # Save
-#        name= get_merged_fn(brick,outdir,prefix=prefix)
-#        if os.path.exists(name):
-#            os.remove(name)
-#            print('Overwriting %s' % name)
-#        T.writeto(name)
-#        print('wrote %s' % name)
-       
-
-class PlotTable(object):
-    def __init__(self,outdir='./',prefix=''):
-        print('Plotting Tabulated Quantities')
-        self.outdir= outdir
-        self.prefix= prefix
-        # Table 
-        merge_fn= get_merge_fn(self.outdir,prefix=self.prefix) 
-        print('Reading %s' % merge_fn)
-        tab= fits_table( merge_fn )
-        # RA, DEC
-        self.radec(tab)
-        # Source Properties
-        xyrange=dict(x_star=[-0.5,2.2],\
-                 y_star=[-0.3,2.],\
-                 x_elg=[-0.5,2.2],\
-                 y_elg=[-0.3,2.],\
-                 x_lrg= [0, 3.],\
-                 y_lrg= [-2, 6],\
-                 x1_qso= [-0.5,3.],\
-                 y1_qso= [-0.5,2.5],\
-                 x2_qso= [-0.5,4.5],\
-                 y2_qso= [-2.5,3.5])
-        for obj in ['star','lrg','elg','qso']:
-            # Colors, redshift
-            if obj == 'star':
-                x= tab.star_r
-                y= tab.star_r - tab.star_z
-                z= tab.star_g - tab.star_r
-                labels=['r','r-z','g-r']
-                xylims=dict(x1=(15,24),y1=(0,0.3),\
-                            x2=(-1,3.5),y2=(-0.5,2))
-                X= np.array([x,y,z]).T
-            elif obj == 'elg':
-                x= tab.elg_r
-                y= tab.elg_r - tab.elg_z
-                z= tab.elg_g - tab.elg_r
-                d4= tab.elg_redshift
-                labels=['r','r-z','g-r','redshift']
-                xylims=dict(x1=(20.5,25.5),y1=(0,0.8),\
-                            x2=xyrange['x_elg'],y2=xyrange['y_elg'],\
-                            x3=(0.6,1.6),y3=(0.,1.0))
-                X= np.array([x,y,z,d4]).T
-            elif obj == 'lrg':
-                x= tab.lrg_z
-                y= tab.lrg_r - tab.lrg_z
-                z= np.zeros(len(x)) #rW1['red_galaxy']
-                d4= tab.lrg_redshift
-                M= tab.lrg_g
-                labels=['z','r-z','r-W1','redshift','g']
-                xylims=dict(x1=(17.,22.),y1=(0,0.7),\
-                            x2=xyrange['x_lrg'],y2=xyrange['y_lrg'],\
-                            x3=(0.,1.6),y3=(0,1.),\
-                            x4=(17.,29),y4=(0,0.7))
-                X= np.array([x,y,z,d4,M]).T
-            elif obj == 'qso':
-                x= tab.qso_r
-                y= tab.qso_r - tab.qso_z
-                z= tab.qso_g - tab.qso_r
-                d4= tab.qso_redshift
-                labels=['r','r-z','g-r','redshift']
-                hiz=2.1
-                xylims=dict(x1=(15.,24),y1=(0,0.5),\
-                            x2=xyrange['x1_qso'],y2=xyrange['y1_qso'],\
-                            x3=(0.,hiz+0.2),y3=(0.,1.))
-                X= np.array([x,y,z,d4]).T
- 
-            # Shapes
-            if obj in ['elg','lrg']:
-                re,n,ba,pa= tab.get('%s_re'%obj),tab.get('%s_n'%obj),tab.get('%s_ba'%obj),tab.get('%s_pa'%obj) 
-                shape_labels=['re','n','ba','pa']
-                shape_xylims=dict(x1=(-10,100),\
-                            x2=(-2,10),\
-                            x3=(-0.2,1.2),\
-                            x4=(-20,200))
-                X_shapes= np.array([re,n,ba,pa]).T
-            
-            # Plots
-            if obj == 'star':
-                self.plot_1band_and_color(X,labels,obj=obj,xylims=xylims)
-            elif obj == 'qso':
-                self.plot_1band_color_and_redshift(X,labels,obj=obj,xylims=xylims)
-            elif obj in ['lrg','elg']:
-                self.plot_1band_color_and_redshift(X,labels,obj=obj,xylims=xylims)
-                self.plot_galaxy_shapes(X_shapes,shape_labels,obj=obj,xylims=shape_xylims)
-
-    def radec(self,tab):
-        plt.scatter(tab.ra,tab.dec,\
-                    c='b',edgecolors='none',marker='o',s=1.,rasterized=True,alpha=0.2)
-        xlab=plt.xlabel('RA (deg)')
-        ylab=plt.ylabel('DEC (deg)')
-        fn=os.path.join(self.outdir,'%ssample-merged-radec.png' % (self.prefix))
-        plt.savefig(fn,bbox_extra_artists=[xlab,ylab], bbox_inches='tight',dpi=150)
-        plt.close()
-        print('Wrote %s' % fn)
-
-
-
-    def plot_1band_and_color(self,X,labels,obj='star',xylims=None):
-        '''xylims -- dict of x1,y1,x2,y2,... where x1 is tuple of low,hi for first plot xaxis'''
-        if obj == 'lrg':
-            fig,ax= plt.subplots(1,3,figsize=(15,3))
-        else:
-            fig,ax= plt.subplots(1,2,figsize=(12,5))
-        plt.subplots_adjust(wspace=0.2)
-        # Data
-        ax[0].hist(X[:,0],normed=True)
-        ax[1].scatter(X[:,1],X[:,2],\
-                      c='b',edgecolors='none',marker='o',s=10.,rasterized=True,alpha=0.2)
-        if xylims is not None:
-            ax[0].set_xlim(xylims['x1'])
-            ax[0].set_ylim(xylims['y1'])
-            ax[1].set_xlim(xylims['x2'])
-            ax[1].set_ylim(xylims['y2'])
-        xlab=ax[0].set_xlabel(labels[0],fontsize='x-large')
-        xlab=ax[1].set_xlabel(labels[1],fontsize='x-large')
-        ylab=ax[1].set_ylabel(labels[2],fontsize='x-large')
-        if obj == 'lrg':
-            # G distribution even though no Targeting cuts on g
-            ax[0,2].hist(X[:,3],normed=True)
-            if xylims is not None:
-                ax[2].set_xlim(xylims['x3'])
-                ax[2].set_ylim(xylims['y3'])
-            xlab=ax[2].set_xlabel(labels[3],fontsize='x-large')
-        fn=os.path.join(self.outdir,'%ssample-merged-colors-%s.png' % (self.prefix,obj))
-        plt.savefig(fn,bbox_extra_artists=[xlab], bbox_inches='tight',dpi=150)
-        plt.close()
-        print('Wrote %s' % fn)
-
-    def plot_1band_color_and_redshift(self,X,labels,obj='elg',xylims=None):
-        '''xylims -- dict of x1,y1,x2,y2,... where x1 is tuple of low,hi for first plot xaxis'''
-        # Colormap the color-color plot by redshift
-        cmap = mpl.colors.ListedColormap(['m','r', 'y', 'g','b', 'c'])
-        bounds= np.linspace(xylims['x3'][0],xylims['x3'][1],num=6)
-        norm = mpl.colors.BoundaryNorm(bounds, cmap.N)
-        if obj == 'lrg':
-            fig,ax= plt.subplots(1,4,figsize=(15,3))
-        else:
-            fig,ax= plt.subplots(1,3,figsize=(12,3))
-        plt.subplots_adjust(wspace=0.2)
-        # Data
-        ax[0].hist(X[:,0],normed=True)
-        # color bar with color plot
-        axobj= ax[1].scatter(X[:,1],X[:,2],c=X[:,3],\
-                                 marker='o',s=10.,rasterized=True,lw=0,\
-                                 cmap=cmap,norm=norm,\
-                                 vmin=bounds.min(),vmax=bounds.max())
-        divider3 = make_axes_locatable(ax[1])
-        cax3 = divider3.append_axes("right", size="5%", pad=0.1)
-        cbar3 = plt.colorbar(axobj, cax=cax3,\
-                             cmap=cmap, norm=norm, boundaries=bounds, ticks=bounds)
-        cbar3.set_label('redshift')
-        ax[2].hist(X[:,3],normed=True)
-        if xylims is not None:
-            ax[0].set_xlim(xylims['x1'])
-            ax[0].set_ylim(xylims['y1'])
-            ax[1].set_xlim(xylims['x2'])
-            ax[1].set_ylim(xylims['y2'])
-            ax[2].set_xlim(xylims['x3'])
-            ax[2].set_ylim(xylims['y3'])
-        xlab=ax[0].set_xlabel(labels[0],fontsize='x-large')
-        xlab=ax[1].set_xlabel(labels[1],fontsize='x-large')
-        ylab=ax[1].set_ylabel(labels[2],fontsize='x-large')
-        xlab=ax[2].set_xlabel(labels[3],fontsize='x-large')
-        if obj == 'lrg':
-            # G distribution even though no Targeting cuts on g
-            ax[3].hist(X[:,4],normed=True)
-            if xylims is not None:
-                ax[3].set_xlim(xylims['x4'])
-                ax[3].set_ylim(xylims['y4'])
-            xlab=ax[3].set_xlabel(labels[4],fontsize='x-large')
-        fn=os.path.join(self.outdir,'%ssample-merged-colors-redshift-%s.png' % (self.prefix,obj))
-        plt.savefig(fn,bbox_extra_artists=[xlab], bbox_inches='tight',dpi=150)
-        plt.close()
-        print('Wrote %s' % fn)
-
-
-    def plot_galaxy_shapes(self,X,labels,obj='elg',xylims=None):
-        '''xylims -- dict of x1,y1,x2,y2,... where x1 is tuple of low,hi for first plot xaxis'''
-        fig,ax= plt.subplots(1,4,figsize=(15,3))
-        plt.subplots_adjust(wspace=0.2)
-        # ba,pa can be slightly greater 1.,180
-        assert(np.all(X[:,0] > 0))
-        assert(np.all((X[:,1] > 0)*\
-                      (X[:,1] < 10)))
-        assert(np.all((X[:,2] > 0)*\
-                      (X[:,2] <= 1.)))
-        assert(np.all((X[:,3] >= 0)*\
-                      (X[:,3] <= 180)))
-        # plot
-        for cnt in range(4):
-            # Bin Re
-            if cnt == 0:
-                bins=np.linspace(0,80,num=20)
-                ax[0].hist(X[:,cnt],bins=bins,normed=True)
-            else:
-                ax[cnt].hist(X[:,cnt],normed=True)
-        # lims
-        for col in range(4):
-            if xylims is not None:
-                ax[col].set_xlim(xylims['x%s' % str(col+1)])
-                #ax[cnt,1].set_xlim(xylims['x2'])
-                #ax[cnt,2].set_xlim(xylims['x3'])
-                xlab=ax[col].set_xlabel(labels[col],fontsize='x-large')
-                #xlab=ax[cnt,1].set_xlabel(labels[1],fontsize='x-large')
-        fn=os.path.join(self.outdir,'%ssample-merged-shapes-%s.png' % (self.prefix,obj))
-        plt.savefig(fn,bbox_extra_artists=[xlab], bbox_inches='tight',dpi=150)
-        plt.close()
-        print('Wrote %s' % fn)
-
-def combine(fns):
-    cat=np.array([])
-    for i,fn in enumerate(fns): 
-        print('reading %d/%d' % (i+1,len(fns)))
-        try: 
-            tab= fits_table(fn) 
-            cat= np.concatenate( (cat,tab.id) )
-        except IOError:
-            print('Fits file does not exist: %s' % fn)
-    return cat
-
 def get_parser():
     parser = argparse.ArgumentParser(description='Generate a legacypipe-compatible CCDs file from a set of reduced imaging.')
     parser.add_argument('--dowhat',choices=['sample','bybrick','merge','cleanup','check'],action='store',default='001',required=True)
@@ -858,195 +339,23 @@ if __name__ == "__main__":
     # Draws per mpi task
     if args.nproc > 1:
         unique_ids= np.array_split(unique_ids,comm.size)[comm.rank] 
-        #nper= len(unique_ids) #int(ndraws/float(comm.size))
-    #else: 
-    #    nper= ndraws
     t0=ptime('parse-args',t0)
 
     if args.nproc > 1:
+        seed = comm.rank
         if comm.rank == 0:
-            print('using mpi')
             if not os.path.exists(args.outdir):
                 os.makedirs(args.outdir)
-        seed = comm.rank
-        #cnt=0
-        #while os.path.exists(get_fn(args.outdir,seed)):
-        #    print('skipping, exists: %s' % get_fn(args.outdir,seed))
-        #    cnt+=1
-        #    seed= comm.rank+ comm.size*cnt
-        # Divide and conquer: each task saves a sample
-        if args.dowhat == 'sample':
-            # Write {outdir}/input_sample/{prefix}sample_{seed}.fits files
-            # Root 0 makes dirs
-            #if comm.rank == 0:
-            #    dr= get_sample_dir(outdir=args.outdir)
-            #    if not os.path.exists(dr):
-            #        os.makedirs(dr)
-            #    data=dict(dr=dr)
-            #else: 
-            #    data=None
-            # Bcast the dir
-            #comm.bcast(data, root=0)
-            #print('rank=%d, data["dr"]= ' % comm.rank,data['dr'])
-            draw_points(radec,unique_ids,obj=args.obj, seed=seed,
-                        kdedir=args.kdedir, outdir=args.outdir,
-                        prefix=args.prefix)
-        elif args.dowhat == 'bybrick':
-            # Write {outdir}/input_sample/bybrick/{prefix}sample_{brick}_{seed}.fits files
-            # Root 0 reads survey bricks, makes dirs
-            #if comm.rank == 0:
-            #    d= dict(btable= survey_bricks_cut2radec(radec) )
-            #    # Root 0 makes all dirs could need    
-            #    dr= get_bybrick_dir(outdir=args.outdir)
-            #    if not os.path.exists(dr):
-            #        os.makedirs(dr)
-            #else:
-            #    d=None
-            # Bcast survey bricks
-            #if comm.rank == 1:
-            #    print('rank 1 before bcast')
-            #comm.bcast(d, root=0)
-            #if comm.rank == 1:
-            #    print('rank 1 after bcast')
-            # All workers
-            # Assign list of samples to each worker
-            sample_fns= get_sample_fns(outdir=args.outdir,prefix=args.prefix)
-            sample_fns= np.array_split(sample_fns,comm.size)[comm.rank] 
-            print('rank %d, sample_fns=' % comm.rank,sample_fns)
-            # Loop over survey bricks, write brick sample files
-            print('before read table: rank=%d' % comm.rank)
-            btable= survey_bricks_cut2radec(radec) 
-            print('after read table: rank=%d' % comm.rank)
-            organize_by_brick(sample_fns,btable,outdir=args.outdir,seed=seed,prefix=args.prefix)
-            # DONE at this point        
-            #Each task gets its sample file
-            ## Divide and conquer: 15k bricks in eBOSS NGC
-            #inds= np.arange(len(btable))
-            #inds= np.array_split(inds,comm.size)[comm.rank]
-            #btable.cut(inds)
-            # Gather, done
-        elif args.dowhat in ['merge','cleanup']:
-            brickfn= os.path.join(args.outdir,'bricks_for_sample.txt')
-            # See if we can read text file as opposed to entire fits table
-            if os.path.exists(brickfn):
-                bricks= np.loadtxt(brickfn,dtype=str)
-                bricks= np.array_split(bricks,comm.size)[comm.rank] 
-            else:
-                btable= survey_bricks_cut2radec(radec)
-                bricks= np.array_split(btable.brickname,comm.size)[comm.rank]
-                if comm.rank == 0:
-                    if not os.path.exists(brickfn):
-                        with open(brickfn,'w') as foo:
-                            for b in btable.brickname:
-                                foo.write('%s\n' % b)
-                        print('Wrote %s' % brickfn) 
-            # Either create brick samples or remove them if all have been created and concatenated
-            cleanup=False 
-            if args.dowhat == 'cleanup':
-                cleanup=True
-            merge_bybrick(bricks,outdir=args.outdir,prefix=args.prefix,cleanup=cleanup)
-        elif args.dowhat == 'check':
-            fns=glob(os.path.join(args.outdir,'input_sample/bybrick/%ssample_*[0-9][0-9].fits' % args.prefix))
-            if len(fns) == 0: raise ValueError
-            fns= np.array_split(fns,comm.size)[comm.rank] 
-            ids= combine(fns)
-            all_ids= comm.gather(ids, root=0)
-            if comm.rank == 0:
-                print('number of unique ids=%d, total number ra,dec pts=%d' % \
-                        (len(set(all_ids)),len(all_ids)))
-        #if comm.rank == 0:
-        #    merge_draws(outdir=args.outdir,prefix=args.prefix)
-            #plotobj= PlotTable(outdir=args.outdir,prefix=args.prefix)
-        #images_split= np.array_split(images, comm.size)
-        # HACK, not sure if need to wait for all proc to finish 
-        #confirm_files = comm.gather( images_split[comm.rank], root=0 )
-        #if comm.rank == 0:
-        #    print('Rank 0 gathered the results:')
-        #    print('len(images)=%d, len(gathered)=%d' % (len(images),len(confirm_files)))
-        #    tnow= Time()
-        #    print("TIMING:total %s" % (tnow-tbegin,))
-        #    print("Done")
+        draw_points(radec,unique_ids,obj=args.obj, seed=seed,
+                    kdedir=args.kdedir, outdir=args.outdir,
+                    prefix=args.prefix)
     else:
+        seed= args.seed
         if not os.path.exists(args.outdir):
             os.makedirs(args.outdir)
-        seed= args.seed
-        #cnt=1
-        #while os.path.exists(get_fn(args.outdir,seed)):
-        #    print('skipping, exists: %s' % get_fn(args.outdir,seed))
-        #    cnt+=1
-        #    seed= cnt
-        if args.dowhat == 'sample':
-            # Write {outdir}/input_sample/{prefix}sample_{seed}.fits files
-            dr= get_sample_dir(outdir=args.outdir,obj=args.obj)
-            if not os.path.exists(dr):
-                os.makedirs(dr)
-            draw_points(radec,unique_ids,obj=args.obj, seed=seed,
-                        kdedir=args.kdedir, outdir=args.outdir,
-                        prefix=args.prefix)
-        elif args.dowhat == 'bybrick':
-            # Assign list of samples to each worker
-            sample_fns= get_sample_fns(outdir=args.outdir,prefix=args.prefix)
-            sample_fns= np.array_split(sample_fns,1)[0] 
-            print('sample_fns=',sample_fns)
-            # Loop over survey bricks, write brick sample files
-            print('before read table:')
-            btable= survey_bricks_cut2radec(radec) 
-            print('after read table:')
-            organize_by_brick(sample_fns,btable,outdir=args.outdir,seed=154,prefix=args.prefix)
-            # DEPRECATED:
-            ## Write {outdir}/input_sample/bybrick/{prefix}sample_{brick}_{seed}.fits files
-            #btable= survey_bricks_cut2radec(radec)
-            #with open('eboss_ngc_bricks.txt','w') as foo:
-            #    for brick in btable.brickname:
-            #        foo.write('%s\n' % brick)
-            #dr= get_bybrick_dir(outdir=args.outdir)
-            #if not os.path.exists(dr):
-            #    os.makedirs(dr)
-            ## split each sample into its bricks
-            #sample_fns= get_sample_fns(outdir=args.outdir,prefix=args.prefix)
-            #sample_fns= np.array_split(sample_fns,1)[0] 
-            ## Loop over survey bricks, write brick sample files
-            #organize_by_brick(sample_fns,btable,outdir=args.outdir,seed=seed,prefix=args.prefix)
-        elif args.dowhat in ['merge','cleanup']:
-            brickfn= os.path.join(args.outdir,'bricks_for_sample.txt')
-            if os.path.exists(brickfn):
-                # Quicker to read 1 column text file
-                bricks= np.loadtxt(brickfn,dtype=str)
-                bricks= np.array_split(bricks,1)[0] 
-            else:
-                btable= survey_bricks_cut2radec(radec)
-                bricks= np.array_split(btable.brickname,1)[0]
-                if not os.path.exists(brickfn):
-                    with open(brickfn,'w') as foo:
-                        for b in btable.brickname:
-                            foo.write('%s\n' % b)
-                    print('Wrote %s' % brickfn) 
-            # Each task gets a list of bricks, merges sample for each brick, removes indiv brick samps 
-            cleanup=False 
-            if args.dowhat == 'cleanup':
-                cleanup=True
-            print('cleanup=',cleanup)
-            merge_bybrick(bricks,outdir=args.outdir,prefix=args.prefix,cleanup=cleanup)
-        elif args.dowhat == 'check':
-            fns=glob(os.path.join(args.outdir,'input_sample/bybrick/%ssample_*[0-9][0-9].fits' % args.prefix))
-            if len(fns) == 0: raise ValueError
-            fns= np.array_split(fns,1)[0]
-            print("len(fns)=",len(fns)) 
-            all_ids= combine(fns)
-            print('number of unique ids=%d, total number ra,dec pts=%d' % \
-                    (len(set(all_ids)),len(all_ids)))
-        #
-        # Gather, done
-        #merge_draws(outdir=args.outdir,prefix=args.prefix)
-        #plotobj= PlotTable(outdir=args.outdir,prefix=args.prefix)
-        # Plot table for sanity check
+        if not os.path.exists(args.outdir):
+            os.makedirs(args.outdir)
+        draw_points(radec,unique_ids,obj=args.obj, seed=seed,
+                    kdedir=args.kdedir, outdir=args.outdir,
+                    prefix=args.prefix)
         
-        ## Create the file
-        #t0=ptime('b4-run',t0)
-        #runit(image_fn, measureargs,\
-        #      zptsfile=zptsfile,zptstarsfile=zptstarsfile)
-        #t0=ptime('after-run',t0)
-        #tnow= Time()
-        #print("TIMING:total %s" % (tnow-tbegin,))
-        #print("Done")
-
