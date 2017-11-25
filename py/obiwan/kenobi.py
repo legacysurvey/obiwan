@@ -432,36 +432,42 @@ class BuildStamp():
         #self.pixscale = np.sqrt(np.linalg.det(cd))*3600.0
         
         # Get the local PSF
-        psf = self.psf.getPointSourcePatch(self.xpos, self.ypos)
-        psf= galsim.Image(psf.getImage(),wcs=self.galsim_wcs)
-        if True:
-            psf /= psf.array.sum()
+        self.localpsf = self.psf.getPointSourcePatch(self.xpos, self.ypos)
+        # pixelized psf is "as is" (normalization not 1 at 1-5% but leave alone)
+        # TODO is pixscale fixed?
+        self.localpsf= galsim.Image(self.localpsf.getImage(),
+                                    wcs=self.localwcs)
+                                    #scale=self.wcs.pixscale_at(self.xpos,self.ypos))
+                                    #wcs=self.galsim_wcs)
+        if False:
+            self.localpsf /= self.localpsf.array.sum()
         #plt.imshow(psfim) ; plt.show()
         
         #########################
         # Normalize to 1 at 7''
-        if True:
+        if False:
             pxscale=0.262
-            apers= photutils.CircularAperture((psf.trueCenter().x,psf.trueCenter().y), 
+            apers= photutils.CircularAperture((self.localpsf.trueCenter().x,
+                                               self.localpsf.trueCenter().y), 
                                                r=3.5/pxscale) #KEY is to harcode this # pix
             apy_table = photutils.aperture_photometry(psf.array, apers)
             flux_in_7= np.array(apy_table['aperture_sum'])[0]
-            psf /= flux_in_7
+            self.localpsf /= flux_in_7
         #frac_in_7= flux_in_7 / psfim.array.sum()
         #psfim /= frac_in_7
         #################
-
-        # make galsim PSF object
-        self.localpsf = galsim.InterpolatedImage(psf, wcs=self.galsim_wcs,\
-                                                 gsparams=self.gsparams)
+        print('DREW psf, pixscale=%.5f,flux=%.5f' % \
+            (self.wcs.pixscale_at(self.xpos,self.ypos),self.localpsf.array.sum()))
 
     def star(self,obj):
         """Render a star (PSF)."""
         log = logging.getLogger('decals_sim')
         # Use input flux as the 7'' aperture flux
         self.setlocal(obj)
-        psf = self.localpsf.copy()
-        stamp = psf.drawImage(offset=self.offset, wcs=self.localwcs, method='no_pixel')      
+        stamp = self.localpsf.copy()
+        #stamp = psf.drawImage(offset=self.offset, wcs=self.localwcs, method='no_pixel')      
+        if True:
+            stamp /= stamp.array.sum()
         # Scale to desired flux
         stamp *= float(obj.get(self.band+'flux')) # [nanomaggies]
         # position in observed image
@@ -469,14 +475,16 @@ class BuildStamp():
         return stamp
 
 
-    def convolve_and_draw(self,gal):
+    def convolve_galaxy(self,gal):
         """Convolve the object with the PSF and then draw it."""
-        gal = galsim.Convolve([gal, self.localpsf], gsparams=self.gsparams)
-        # drawImage() requires local wcs
-        gal = gal.drawImage(offset=self.offset, wcs=self.localwcs,method='no_pixel')
-        return gal 
+        psf= self.localpsf.copy()
+        # doesn't change tractor measurements
+        #psf /= psf.array.sum()
+        psf= galsim.InterpolatedImage(psf) 
+                                             #gsparams=self.gsparams)
+        return galsim.Convolve([gal, psf]) #, gsparams=self.gsparams)
 
-    def elg(self,obj):
+    def elg(self,obj,pixscale=0.262):
         """Create an ELG (disk-like) galaxy."""
         # Create localpsf object
         self.setlocal(obj)
@@ -485,7 +493,7 @@ class BuildStamp():
         gal = galsim.Sersic(float(obj.get('sersicn')), half_light_radius=float(obj.get('rhalf')),\
                             flux=1., gsparams=self.gsparams)
         gal = gal.shear(e1=float(obj.get('e1')), e2=float(obj.get('e2')))
-        if True:
+        if False:
             # flux need to be so that 1 within 7''
             gal = gal.drawImage(wcs=self.localwcs,method='no_pixel')
             apers= photutils.CircularAperture((gal.trueCenter().x,gal.trueCenter().y), 
@@ -497,11 +505,19 @@ class BuildStamp():
                                 flux=1./flux_in_7, gsparams=self.gsparams) 
             gal = gal.shear(e1=float(obj.get('e1')), e2=float(obj.get('e2')))
         # Convolve with normed-psf
-        gal = self.convolve_and_draw(gal)
-        if False:
+        gal = self.convolve_galaxy(gal)
+        # drawImage() requires local wcs
+        #gal = gal.drawImage(offset=self.offset, wcs=self.localwcs,
+        #                    method='no_pixel')
+        gal = gal.drawImage(offset=self.offset,  
+                            method='auto',
+                            wcs= self.localwcs)
+                            #scale= self.wcs.pixscale_at(self.xpos,self.ypos))
+
+        if True:
             gal /= gal.array.sum()
         #Normalize to 1 at 7''
-        if True:
+        if False:
             pxscale=0.262
             if False:
                 pxscale=self.wcs.pixscale_at(self.xpos,self.ypos)
@@ -511,9 +527,28 @@ class BuildStamp():
             flux_in_7= np.array(apy_table['aperture_sum'])[0]
             gal /= flux_in_7
         # Scale to desired flux
+        print('DREW normed galaxy, flux=',gal.array.sum())
         gal *= float(obj.get(self.band+'flux')) # [nanomaggies]
         # position in observed image
         gal.setCenter(self.xpos, self.ypos)
+        if False:
+            # Add dev to the sersic
+            dev = galsim.Sersic(4, half_light_radius=0.5314,\
+                                flux=0.5, gsparams=self.gsparams)
+            dev = dev.shear(e1=0.14827, e2=-0.040448)
+            dev = self.convolve_galaxy(dev)
+            dev = dev.drawImage(offset=self.offset, scale= pixscale, 
+                                method='auto')
+            dev *= float(obj.get(self.band+'flux'))
+            dev.setCenter(self.xpos, self.ypos)
+            olap= gal.bounds & dev.bounds
+            if dev.array.shape[0] > gal.array.shape[0]:
+                dev[olap] += gal[olap]
+                return dev
+            else:
+                gal[olap] += dev[olap]
+                return gal
+
         return gal
 
     def lrg(self,obj):
@@ -622,10 +657,6 @@ def build_simcat(Samp=None,brickwcs=None, meta=None):
             cat.set(key, Samp.get('%s_%s'%(typ,tab_key) ))
         # Sersic n: GALSIM n = [0.3,6.2] for numerical stability,see
         # https://github.com/GalSim-developers/GalSim/issues/{325,450}
-        vals= cat.sersicn
-        vals[cat.sersicn < 0.4] = 0.4
-        vals[cat.sersicn > 6.1] = 6.1
-        cat.set('sersicn',vals)
     return cat, skipping_ids
 
 
@@ -661,8 +692,8 @@ def get_parser():
     parser.add_argument('-testA','--image_eq_model', action="store_true", help="set to set image,inverr by model only (ignore real image,invvar)")
     parser.add_argument('--all-blobs', action='store_true', 
                         help='Process all the blobs, not just those that contain simulated sources.')
-    parser.add_argument('--stage', choices=['tims', 'image_coadds', 'srcs', 'fitblobs', 'coadds'],
-                        type=str, default=None, metavar='', help='Run up to the given stage')
+    #parser.add_argument('--stage', choices=['tims', 'image_coadds', 'srcs', 'fitblobs', 'coadds'],
+    #                    type=str, default=None, metavar='', help='Run up to the given stage')
     parser.add_argument('--early_coadds', action='store_true',default=False,
                         help='add this option to make the JPGs before detection/model fitting')
     parser.add_argument('--bricklist',action='store',default='bricks-eboss-ngc.txt',\
@@ -801,9 +832,9 @@ def get_runbrick_setup(**kwargs):
            '--zoom','%d' % zm[0],'%d' % zm[1],'%d' % zm[2],'%d' % zm[3],
            '--no-wise', '--threads','%d' % kwargs['threads']]
     if kwargs['early_coadds']:
-        cmd_line += ['--early-coadds']
-    if kwargs['stage']:
-        cmd_line += ['--stage', '%s' % kwargs['stage']]
+        cmd_line += ['--early-coadds', '--stage', 'image_coadds']
+    #if kwargs['stage']:
+    #    cmd_line += ['--stage', '%s' % kwargs['stage']]
     if dataset == 'DR3':
         #cmd_line += ['--run', 'dr3', '--hybrid-psf','--nsigma', '6']
         cmd_line += ['--run', 'dr3','--nsigma', '6']
@@ -886,9 +917,10 @@ def do_ith_cleanup(d=None):
     try:
         dobash('rsync -av %s/coadd/%s/%s/* %s/coadd/' % 
                 (outdir,bri,brick, outdir))
-        for name in ['metrics','tractor','tractor-i']:
-            dobash('rsync -av %s/%s/%s/* %s/%s/' % 
-                    (outdir,name,bri, outdir,name))
+        if not d['args'].early_coadds:
+            for name in ['metrics','tractor','tractor-i']:
+                dobash('rsync -av %s/%s/%s/* %s/%s/' % 
+                        (outdir,name,bri, outdir,name))
         dobash('mkdir -p %s/obiwan' % outdir)
         dobash('rsync -av %s/*.fits %s/obiwan/' % 
                 (outdir,outdir))
@@ -897,8 +929,9 @@ def do_ith_cleanup(d=None):
 
     # If here, then safe to remove originals
     dobash('rm -r %s/coadd/%s' % (outdir,bri))
-    for name in ['metrics','tractor','tractor-i']:
-        dobash('rm -r %s/%s/%s' % (outdir,name,bri))
+    if not d['args'].early_coadds:
+        for name in ['metrics','tractor','tractor-i']:
+            dobash('rm -r %s/%s/%s' % (outdir,name,bri))
     dobash('rm %s/*.fits' % outdir)
     # Only "rowstars 0" keeps its coadds
     if d['rowst'] != 0:
@@ -937,7 +970,8 @@ def get_sample(objtype,brick,randoms_db,
         assert(not outdir is None)
     if randoms_from_fits:
         Samp= fits_table(randoms_from_fits)
-        Samp.rename('%s_rhalf' % objtype,'%s_re' % objtype)
+        if objtype in ['elg','lrg']:
+            Samp.rename('%s_rhalf' % objtype,'%s_re' % objtype)
     else:
       if do_skipids == 'no':
         Samp= getSrcsInBrick(brick,objtype, db_table=randoms_db)
@@ -1052,7 +1086,8 @@ def main(args=None):
     Samp= get_sample(**sample_kwargs)
     Samp= Samp[args.rowstart:args.rowstart + args.nobj]
     # Performance
-    Samp=Samp[np.argsort( Samp.get('%s_n' % objtype) )]
+    if objtype in ['elg','lrg']:
+        Samp=Samp[np.argsort( Samp.get('%s_n' % objtype) )]
     print('Max sample size=%d, actual sample size=%d' % (args.nobj,len(Samp)))
     assert(len(Samp) <= args.nobj)
     t0= ptime('Got randoms sample',t0)
