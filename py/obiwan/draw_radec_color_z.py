@@ -66,10 +66,9 @@ class GaussianMixtureModel(object):
     @staticmethod
     def load(name,py=None,is1D=False,indir='./'):
         """name: prefix to _weights.txt or _means.txt"""
-        assert(obj in ['elg','star'])
-        d={name:np.loadtxt(os.path.join(indir,name+'_%s.txt' % param),
+        d={key:np.loadtxt(os.path.join(indir,name+'_%s.txt' % key),
                            delimiter=',')
-           for param in ['means','weights','covars']}
+           for key in ['means','weights','covars']}
         return GaussianMixtureModel(
                     d['weights'],d['means'],d['covars'],
                     covar_type='full',py=py,is1D=is1D)
@@ -183,8 +182,6 @@ def get_radec(radec,\
     RA   = ramin + u1*(ramax-ramin)
     DEC  = 90-np.arccos(cmin+u2*(cmax-cmin))*180./np.pi
     return RA,DEC
-		raise ValueError('objecttype= %s, not supported' % self.objtype)
-
 
 def get_sample_dir(outdir,obj):
     return outdir
@@ -215,8 +212,8 @@ def write_calling_seq(d):
     print('Wrote %s' % fn)
 
 
-def get_sample_fn(seed=None,prefix=''):
-    return '%srank_%d_seed_%d.fits' % (prefix,seed,seed)
+def get_sample_fn(seed=None):
+    return 'randoms_rank_%d.fits' % seed
 
 def get_mog_dir():
     """path to Mixture of Gaussian directory, containing the fitted params"""
@@ -229,7 +226,7 @@ def get_py_version():
 
 
 def draw_points(radec,unique_ids,obj='star',seed=1,
-                outdir='./',prefix=''):
+                outdir='./'):
     """
 	Args:
 		radec: dict with keys ra1,ra2,dec1,dec2
@@ -275,9 +272,9 @@ def draw_points(radec,unique_ids,obj='star',seed=1,
     if obj in ['elg','lrg']:
         T.set('n',np.ones(ndraws))
         T.set('ba', np.random.uniform(0.2,1.,size=ndraws))
-        t.set('pa', np.random.uniform(0.,180.,size=ndraws))
+        T.set('pa', np.random.uniform(0.,180.,size=ndraws))
     # Save
-    fn= os.path.join(get_sample_dir(outdir,obj),get_sample_fn(seed,prefix=prefix) )
+    fn= os.path.join(get_sample_dir(outdir,obj),get_sample_fn(seed) )
     if os.path.exists(fn):
         os.remove(fn)
         print('Overwriting %s' % fn)
@@ -287,7 +284,6 @@ def draw_points(radec,unique_ids,obj='star',seed=1,
         
 def get_parser():
     parser = argparse.ArgumentParser(description='Generate a legacypipe-compatible CCDs file from a set of reduced imaging.')
-    parser.add_argument('--dowhat',choices=['sample','bybrick','merge','cleanup','check'],action='store',default='001',required=True)
     parser.add_argument('--obj', type=str, choices=['star','elg', 'lrg', 'qso'], default=None, required=True) 
     parser.add_argument('--ra1',type=float,action='store',help='bigbox',required=True)
     parser.add_argument('--ra2',type=float,action='store',help='bigbox',required=True)
@@ -295,9 +291,7 @@ def get_parser():
     parser.add_argument('--dec2',type=float,action='store',help='bigbox',required=True)
     parser.add_argument('--spacing',type=float,action='store',default=10.,help='choosing N radec pionts so points have spacingxspacing arcsec spacing',required=False)
     parser.add_argument('--ndraws',type=int,action='store',help='default space by 10x10 arcsec, number of draws for all mpi tasks',required=False)
-    parser.add_argument('--prefix', type=str, default='', help='Prefix to prepend to the output files.')
-    parser.add_argument('--kdedir', type=str, default='dir continaing *kde.pickle files', help='Output directory.')
-    parser.add_argument('--outdir', type=str, default='dir to write randoms to', help='Output directory.')
+    parser.add_argument('--outdir', type=str, default='./', help='Directory to write randoms tables to')
     parser.add_argument('--nproc', type=int, default=1, help='Number of CPUs to use.')
     parser.add_argument('--seed', type=int, default=1, help='seed for nproc=1')
     parser.add_argument('--startid', type=int, default=1, help='if generating additional randoms mid-run, will want to start from a specific id')
@@ -347,8 +341,7 @@ if __name__ == "__main__":
             if not os.path.exists(args.outdir):
                 os.makedirs(args.outdir)
         draw_points(radec,unique_ids,obj=args.obj, seed=seed,
-                    kdedir=args.kdedir, outdir=args.outdir,
-                    prefix=args.prefix)
+                    outdir=args.outdir)
     else:
         seed= args.seed
         if not os.path.exists(args.outdir):
@@ -356,6 +349,5 @@ if __name__ == "__main__":
         if not os.path.exists(args.outdir):
             os.makedirs(args.outdir)
         draw_points(radec,unique_ids,obj=args.obj, seed=seed,
-                    kdedir=args.kdedir, outdir=args.outdir,
-                    prefix=args.prefix)
+                    outdir=args.outdir)
         
