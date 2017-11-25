@@ -72,22 +72,35 @@ class Testcase(object):
 
     Args:
         name: testcase name
-        dataset: string, 'DR3', 'DR5', etc
-        zoom: the zoom array pass to runbrick
-        all_blobs,add_noise: booleans
+        dataset: string, 'DR3', 'DR5', 
+        obj: elg,star
+        add_noise: to add Poisson noise to simulated galaxy profiles
+        all_blobs: to fit models to all blobs, not just the blobs containing sims
+        onedge: to add randoms at edge of region, not well within the boundaries
     """
+
     def __init__(self, name='testcase_DR5_z',dataset='DR5',
-                 all_blobs=False,add_noise=True):
+                 obj='elg',
+                 add_noise=False,all_blobs=False,
+                 onedge=False,
+                 early_coadds=False):
         assert(dataset in DATASETS)
         self.name= name
         self.dataset= dataset
+        self.obj= obj
         self.all_blobs= all_blobs
         self.add_noise= add_noise
-        self.outname= 'out_'+self.name
+        self.onedge= onedge
+        self.early_coadds= early_coadds
+        self.outname= 'out_%s_%s' % (self.name,self.obj)
         if self.all_blobs:
             self.outname += '_allblobs'
         if self.add_noise:
             self.outname += '_addnoise'
+        if self.onedge:
+            self.outname += '_onedge'
+        if self.early_coadds:
+            self.outname += '_coadds'
         self.outdir= os.path.join(os.path.dirname(__file__), 
                                   self.outname)
         
@@ -111,15 +124,19 @@ class Testcase(object):
             extra_cmd_line += ['--add_sim_noise']
         if self.all_blobs:
             extra_cmd_line += ['--all_blobs']
+        if self.early_coadds:
+            extra_cmd_line += ['--early_coadds']
 
-        randoms_from_fits= os.path.join(os.environ["LEGACY_SURVEY_DIR"], 
-                                        'randoms.fits')
+        randoms_fn= os.path.join(os.environ["LEGACY_SURVEY_DIR"], 
+                                 'randoms_%s.fits' % self.obj)
+        if self.onedge:
+            randoms_fn= randoms_fn.replace('.fits','_onedge.fits')
 
         cmd_line=['--dataset', self.dataset, '-b', self.brick, '-n', '4', 
                   '--zoom', str(self.zoom[0]), str(self.zoom[1]), 
                             str(self.zoom[2]), str(self.zoom[3]),
-                  '-o', 'elg', '--outdir', self.outdir,
-                  '--randoms_from_fits', randoms_from_fits] + extra_cmd_line
+                  '-o', self.obj, '--outdir', self.outdir,
+                  '--randoms_from_fits', randoms_fn] + extra_cmd_line
         parser= get_parser()
         args = parser.parse_args(args=cmd_line)
 
@@ -159,8 +176,8 @@ class AnalyzeTestcase(Testcase):
 
         self.outdir= os.path.join(os.environ['HOME'],
                            'myrepo/obiwan/tests/end_to_end',
-                            self.outname,'elg/%s/%s/rs0/' % \
-                             (self.brick[:3],self.brick)
+                            self.outname,'%s/%s/%s/rs0/' % \
+                             (self.obj,self.brick[:3],self.brick)
                          )
     
     def load_outputs(self):
@@ -172,17 +189,18 @@ class AnalyzeTestcase(Testcase):
             fits_coadds
         """
         print('Loading from %s' % self.outdir)
-        self.simcat= fits_table(os.path.join(self.outdir,'obiwan/simcat-elg-%s.fits' % self.brick))
-        self.obitractor= fits_table(os.path.join(self.outdir,'tractor/tractor-%s.fits' % self.brick))
-
-        self.blobs= fitsio.FITS(os.path.join(self.outdir,'metrics/blobs-%s.fits.gz' % self.brick))[0].read()
-
+        if not self.early_coadds:
+            self.obitractor= fits_table(os.path.join(self.outdir,'tractor/tractor-%s.fits' % self.brick))
+            self.blobs= fitsio.FITS(os.path.join(self.outdir,'metrics/blobs-%s.fits.gz' % self.brick))[0].read()
+            self.model_jpg= readImage(os.path.join(self.outdir,'coadd/legacysurvey-%s-model.jpg' % self.brick),
+                                 jpeg=True)
+            self.resid_jpg= readImage(os.path.join(self.outdir,'coadd/legacysurvey-%s-resid.jpg' % self.brick),
+                                 jpeg=True)
+        
+        self.simcat= fits_table(os.path.join(self.outdir,'obiwan/simcat-%s-%s.fits' % (self.obj,self.brick)))
+        
         self.img_jpg= readImage(os.path.join(self.outdir,'coadd/legacysurvey-%s-image.jpg' % self.brick),
                            jpeg=True)
-        self.model_jpg= readImage(os.path.join(self.outdir,'coadd/legacysurvey-%s-model.jpg' % self.brick),
-                             jpeg=True)
-        self.resid_jpg= readImage(os.path.join(self.outdir,'coadd/legacysurvey-%s-resid.jpg' % self.brick),
-                             jpeg=True)
 
         self.img_fits,self.ivar_fits,self.sims_fits= {},{},{}
         for b in self.bands:
@@ -268,6 +286,7 @@ class AnalyzeTestcase(Testcase):
         # so its computing on something else and is currently wrong for sim sources
         apers= photutils.CircularAperture((self.simcat.x,self.simcat.y), 
                                            r=3.5/self.brickwcs.pixel_scale())
+
         for b in self.bands: 
             apy_table = photutils.aperture_photometry(self.img_fits[b], apers)
             img_apflux= np.array(apy_table['aperture_sum'])
@@ -280,36 +299,43 @@ class AnalyzeTestcase(Testcase):
             diff= sims_apflux + \
                     sky_apflux - obitractor_apflux
             print(diff) 
-            assert(np.all(np.abs(diff) 
-                                < self.tol['apsims_p_apsky_m_aptractor'])) 
+            if not self.onedge:
+                assert(np.all(np.abs(diff) 
+                                    < self.tol['apsims_p_apsky_m_aptractor'])) 
             # tractor apflux vs. simcat table + sky
             diff= simcat_flux + \
                     sky_apflux - obitractor_apflux
             print(diff,self.add_noise,self.tol['simcat_p_apsky_m_aptractor'])
-            assert(np.all(np.abs(diff) 
-                                < self.tol['simcat_p_apsky_m_aptractor'])) 
+            if not self.onedge:
+                assert(np.all(np.abs(diff) 
+                                    < self.tol['simcat_p_apsky_m_aptractor'])) 
         print('passed')
 
 
-def test_cases(z=True,
-               grz=True):
+def test_cases(z=True,grz=True,
+               obj='elg',
+               add_noise=False,all_blobs=False,
+               onedge=False, early_coadds=False,
+               dataset='DR5'):
     """
     Args:
-        z_band: z-band testcase?
-        grz_band: grz-band testcase?
+        z, grz: to run the z and/or grz testcases
+        all_blobs: to fit models to all blobs, not just the blobs containing sims
+        add_noise: to add Poisson noise to simulated galaxy profiles
+        onedge: to add randoms at edge of region, not well within the boundaries
+        early_coadds: write coadds before model fitting and stop there
+        dataset: no reason to be anything other than DR5 for these tests
     """
-    # Two: z, grz, Possibly modifications: can add sim galaxies at diff 
-    #   seaprations (currnetly 4 sep by 12''), Or can can run w/ or wout/ 
-    #   all_blobs, etc
-    d= dict(name='testcase_DR5_z',dataset='DR5',
-            add_noise=False)
-    
+    d= dict(obj=obj,
+            add_noise=add_noise,all_blobs=all_blobs,
+            onedge=onedge,early_coadds=early_coadds,
+            dataset=dataset)    
     if z:
-        for all_blobs in [False]: #,True]:
-            d.update(all_blobs=all_blobs)
-            T= Testcase(**d)
-            T.run()
+        d.update(name='testcase_DR5_z')
+        T= Testcase(**d)
+        T.run()
 
+        if not early_coadds:
             A= AnalyzeTestcase(**d)
             A.load_outputs()
             A.simcat_xy()
@@ -318,11 +344,10 @@ def test_cases(z=True,
 
     if grz:
         d.update(name='testcase_DR5_grz')
-        for all_blobs in [True,False]:
-            d.update(all_blobs=all_blobs)
-            T= Testcase(**d)
-            T.run()
+        T= Testcase(**d)
+        T.run()
 
+        if not early_coadds:
             A= AnalyzeTestcase(**d)
             A.load_outputs()
             A.simcat_xy()
@@ -331,13 +356,15 @@ def test_cases(z=True,
 
 def test_main():
     """travis CI"""
-    test_cases(z=True,
-               grz=False)
+    test_cases(z=True,grz=False,
+               onedge=False)
 
 if __name__ == "__main__":
     #test_dataset_DR3()
     #test_dataset_DR5() 
-    test_cases(z=True,
-               grz=False)
+    test_cases(z=False,grz=True,
+               obj='elg',
+               all_blobs=True,onedge=False,
+               early_coadds=True)
 
     
