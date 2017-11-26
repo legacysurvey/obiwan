@@ -47,8 +47,12 @@ def fits2pandas(tab,attrs=None):
 def get_brickdir(outdir,obj,brick):
     return os.path.join(outdir,obj,brick[:3],brick)
 
-def get_savedir(outdir,obj,brick,rowstart,
+def get_outdir_runbrick(outdir,obj,brick,rowstart,
                 do_skipids='no',do_more='yes'):
+    """diretory obiwan/runbrick will write results to
+
+    Returns path to like outdir/obj/bri/brick/rs0
+    """
     # Either rs or skip_rs
     if do_skipids == 'no':
         final_dir= "rs%s" % str(rowstart)
@@ -59,5 +63,22 @@ def get_savedir(outdir,obj,brick,rowstart,
         final_dir= "more_"+final_dir
     #return os.path.join(get_brickdir(outdir,obj,brick),
     #                  final_dir)
-    return os.path.join(outdir,obj,final_dir)
+    return os.path.join(outdir,obj,brick[:3],brick,final_dir)
 
+def get_outdir_final(outdir,obj,brick,rowstart,
+                do_skipids='no',do_more='yes'):
+    """directory obiwan/runbrick outputs will be repackaged into
+
+    Returns path to like outdir/obj/coadd/bri/brick/rs0
+    """
+    # Either rs or skip_rs
+    if do_skipids == 'no':
+        final_dir= "rs%s" % str(rowstart)
+    elif do_skipids == 'yes':
+        final_dir= "skip_rs%s" % str(rowstart) 
+    # if specified minimum id, running more randoms
+    if do_more == 'yes':
+        final_dir= "more_"+final_dir
+    #return os.path.join(get_brickdir(outdir,obj,brick),
+    #                  final_dir)
+    return os.path.join(outdir,obj,brick[:3],brick,final_dir)
