@@ -362,9 +362,9 @@ def test_main():
 if __name__ == "__main__":
     #test_dataset_DR3()
     #test_dataset_DR5() 
-    test_cases(z=False,grz=True,
+    test_cases(z=True,grz=False,
                obj='elg',
                all_blobs=True,onedge=False,
-               early_coadds=True)
+               early_coadds=False)
 
     
