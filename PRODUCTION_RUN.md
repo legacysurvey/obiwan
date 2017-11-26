@@ -2,7 +2,7 @@
 
 ### Completed production runs (newest -> oldest)
 
-(1) 100deg2 region, dataset:DR5, ra:[135,235], dec:[-1,10]
+(1) 100deg2 region, dataset:DR5, ra:[150,160], dec:[0,10]
 * name_for_run: elg_100deg2
 * kdedir for randoms: $CSCRATCH/obiwan_out/randoms
 * outdir for randoms: $CSCRATCH/obiwan_out/randoms/elg_100deg2
@@ -25,30 +25,32 @@
 * psql db, desi, table for randoms: obiwan_elg_9deg
 * psql db, qdo, table for tasks: obiwan_9deg, obiwan_9deg_doskip
 
-
-
-The rest of this markdown is for `elg_9deg2_ra175`.
+The rest of this markdown is for `elg_100deg2`.
 
 ### Randoms + PSQL DB
 
-Given KDE trained models, saved as .pkl files
+You need a fit Mixture of Gaussians to the desired n(z) and a seperate joint-sample of color,shape,redshift (10k row fits table) to sample from. Put the 10k row fits table here
 ```sh
-ls $obiwan_out/randoms
-elg-kde.pickle lrg-kde.pickle
+ls $obiwan_out/randoms/elg_100deg2
+elg_sample_5dim_10k.fits
 ```
 
 Generate "ndraws" random ra,dec points on the unit sphere each point also sampling the KDE model. Run with multiple core if > 1 Million randoms. Either way fill in and submit this slurm job:
 https://github.com/legacysurvey/obiwan/blob/master/bin/slurm_job_randoms.sh
 
-Load the randoms into the desi database at nerscdb03 (the scidb2.nersc.gov server is no more)
+Load the randoms into the desi database at nerscdb03 (the scidb2.nersc.gov server is no more). First create the table
+```sh
+bash $obiwan_code/obiwan/bin/fits2db_create.sh obiwan_elg_100deg2 /global/cscratch1/sd/kaylanb/obiwan_out/randoms/elg_100deg2/randoms_rank_0.fits
 ```
-bash $obiwan_code/obiwan/bin/run_fits2db.sh obiwan_elg_ra175 /global/cscratch1/sd/kaylanb/obiwan_out/randoms/elg_9deg2_ra175/rank_1_seed_1.fits
+then load all the randoms fits tables
+```sh
+for fn in `find $obiwan_code/randoms/elg_100deg2 -name "randoms*.fits"`;do bash $obiwan_code/obiwan/bin/fits2db_load.sh obiwan_elg_100deg2 $fn;done
 ```
 
 Index and cluster the db table for fast ra,dec querying
 ```sh
 cd $obiwan_code/obiwan/etc
-cat cluster_randoms | sed s#name#obiwan_elg_ra175#g > cluster_temp
+cat cluster_randoms | sed s#name#obiwan_elg_100deg2#g > cluster_temp
 psql -U desi_admin -d desi -h nerscdb03.nersc.gov
 desi=> \i /global/cscratch1/sd/kaylanb/obiwan_code/obiwan/etc/cluster_temp
 ```
