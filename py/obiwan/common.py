@@ -57,6 +57,7 @@ def get_savedir(outdir,obj,brick,rowstart,
     # if specified minimum id, running more randoms
     if do_more == 'yes':
         final_dir= "more_"+final_dir
-    return os.path.join(get_brickdir(outdir,obj,brick),
-                      final_dir)
+    #return os.path.join(get_brickdir(outdir,obj,brick),
+    #                  final_dir)
+    return os.path.join(outdir,obj,final_dir)
 
