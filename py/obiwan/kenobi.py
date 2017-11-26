@@ -261,6 +261,8 @@ class SimImage(DecamImage):
 
         objtype = self.survey.metacat.get('objtype')[0]
         objstamp = BuildStamp(tim, gain=self.t.gain)
+        # ids make it onto a ccd (geometry cut)
+        tim.ids_added=[]
 
         # Grab the data and inverse variance images [nanomaggies!]
         tim_image = galsim.Image(tim.getImage())
@@ -300,7 +302,8 @@ class SimImage(DecamImage):
             # Add source if EVEN 1 pix falls on the CCD
             overlap = stamp.bounds & tim_image.bounds
             if overlap.area() > 0:
-                print('Stamp overlaps tim: id=%d band=%s' % (obj.id,objstamp.band))      
+                print('Stamp overlaps tim: id=%d band=%s' % (obj.id,objstamp.band))     
+                tim.ids_added.append(obj.id)
                 stamp = stamp[overlap]   
                 ivarstamp = ivarstamp[overlap]      
                 stamp_nonoise= stamp_nonoise[overlap]
@@ -897,28 +900,45 @@ def do_ith_cleanup(d=None):
     # tractor-i/123/* -> tractor-i/
     # *.fits -> obiwan/
     try:
-        dobash('rsync -av %s/coadd/%s/%s/* %s/coadd/' % 
-                (outdir,bri,brick, outdir))
-        if not d['args'].early_coadds:
-            for name in ['metrics','tractor','tractor-i']:
-                dobash('rsync -av %s/%s/%s/* %s/%s/' % 
-                        (outdir,name,bri, outdir,name))
-        dobash('mkdir -p %s/obiwan' % outdir)
+        rsdir= os.path.dirname(outdir)
+        base= os.path.basename(outdir)
+        # elg/(obiwan|coadd)/bri/brick/rs0/
+        dobash('mkdir -p %s/obiwan/%s/%s/%s' % \
+                (base,bri,brick,rsdir))
+        dobash('mv %s/*.fits %s/obiwan/%s/%s/%s/' % \
+                (outdir,  base,bri,brick,rsdir)))
+        dobash('mv %s/coadd/%s/%s/sim_ids_added.fits %s/obiwan/%s/%s/%s/' % \
+                (outdir,bri,brick,  base,bri,brick,rsdir))
+
+        dobash('mkdir -p %s/coadd/%s/%s/%s' % \
+                (base,bri,brick,rsdir))
+        dobash('mv %s/*.fits %s/coadd/%s/%s/%s/' % \
+                (outdir,  base,bri,brick,rsdir)))
+        # elg/(metrics|tractor|tractor-i)/bri/rs0/
+        dobash('mkdir -p %s/tractor/%s/%s' % \
+                (base,bri,rsdir))
         dobash('rsync -av %s/*.fits %s/obiwan/' % 
                 (outdir,outdir))
+        
+        #if not d['args'].early_coadds:
+        #    for name in ['metrics','tractor','tractor-i']:
+        #        dobash('rsync -av %s/%s/%s/* %s/%s/' % 
+        #                (outdir,name,bri, outdir,name))
     except:
         raise ValueError('issue repackaging %s' % output_dir)
 
     # If here, then safe to remove originals
-    dobash('rm -r %s/coadd/%s' % (outdir,bri))
-    if not d['args'].early_coadds:
-        for name in ['metrics','tractor','tractor-i']:
-            dobash('rm -r %s/%s/%s' % (outdir,name,bri))
+    #dobash('rm -r %s/coadd/%s' % (outdir,bri))
+    #if not d['args'].early_coadds:
+    #    for name in ['metrics','tractor','tractor-i']:
+    #        dobash('rm -r %s/%s/%s' % (outdir,name,bri))
     dobash('rm %s/*.fits' % outdir)
+    dobash('rm %s/coadd/%s/%s/sim_ids_added.fits' % \
+            (outdir,bri,brick))
     # Only "rowstars 0" keeps its coadds
-    if d['rowst'] != 0:
-        dobash('rm %s/coadd/*.fits.fz' % outdir)
-        dobash('rm %s/coadd/*.fits' % outdir)
+    #if d['rowst'] != 0:
+    #    dobash('rm %s/coadd/*.fits.fz' % outdir)
+    #    dobash('rm %s/coadd/*.fits' % outdir)
         
 
 
@@ -952,8 +972,6 @@ def get_sample(objtype,brick,randoms_db,
         assert(not outdir is None)
     if randoms_from_fits:
         Samp= fits_table(randoms_from_fits)
-        if objtype in ['elg','lrg']:
-            Samp.rename('%s_rhalf' % objtype,'%s_re' % objtype)
     else:
       if do_skipids == 'no':
         Samp= getSrcsInBrick(brick,objtype, db_table=randoms_db)
@@ -1111,7 +1129,7 @@ def main(args=None):
     do_one_chunk(d=kwargs)
     t0= ptime('do_one_chunk',t0)
     # Clean up output
-    do_ith_cleanup(d=kwargs)
+    #do_ith_cleanup(d=kwargs)
     t0= ptime('do_ith_cleanup',t0)
     log.info('All done!')
     return 0
