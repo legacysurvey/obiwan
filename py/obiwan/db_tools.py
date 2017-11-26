@@ -18,7 +18,7 @@ class PsqlWorker(object):
 
 def getSrcsInBrick(brickname,objtype, db_table='obiwan_elg',
                    skipped_ids=None):
-    """returns a fit_table of PSQL query
+    """Returns tuple: fits table, seed
     
     Args:
         skipped_ids: array or list of strings of ids if not None, the db ids
@@ -67,10 +67,9 @@ def getSrcsInBrick(brickname,objtype, db_table='obiwan_elg',
     for key in d.keys():
         T.set(key, np.array(d[key]))
     del d
-    T.set('seed',np.array([brickid]*len(T)))
     #
     db.close()
-    return T
+    return T,brickid
 
 def redshifts_for_ids(ids, db_table='obiwan_elg_ra175',
                      try_with_join=False):
