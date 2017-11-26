@@ -277,8 +277,8 @@ class SimImage(DecamImage):
             # Print timing
             t0= Time()
             if objtype in ['lrg','elg']:
-                strin= 'Drawing 1 %s: sersicn=%.2f, rhalf=%.2f, e1=%.2f, e2=%.2f' % \
-                        (objtype.upper(), obj.sersicn,obj.rhalf,obj.e1,obj.e2)
+                strin= 'Drawing 1 %s: n=%.2f, rhalf=%.2f, e1=%.2f, e2=%.2f' % \
+                        (objtype.upper(), obj.n,obj.rhalf,obj.e1,obj.e2)
                 print(strin)
 
             if objtype == 'star':
@@ -490,7 +490,7 @@ class BuildStamp():
         self.setlocal(obj)
         #try:
         # TRIAL: galaxy profile
-        gal = galsim.Sersic(float(obj.get('sersicn')), half_light_radius=float(obj.get('rhalf')),\
+        gal = galsim.Sersic(float(obj.get('n')), half_light_radius=float(obj.get('rhalf')),\
                             flux=1., gsparams=self.gsparams)
         gal = gal.shear(e1=float(obj.get('e1')), e2=float(obj.get('e2')))
         if False:
@@ -501,7 +501,7 @@ class BuildStamp():
             apy_table = photutils.aperture_photometry(gal.array, apers)
             flux_in_7= np.array(apy_table['aperture_sum'])[0]
             # NORMED: galaxy profile
-            gal = galsim.Sersic(float(obj.get('sersicn')), half_light_radius=float(obj.get('rhalf')),\
+            gal = galsim.Sersic(float(obj.get('n')), half_light_radius=float(obj.get('rhalf')),\
                                 flux=1./flux_in_7, gsparams=self.gsparams) 
             gal = gal.shear(e1=float(obj.get('e1')), e2=float(obj.get('e2')))
         # Convolve with normed-psf
@@ -531,24 +531,6 @@ class BuildStamp():
         gal *= float(obj.get(self.band+'flux')) # [nanomaggies]
         # position in observed image
         gal.setCenter(self.xpos, self.ypos)
-        if False:
-            # Add dev to the sersic
-            dev = galsim.Sersic(4, half_light_radius=0.5314,\
-                                flux=0.5, gsparams=self.gsparams)
-            dev = dev.shear(e1=0.14827, e2=-0.040448)
-            dev = self.convolve_galaxy(dev)
-            dev = dev.drawImage(offset=self.offset, scale= pixscale, 
-                                method='auto')
-            dev *= float(obj.get(self.band+'flux'))
-            dev.setCenter(self.xpos, self.ypos)
-            olap= gal.bounds & dev.bounds
-            if dev.array.shape[0] > gal.array.shape[0]:
-                dev[olap] += gal[olap]
-                return dev
-            else:
-                gal[olap] += dev[olap]
-                return gal
-
         return gal
 
     def lrg(self,obj):
@@ -643,18 +625,18 @@ def build_simcat(Samp=None,brickwcs=None, meta=None):
 
     typ=meta.get('objtype')[0]
     # Mags
-    for key in ['g','r','z']:
+    for band in ['g','r','z']:
         # nanomags
-        cat.set('%sflux' % key, 1E9*10**(-0.4*Samp.get('%s_%s' % (typ,key))) ) 
+        cat.set('%sflux' % band, 1E9*10**(-0.4*Samp.get(band)) ) 
     # Galaxy Properties
     if typ in ['elg','lrg']:
         # Convert to e1,e2 if given ba,pa
-        if (typ+'_ba' in Samp.get_columns()) & (typ+'_pa' in Samp.get_columns()):
-            e1,e2= get_e1_e2(Samp.get(typ+'_ba'),Samp.get(typ+'_pa'))
-            Samp.set(typ+'_e1',e1) 
-            Samp.set(typ+'_e2',e2) 
-        for key,tab_key in zip(['sersicn','rhalf','e1','e2'],['n','re','e1','e2']):
-            cat.set(key, Samp.get('%s_%s'%(typ,tab_key) ))
+        if ('ba' in Samp.get_columns()) & ('pa' in Samp.get_columns()):
+            e1,e2= get_e1_e2(Samp.get('ba'),Samp.get('pa'))
+            Samp.set('e1',e1) 
+            Samp.set('e2',e2) 
+        for key in ['n','rhalf','e1','e2']:
+            cat.set(key, Samp.get(key))
         # Sersic n: GALSIM n = [0.3,6.2] for numerical stability,see
         # https://github.com/GalSim-developers/GalSim/issues/{325,450}
     return cat, skipping_ids
@@ -993,7 +975,7 @@ def get_sample(objtype,brick,randoms_db,
     if minid:
       Samp.cut( Samp.id >= minid )
     # sort by id so first 300 isn't changed if add more ids
-    Samp= Samp[np.argsort(Samp.id) ]
+    #Samp= Samp[np.argsort(Samp.id) ]
     return Samp
 
 
@@ -1086,8 +1068,8 @@ def main(args=None):
     Samp= get_sample(**sample_kwargs)
     Samp= Samp[args.rowstart:args.rowstart + args.nobj]
     # Performance
-    if objtype in ['elg','lrg']:
-        Samp=Samp[np.argsort( Samp.get('%s_n' % objtype) )]
+    #if objtype in ['elg','lrg']:
+    #    Samp=Samp[np.argsort( Samp.get('%s_n' % objtype) )]
     print('Max sample size=%d, actual sample size=%d' % (args.nobj,len(Samp)))
     assert(len(Samp) <= args.nobj)
     t0= ptime('Got randoms sample',t0)
