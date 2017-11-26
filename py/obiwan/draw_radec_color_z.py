@@ -215,7 +215,7 @@ def write_calling_seq(d):
 def get_sample_fn(seed=None):
     return 'randoms_rank_%d.fits' % seed
 
-def get_mog_dir():
+def mog_param_dir():
     """path to Mixture of Gaussian directory, containing the fitted params"""
     return os.path.join(os.path.dirname(__file__),
                         '../../','etc')
@@ -245,12 +245,12 @@ def draw_points(radec,unique_ids,obj='star',seed=1,
     random_state= np.random.RandomState(seed)
     ra,dec= get_radec(radec,ndraws=ndraws,random_state=random_state)
     # Load joint sample
-    sample_5d_10k=fits_table(os.path.join(get_mog_dir(),
+    sample_5d_10k=fits_table(os.path.join(outdir,
                                 'elg_sample_5dim_10k.fits'))
     sample_5d_10k= fits2pandas(sample_5d_10k)
     tree = spatial.KDTree(sample_5d_10k['redshift'].values.reshape(-1,1))
     # Sample from n(z) and take the nearest z in joint sample
-    model= GaussianMixtureModel.load(name=obj+'_nz',indir=get_mog_dir(),
+    model= GaussianMixtureModel.load(name=obj+'_nz',indir=mog_param_dir(),
                                      py=get_py_version(),is1D=True)
     redshifts= model.sample(ndraws)
     _,ind= tree.query(redshifts)
