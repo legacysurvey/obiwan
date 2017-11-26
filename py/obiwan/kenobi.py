@@ -47,7 +47,7 @@ from legacypipe.survey import LegacySurveyData, wcs_for_brick
 
 import obiwan.priors as priors
 from obiwan.db_tools import getSrcsInBrick 
-from obiwan.common import get_savedir 
+from obiwan.common import get_outdir_runbrick,get_outdir_final 
 
 from astrometry.util.fits import fits_table, merge_tables
 from astrometry.util.ttime import Time
@@ -126,7 +126,8 @@ class SimDecals(LegacySurveyData):
         simcat: fits_table
             simulated source catalog for a given brick (not CCD).
         output_dir: legacypipe's outdir
-        add_sim_noise: add Poisson noise from the simulated source to the image 
+        add_sim_noise: add Poisson noise from the simulated source to the image
+        seed: for random number generators
         image_eq_model: referred to as 'testA'
             wherever add a simulated source, replace both image and invvar of the image
             with that of the simulated source only
@@ -145,7 +146,7 @@ class SimDecals(LegacySurveyData):
     """
     
     def __init__(self, dataset=None, survey_dir=None, metacat=None, simcat=None, 
-                 output_dir=None,add_sim_noise=False, 
+                 output_dir=None,add_sim_noise=False, seed=0,
                  image_eq_model=False):
         super(SimDecals, self).__init__(survey_dir=survey_dir, output_dir=output_dir)
         self.dataset= dataset
@@ -153,6 +154,7 @@ class SimDecals(LegacySurveyData):
         self.simcat = simcat
         # Additional options from command line
         self.add_sim_noise= add_sim_noise
+        self.seed= seed
         self.image_eq_model= image_eq_model
         print('SimDecals: self.image_eq_model=',self.image_eq_model)
         
@@ -260,7 +262,10 @@ class SimImage(DecamImage):
         #    seed = None
 
         objtype = self.survey.metacat.get('objtype')[0]
-        objstamp = BuildStamp(tim, gain=self.t.gain)
+        objstamp = BuildStamp(tim, gain=self.t.gain, 
+                              seed=self.survey.seed)
+        # ids make it onto a ccd (geometry cut)
+        tim.ids_added=[]
 
         # Grab the data and inverse variance images [nanomaggies!]
         tim_image = galsim.Image(tim.getImage())
@@ -300,7 +305,8 @@ class SimImage(DecamImage):
             # Add source if EVEN 1 pix falls on the CCD
             overlap = stamp.bounds & tim_image.bounds
             if overlap.area() > 0:
-                print('Stamp overlaps tim: id=%d band=%s' % (obj.id,objstamp.band))      
+                print('Stamp overlaps tim: id=%d band=%s' % (obj.id,objstamp.band))     
+                tim.ids_added.append(obj.id)
                 stamp = stamp[overlap]   
                 ivarstamp = ivarstamp[overlap]      
                 stamp_nonoise= stamp_nonoise[overlap]
@@ -387,18 +393,14 @@ class BuildStamp():
         nano2e: conversion factor 'nanomaggies' to 'e-'
     """
 
-    def __init__(self,tim, gain=4.0):
+    def __init__(self,tim, gain=4.0,seed=0):
         self.band = tim.band.strip()
         # GSParams should be used when galsim object is initialized
         # MAX size for sersic n < 6.2 
         # https://github.com/GalSim-developers/GalSim/pull/450/commits/755bcfdca25afe42cccfd6a7f8660da5ecda2a65
         self.gsparams = galsim.GSParams(maximum_fft_size=65536)
         #print('FIX ME!!!!!!!!!!!!!!!!!!!!!!!!!!!!')
-        self.gsdeviate = galsim.BaseDeviate()
-        #if seed is None:
-        #    self.gsdeviate = galsim.BaseDeviate()
-        #else:
-        #    self.gsdeviate = galsim.BaseDeviate(seed)
+        self.gsdeviate = galsim.BaseDeviate(seed)
         self.wcs = tim.getWcs()
         self.psf = tim.getPsf()
         # Tractor wcs object -> galsim wcs object
@@ -662,8 +664,6 @@ def get_parser():
     parser.add_argument('--minid', type=int, default=None, help='set if do_more==yes, minimum id to consider, useful if adding more randoms mid-run')
     parser.add_argument('--randoms_db', default='obiwan_elg', help='desi db table name for randoms')
     parser.add_argument('--randoms_from_fits', default=None, help='set to read randoms from fits file instead of scidb2.nersc.gov db, set to absolute path of local fits file on computer')
-    parser.add_argument('--prefix', type=str, default='', metavar='', 
-                        help='tells which input sample to use')
     parser.add_argument('-t', '--threads', type=int, default=1, metavar='', 
                         help='number of threads to use when calling The Tractor')
     parser.add_argument('-z', '--zoom', nargs=4, default=(0, 3600, 0, 3600), type=int, metavar='', 
@@ -728,7 +728,7 @@ def create_metadata(kwargs=None):
     #    log.info('Random seed = {}'.format(kwargs['args'].seed))
     #    metacat['SEED'] = kwargs['args'].seed
     #metacat_dir = os.path.join(kwargs['decals_sim_dir'], kwargs['objtype'],kwargs['brickname'][:3],kwargs['brickname'])    
-    metacat_dir= get_savedir(kwargs['decals_sim_dir'],kwargs['objtype'],
+    metacat_dir= get_outdir_runbrick(kwargs['decals_sim_dir'],kwargs['objtype'],
                              kwargs['brickname'],kwargs['rowst'],
                              do_skipids=kwargs['do_skipids'],do_more=kwargs['do_more'])
     if not os.path.exists(metacat_dir): 
@@ -764,7 +764,7 @@ def create_ith_simcat(d=None):
     #simcat = build_simcat(d['nobj'], d['brickname'], d['brickwcs'], d['metacat'], seed)
     simcat, skipped_ids = build_simcat(Samp=d['Samp'],brickwcs=d['brickwcs'],meta=d['metacat'])
     # Simcat 
-    simcat_dir = get_savedir(d['decals_sim_dir'],d['objtype'],
+    simcat_dir = get_outdir_runbrick(d['decals_sim_dir'],d['objtype'],
                            d['brickname'],d['rowst'],
                            do_skipids=d['do_skipids'],do_more=d['do_more'])
     if not os.path.exists(simcat_dir): 
@@ -852,7 +852,7 @@ def do_one_chunk(d=None):
     assert(d is not None)
     simdecals = SimDecals(dataset=d['args'].dataset,\
               metacat=d['metacat'], simcat=d['simcat'], output_dir=d['simcat_dir'], \
-              add_sim_noise=d['args'].add_sim_noise,\
+              add_sim_noise=d['args'].add_sim_noise, seed=d['seed'],\
               image_eq_model=d['args'].image_eq_model)
     # Use Tractor to just process the blobs containing the simulated sources.
     if d['args'].all_blobs:
@@ -870,6 +870,7 @@ def do_one_chunk(d=None):
     print('simdecals= ',simdecals)
     print('runbrick_kwards= ',runbrick_kwargs)
     # Run it: run_brick(brick, survey obj, **kwargs)
+    np.random.seed(d['seed'])
     run_brick(d['brickname'], simdecals, **runbrick_kwargs)
 
 def dobash(cmd):
@@ -891,41 +892,40 @@ def do_ith_cleanup(d=None):
     brick= d['brickname']
     bri= brick[:3]
     outdir= d['simcat_dir']
-    # coadd/123/1238p245/* -> coadd/
-    # metrics/123/* -> metrics/
-    # tractor/123/* -> tractor/
-    # tractor-i/123/* -> tractor-i/
-    # *.fits -> obiwan/
-    try:
-        dobash('rsync -av %s/coadd/%s/%s/* %s/coadd/' % 
-                (outdir,bri,brick, outdir))
-        if not d['args'].early_coadds:
-            for name in ['metrics','tractor','tractor-i']:
-                dobash('rsync -av %s/%s/%s/* %s/%s/' % 
-                        (outdir,name,bri, outdir,name))
-        dobash('mkdir -p %s/obiwan' % outdir)
-        dobash('rsync -av %s/*.fits %s/obiwan/' % 
-                (outdir,outdir))
-    except:
-        raise ValueError('issue repackaging %s' % output_dir)
+    rsdir= os.path.basename(outdir)
+    # outdir/obj
+    base= os.path.dirname(
+                os.path.dirname(
+                    os.path.dirname(outdir)))
 
-    # If here, then safe to remove originals
-    dobash('rm -r %s/coadd/%s' % (outdir,bri))
-    if not d['args'].early_coadds:
-        for name in ['metrics','tractor','tractor-i']:
-            dobash('rm -r %s/%s/%s' % (outdir,name,bri))
-    dobash('rm %s/*.fits' % outdir)
-    # Only "rowstars 0" keeps its coadds
-    if d['rowst'] != 0:
-        dobash('rm %s/coadd/*.fits.fz' % outdir)
-        dobash('rm %s/coadd/*.fits' % outdir)
-        
+    for dr in ['obiwan','coadd','metrics',
+                'tractor','tractor-i']:
+        dobash('mkdir -p %s/%s/%s/%s/%s' % \
+                (base,dr,bri,brick,rsdir))
+    # obiwan
+    dobash('mv %s/*.fits %s/obiwan/%s/%s/%s/' % \
+            (outdir,  base,bri,brick,rsdir))
+    dobash('mv %s/coadd/%s/%s/sim_ids_added.fits %s/obiwan/%s/%s/%s/' % \
+            (outdir,bri,brick,  base,bri,brick,rsdir))
+    # coadd
+    dobash('mv %s/coadd/%s/%s/* %s/coadd/%s/%s/%s/' % \
+             (outdir,bri,brick,  base,bri,brick,rsdir))
+    # metrics,tractor,tractor-i
+    for dr in ['metrics','tractor','tractor-i']:
+        dobash('mv %s/%s/%s/* %s/%s/%s/%s/%s/' % \
+             (outdir,dr,bri,  base,dr,bri,brick,rsdir))
+    # Remove original outdir
+    dobash('rm -r %s' % outdir)
+    # Remove unneeded coadd files
+    for name in ['nexp','depth','chi2']:
+        dobash('rm %s/coadd/%s/%s/%s/*%s*' % 
+                    (base,bri,brick,rsdir,name))
+    if rsdir != 'rs0':
+        # jpgs are nice to look at, but only keep in 1 dir
+        for name in ['jpg']:
+            dobash('rm %s/coadd/%s/%s/%s/*.%s' % 
+                        (base,bri,brick,rsdir,name))    
 
-
-def get_sample_fn(brick,decals_sim_dir,prefix=''):
-    fn= os.path.join(decals_sim_dir,'input_sample','bybrick','%ssample_%s.fits' % (prefix,brick))
-    return fn
-    #return os.path.join(decals_sim_dir,'softlinked_table') #'sample-merged.fits')
 
 def get_sample(objtype,brick,randoms_db,
                minid=None,randoms_from_fits='',
@@ -945,21 +945,19 @@ def get_sample(objtype,brick,randoms_db,
         skip_ids: None, unless do_skipids==yes then list of ids for the randoms to use
     
     Returns:
-        sample fits_table
+        tupe: sample fits_table, seed
     """
     assert(do_skipids in ['yes','no'])
     if do_skipids == 'yes':
         assert(not outdir is None)
     if randoms_from_fits:
-        Samp= fits_table(randoms_from_fits)
-        if objtype in ['elg','lrg']:
-            Samp.rename('%s_rhalf' % objtype,'%s_re' % objtype)
+        Samp,seed= fits_table(randoms_from_fits),1
     else:
       if do_skipids == 'no':
-        Samp= getSrcsInBrick(brick,objtype, db_table=randoms_db)
+        Samp,seed= getSrcsInBrick(brick,objtype, db_table=randoms_db)
       elif do_skipids == 'yes':
         skip_ids= get_skip_ids(outdir, brick, objtype)
-        Samp= getSrcsInBrick(brick,objtype, db_table=randoms_db,
+        Samp,seed= getSrcsInBrick(brick,objtype, db_table=randoms_db,
                              skipped_ids= skip_ids)
     if verbose:
       print('%d samples, for brick %s' % (len(Samp),brick))
@@ -976,7 +974,7 @@ def get_sample(objtype,brick,randoms_db,
       Samp.cut( Samp.id >= minid )
     # sort by id so first 300 isn't changed if add more ids
     #Samp= Samp[np.argsort(Samp.id) ]
-    return Samp
+    return Samp,seed
 
 
 
@@ -1065,7 +1063,7 @@ def main(args=None):
                     "minid":args.minid,
                     "do_skipids":args.do_skipids,
                     "randoms_from_fits":args.randoms_from_fits}
-    Samp= get_sample(**sample_kwargs)
+    Samp,seed= get_sample(**sample_kwargs)
     Samp= Samp[args.rowstart:args.rowstart + args.nobj]
     # Performance
     #if objtype in ['elg','lrg']:
@@ -1077,6 +1075,7 @@ def main(args=None):
     # Store args in dict for easy func passing
     kwargs=dict(Samp=Samp,\
                 brickname=brickname, \
+                seed= seed,
                 decals_sim_dir= decals_sim_dir,\
                 brickwcs= brickwcs, \
                 objtype=objtype,\
@@ -1090,7 +1089,7 @@ def main(args=None):
 
     # Stop if starting row exceeds length of radec,color table
     if len(Samp) == 0:
-        fn= get_savedir(kwargs['decals_sim_dir'],kwargs['objtype'],
+        fn= get_outdir_runbrick(kwargs['decals_sim_dir'],kwargs['objtype'],
                         kwargs['brickname'],kwargs['rowst'],
                         do_skipids=kwargs['do_skipids'],do_more=kwargs['do_more'])
         fn+= '_exceeded.txt'
