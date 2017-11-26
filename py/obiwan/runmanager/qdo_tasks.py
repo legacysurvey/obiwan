@@ -15,25 +15,12 @@ class Bricks(object):
         self.bricks= fits_table(SURVEY_BRICKS)
 
     def overlapBox(self,ra=[100,101],dec=[20,21]):
-        """approx: bricks within radius of hypotenjuse of box of box center"""
-        box_center=dict(ra= np.average(ra),
-                        dec= np.average(dec))
-        rad_deg= np.sqrt((box_center['ra'] - ra[0])**2 + \
-                         (box_center['dec'] - dec[0])**2)
-        print('box_center=',box_center,'rad_deg=',rad_deg)
-        I,J,d = match_radec(self.bricks.ra, self.bricks.dec, 
-                            box_center['ra'],box_center['dec'],
-                            rad_deg, nearest=True)
-        return self.bricks[I].copy()
-        #for corn_ra,corn_dec in zip([(ra[0],dec[0]),
-        #                             (ra[1],dec[0]),
-        #                             (ra[0],dec[1]),
-        #                             (ra[1],dec[1])]):
-        #keep= np.logical_or.reduce((self.bricks.ra1 >= ra[0],
-        #                             self.bricks.ra2 <= ra[1],
-        #                             self.bricks.dec1 >= dec[0],
-        #                             self.bricks.dec2 <= dec[1]))
-        #return self.bricks[keep].copy()
+        """ra,dec: corners of box injected randoms into"""
+        hw=0.25
+        return self.bricks[((ra[0] -hw <= self.bricks.ra) &
+                            (ra[1] +hw >= self.bricks.ra) &
+                            (dec[0] -hw <= self.bricks.dec) &
+                            (dec[1] +hw >= self.bricks.dec))
 
 class TaskList(object):
     """Creates QDO tasks lists for default,do_skipids, and/or do_more
@@ -44,11 +31,12 @@ class TaskList(object):
     """
 
     def __init__(self,ra1=123.3,ra2=124.3,dec1=24.0,dec2=25.0,
-                 nobj_per_run=500): 
+                 nobj_total=1e6,nobj_per_run=500): 
         self.ra1=ra1
         self.ra2=ra2
         self.dec1=dec1
         self.dec2=dec2
+        self.nobj_total=nobj_total
         self.nobj_per_run=nobj_per_run
 
     def get_bricks(self):
@@ -56,6 +44,12 @@ class TaskList(object):
         b= Bricks()
         self.bricks= b.overlapBox(ra=[self.ra1,self.ra2], dec=[self.dec1,self.dec2])
         #writelist(np.sort(self.bricks.brickname), 'bricks_inregion.txt')
+
+    def estim_nperbrick(self):
+        p= 1./len(self.bricks)
+        Ex= self.nobj_total * p
+        SE= np.sqrt(self.nobj_total * p * (1-p))
+        return Ex + 2*SE
 
     def task(self,brick,rs,do_skipids,do_more):
         """returns a single QDO task as a string"""
@@ -80,38 +74,23 @@ class TaskList(object):
 
     def get_tasklist(self,objtype='elg',randoms_db='obiwan_elg_ra175',
                      do_more='no',minid=1,outdir=None,
-                     bricks=None):
-        """For each brick, gets all randoms from PSQL db, and finds exact number of rs* tasks needed
+                     bricks=None,estim_nperbrick=2e3):
+        """It is too slow to find the example number of randoms in each brick, so find all bricks
+            with at least one source and put in the expected number of randoms + 2 StdErros worth
 
         Args:
             objtype: elg,lrg
-            randoms_db: name of PSQL db for randoms, e.g. obiwan_elg_ra175
             minid: None, unless do_more == yes then it is an integer for the randoms id to start from
             bricks: array like list of bricks to get qdo tasks for, if None all bricks found
         """
-        from obiwan.kenobi import get_sample
-        sample_kwargs= {"objtype":objtype,
-                        "randoms_db":randoms_db,
-                        "minid":minid}
         tasks=[]
         if bricks is None:
             bricks= np.sort(self.bricks.brickname)
         else:
             bricks= np.sort(bricks)
-        not_in_bricks=[]
-        for cnt,brick in enumerate(bricks):
-            if cnt % 10 == 0: print('brick %d/%d' % (cnt+1,len(bricks)))
-            try: 
-                Samp= get_sample(brick=brick,verbose=False,**sample_kwargs)
-            except ValueError as err_obj:
-                if 'No randoms in brick' in str(err_obj):
-                    not_in_bricks+= [brick]
-                    continue
-                else: 
-                    raise ValueError(str(err_obj))
-            tasks+= [self.task(brick,rs,do_skipids,do_more) 
-                     for rs in np.arange(0,len(Samp),self.nobj_per_run)]
-        return tasks, not_in_bricks
+        tasks+= [self.task(brick,rs,do_skipids,do_more) 
+                 for rs in np.arange(0,estim_nperbrick,self.nobj_per_run)]
+        return tasks
 
     def writetasks(self,tasks,not_in_bricks,
                    do_more='no',minid=1,do_skipids='no'):
@@ -130,22 +109,20 @@ if __name__ == '__main__':
     else:
         minid=None
     ###
-    ra1=173.5
-    ra2=176.5
-    dec1=23.0
-    dec2=26.0
-    randoms_db='obiwan_elg_ra175'
-    outdir='/global/cscratch1/sd/kaylanb/obiwan_out/elg_9deg2_ra175'
-    nobj_per_run=300
+    d= dict(ra1=150.,ra2=160.,
+            dec1=0.,dec2=10.0,
+            nobj_total=2.4e6,nobj_per_run=300)
+    outdir='/global/cscratch1/sd/kaylanb/obiwan_out/elg_100deg2'
     objtype='elg'
     # Initialize
-    T= TaskList(ra1=ra1,ra2=ra2, dec1=dec1,dec2=dec2,
-              nobj_per_run=nobj_per_run)
+    T= TaskList(**d)
     T.get_bricks()
+    num= T.estim_nperbrick()
     # Write tasks
     if do_skipids == 'no':
-        T.tasklist(objtype,randoms_db,
-                   do_more,minid,outdir)
+        T.tasklist(objtype,
+                   do_more,minid,outdir,
+                   estim_nperbrick=num)
     else:
         T.tasklist_skipids(do_more=do_more,minid=minid)
     # Qdo "skip_ids" task list for a given list of bricks
