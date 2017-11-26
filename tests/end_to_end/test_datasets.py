@@ -176,9 +176,8 @@ class AnalyzeTestcase(Testcase):
 
         self.outdir= os.path.join(os.environ['HOME'],
                            'myrepo/obiwan/tests/end_to_end',
-                            self.outname,'%s/%s/%s/rs0/' % \
-                             (self.obj,self.brick[:3],self.brick)
-                         )
+                            self.outname,self.obj)
+        self.rsdir='rs0'
     
     def load_outputs(self):
         """Each output from the testcase becomes an attribute
@@ -189,26 +188,36 @@ class AnalyzeTestcase(Testcase):
             fits_coadds
         """
         print('Loading from %s' % self.outdir)
+        dr= '%s/%s/%s' % (self.brick[:3],self.brick,self.rsdir)
         if not self.early_coadds:
-            self.obitractor= fits_table(os.path.join(self.outdir,'tractor/tractor-%s.fits' % self.brick))
-            self.blobs= fitsio.FITS(os.path.join(self.outdir,'metrics/blobs-%s.fits.gz' % self.brick))[0].read()
-            self.model_jpg= readImage(os.path.join(self.outdir,'coadd/legacysurvey-%s-model.jpg' % self.brick),
-                                 jpeg=True)
-            self.resid_jpg= readImage(os.path.join(self.outdir,'coadd/legacysurvey-%s-resid.jpg' % self.brick),
-                                 jpeg=True)
+            self.obitractor= fits_table(os.path.join(self.outdir,'tractor',
+                                        dr,'tractor-%s.fits' % self.brick))
+            self.blobs= fitsio.FITS(os.path.join(self.outdir,'metrics',
+                                    dr,'blobs-%s.fits.gz' % self.brick))[0].read()
+            self.model_jpg= readImage(os.path.join(self.outdir,'coadd',
+                                        dr,'legacysurvey-%s-model.jpg' % self.brick),
+                                      jpeg=True)
+            self.resid_jpg= readImage(os.path.join(self.outdir,'coadd',
+                                            dr,'legacysurvey-%s-resid.jpg' % self.brick),
+                                      jpeg=True)
         
-        self.simcat= fits_table(os.path.join(self.outdir,'obiwan/simcat-%s-%s.fits' % (self.obj,self.brick)))
+        self.simcat= fits_table(os.path.join(self.outdir,'obiwan',
+                                    dr,'simcat-%s-%s.fits' % (self.obj,self.brick)))
         
-        self.img_jpg= readImage(os.path.join(self.outdir,'coadd/legacysurvey-%s-image.jpg' % self.brick),
-                           jpeg=True)
+        self.img_jpg= readImage(os.path.join(self.outdir,'coadd',
+                                    dr,'legacysurvey-%s-image.jpg' % self.brick),
+                                jpeg=True)
 
         self.img_fits,self.ivar_fits,self.sims_fits= {},{},{}
         for b in self.bands:
-            self.img_fits[b]= readImage(os.path.join(self.outdir,'coadd/legacysurvey-%s-image-%s.fits.fz' % \
+            self.img_fits[b]= readImage(os.path.join(self.outdir,'coadd',
+                                            dr,'legacysurvey-%s-image-%s.fits.fz' % \
                                              (self.brick,b)))
-            self.ivar_fits[b]= readImage(os.path.join(self.outdir,'coadd/legacysurvey-%s-invvar-%s.fits.fz' % \
+            self.ivar_fits[b]= readImage(os.path.join(self.outdir,'coadd',
+                                            dr,'legacysurvey-%s-invvar-%s.fits.fz' % \
                                               (self.brick,b)))
-            self.sims_fits[b]= readImage(os.path.join(self.outdir,'coadd/legacysurvey-%s-sims-%s.fits.fz' % \
+            self.sims_fits[b]= readImage(os.path.join(self.outdir,'coadd',
+                                            dr,'legacysurvey-%s-sims-%s.fits.fz' % \
                                               (self.brick,b)))
             
     def simcat_xy(self):
@@ -302,13 +311,14 @@ class AnalyzeTestcase(Testcase):
             if not self.onedge:
                 assert(np.all(np.abs(diff) 
                                     < self.tol['apsims_p_apsky_m_aptractor'])) 
-            # tractor apflux vs. simcat table + sky
+            # Ditto but vs. tractor model flux
             diff= simcat_flux + \
                     sky_apflux - obitractor_apflux
             print(diff,self.add_noise,self.tol['simcat_p_apsky_m_aptractor'])
             if not self.onedge:
                 assert(np.all(np.abs(diff) 
                                     < self.tol['simcat_p_apsky_m_aptractor'])) 
+            # rhalf should be close
         print('passed')
 
 
@@ -364,7 +374,11 @@ if __name__ == "__main__":
     #test_dataset_DR5() 
     test_cases(z=True,grz=False,
                obj='elg',
-               all_blobs=True,onedge=False,
+               all_blobs=False,onedge=False,
                early_coadds=False)
+    # test_cases(z=True,grz=False,
+    #            obj='star',
+    #            all_blobs=False,onedge=False,
+    #            early_coadds=False)
 
     
