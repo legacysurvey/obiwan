@@ -438,8 +438,9 @@ class BuildStamp():
         # pixelized psf is "as is" (normalization not 1 at 1-5% but leave alone)
         # TODO is pixscale fixed?
         self.localpsf= galsim.Image(self.localpsf.getImage(),
-                                    wcs=self.localwcs)
-                                    #scale=self.wcs.pixscale_at(self.xpos,self.ypos))
+                                    scale=self.wcs.pixscale_at(self.xpos,self.ypos))
+                                    #wcs=self.localwcs)
+                                    #
                                     #wcs=self.galsim_wcs)
         if False:
             self.localpsf /= self.localpsf.array.sum()
@@ -513,8 +514,9 @@ class BuildStamp():
         #                    method='no_pixel')
         gal = gal.drawImage(offset=self.offset,  
                             method='auto',
-                            wcs= self.localwcs)
-                            #scale= self.wcs.pixscale_at(self.xpos,self.ypos))
+                            scale= self.wcs.pixscale_at(self.xpos,self.ypos))
+                            #wcs= self.localwcs)
+                            #)
 
         if True:
             gal /= gal.array.sum()
