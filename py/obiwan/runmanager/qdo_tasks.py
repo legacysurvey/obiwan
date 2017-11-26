@@ -2,17 +2,15 @@ import os
 import numpy as np
 
 from astrometry.util.fits import fits_table
-from astrometry.libkd.spherematch import match_radec
 
 from obiwan.runmanager.status import writelist
 
-SURVEY_BRICKS= os.path.join(os.environ['obiwan_data'],
-                            'legacysurveydir/survey-bricks.fits.gz')
-assert(os.path.exists(SURVEY_BRICKS))
 
 class Bricks(object):
-    def __init__(self):
-        self.bricks= fits_table(SURVEY_BRICKS)
+    def __init__(self,survey_bricks=None):
+        if survey_bricks is None:
+            raise ValueError('did not supply survey-bricks.fits.fz filename')
+        self.bricks= fits_table(survey_bricks)
 
     def overlapBox(self,ra=[100,101],dec=[20,21]):
         """ra,dec: corners of box injected randoms into"""
@@ -20,7 +18,7 @@ class Bricks(object):
         return self.bricks[((ra[0] -hw <= self.bricks.ra) &
                             (ra[1] +hw >= self.bricks.ra) &
                             (dec[0] -hw <= self.bricks.dec) &
-                            (dec[1] +hw >= self.bricks.dec))
+                            (dec[1] +hw >= self.bricks.dec))]
 
 class TaskList(object):
     """Creates QDO tasks lists for default,do_skipids, and/or do_more
@@ -39,9 +37,9 @@ class TaskList(object):
         self.nobj_total=nobj_total
         self.nobj_per_run=nobj_per_run
 
-    def get_bricks(self):
+    def get_bricks(self,survey_bricks=None):
         """Returns bricks in ra,dec region"""
-        b= Bricks()
+        b= Bricks(survey_bricks=survey_bricks)
         self.bricks= b.overlapBox(ra=[self.ra1,self.ra2], dec=[self.dec1,self.dec2])
         #writelist(np.sort(self.bricks.brickname), 'bricks_inregion.txt')
 
@@ -72,8 +70,8 @@ class TaskList(object):
                          (do_skipids,do_more,str(minid)))
 
 
-    def get_tasklist(self,objtype='elg',randoms_db='obiwan_elg_ra175',
-                     do_more='no',minid=1,outdir=None,
+    def get_tasklist(self,objtype='elg',
+                     do_more='no',minid=1,
                      bricks=None,estim_nperbrick=2e3):
         """It is too slow to find the example number of randoms in each brick, so find all bricks
             with at least one source and put in the expected number of randoms + 2 StdErros worth
@@ -83,27 +81,30 @@ class TaskList(object):
             minid: None, unless do_more == yes then it is an integer for the randoms id to start from
             bricks: array like list of bricks to get qdo tasks for, if None all bricks found
         """
-        tasks=[]
+        #tasks=[]
         if bricks is None:
             bricks= np.sort(self.bricks.brickname)
         else:
             bricks= np.sort(bricks)
-        tasks+= [self.task(brick,rs,do_skipids,do_more) 
-                 for rs in np.arange(0,estim_nperbrick,self.nobj_per_run)]
+        tasks= [self.task(brick,rs,do_skipids,do_more) 
+                for brick in bricks
+                for rs in np.arange(0,estim_nperbrick,self.nobj_per_run)]
         return tasks
 
-    def writetasks(self,tasks,not_in_bricks,
+    def writetasks(self,tasks,
                    do_more='no',minid=1,do_skipids='no'):
         """Write task list to file"""
         writelist(tasks, 'tasks_skipid_%s_more_%s_minid_%s.txt' % 
                     (do_skipids,do_more,str(minid)))
-        print('Number of bricks without randoms: %d' % len(not_in_bricks))
-        print('First 10 are',not_in_bricks[:10])
 
 
 if __name__ == '__main__':
     do_skipids='no'
-    do_more='yes'
+    do_more='no'
+    survey_bricks=os.path.join(os.environ['HOME'],
+                            'Downloads/survey-bricks-dr5.fits.gz')
+    #survey_bricks= os.path.join(os.environ['obiwan_data'],
+    #                        'legacysurveydir/survey-bricks.fits.gz')
     if do_more == 'yes':
         minid=240001
     else:
@@ -116,15 +117,16 @@ if __name__ == '__main__':
     objtype='elg'
     # Initialize
     T= TaskList(**d)
-    T.get_bricks()
+    T.get_bricks(survey_bricks=survey_bricks)
     num= T.estim_nperbrick()
     # Write tasks
     if do_skipids == 'no':
-        T.tasklist(objtype,
-                   do_more,minid,outdir,
-                   estim_nperbrick=num)
+        tasks= T.get_tasklist(objtype,
+                              do_more,minid,
+                              estim_nperbrick=num)
     else:
         T.tasklist_skipids(do_more=do_more,minid=minid)
+    T.writetasks(tasks,do_more=do_more,minid=minid,do_skipids=do_skipids)
     # Qdo "skip_ids" task list for a given list of bricks
     #brick_list_fn= '/global/cscratch1/sd/kaylanb/obiwan_code/obiwan/bricks_ready_skip.txt'
     #write_qdo_tasks_skipids(brick_list_fn, nobj_per_run=300)
