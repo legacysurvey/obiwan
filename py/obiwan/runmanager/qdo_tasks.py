@@ -91,20 +91,23 @@ class TaskList(object):
                 for rs in np.arange(0,estim_nperbrick,self.nobj_per_run)]
         return tasks
 
-    def writetasks(self,tasks,
+    def writetasks(self,tasks,outdir=None,
                    do_more='no',minid=1,do_skipids='no'):
         """Write task list to file"""
-        writelist(tasks, 'tasks_skipid_%s_more_%s_minid_%s.txt' % 
-                    (do_skipids,do_more,str(minid)))
+        if outdir is None:
+            outdir='.'
+        fn= os.path.join(outdir,'tasks_skipid_%s_more_%s_minid_%s.txt' % \
+                (do_skipids,do_more,str(minid)))
+        writelist(tasks, fn)
 
 
 if __name__ == '__main__':
     do_skipids='no'
     do_more='no'
-    survey_bricks=os.path.join(os.environ['HOME'],
-                            'Downloads/survey-bricks-dr5.fits.gz')
-    #survey_bricks= os.path.join(os.environ['obiwan_data'],
-    #                        'legacysurveydir/survey-bricks.fits.gz')
+    #survey_bricks=os.path.join(os.environ['HOME'],
+    #                        'Downloads/survey-bricks-dr5.fits.gz')
+    survey_bricks= os.path.join(os.environ['obiwan_data'],
+                            'legacysurveydir/survey-bricks.fits.gz')
     if do_more == 'yes':
         minid=240001
     else:
