@@ -29,6 +29,17 @@ def dobash(cmd):
     print('UNIX cmd: %s' % cmd)
     if os.system(cmd): raise ValueError
 
+def writelist(lis,fn):
+    if os.path.exists(fn):
+        os.remove(fn)
+    with open(fn,'w') as foo:
+        for li in lis:
+            foo.write('%s\n' % li)
+    print('Wrote %s' % fn)
+    if len(lis) == 0:
+        print('Warning: %s is empty list' % fn)
+        
+
 def fits2pandas(tab,attrs=None):
     """converts a fits_table into a pandas DataFrame
 
@@ -50,11 +61,13 @@ def fits2pandas(tab,attrs=None):
 def get_brickdir(outdir,obj,brick):
     return os.path.join(outdir,obj,brick[:3],brick)
 
-def get_outdir_runbrick(outdir,brick,rowstart,
-                        do_skipids='no',do_more='yes'):
-    """diretory obiwan/runbrick will write results to
+def get_rsdir(rowstart,
+              do_skipids='no',do_more='no'):
+    """Returns string like rs0 or skip_rs0
 
-    Returns path to like outdir/obj/bri/brick/rs0
+    Args:
+        rowstart: 0, 300, etc
+        do_skipids,do_more: yes or no
     """
     # Either rs or skip_rs
     if do_skipids == 'no':
@@ -64,7 +77,19 @@ def get_outdir_runbrick(outdir,brick,rowstart,
     # if specified minimum id, running more randoms
     if do_more == 'yes':
         final_dir= "more_"+final_dir
-    return os.path.join(outdir,brick[:3],brick,final_dir)
+    return final_dir
+
+def get_outdir_runbrick(outdir,brick,rowstart,
+                        do_skipids='no',do_more='yes'):
+    """diretory obiwan/runbrick will write results to
+
+    Returns path to like outdir/obj/bri/brick/rs0
+    """
+    
+    return os.path.join(outdir,brick[:3],brick,
+                        get_rsdir(rowstart,
+                                  do_skipids='no',
+                                  do_more='yes'))
 
 def get_brickinfo_hack(survey,brickname):
     """when in ipython and reading single row survey-bricks table,

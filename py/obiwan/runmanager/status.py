@@ -1,39 +1,54 @@
 """
 for a given brick, prints whether each rs* obiwan job finished or not
 """
-import qdo
 import os
 import numpy as np
 from glob import glob
 import re
 from collections import defaultdict
 
-from obiwan.common import get_savedir,dobash
+from obiwan.common import dobash,get_rsdir
+
+import qdo
 
 QDO_RESULT= ['running', 'succeeded', 'failed']
 
 
-def get_logfile(outdir,obj,brick,rowstart, 
+def get_datadir(outdir,brick,rowstart, 
                 do_skipids='no',do_more='no'):
-  return os.path.join(outdir,'logs',brick[:3],brick,'rs'+rowstars,
-                      'log.'+brick
-                      
-                      get_outdir_runbrick(outdir,brick,rowstart, 
-                                   do_skipids=do_skipids,do_more=do_more),
-                       'log.%s' % brick)
+    """Returns paths like outdir/replaceme/bri/brick/rs0"""
+    rsdir= get_rsdir(rowstart, 
+                     do_skipids,do_more)
+    return os.path.join(outdir,'replaceme',brick[:3],brick,
+                        rsdir)
+
+
+def get_datadirs(outdir,brick,rowstart, 
+                 do_skipids='no',do_more='no'):
+    """Returns list of paths to obiwan,coadd/tractor/bri/brick/rs0/ dirs"""
+    return [get_datadir(outdir,brick,rowstart, 
+                        do_skipids,do_more).replace('replaceme',dr)
+            for dr in ['logs','obiwan','coadd','metrics',
+                       'tractor','tractor-i']
+           ]
+
+def get_logdir(outdir,brick,rowstart, 
+               do_skipids='no',do_more='no'):
+   logdir= (get_datadir(outdir,brick,rowstart, 
+                        do_skipids,do_more)
+         .replace('replaceme','logs'))
+
+
+def get_logfile(outdir,brick,rowstart, 
+                do_skipids='no',do_more='no'):
+    logdir= get_logdir(outdir,brick,rowstart, 
+                       do_skipids,do_more)
+    return os.path.join(logdir,'log.'+brick)
+
 
 def get_slurm_files(outdir):
     return glob( outdir + '/slurm-*.out')
-
-def writelist(lis,fn):
-    if os.path.exists(fn):
-        os.remove(fn)
-    with open(fn,'w') as foo:
-        for li in lis:
-            foo.write('%s\n' % li)
-    print('Wrote %s' % fn)
-    if len(lis) == 0:
-        print('Warning: %s is empty list' % fn) 
+ 
 
 
 class QdoList(object):
@@ -44,7 +59,6 @@ class QdoList(object):
         obj: ...
         que_name: ie. qdo create que_name
     """
-
     def __init__(self,outdir,obj='elg',que_name='obiwan'):
         self.outdir= outdir
         self.obj= obj
@@ -104,15 +118,16 @@ class QdoList(object):
             try:
                 task_obj= q.tasks(id= int(task_id))
                 brick,rs,do_skipids,do_more= task_obj.task.split(' ')
-                logdir= get_savedir(self.outdir,self.obj,brick,rs, 
-                                    do_skipids=do_skipids,do_more=do_more)
-                rmcmd= "rm %s/*" % logdir
+                del_dirs= get_datadirs(self.outdir,brick,rs, 
+                                       do_skipids=do_skipids,
+                                       do_more=do_more)
                 if modify:
                     task_obj.set_state(qdo.Task.PENDING)
-                    dobash(rmcmd)
+                    for dr in del_dirs:
+                        dobash('rm %s/*' % dr)
                 else:
                     print('would remove id=%d, which corresponds to taks_obj=' % task_id,task_obj)
-                    print('by calling dobash(%s)' % rmcmd)
+                    print('by removing these dirs',del_dirs)
             except ValueError:
                 print('cant find task_id=%d' % task_id)
 
