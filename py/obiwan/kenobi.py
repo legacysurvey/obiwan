@@ -47,7 +47,8 @@ from legacypipe.survey import LegacySurveyData, wcs_for_brick
 
 import obiwan.priors as priors
 from obiwan.db_tools import getSrcsInBrick 
-from obiwan.common import get_outdir_runbrick,get_outdir_final 
+from obiwan.common import get_outdir_runbrick,get_outdir_final
+from obiwan.common import get_brickinfo_hack
 
 from astrometry.util.fits import fits_table, merge_tables
 from astrometry.util.ttime import Time
@@ -421,16 +422,6 @@ class BuildStamp():
         self.localpsf = self.psf.getPointSourcePatch(self.xpos, self.ypos)
         self.localpsf= galsim.Image(self.localpsf.getImage(),
                                     scale=self.wcs.pixscale_at(self.xpos,self.ypos))
-        if False:
-            # print flux in 7''
-            pxscale=0.262
-            apers= photutils.CircularAperture((self.localpsf.trueCenter().x,
-                                               self.localpsf.trueCenter().y), 
-                                               r=3.5/pxscale) #KEY is to harcode this # pix
-            apy_table = photutils.aperture_photometry(self.localpsf.array, apers)
-            flux_in_7= np.array(apy_table['aperture_sum'])[0]
-            print('psf norm=%.6f,fluxin7=%.6f' % \
-                (self.localpsf.array.sum(),flux_in_7))
 
     def star(self,obj):
         """Render a star (PSF)."""
@@ -438,7 +429,7 @@ class BuildStamp():
         # Use input flux as the 7'' aperture flux
         self.setlocal(obj)
         stamp = self.localpsf.copy()
-        #stamp = psf.drawImage(offset=self.offset, method='no_pixel')      
+        stamp.shift(dx=self.offset.x,dy=self.offset.y)      
         # Scale to desired flux
         stamp *= float(obj.get(self.band+'flux')) # [nanomaggies]
         # position in observed image
@@ -468,8 +459,8 @@ class BuildStamp():
         gal = gal.shear(e1=float(obj.get('e1')), e2=float(obj.get('e2')))
         # Convolve with normed-psf
         gal = self.convolve_galaxy(gal)
-        gal = gal.drawImage(offset=self.offset,  
-                            method='auto',
+        gal = gal.drawImage(method='auto',
+                            offset=self.offset,  
                             scale= self.wcs.pixscale_at(self.xpos,self.ypos))
                             #method='no_pixel'
         # Scale to desired flux
@@ -564,7 +555,7 @@ def build_simcat(Samp=None,brickwcs=None, meta=None):
     #cat['X'] = Column(xxyy[1][:], dtype='f4')
     #cat['Y'] = Column(xxyy[2][:], dtype='f4')
     cat = fits_table()
-    for key in ['id','seed','ra','dec']:
+    for key in ['id','ra','dec']:
         cat.set(key, Samp.get(key))
     cat.set('x', xxyy[1][:])
     cat.set('y', xxyy[2][:])
@@ -973,8 +964,9 @@ def main(args=None):
 
     # Optionally zoom into a portion of the brick
     survey = LegacySurveyData()
-    brickinfo = survey.get_brick_by_name(brickname)
-    print(brickname)
+    brickinfo= get_brickinfo_hack(survey,brickname)
+    #brickinfo = survey.get_brick_by_name(brickname)
+    #print(brickname)
     brickwcs = wcs_for_brick(brickinfo)
     W, H, pixscale = brickwcs.get_width(), brickwcs.get_height(), brickwcs.pixel_scale()
 
