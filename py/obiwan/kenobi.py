@@ -47,8 +47,7 @@ from legacypipe.survey import LegacySurveyData, wcs_for_brick
 
 import obiwan.priors as priors
 from obiwan.db_tools import getSrcsInBrick 
-from obiwan.common import get_outdir_runbrick,get_outdir_final
-from obiwan.common import get_brickinfo_hack
+from obiwan.common import get_outdir_runbrick, get_brickinfo_hack
 
 from astrometry.util.fits import fits_table, merge_tables
 from astrometry.util.ttime import Time
@@ -663,7 +662,7 @@ def create_metadata(kwargs=None):
     #    log.info('Random seed = {}'.format(kwargs['args'].seed))
     #    metacat['SEED'] = kwargs['args'].seed
     #metacat_dir = os.path.join(kwargs['decals_sim_dir'], kwargs['objtype'],kwargs['brickname'][:3],kwargs['brickname'])    
-    metacat_dir= get_outdir_runbrick(kwargs['decals_sim_dir'],kwargs['objtype'],
+    metacat_dir= get_outdir_runbrick(kwargs['decals_sim_dir'],
                              kwargs['brickname'],kwargs['rowst'],
                              do_skipids=kwargs['do_skipids'],do_more=kwargs['do_more'])
     if not os.path.exists(metacat_dir): 
@@ -699,7 +698,7 @@ def create_ith_simcat(d=None):
     #simcat = build_simcat(d['nobj'], d['brickname'], d['brickwcs'], d['metacat'], seed)
     simcat, skipped_ids = build_simcat(Samp=d['Samp'],brickwcs=d['brickwcs'],meta=d['metacat'])
     # Simcat 
-    simcat_dir = get_outdir_runbrick(d['decals_sim_dir'],d['objtype'],
+    simcat_dir = get_outdir_runbrick(d['decals_sim_dir'],
                            d['brickname'],d['rowst'],
                            do_skipids=d['do_skipids'],do_more=d['do_more'])
     if not os.path.exists(simcat_dir): 
@@ -1025,7 +1024,7 @@ def main(args=None):
 
     # Stop if starting row exceeds length of radec,color table
     if len(Samp) == 0:
-        fn= get_outdir_runbrick(kwargs['decals_sim_dir'],kwargs['objtype'],
+        fn= get_outdir_runbrick(kwargs['decals_sim_dir'],
                         kwargs['brickname'],kwargs['rowst'],
                         do_skipids=kwargs['do_skipids'],do_more=kwargs['do_more'])
         fn+= '_exceeded.txt'
