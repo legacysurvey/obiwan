@@ -15,7 +15,10 @@ QDO_RESULT= ['running', 'succeeded', 'failed']
 
 def get_logfile(outdir,obj,brick,rowstart, 
                 do_skipids='no',do_more='no'):
-  return os.path.join( get_savedir(outdir,obj,brick,rowstart, 
+  return os.path.join(outdir,'logs',brick[:3],brick,'rs'+rowstars,
+                      'log.'+brick
+                      
+                      get_outdir_runbrick(outdir,brick,rowstart, 
                                    do_skipids=do_skipids,do_more=do_more),
                        'log.%s' % brick)
 

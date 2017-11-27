@@ -37,7 +37,7 @@ class TaskList(object):
         self.nobj_total=nobj_total
         self.nobj_per_run=nobj_per_run
 
-    def get_bricks(self,survey_bricks=None):
+    def bricks_in_region(self,survey_bricks=None):
         """Returns bricks in ra,dec region"""
         b= Bricks(survey_bricks=survey_bricks)
         self.bricks= b.overlapBox(ra=[self.ra1,self.ra2], dec=[self.dec1,self.dec2])
@@ -70,9 +70,9 @@ class TaskList(object):
                          (do_skipids,do_more,str(minid)))
 
 
-    def get_tasklist(self,objtype='elg',
+    def get_tasklist(self,bricks=None,objtype='elg',
                      do_more='no',minid=1,
-                     bricks=None,estim_nperbrick=2e3):
+                     estim_nperbrick=2e3):
         """It is too slow to find the example number of randoms in each brick, so find all bricks
             with at least one source and put in the expected number of randoms + 2 StdErros worth
 
@@ -113,18 +113,20 @@ if __name__ == '__main__':
     else:
         minid=None
     ###
-    d= dict(ra1=150.,ra2=160.,
-            dec1=0.,dec2=10.0,
-            nobj_total=2.4e6,nobj_per_run=300)
-    outdir='/global/cscratch1/sd/kaylanb/obiwan_out/elg_100deg2'
+    d= dict(ra1=109.,ra2=278.5,
+            dec1=-11.1,dec2=35.4,
+            nobj_total=0.767e9,nobj_per_run=300)
+    outdir='/global/cscratch1/sd/kaylanb/obiwan_out/elg_dr5'
     objtype='elg'
     # Initialize
     T= TaskList(**d)
-    T.get_bricks(survey_bricks=survey_bricks)
+    T.bricks_in_region(survey_bricks=survey_bricks)
     num= T.estim_nperbrick()
     # Write tasks
     if do_skipids == 'no':
-        tasks= T.get_tasklist(objtype,
+        bricks=np.loadtxt(os.path.join(outdir,
+                              'dr5_bricks_inMid_grz.txt'),dtype=str)
+        tasks= T.get_tasklist(bricks,objtype,
                               do_more,minid,
                               estim_nperbrick=num)
     else:
