@@ -168,7 +168,7 @@ class AnalyzeTestcase(Testcase):
 
         self.outdir= os.path.join(os.environ['HOME'],
                            'myrepo/obiwan/tests/end_to_end',
-                            self.outname,self.obj)
+                            self.outname)
         self.rsdir='rs0'
 
     def get_tolerances(self):
