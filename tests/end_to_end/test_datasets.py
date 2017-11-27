@@ -14,6 +14,7 @@ from legacypipe.survey import LegacySurveyData, wcs_for_brick
 
 from obiwan.kenobi import main,get_parser
 from obiwan.qa.visual import plotImage, readImage
+from obiwan.common import get_brickinfo_hack
 
 DATASETS= ['DR3','DR5','DR3_eBOSS']
 
@@ -159,27 +160,49 @@ class AnalyzeTestcase(Testcase):
         super(AnalyzeTestcase, self).__init__(**kwargs)
 
         # Tolerances
-        if '_grz' in self.name:
-            self.tol={'apsims_p_apsky_m_aptractor':0.2, #nanomags
-                      'simcat_p_apsky_m_aptractor':0.3}
-        else:
-            if self.add_noise:
-                self.tol={'apsims_p_apsky_m_aptractor':0.2, 
-                          'simcat_p_apsky_m_aptractor':0.7}
-            else:
-                self.tol={'apsims_p_apsky_m_aptractor':0.2, 
-                          'simcat_p_apsky_m_aptractor':0.5}
+        self.tol= self.get_tolerances()
 
         survey = LegacySurveyData()
-        brickinfo = survey.get_brick_by_name(self.brick)
+        brickinfo= get_brickinfo_hack(survey,self.brick)
         self.brickwcs = wcs_for_brick(brickinfo)
 
         self.outdir= os.path.join(os.environ['HOME'],
                            'myrepo/obiwan/tests/end_to_end',
-                            self.outname,'%s/%s/%s/rs0/' % \
-                             (self.obj,self.brick[:3],self.brick)
-                         )
-    
+                            self.outname,self.obj)
+        self.rsdir='rs0'
+
+    def get_tolerances(self):
+        if '_grz' in self.name:
+            # also amazing agreement
+            return {'rhalf':0.65, 
+                    'apflux':0.2,
+                    'skyflux':2.,
+                    'modelflux':4.5}
+        else:
+            if self.add_noise:
+                # TODO: tune
+                return {'rhalf':0.11, 
+                      'apflux':0.25,
+                      'skyflux':1.1,
+                      'modelflux':6.0}
+            if self.onedge:
+                return {'rhalf':0.14, 
+                      'apflux':0.2,
+                      'skyflux':2.,
+                      'modelflux':5.5}
+            if self.obj == 'star':
+                # simcat-model amazing agreement
+                return {'apflux':0.2,
+                        'skyflux':1.1,
+                        'modelflux':0.6}
+
+            
+            return {'rhalf':0.11, 
+                      'apflux':0.25,
+                      'skyflux':1.1,
+                      'modelflux':6.0}
+
+
     def load_outputs(self):
         """Each output from the testcase becomes an attribute
 
@@ -189,26 +212,36 @@ class AnalyzeTestcase(Testcase):
             fits_coadds
         """
         print('Loading from %s' % self.outdir)
+        dr= '%s/%s/%s' % (self.brick[:3],self.brick,self.rsdir)
         if not self.early_coadds:
-            self.obitractor= fits_table(os.path.join(self.outdir,'tractor/tractor-%s.fits' % self.brick))
-            self.blobs= fitsio.FITS(os.path.join(self.outdir,'metrics/blobs-%s.fits.gz' % self.brick))[0].read()
-            self.model_jpg= readImage(os.path.join(self.outdir,'coadd/legacysurvey-%s-model.jpg' % self.brick),
-                                 jpeg=True)
-            self.resid_jpg= readImage(os.path.join(self.outdir,'coadd/legacysurvey-%s-resid.jpg' % self.brick),
-                                 jpeg=True)
+            self.obitractor= fits_table(os.path.join(self.outdir,'tractor',
+                                        dr,'tractor-%s.fits' % self.brick))
+            self.blobs= fitsio.FITS(os.path.join(self.outdir,'metrics',
+                                    dr,'blobs-%s.fits.gz' % self.brick))[0].read()
+            self.model_jpg= readImage(os.path.join(self.outdir,'coadd',
+                                        dr,'legacysurvey-%s-model.jpg' % self.brick),
+                                      jpeg=True)
+            self.resid_jpg= readImage(os.path.join(self.outdir,'coadd',
+                                            dr,'legacysurvey-%s-resid.jpg' % self.brick),
+                                      jpeg=True)
         
-        self.simcat= fits_table(os.path.join(self.outdir,'obiwan/simcat-%s-%s.fits' % (self.obj,self.brick)))
+        self.simcat= fits_table(os.path.join(self.outdir,'obiwan',
+                                    dr,'simcat-%s-%s.fits' % (self.obj,self.brick)))
         
-        self.img_jpg= readImage(os.path.join(self.outdir,'coadd/legacysurvey-%s-image.jpg' % self.brick),
-                           jpeg=True)
+        self.img_jpg= readImage(os.path.join(self.outdir,'coadd',
+                                    dr,'legacysurvey-%s-image.jpg' % self.brick),
+                                jpeg=True)
 
         self.img_fits,self.ivar_fits,self.sims_fits= {},{},{}
         for b in self.bands:
-            self.img_fits[b]= readImage(os.path.join(self.outdir,'coadd/legacysurvey-%s-image-%s.fits.fz' % \
+            self.img_fits[b]= readImage(os.path.join(self.outdir,'coadd',
+                                            dr,'legacysurvey-%s-image-%s.fits.fz' % \
                                              (self.brick,b)))
-            self.ivar_fits[b]= readImage(os.path.join(self.outdir,'coadd/legacysurvey-%s-invvar-%s.fits.fz' % \
+            self.ivar_fits[b]= readImage(os.path.join(self.outdir,'coadd',
+                                            dr,'legacysurvey-%s-invvar-%s.fits.fz' % \
                                               (self.brick,b)))
-            self.sims_fits[b]= readImage(os.path.join(self.outdir,'coadd/legacysurvey-%s-sims-%s.fits.fz' % \
+            self.sims_fits[b]= readImage(os.path.join(self.outdir,'coadd',
+                                            dr,'legacysurvey-%s-sims-%s.fits.fz' % \
                                               (self.brick,b)))
             
     def simcat_xy(self):
@@ -280,6 +313,12 @@ class AnalyzeTestcase(Testcase):
             else:
                 assert(len(ireal) == 0)
 
+        if not self.obj == 'star':
+            rhalf= np.max((self.obitractor[itrac].shapeexp_r,
+                           self.obitractor[itrac].shapedev_r),axis=0)
+            diff= rhalf - self.simcat.rhalf
+            print('rhalf',diff)
+            assert(np.all(np.abs(diff) < self.tol['rhalf']))
         # Tractor apflux is nearly bang on to my apflux for sims coadd 
         # plus my apflux for sky in coadd
         # However, Tractor model flux is does not agree with fits coadd counts
@@ -292,23 +331,20 @@ class AnalyzeTestcase(Testcase):
             img_apflux= np.array(apy_table['aperture_sum'])
             apy_table = photutils.aperture_photometry(self.sims_fits[b], apers)
             sims_apflux= np.array(apy_table['aperture_sum'])
-            sky_apflux= img_apflux - sims_apflux
-            # tractor apflux vs. my apflux sims + sky 
             obitractor_apflux= self.obitractor[itrac].get('apflux_'+b)[:,5]
-            simcat_flux= self.simcat.get(b+'flux')
-            diff= sims_apflux + \
-                    sky_apflux - obitractor_apflux
-            print(diff) 
-            if not self.onedge:
-                assert(np.all(np.abs(diff) 
-                                    < self.tol['apsims_p_apsky_m_aptractor'])) 
-            # tractor apflux vs. simcat table + sky
-            diff= simcat_flux + \
-                    sky_apflux - obitractor_apflux
-            print(diff,self.add_noise,self.tol['simcat_p_apsky_m_aptractor'])
-            if not self.onedge:
-                assert(np.all(np.abs(diff) 
-                                    < self.tol['simcat_p_apsky_m_aptractor'])) 
+            # my apflux vs tractor apflux
+            diff= img_apflux - obitractor_apflux
+            print('apflux',diff) 
+            assert(np.all(np.abs(diff) < self.tol['apflux']))
+            # sky flux is small
+            diff= img_apflux - sims_apflux
+            print('skyflux',diff) 
+            assert(np.all(np.abs(diff) < self.tol['skyflux']))
+            # tractor model flux within 5-6 nanomags of input flux 
+            diff= self.simcat.get(b+'flux') -\
+                    self.obitractor[itrac].get('flux_'+b)
+            print('modelflux',diff) 
+            assert(np.all(np.abs(diff) < self.tol['modelflux']))
         print('passed')
 
 
@@ -356,15 +392,49 @@ def test_cases(z=True,grz=True,
 
 def test_main():
     """travis CI"""
-    test_cases(z=True,grz=False,
-               onedge=False)
+    d=dict(z=True,grz=False,
+           obj='elg',
+           all_blobs=False,onedge=False,
+           early_coadds=False)
+    
+    d.update(all_blobs=True)
+    test_cases(**d)
+
+    d.update(all_blobs=False,onedge=True)
+    test_cases(**d)
+
+    # Amazing agreement
+    d.update(obj='star',onedge=False)
+    test_cases(**d)
+
+    # Also amazing agreement
+    d.update(obj='elg',z=False,grz=True)
+    test_cases(**d)
+    
 
 if __name__ == "__main__":
     #test_dataset_DR3()
-    #test_dataset_DR5() 
-    test_cases(z=True,grz=False,
-               obj='elg',
-               all_blobs=True,onedge=False,
-               early_coadds=False)
+    #test_dataset_DR5()
+    # Various tests can do 
+    d=dict(z=True,grz=False,
+           obj='elg',
+           all_blobs=False,onedge=False,
+           early_coadds=False)
+    test_cases(**d)
+    
+    d.update(all_blobs=True)
+    test_cases(**d)
+
+    d.update(all_blobs=False,onedge=True)
+    test_cases(**d)
+
+    # Amazing agreement
+    d.update(obj='star',onedge=False)
+    test_cases(**d)
+
+    # Also amazing agreement
+    d.update(obj='elg',z=False,grz=True)
+    test_cases(**d)
+    
 
     
