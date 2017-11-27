@@ -374,7 +374,7 @@ if __name__ == "__main__":
     #test_dataset_DR5() 
     test_cases(z=True,grz=False,
                obj='elg',
-               all_blobs=False,onedge=False,
+               all_blobs=True,onedge=False,
                early_coadds=False)
     # test_cases(z=True,grz=False,
     #            obj='star',
