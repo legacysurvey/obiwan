@@ -3,14 +3,12 @@ import numpy as np
 
 from astrometry.util.fits import fits_table
 
-from obiwan.runmanager.status import writelist
+from obiwan.common import writelist
 
 
 class Bricks(object):
-    def __init__(self,survey_bricks=None):
-        if survey_bricks is None:
-            raise ValueError('did not supply survey-bricks.fits.fz filename')
-        self.bricks= fits_table(survey_bricks)
+    def __init__(self,survey_bricks_fn):
+        self.bricks= fits_table(survey_bricks_fn)
 
     def overlapBox(self,ra=[100,101],dec=[20,21]):
         """ra,dec: corners of box injected randoms into"""
@@ -37,9 +35,9 @@ class TaskList(object):
         self.nobj_total=nobj_total
         self.nobj_per_run=nobj_per_run
 
-    def bricks_in_region(self,survey_bricks=None):
+    def bricks_in_region(self,survey_bricks_fn=None):
         """Returns bricks in ra,dec region"""
-        b= Bricks(survey_bricks=survey_bricks)
+        b= Bricks(survey_bricks_fn=survey_bricks_fn)
         self.bricks= b.overlapBox(ra=[self.ra1,self.ra2], dec=[self.dec1,self.dec2])
         #writelist(np.sort(self.bricks.brickname), 'bricks_inregion.txt')
 
@@ -55,7 +53,7 @@ class TaskList(object):
         assert(do_more in ['yes','no'])
         return '%s %d %s %s' % (brick,rs,do_skipids,do_more) 
 
-    def tasklist_skipids(self,do_more='no',minid=None):
+    def tasklist_skipids(self,bricks=None,do_more='no',minid=None):
         """tasklist for skipids runs
 
         Args:
@@ -63,8 +61,10 @@ class TaskList(object):
             minid: if do_more == yes, this must be an integer for the randoms id to start from
         """
         do_skipids= 'yes'
+        if bricks is None:
+            bricks= np.sort(self.bricks.brickname)
         tasks= [self.task(brick,rs,do_skipid,do_more) 
-                for brick in np.sort(self.bricks.brickname)
+                for brick in bricks
                 for rs in np.arange(0,3*self.nobj_per_run, self.nobj_per_run)]
         writelist(tasks, 'tasks_skipid_%s_more_%s_minid_%s.txt' % 
                          (do_skipids,do_more,str(minid)))
@@ -91,59 +91,72 @@ class TaskList(object):
                 for rs in np.arange(0,estim_nperbrick,self.nobj_per_run)]
         return tasks
 
-    def writetasks(self,tasks,outdir=None,
+    def writetasks(self,tasks,
                    do_more='no',minid=1,do_skipids='no'):
         """Write task list to file"""
-        if outdir is None:
-            outdir='.'
-        fn= os.path.join(outdir,'tasks_skipid_%s_more_%s_minid_%s.txt' % \
-                (do_skipids,do_more,str(minid)))
+        fn= 'tasks_skipid_%s_more_%s_minid_%s.txt' % \
+                (do_skipids,do_more,str(minid))
         writelist(tasks, fn)
 
 
 if __name__ == '__main__':
+    from argparse import ArgumentParser
+    parser = ArgumentParser()
+    parser.add_argument('--obj', type=str,choices=['elg','star'],required=True)
+    parser.add_argument('--radec', nargs='+',type=float, 
+                        help='no quotes, e.g. --radec ra1 ra2 dec1 dec2',required=True)
+    parser.add_argument('--nobj_total', type=int, default=10000,required=True)
+    parser.add_argument('--survey_bricks_fn', type=str, 
+                        help='abs path to survey-bricks.fits.fz',
+                        required=True)
+    parser.add_argument('--nobj_per_run', type=int, default=300)
+    parser.add_argument('--bricks_fn', type=str, default=None,
+                        help='abs path to list of bricks for the tasklist')
+    parser.add_argument('--do_skipids', type=str, choices=['yes','no'],
+                        default='no')
+    parser.add_argument('--do_more', type=str, choices=['yes','no'],
+                        default='no')
+    parser.add_argument('--minid', type=int, default=None)
+    args = parser.parse_args()
+
+    assert(len(args.radec) == 4)
+    if args.do_more == 'yes':
+        assert(not args.minid is None)
     do_skipids='no'
     do_more='no'
     #survey_bricks=os.path.join(os.environ['HOME'],
+    #                        'mydata/survey-bricks.fits.gz')
+    #survey_bricks=os.path.join(os.environ['HOME'],
     #                        'Downloads/survey-bricks-dr5.fits.gz')
-    survey_bricks= os.path.join(os.environ['obiwan_data'],
-                            'legacysurveydir/survey-bricks.fits.gz')
-    if do_more == 'yes':
-        minid=240001
-    else:
-        minid=None
+    #survey_bricks= os.path.join(os.environ['obiwan_data'],
+    #                        'legacysurveydir/survey-bricks.fits.gz')
+    
     ###
-    d= dict(ra1=109.,ra2=278.5,
-            dec1=-11.1,dec2=35.4,
-            nobj_total=0.767e9,nobj_per_run=300)
-    outdir='/global/cscratch1/sd/kaylanb/obiwan_out/elg_dr5'
-    objtype='elg'
+    d= dict(ra1=args.radec[0],ra2=args.radec[1],
+            dec1=args.radec[2],dec2=args.radec[3],
+            nobj_total=args.nobj_total,
+            nobj_per_run=args.nobj_per_run)
     # Initialize
     T= TaskList(**d)
-    T.bricks_in_region(survey_bricks=survey_bricks)
+    T.bricks_in_region(survey_bricks_fn=args.survey_bricks_fn)
     num= T.estim_nperbrick()
     # Write tasks
-    if do_skipids == 'no':
-        bricks=np.loadtxt(os.path.join(outdir,
-                              'dr5_bricks_inMid_grz.txt'),dtype=str)
-        tasks= T.get_tasklist(bricks,objtype,
-                              do_more,minid,
+    bricks=None
+    if args.bricks_fn:
+        bricks=np.loadtxt(args.bricks_fn,dtype=str)
+    
+    if args.do_skipids == 'no':
+        tasks= T.get_tasklist(bricks,args.obj,
+                              args.do_more,args.minid,
                               estim_nperbrick=num)
     else:
-        T.tasklist_skipids(do_more=do_more,minid=minid)
-    T.writetasks(tasks,do_more=do_more,minid=minid,do_skipids=do_skipids)
+        T.tasklist_skipids(bricks,
+                           do_more=do_more,minid=minid)
+    T.writetasks(tasks,
+                 do_more=args.do_more,minid=args.minid,
+                 do_skipids=args.do_skipids)
     # Qdo "skip_ids" task list for a given list of bricks
     #brick_list_fn= '/global/cscratch1/sd/kaylanb/obiwan_code/obiwan/bricks_ready_skip.txt'
     #write_qdo_tasks_skipids(brick_list_fn, nobj_per_run=300)
-    #from argparse import ArgumentParser
-    #parser = ArgumentParser()
-    #parser.add_argument('--region', type=str, choices=['no','yes'],default='no', help='inject skipped ids for brick, otherwise run as usual')
-    #parser.add_argument('--bricks_list', type=str, default=None, help='text file listing bricks to inject skipped ids for brick, otherwise run as usual')
-    #parser.add_argument('--ra1',type=float,action='store',default=123.3,required=False)
-    #parser.add_argument('--ra2',type=float,action='store',default=124.3,required=False)
-    #parser.add_argument('--dec1',type=float,action='store',default=24.0,required=False)
-    #parser.add_argument('--dec2',type=float,action='store',default=25.0,required=False)
-    #parser.add_argument('--nobj_total',type=int,action='store',default=2400,help='total number of randoms in the region running obiwan on',required=False)
-    #parser.add_argument('--nobj_per_run',type=int,action='store',default=500,help='number of simulated sources to inject per obiwan run',required=False)
-#args = parser.parse_args()
+    
 

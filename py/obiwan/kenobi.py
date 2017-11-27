@@ -832,8 +832,12 @@ def do_ith_cleanup(d=None):
                 os.path.dirname(
                     os.path.dirname(outdir)))
 
-    for dr in ['obiwan','coadd','metrics',
-                'tractor','tractor-i']:
+    drs= ['obiwan','coadd']
+    print(d)
+    print(d['args'])
+    if not d['args'].early_coadds:
+        drs += ['metrics','tractor','tractor-i']
+    for dr in drs:
         dobash('mkdir -p %s/%s/%s/%s/%s' % \
                 (base,dr,bri,brick,rsdir))
     # obiwan
@@ -844,14 +848,20 @@ def do_ith_cleanup(d=None):
     # coadd
     dobash('mv %s/coadd/%s/%s/* %s/coadd/%s/%s/%s/' % \
              (outdir,bri,brick,  base,bri,brick,rsdir))
-    # metrics,tractor,tractor-i
-    for dr in ['metrics','tractor','tractor-i']:
-        dobash('mv %s/%s/%s/* %s/%s/%s/%s/%s/' % \
-             (outdir,dr,bri,  base,dr,bri,brick,rsdir))
+
+    if not d['args'].early_coadds:
+        # metrics,tractor,tractor-i
+        for dr in ['metrics','tractor','tractor-i']:
+            dobash('mv %s/%s/%s/* %s/%s/%s/%s/%s/' % \
+                 (outdir,dr,bri,  base,dr,bri,brick,rsdir))
     # Remove original outdir
     dobash('rm -r %s' % outdir)
+
     # Remove unneeded coadd files
-    for name in ['nexp','depth','chi2']:
+    names= ['nexp','depth']
+    if not d['args'].early_coadds:
+        drs+= ['chi2']
+    for name in names:
         dobash('rm %s/coadd/%s/%s/%s/*%s*' % 
                     (base,bri,brick,rsdir,name))
     if rsdir != 'rs0':

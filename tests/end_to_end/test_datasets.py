@@ -396,21 +396,24 @@ def test_main():
            obj='elg',
            all_blobs=False,onedge=False,
            early_coadds=False)
+
+    d.update(early_coadds=True)
+    test_cases(**d)
     
+    d.update(early_coadds=False)
+    test_cases(**d)
     d.update(all_blobs=True)
     test_cases(**d)
 
     d.update(all_blobs=False,onedge=True)
     test_cases(**d)
 
-    # Amazing agreement
     d.update(obj='star',onedge=False)
     test_cases(**d)
 
-    # Also amazing agreement
     d.update(obj='elg',z=False,grz=True)
     test_cases(**d)
-    
+
 
 if __name__ == "__main__":
     #test_dataset_DR3()
@@ -420,21 +423,8 @@ if __name__ == "__main__":
            obj='elg',
            all_blobs=False,onedge=False,
            early_coadds=False)
-    test_cases(**d)
     
-    d.update(all_blobs=True)
+    d.update(early_coadds=True)
     test_cases(**d)
-
-    d.update(all_blobs=False,onedge=True)
-    test_cases(**d)
-
-    # Amazing agreement
-    d.update(obj='star',onedge=False)
-    test_cases(**d)
-
-    # Also amazing agreement
-    d.update(obj='elg',z=False,grz=True)
-    test_cases(**d)
-    
 
     
