@@ -620,7 +620,7 @@ def build_simcat(Samp=None,brickwcs=None, meta=None):
     #cat['X'] = Column(xxyy[1][:], dtype='f4')
     #cat['Y'] = Column(xxyy[2][:], dtype='f4')
     cat = fits_table()
-    for key in ['id','seed','ra','dec']:
+    for key in ['id','ra','dec']:
         cat.set(key, Samp.get(key))
     cat.set('x', xxyy[1][:])
     cat.set('y', xxyy[2][:])
