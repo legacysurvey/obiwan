@@ -14,6 +14,7 @@ from legacypipe.survey import LegacySurveyData, wcs_for_brick
 
 from obiwan.kenobi import main,get_parser
 from obiwan.qa.visual import plotImage, readImage
+from obiwan.common import get_brickinfo_hack
 
 DATASETS= ['DR3','DR5','DR3_eBOSS']
 
@@ -159,34 +160,49 @@ class AnalyzeTestcase(Testcase):
         super(AnalyzeTestcase, self).__init__(**kwargs)
 
         # Tolerances
-        if '_grz' in self.name:
-            # TODO tune
-            self.tol={'rhalf':0.11, 
-                      'apflux':0.25,
-                      'skyflux':1.1,
-                      'simcat-model':6.0}
-        else:
-            if self.add_noise:
-                # TODO: tune
-                self.tol={'rhalf':0.11, 
-                          'apflux':0.25,
-                          'skyflux':1.1,
-                          'simcat-model':6.0}
-            else:
-                self.tol={'rhalf':0.11, 
-                          'apflux':0.25,
-                          'skyflux':1.1,
-                          'simcat-model':6.0}
+        self.tol= self.get_tolerances()
 
         survey = LegacySurveyData()
-        brickinfo = survey.get_brick_by_name(self.brick)
+        brickinfo= get_brickinfo_hack(survey,self.brick)
         self.brickwcs = wcs_for_brick(brickinfo)
 
         self.outdir= os.path.join(os.environ['HOME'],
                            'myrepo/obiwan/tests/end_to_end',
                             self.outname,self.obj)
         self.rsdir='rs0'
-    
+
+    def get_tolerances(self):
+        if '_grz' in self.name:
+            # also amazing agreement
+            return {'rhalf':0.65, 
+                    'apflux':0.2,
+                    'skyflux':2.,
+                    'modelflux':4.5}
+        else:
+            if self.add_noise:
+                # TODO: tune
+                return {'rhalf':0.11, 
+                      'apflux':0.25,
+                      'skyflux':1.1,
+                      'modelflux':6.0}
+            if self.onedge:
+                return {'rhalf':0.14, 
+                      'apflux':0.2,
+                      'skyflux':2.,
+                      'modelflux':5.5}
+            if self.obj == 'star':
+                # simcat-model amazing agreement
+                return {'apflux':0.2,
+                        'skyflux':1.1,
+                        'modelflux':0.6}
+
+            
+            return {'rhalf':0.11, 
+                      'apflux':0.25,
+                      'skyflux':1.1,
+                      'modelflux':6.0}
+
+
     def load_outputs(self):
         """Each output from the testcase becomes an attribute
 
@@ -297,12 +313,12 @@ class AnalyzeTestcase(Testcase):
             else:
                 assert(len(ireal) == 0)
 
-        print(len(self.obitractor[itrac]))
-        rhalf= np.max([self.obitractor[itrac].shapeexp_r,
-                       self.obitractor[itrac].shapedev_r],
-                      axis=1)
-        print(rhalf.shape)
-        assert(np.all(rhalf - self.simcat.rhalf < self.tol['rhalf']))
+        if not self.obj == 'star':
+            rhalf= np.max((self.obitractor[itrac].shapeexp_r,
+                           self.obitractor[itrac].shapedev_r),axis=0)
+            diff= rhalf - self.simcat.rhalf
+            print('rhalf',diff)
+            assert(np.all(np.abs(diff) < self.tol['rhalf']))
         # Tractor apflux is nearly bang on to my apflux for sims coadd 
         # plus my apflux for sky in coadd
         # However, Tractor model flux is does not agree with fits coadd counts
@@ -316,25 +332,19 @@ class AnalyzeTestcase(Testcase):
             apy_table = photutils.aperture_photometry(self.sims_fits[b], apers)
             sims_apflux= np.array(apy_table['aperture_sum'])
             obitractor_apflux= self.obitractor[itrac].get('apflux_'+b)[:,5]
-            # my apflux agrees with tractor apflux
+            # my apflux vs tractor apflux
             diff= img_apflux - obitractor_apflux
-            print(diff) 
-            if not self.onedge:
-                assert(np.all(np.abs(diff) 
-                                    < self.tol['apflux']))
-            # background sky flux is small
+            print('apflux',diff) 
+            assert(np.all(np.abs(diff) < self.tol['apflux']))
+            # sky flux is small
             diff= img_apflux - sims_apflux
-            print(diff) 
-            if not self.onedge:
-                assert(np.all(np.abs(diff) 
-                                    < self.tol['skyflux']))
-            # tractor model flux and input simcat flux within a few nanmaggies
+            print('skyflux',diff) 
+            assert(np.all(np.abs(diff) < self.tol['skyflux']))
+            # tractor model flux within 5-6 nanomags of input flux 
             diff= self.simcat.get(b+'flux') -\
                     self.obitractor[itrac].get('flux_'+b)
-            print(diff) 
-            if not self.onedge:
-                assert(np.all(np.abs(diff) 
-                                    < self.tol['modelflux']))
+            print('modelflux',diff) 
+            assert(np.all(np.abs(diff) < self.tol['modelflux']))
         print('passed')
 
 
@@ -382,19 +392,49 @@ def test_cases(z=True,grz=True,
 
 def test_main():
     """travis CI"""
-    test_cases(z=True,grz=False,
-               onedge=False)
+    d=dict(z=True,grz=False,
+           obj='elg',
+           all_blobs=False,onedge=False,
+           early_coadds=False)
+    
+    d.update(all_blobs=True)
+    test_cases(**d)
+
+    d.update(all_blobs=False,onedge=True)
+    test_cases(**d)
+
+    # Amazing agreement
+    d.update(obj='star',onedge=False)
+    test_cases(**d)
+
+    # Also amazing agreement
+    d.update(obj='elg',z=False,grz=True)
+    test_cases(**d)
+    
 
 if __name__ == "__main__":
     #test_dataset_DR3()
-    #test_dataset_DR5() 
-    test_cases(z=True,grz=False,
-               obj='elg',
-               all_blobs=True,onedge=False,
-               early_coadds=False)
-    # test_cases(z=True,grz=False,
-    #            obj='star',
-    #            all_blobs=False,onedge=False,
-    #            early_coadds=False)
+    #test_dataset_DR5()
+    # Various tests can do 
+    d=dict(z=True,grz=False,
+           obj='elg',
+           all_blobs=False,onedge=False,
+           early_coadds=False)
+    test_cases(**d)
+    
+    d.update(all_blobs=True)
+    test_cases(**d)
+
+    d.update(all_blobs=False,onedge=True)
+    test_cases(**d)
+
+    # Amazing agreement
+    d.update(obj='star',onedge=False)
+    test_cases(**d)
+
+    # Also amazing agreement
+    d.update(obj='elg',z=False,grz=True)
+    test_cases(**d)
+    
 
     
