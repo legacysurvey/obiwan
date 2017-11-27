@@ -160,15 +160,23 @@ class AnalyzeTestcase(Testcase):
 
         # Tolerances
         if '_grz' in self.name:
-            self.tol={'apsims_p_apsky_m_aptractor':0.2, #nanomags
-                      'simcat_p_apsky_m_aptractor':0.3}
+            # TODO tune
+            self.tol={'rhalf':0.11, 
+                      'apflux':0.25,
+                      'skyflux':1.1,
+                      'simcat-model':6.0}
         else:
             if self.add_noise:
-                self.tol={'apsims_p_apsky_m_aptractor':0.2, 
-                          'simcat_p_apsky_m_aptractor':0.7}
+                # TODO: tune
+                self.tol={'rhalf':0.11, 
+                          'apflux':0.25,
+                          'skyflux':1.1,
+                          'simcat-model':6.0}
             else:
-                self.tol={'apsims_p_apsky_m_aptractor':0.2, 
-                          'simcat_p_apsky_m_aptractor':0.5}
+                self.tol={'rhalf':0.11, 
+                          'apflux':0.25,
+                          'skyflux':1.1,
+                          'simcat-model':6.0}
 
         survey = LegacySurveyData()
         brickinfo = survey.get_brick_by_name(self.brick)
@@ -289,6 +297,12 @@ class AnalyzeTestcase(Testcase):
             else:
                 assert(len(ireal) == 0)
 
+        print(len(self.obitractor[itrac]))
+        rhalf= np.max([self.obitractor[itrac].shapeexp_r,
+                       self.obitractor[itrac].shapedev_r],
+                      axis=1)
+        print(rhalf.shape)
+        assert(np.all(rhalf - self.simcat.rhalf < self.tol['rhalf']))
         # Tractor apflux is nearly bang on to my apflux for sims coadd 
         # plus my apflux for sky in coadd
         # However, Tractor model flux is does not agree with fits coadd counts
@@ -301,24 +315,26 @@ class AnalyzeTestcase(Testcase):
             img_apflux= np.array(apy_table['aperture_sum'])
             apy_table = photutils.aperture_photometry(self.sims_fits[b], apers)
             sims_apflux= np.array(apy_table['aperture_sum'])
-            sky_apflux= img_apflux - sims_apflux
-            # tractor apflux vs. my apflux sims + sky 
             obitractor_apflux= self.obitractor[itrac].get('apflux_'+b)[:,5]
-            simcat_flux= self.simcat.get(b+'flux')
-            diff= sims_apflux + \
-                    sky_apflux - obitractor_apflux
+            # my apflux agrees with tractor apflux
+            diff= img_apflux - obitractor_apflux
             print(diff) 
             if not self.onedge:
                 assert(np.all(np.abs(diff) 
-                                    < self.tol['apsims_p_apsky_m_aptractor'])) 
-            # Ditto but vs. tractor model flux
-            diff= simcat_flux + \
-                    sky_apflux - obitractor_apflux
-            print(diff,self.add_noise,self.tol['simcat_p_apsky_m_aptractor'])
+                                    < self.tol['apflux']))
+            # background sky flux is small
+            diff= img_apflux - sims_apflux
+            print(diff) 
             if not self.onedge:
                 assert(np.all(np.abs(diff) 
-                                    < self.tol['simcat_p_apsky_m_aptractor'])) 
-            # rhalf should be close
+                                    < self.tol['skyflux']))
+            # tractor model flux and input simcat flux within a few nanmaggies
+            diff= self.simcat.get(b+'flux') -\
+                    self.obitractor[itrac].get('flux_'+b)
+            print(diff) 
+            if not self.onedge:
+                assert(np.all(np.abs(diff) 
+                                    < self.tol['modelflux']))
         print('passed')
 
 

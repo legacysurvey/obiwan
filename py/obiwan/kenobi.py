@@ -403,17 +403,6 @@ class BuildStamp():
         self.gsdeviate = galsim.BaseDeviate(seed)
         self.wcs = tim.getWcs()
         self.psf = tim.getPsf()
-        # Tractor wcs object -> galsim wcs object
-        temp_hdr = FITSHDR()
-        subwcs = tim.wcs.wcs.get_subimage(tim.wcs.x0, tim.wcs.y0,
-                                  int(tim.wcs.wcs.get_width())-tim.wcs.x0,
-                                  int(tim.wcs.wcs.get_height())-tim.wcs.y0)
-        subwcs.add_to_header(temp_hdr)
-        # Galsim uses astropy header, not fitsio
-        hdr = fits.Header()
-        for key in temp_hdr.keys(): hdr[key]=temp_hdr[key]
-        self.galsim_wcs = galsim.GSFitsWCS(header=hdr)
-        del subwcs,temp_hdr,hdr
         
         # zpscale equivalent to magzpt = self.t.ccdzpt+2.5*np.log10(self.t.exptime)
         self.zpscale = tim.zpscale      # nanomaggies-->ADU conversion factor
@@ -427,40 +416,21 @@ class BuildStamp():
         self.xpos = int(self.pos.x)
         self.ypos = int(self.pos.y)
         self.offset = galsim.PositionD(self.pos.x-self.xpos, self.pos.y-self.ypos)
-
-        # galsim.drawImage() requires local (linear) wcs
-        self.localwcs = self.galsim_wcs.local(image_pos=self.pos)
-        #cd = self.wcs.cdAtPixel(self.pos.x, self.pos.y)
-        #self.pixscale = np.sqrt(np.linalg.det(cd))*3600.0
         
         # Get the local PSF
         self.localpsf = self.psf.getPointSourcePatch(self.xpos, self.ypos)
-        # pixelized psf is "as is" (normalization not 1 at 1-5% but leave alone)
-        # TODO is pixscale fixed?
         self.localpsf= galsim.Image(self.localpsf.getImage(),
                                     scale=self.wcs.pixscale_at(self.xpos,self.ypos))
-                                    #wcs=self.localwcs)
-                                    #
-                                    #wcs=self.galsim_wcs)
         if False:
-            self.localpsf /= self.localpsf.array.sum()
-        #plt.imshow(psfim) ; plt.show()
-        
-        #########################
-        # Normalize to 1 at 7''
-        if False:
+            # print flux in 7''
             pxscale=0.262
             apers= photutils.CircularAperture((self.localpsf.trueCenter().x,
                                                self.localpsf.trueCenter().y), 
                                                r=3.5/pxscale) #KEY is to harcode this # pix
-            apy_table = photutils.aperture_photometry(psf.array, apers)
+            apy_table = photutils.aperture_photometry(self.localpsf.array, apers)
             flux_in_7= np.array(apy_table['aperture_sum'])[0]
-            self.localpsf /= flux_in_7
-        #frac_in_7= flux_in_7 / psfim.array.sum()
-        #psfim /= frac_in_7
-        #################
-        print('DREW psf, pixscale=%.5f,flux=%.5f' % \
-            (self.wcs.pixscale_at(self.xpos,self.ypos),self.localpsf.array.sum()))
+            print('psf norm=%.6f,fluxin7=%.6f' % \
+                (self.localpsf.array.sum(),flux_in_7))
 
     def star(self,obj):
         """Render a star (PSF)."""
@@ -468,9 +438,7 @@ class BuildStamp():
         # Use input flux as the 7'' aperture flux
         self.setlocal(obj)
         stamp = self.localpsf.copy()
-        #stamp = psf.drawImage(offset=self.offset, wcs=self.localwcs, method='no_pixel')      
-        if True:
-            stamp /= stamp.array.sum()
+        #stamp = psf.drawImage(offset=self.offset, method='no_pixel')      
         # Scale to desired flux
         stamp *= float(obj.get(self.band+'flux')) # [nanomaggies]
         # position in observed image
@@ -487,52 +455,26 @@ class BuildStamp():
                                              #gsparams=self.gsparams)
         return galsim.Convolve([gal, psf]) #, gsparams=self.gsparams)
 
-    def elg(self,obj,pixscale=0.262):
+    def elg(self,obj):
         """Create an ELG (disk-like) galaxy."""
         # Create localpsf object
         self.setlocal(obj)
         #try:
         # TRIAL: galaxy profile
-        gal = galsim.Sersic(float(obj.get('n')), half_light_radius=float(obj.get('rhalf')),\
-                            flux=1., gsparams=self.gsparams)
+        gal = galsim.Sersic(float(obj.get('n')), 
+                    half_light_radius=float(obj.get('rhalf')),\
+                    flux=float(obj.get(self.band+'flux')), 
+                    gsparams=self.gsparams)
         gal = gal.shear(e1=float(obj.get('e1')), e2=float(obj.get('e2')))
-        if False:
-            # flux need to be so that 1 within 7''
-            gal = gal.drawImage(wcs=self.localwcs,method='no_pixel')
-            apers= photutils.CircularAperture((gal.trueCenter().x,gal.trueCenter().y), 
-                                              r=3.5/0.262)
-            apy_table = photutils.aperture_photometry(gal.array, apers)
-            flux_in_7= np.array(apy_table['aperture_sum'])[0]
-            # NORMED: galaxy profile
-            gal = galsim.Sersic(float(obj.get('n')), half_light_radius=float(obj.get('rhalf')),\
-                                flux=1./flux_in_7, gsparams=self.gsparams) 
-            gal = gal.shear(e1=float(obj.get('e1')), e2=float(obj.get('e2')))
         # Convolve with normed-psf
         gal = self.convolve_galaxy(gal)
-        # drawImage() requires local wcs
-        #gal = gal.drawImage(offset=self.offset, wcs=self.localwcs,
-        #                    method='no_pixel')
         gal = gal.drawImage(offset=self.offset,  
                             method='auto',
                             scale= self.wcs.pixscale_at(self.xpos,self.ypos))
-                            #wcs= self.localwcs)
-                            #)
-
-        if False:
-            gal /= gal.array.sum()
-        #Normalize to 1 at 7''
-        if False:
-            pxscale=0.262
-            if False:
-                pxscale=self.wcs.pixscale_at(self.xpos,self.ypos)
-            apers= photutils.CircularAperture((gal.trueCenter().x,gal.trueCenter().y), 
-                                               r=3.5/pxscale) #KEY is to harcode this # pix
-            apy_table = photutils.aperture_photometry(gal.array, apers)
-            flux_in_7= np.array(apy_table['aperture_sum'])[0]
-            gal /= flux_in_7
+                            #method='no_pixel'
         # Scale to desired flux
-        print('DREW normed galaxy, flux=',gal.array.sum())
-        gal *= float(obj.get(self.band+'flux')) # [nanomaggies]
+        print('DREW galaxy, flux input=%.4f, actual=%.4f' % \
+                (float(obj.get(self.band+'flux')),gal.array.sum()))
         # position in observed image
         gal.setCenter(self.xpos, self.ypos)
         return gal
