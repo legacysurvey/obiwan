@@ -6,6 +6,9 @@ import matplotlib.pyplot as plt
 import os
 import pandas as pd
 
+import fitsio
+from astrometry.util.fits import fits_table
+
 def inJupyter():
     return 'inline' in matplotlib.get_backend()
     
@@ -82,3 +85,22 @@ def get_outdir_final(outdir,obj,brick,rowstart,
     #return os.path.join(get_brickdir(outdir,obj,brick),
     #                  final_dir)
     return os.path.join(outdir,obj,brick[:3],brick,final_dir)
+
+def get_brickinfo_hack(survey,brickname):
+    """when in ipython and reading single row survey-bricks table,
+        astroometry.net's fits_table() can break, handle this case
+
+    Returns: 
+        brickinfo: the single row fits_table
+    """
+    try:
+        brickinfo = survey.get_brick_by_name(brickname)
+    except AttributeError:
+        # can happen inside: ipython %run
+        hdu=fitsio.FITS(survey.find_file('bricks'))
+        data= hdu[1].read()
+        data= data[data['brickname'] == brickname][0]
+        brickinfo= fits_table()
+        for col in data.dtype.fields.keys():
+            brickinfo.set(col,data[col])
+    return brickinfo
