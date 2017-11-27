@@ -4,8 +4,8 @@
 # qdo launch obiwan 3 --cores_per_worker 4 --batchqueue debug --walltime 00:05:00 --script $obiwan_code/obiwan/bin/qdo_job_test.sh --keep_env
 
 
-export name_for_run=elg_100deg2
-export randoms_db=obiwan_elg_100deg2
+export name_for_run=elg_dr5
+export randoms_db=obiwan_elg_dr5
 export dataset=dr5
 export brick="$1"
 export rowstart="$2"
@@ -24,9 +24,9 @@ export LEGACY_SURVEY_DIR=$obiwan_data/legacysurveydir_${dataset}
 export bri=$(echo $brick | head -c 3)
 export outdir=${obiwan_out}/${name_for_run}
 if [ ${do_skipids} == "no" ]; then
-  export log=${outdir}/${object}/${bri}/${brick}/rs${rowstart}/log.${brick}
+  export log=${outdir}/logs/${bri}/${brick}/rs${rowstart}/log.${brick}
 else
-  export log=${outdir}/${object}/${bri}/${brick}/skip_rs${rowstart}/log.${brick}
+  export log=${outdir}/logs/${bri}/${brick}/skip_rs${rowstart}/log.${brick}
 fi
 mkdir -p $(dirname $log)
 echo Logging to: $log
@@ -38,6 +38,23 @@ export MKL_NUM_THREADS=1
 export OMP_NUM_THREADS=1
 # <= cores_per_worker
 export threads=4
+
+# Limit memory to avoid 1 srun killing whole node
+if [ "$NERSC_HOST" = "edison" ]; then
+    # 62 GB / Edison node = 65000000 kbytes
+    maxmem=65000000
+    let usemem=${maxmem}*${threads}/24
+else
+    # 128 GB / Cori node = 65000000 kbytes
+    maxmem=134000000
+    let usemem=${maxmem}*${threads}/32
+fi
+echo BEFORE
+ulimit -Sa
+ulimit -Sv $usemem
+echo AFTER
+ulimit -Sa
+
 
 cd $obiwan_code/obiwan/py
 export dataset=`echo $dataset | tr '[a-z]' '[A-Z]'`
