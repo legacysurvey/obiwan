@@ -2,7 +2,7 @@
 
 #SBATCH -p debug
 #SBATCH -N 1
-#SBATCH -t 00:30:00
+#SBATCH -t 00:05:00
 #SBATCH --account=desi
 #SBATCH -J obiwan
 #SBATCH -L SCRATCH,project
@@ -43,7 +43,7 @@ else
     export rsdir=more_skip_rs${rowstart}
   fi
 fi
-export log=${outdir}/${object}/logs/${bri}/${brick}/${rsdir}/log.${brick}
+export log=${outdir}/logs/${bri}/${brick}/${rsdir}/log.${brick}
 mkdir -p $(dirname $log)
 echo Logging to: $log
 
