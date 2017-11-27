@@ -518,7 +518,7 @@ class BuildStamp():
                             #wcs= self.localwcs)
                             #)
 
-        if True:
+        if False:
             gal /= gal.array.sum()
         #Normalize to 1 at 7''
         if False:
