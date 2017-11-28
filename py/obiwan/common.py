@@ -80,16 +80,15 @@ def get_rsdir(rowstart,
     return final_dir
 
 def get_outdir_runbrick(outdir,brick,rowstart,
-                        do_skipids='no',do_more='yes'):
+                        do_skipids='no',do_more='no'):
     """diretory obiwan/runbrick will write results to
 
     Returns path to like outdir/obj/bri/brick/rs0
     """
-    
     return os.path.join(outdir,brick[:3],brick,
                         get_rsdir(rowstart,
-                                  do_skipids='no',
-                                  do_more='yes'))
+                                  do_skipids=do_skipids,
+                                  do_more=do_more))
 
 def get_brickinfo_hack(survey,brickname):
     """when in ipython and reading single row survey-bricks table,
