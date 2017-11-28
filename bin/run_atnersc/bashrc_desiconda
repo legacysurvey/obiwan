@@ -1,0 +1,37 @@
+#!/bin/bash
+
+# We need 3 directories for Obiwan
+export obiwan_data=$CSCRATCH/obiwan_data
+export obiwan_code=$CSCRATCH/obiwan_code
+export obiwan_out=$CSCRATCH/obiwan_out
+
+# Python environment, Ted Kisner's desiconda for imaging  
+module use /global/common/${NERSC_HOST}/contrib/desi/desiconda/20170818-1.1.12-img/modulefiles
+module load desiconda/20170818-1.1.12-img
+
+module use $obiwan_code/obiwan/etc/modulefiles
+# Env vars for imaging pipeline 
+for name in unwise_coadds unwise_coadds_timeresolved; do
+    module load $name
+done  
+export LEGACY_SURVEY_DIR=$obiwan_data/legacysurveydir_dr5
+export DUST_DIR=$obiwan_data/dust
+
+# Obiwan and imaging pipeline repos
+export PATH=/global/cscratch1/sd/kaylanb/obiwan_code/qdo/bin:${PATH}
+export PYTHONPATH=$obiwan_code/qdo:${PYTHONPATH}
+export PYTHONPATH=$obiwan_code/theValidator:${PYTHONPATH}
+export PYTHONPATH=$obiwan_code/legacypipe/py:${PYTHONPATH}
+export PYTHONPATH=$obiwan_code/obiwan/py:${PYTHONPATH}
+
+# QDO (for Obiwan production runs)
+export QDO_BATCH_PROFILE=$NERSC_HOST
+export QDO_BACKEND=postgres
+export QDO_DB_NAME=desirun
+#export QDO_DB_HOST=scidb2.nersc.gov
+export QDO_DB_HOST=nerscdb03.nersc.gov
+export QDO_DB_USER=desirun_admin
+# directory from "which qdo" but without the trailing /bin/qdo, eg which qdo should give
+#export QDO_DIR=$CSCRATCH/obiwan_desiconda_add_pytest/conda
+# get db pass
+export QDO_DB_PASS="$(cat $HOME/.qdo_db_pass)"

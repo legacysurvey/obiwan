@@ -45,7 +45,6 @@ from legacypipe.runbrick import run_brick
 from legacypipe.decam import DecamImage
 from legacypipe.survey import LegacySurveyData, wcs_for_brick
 
-import obiwan.priors as priors
 from obiwan.db_tools import getSrcsInBrick 
 from obiwan.common import get_outdir_runbrick, get_brickinfo_hack
 
