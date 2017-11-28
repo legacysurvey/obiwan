@@ -424,7 +424,10 @@ if __name__ == "__main__":
            all_blobs=False,onedge=False,
            early_coadds=False)
     
-    d.update(early_coadds=True)
+    #d.update(early_coadds=True)
+    #test_cases(**d)
+
+    d.update(early_coadds=False)
     test_cases(**d)
 
     
