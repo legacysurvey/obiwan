@@ -8,10 +8,10 @@
 #SBATCH -L SCRATCH,project
 #SBATCH -C haswell
 
-export name_for_run=elg_100deg2
-export randoms_db=obiwan_elg_100deg2
+export name_for_run=elg_dr5_coadds
+export randoms_db=obiwan_elg_dr5
 export dataset=dr5
-export brick=1501p072
+export brick=1814p157
 export rowstart=0
 export do_skipids=no
 export do_more=no
@@ -24,7 +24,8 @@ threads=$usecores
 #threads=1
 
 # Load production env
-source $CSCRATCH/obiwan_code/obiwan/bin/run_atnersc/prodenv_obiwan
+#source $CSCRATCH/obiwan_code/obiwan/bin/run_atnersc/prodenv_obiwan
+source $CSCRATCH/obiwan_code/obiwan/bin/run_atnersc/prodenv_desiconda_imaging
 export LEGACY_SURVEY_DIR=$obiwan_data/legacysurveydir_${dataset}
 
 # Redirect logs
@@ -63,5 +64,6 @@ srun -n 1 -c $usecores python obiwan/kenobi.py --dataset ${dataset} -b ${brick} 
                        --threads $threads  \
                        --do_skipids $do_skipids \
                        --do_more $do_more --minid $minid \
+                       --early_coadds \
                        >> $log 2>&1
 

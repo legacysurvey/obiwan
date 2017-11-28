@@ -3,8 +3,7 @@
 # Example
 # qdo launch obiwan 3 --cores_per_worker 4 --batchqueue debug --walltime 00:05:00 --script $obiwan_code/obiwan/bin/qdo_job_test.sh --keep_env
 
-
-export name_for_run=elg_dr5
+export name_for_run=elg_dr5_coadds
 export randoms_db=obiwan_elg_dr5
 export dataset=dr5
 export brick="$1"
@@ -13,9 +12,11 @@ export do_skipids="$3"
 export do_more="$4"
 export object=elg
 export nobj=300
+export threads=4
 
 # Load env, env vars
-source $CSCRATCH/obiwan_code/obiwan/bin/run_atnersc/prodenv_obiwan 
+#source $CSCRATCH/obiwan_code/obiwan/bin/run_atnersc/prodenv_obiwan 
+source $CSCRATCH/obiwan_code/obiwan/bin/run_atnersc/prodenv_desiconda_imaging
 export LEGACY_SURVEY_DIR=$obiwan_data/legacysurveydir_${dataset}
 # assert we have some new env vars
 : ${obiwan_code:?}
@@ -24,10 +25,19 @@ export LEGACY_SURVEY_DIR=$obiwan_data/legacysurveydir_${dataset}
 export bri=$(echo $brick | head -c 3)
 export outdir=${obiwan_out}/${name_for_run}
 if [ ${do_skipids} == "no" ]; then
-  export log=${outdir}/logs/${bri}/${brick}/rs${rowstart}/log.${brick}
+  if [ ${do_more} == "no" ]; then
+    export rsdir=rs${rowstart}
+  else
+    export rsdir=more_rs${rowstart}
+  fi
 else
-  export log=${outdir}/logs/${bri}/${brick}/skip_rs${rowstart}/log.${brick}
+  if [ ${do_more} == "no" ]; then
+    export rsdir=skip_rs${rowstart}
+  else
+    export rsdir=more_skip_rs${rowstart}
+  fi
 fi
+export log=${outdir}/logs/${bri}/${brick}/${rsdir}/log.${brick}
 mkdir -p $(dirname $log)
 echo Logging to: $log
 
@@ -36,8 +46,6 @@ export KMP_AFFINITY=disabled
 export MPICH_GNI_FORK_MODE=FULLCOPY
 export MKL_NUM_THREADS=1
 export OMP_NUM_THREADS=1
-# <= cores_per_worker
-export threads=4
 
 # Limit memory to avoid 1 srun killing whole node
 if [ "$NERSC_HOST" = "edison" ]; then
@@ -64,6 +72,7 @@ python obiwan/kenobi.py --dataset ${dataset} -b ${brick} \
                         --outdir $outdir --add_sim_noise  \
                         --threads $threads  \
                         --do_skipids $do_skipids --do_more ${do_more} \
+                        --early_coadds \
                         >> $log 2>&1
 
 
