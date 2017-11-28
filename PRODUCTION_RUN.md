@@ -1,15 +1,20 @@
 # Instructions for doing a production run
 
+### Current production runs (newest -> oldest)
+(1) dr5_grz, dataset:DR5, ra [109.0,278.5], dec [-11.1,35.4]
+all dr5 bricks in Middle region (90 < ra < 280) with grz coverage
+Split into two separate runs, for ELGs and Stars, but having same ra,dec
+* name_for_run: (elg|star)_dr5
+* outdir:  $CSCRATCH/obiwan_out/(elg|star)_dr5
+* randoms dir: $CSCRATCH/obiwan_out/randoms/(elg|star)_dr5
+  - 5x ELG density: 2400 * 10 * area * 4
+  - 170*47*2400*5*4/1e9 = 0.383e9
+  - times 4 because 0.42 of 10k in ELG box and expect 1/2 not recovered
+* psql db, desi, table for randoms: obiwan_(elg|star)_dr5
+* psql db, qdo, table for tasks: obiwan_(elg|star)_dr5
+
 ### Completed production runs (newest -> oldest)
-
-(1) 100deg2 region, dataset:DR5, ra:[150,160], dec:[0,10]
-* name_for_run: elg_100deg2
-* kdedir for randoms: $CSCRATCH/obiwan_out/randoms
-* outdir for randoms: $CSCRATCH/obiwan_out/randoms/elg_100deg2
-* psql db, desi, table for randoms: obiwan_elg_100deg2
-* psql db, qdo, table for tasks: obiwan_elg_100deg2
-
-(2) 9deg2 region centered at ra,dec= 175.0,24.5
+(1) 9deg2 region centered at ra,dec= 175.0,24.5
 * name_for_run: elg_9deg2_ra175
 * region: ra1,ra2, dec1,dec2= 173.5,176.5, 23.0,26.0
 * kdedir for randoms: $CSCRATCH/obiwan_out/randoms
@@ -17,15 +22,13 @@
 * psql db, desi, table for randoms: obiwan_elg_ra175
 * psql db, qdo, table for tasks: obiwan_ra175, obiwan_ra175_doskip
 
-(3) 9deg2 region centered at ra,dec= 124.8,24.5
+(2) 9deg2 region centered at ra,dec= 124.8,24.5
 * name_for_run: elg_9deg2_ra125
 * region: ra1,ra2, dec1,dec2= 122.3,125.3, 23.0,26.0
 * kdedir for randoms: $CSCRATCH/obiwan_out/randoms
 * outdir for randoms: $CSCRATCH/obiwan_out/randoms/elg_9deg2_ra125
 * psql db, desi, table for randoms: obiwan_elg_9deg
 * psql db, qdo, table for tasks: obiwan_9deg, obiwan_9deg_doskip
-
-The rest of this markdown is for `elg_100deg2`.
 
 ### Randoms + PSQL DB
 
@@ -40,11 +43,14 @@ https://github.com/legacysurvey/obiwan/blob/master/bin/slurm_job_randoms.sh
 
 Load the randoms into the desi database at nerscdb03 (the scidb2.nersc.gov server is no more). First create the table
 ```sh
-bash $obiwan_code/obiwan/bin/fits2db_create.sh obiwan_elg_100deg2 /global/cscratch1/sd/kaylanb/obiwan_out/randoms/elg_100deg2/randoms_rank_0.fits
+bash $obiwan_out/obiwan/bin/fits2db_create.sh obiwan_elg_dr5 /global/cscratch1/sd/kaylanb/obiwan_out/randoms/elg_dr5/randoms_rank_0.fits
 ```
 then load all the randoms fits tables
 ```sh
-for fn in `find $obiwan_code/randoms/elg_100deg2 -name "randoms*.fits"`;do bash $obiwan_code/obiwan/bin/fits2db_load.sh obiwan_elg_100deg2 $fn;done
+name=elg_dr5
+num=`find $obiwan_out/randoms/$name -name "randoms*.fits"|wc -l`
+let num=$num-1
+for i in `seq 0 $num`;do bash $obiwan_code/obiwan/bin/fits2db_load.sh obiwan_$name $obiwan_out/randoms/$name/randoms_rank_${i}.fits;done
 ```
 
 Index and cluster the db table for fast ra,dec querying
@@ -76,20 +82,16 @@ desi=> \i /global/cscratch1/sd/kaylanb/obiwan_code/obiwan/etc/cluster_bricks
 ### Prepare QDO runs
 
 **1) Make the QDO task list**
-Generate the qdo tasks to run, which includes the list of bricks that are in your radec region AND have at least one random in the pslq db. This requires querying the `randoms_db` for the number of randoms in each brick, so can take awhile. DB performance is okay for up to 20-30 simultaneous connections, so use this mpi4py wrapper of the `qdo_tasks.py` script:
-https://github.com/legacysurvey/obiwan/blob/master/py/obiwan/runmanager/qdo_tasks_mpi4py.py
-to create the tasklist. Run from an NX terminal using the Cori dedicated queue. 
+Generate the qdo tasks to run, which includes the list of bricks that are in your radec region. It is too slow to query the randoms db for each brick's number of randoms, so instead estimate as expectation number + 2 StdErros per brick. Run the script like this
 ```sh
-# NX terminal
-salloc -N 1 -C haswell --qos=interactive -t 00:30:00
-source $CSCRATCH/obiwan_code/obiwan/bin/run_atnersc/bashrc_obiwan
-srun -n 32 -c 1 python $obiwan_code/obiwan/py/obiwan/runmanager/qdo_tasks_mpi4py.py --ra1 135. --ra2 235. --dec1 "-1" --dec2 10 --nobj_per_run 1000 --obj elg --randoms_db obiwan_elg_100deg2 --do_more 'no' --minid 1
+python $obiwan_code/obiwan/py/obiwan/runmanager/qdo_tasks.py --obj elg --radec 109.0 278.5 -11.1 35.4 --nobj_total 383000000 --survey_bricks /home/kaylan/mydata/survey-bricks.fits.gz --bricks_fn elg_dr5/dr5_bricks_inMid_grz.txt
 ```
+which writes out the <task-file.txt>
 
 Now create the qdo queue
 ```sh
-qdo create obiwan_ra175 
-qdo load obiwan_ra175 tasks_inregion.txt
+qdo create obiwan_elg_dr5
+qdo load obiwan_elg_dr5 <task-file.txt>
 ```
 
 **2) Run a single brick to test that everything works**
