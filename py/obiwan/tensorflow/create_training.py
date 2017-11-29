@@ -126,7 +126,8 @@ class SimStamps(object):
         self.set_paths_to_data(brick)
         coadd_fns= glob(os.path.join(self.coadd_dirs[0],
                                      '*-image-*.fits.fz'))
-        assert(len(coadd_fns) > 0)
+        if len(coadd_fns) == 0:
+            raise IOError('no image.fits.fz file here: %s' % self.coadd_dirs[0])
         # set of bands in this brick
         self.bands= (pd.Series(coadd_fns)
                      .str.replace('.fits.fz','')
@@ -138,16 +139,22 @@ class SimStamps(object):
         self.set_hdf5_fns(brick,self.bands_str)
     
         if os.path.exists(self.hdf5_fn):
-            f= h5py.File(self.hdf5_fn, 'r')
-            f2= h5py.File(self.hdf5_fn_onedge, 'r')
-            if (len(f.keys()) == 0) & (len(f2.keys()) == 0):
-                # remove empty files then make them
+            try:
+                f= h5py.File(self.hdf5_fn, 'r')
+                f2= h5py.File(self.hdf5_fn_onedge, 'r')
+                if (len(f.keys()) == 0) & (len(f2.keys()) == 0):
+                    # remove empty files then make them
+                    for fn in [self.hdf5_fn,self.hdf5_fn_onedge]:
+                        dobash('rm %s' % fn)
+                else:
+                    # processing done, skip this brick
+                    print('Skipping %s, hdf5 already filled: %s' % (brick,self.hdf5_fn))
+                    return None
+            except OSError:
+                # One of these got messed up, redo it
                 for fn in [self.hdf5_fn,self.hdf5_fn_onedge]:
-                    dobash('rm %s' % fn)
-            else:
-                # processing done, skip this brick
-                print('Skipping %s, hdf5 already filled: %s' % (brick,self.hdf5_fn))
-                return None
+                    os.remove(fn)
+                    print('removed ',fn)
         self.hdf5_obj = h5py.File(self.hdf5_fn, "w")
         self.hdf5_obj_onedge = h5py.File(self.hdf5_fn_onedge, "w")
         # Many rs*/ dirs per brick
@@ -164,11 +171,13 @@ class SimStamps(object):
     def set_paths_to_data(self,brick):
         """lists of catalogues filenames and coadd dirs"""
         search= os.path.join(self.outdir,'coadd',
-                                   brick[:3],brick,'*rs*')
+                             brick[:3],brick,'*rs*',
+                             'legacysurvey-%s-ccds.fits' % brick)
         rs_dirs= glob(search)
-        rs_dirs= [os.path.basename(a)
+        rs_dirs= [os.path.basename(os.path.dirname(a))
                   for a in rs_dirs]
-        assert(len(rs_dirs) > 0)
+        if len(rs_dirs) == 0:
+            raise IOError('No rs dirs here: %s' % search)
         self.cat_fns,self.coadd_dirs= \
             zip(*[(os.path.join(self.outdir,'obiwan',
                                 brick[:3],brick,rs_dir,
@@ -273,6 +282,10 @@ class TractorStamps(SimStamps):
                                     'tractor-%s.fits' % brick)]
         self.coadd_dirs= [os.path.join(self.outdir,'coadd',
                                        brick[:3],brick)]
+        if ((not os.path.exists(self.cat_fns[0])) |
+            (not os.path.exists(self.coadd_dirs[0]))):
+            raise OSError('does not exist: %s OR %s' % \
+                    (self.cat_fns[0],self.coadd_dirs[0]))
 
     def set_hdf5_fns(self,brick,bands_str):
         dr= os.path.join(self.savedir,'hdf5',
