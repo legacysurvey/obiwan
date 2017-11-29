@@ -93,13 +93,15 @@ class QdoList(object):
                 continue
             # List of "brick rs" for each QDO_RESULT 
             qdo_tasks= np.array(q.tasks(state= getattr(qdo.Task, res.upper())))
-            print(type(qdo_tasks))
             if self.rand_1e3:
                 qdo_tasks= qdo_tasks[np.random.randint(0,len(qdo_tasks),size=1000)]
             elif not self.firstN is None:
                 qdo_tasks= qdo_tasks[:self.firstN]
-            ids[res],tasks[res] = zip(*[(a.id,a.task) 
-                                         for a in qdo_tasks])
+            if len(qdo_tasks) > 0:
+                ids[res],tasks[res] = zip(*[(a.id,a.task) 
+                                             for a in qdo_tasks])
+            else:
+                ids[res],tasks[res]= [],[]
             # Corresponding log, slurm files  
             for task in tasks[res]:
                 # Logs

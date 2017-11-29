@@ -200,7 +200,8 @@ class SimStamps(object):
         assert('id' in self.cat.get_columns())
 
     def apply_cuts(self):
-        pass
+        len_bef=len(self.cat)
+        print('After cut, have %d/%d' % (len(self.cat),len_bef))
 
 
 #######
@@ -442,33 +443,42 @@ def mpi_main(nproc=1,which=None,
 
 if __name__ == '__main__':
     #testcase_main()
-
-    which='tractor' 
+    from argparse import ArgumentParser
+    parser = ArgumentParser()
+    parser.add_argument('--which', type=str, choices=['tractor','sim'], required=True, help='whether to make training hdf5 cutouts of real (DR5) or simulated (elg_dr5_coadds) outputs') 
+    parser.add_argument('--nproc', type=int, default=1, help='set to > 1 to run mpi4py') 
+    parser.add_argument('--bricks_fn', type=str, default=None, help='specify a fn listing bricks to run, or a single default brick will be ran') 
+    args = parser.parse_args()
 
     # Data paths
     if os.environ['HOME'] == '/home/kaylan':
         # ubuntu
         d= dict(ls_dir=os.path.join(os.environ['HOME'],
                                  'mydata/legacysurveydir'))
-        if which == 'sim':
+        if args.which == 'sim':
             d.update(outdir=os.path.join(os.environ['HOME'],
                                  'mydata/elg_dr5_coadds'))
-        elif which == 'tractor':
+        elif args.which == 'tractor':
             d.update(outdir=os.path.join(os.environ['HOME'],
                                  'mydata/dr5_cutouts'),
                      savedir=os.path.join(os.environ['HOME'],
                                  'mydata/dr5_hdf5'))
     else:
         # nersc
-        if which == 'sim':
+        if args.which == 'sim':
             d=dict(outdir=os.path.join(os.environ['CSCRATCH'],
                                  'obiwan_out/elg_dr5_coadds'))
-        elif which == 'tractor':
-            d.update(outdir='/global/project/projectdirs/cosmo/data/legacysurvey/dr5',
-                     savedir=os.path.join(os.environ['CSCRATCH'],
+        elif args.which == 'tractor':
+            d=dict(outdir='/global/project/projectdirs/cosmo/data/legacysurvey/dr5',
+                   savedir=os.path.join(os.environ['CSCRATCH'],
                                  'obiwan_out/dr5_hdf5'))
+    
+    # Bricks to run
+    if args.bricks_fn is None:
+        bricks= ['1126p220']
+    else:
+        bricks= np.loadtxt(args.bricks_fn,dtype=str)
 
-
-    mpi_main(nproc=1,which=which,bricks=['1126p220'],
+    mpi_main(nproc=args.nproc,which=args.which,bricks=bricks,
              **d)
 
