@@ -8,7 +8,7 @@ from astrometry.util.fits import fits_table
 
 from legacypipe.survey import LegacySurveyData, wcs_for_brick
 from obiwan.qa.visual import readImage,sliceImage
-from obiwan.common import dobash,get_rsdir
+from obiwan.common import dobash
 
 import galsim
 
@@ -61,7 +61,7 @@ class SimStamps(object):
             self.img_gs[b]= galsim.Image(self.img_fits[b])
             self.ivar_gs[b]= galsim.Image(self.ivar_fits[b])
 
-    def extract(self,hw=20):
+    def extract(self,hw=32):
         """For each id,x,y in self.cat, extracts image cutout
 
         Args:
@@ -202,7 +202,56 @@ class SimStamps(object):
     def apply_cuts(self):
         pass
 
-        
+
+#######
+# Funcs to apply simulated source cuts to tractor catalogues sources 
+def flux2mag(nmgy):
+    return -2.5 * (np.log10(nmgy) - 9)
+
+def get_xy_pad(slope,pad):
+    """Returns dx,dy"""
+    theta= np.arctan(abs(slope))
+    return pad*np.sin(theta), pad*np.cos(theta)
+
+def y1_line(rz,pad=None):
+    slope,yint= 1.15,-0.15
+    if pad: 
+        dx,dy= get_xy_pad(slope,pad)
+        return slope*(rz+dx) + yint + dy
+    else:
+        return slope*rz + yint
+    
+def y2_line(rz,pad=None):
+    slope,yint= -1.2,1.6
+    if pad: 
+        dx,dy= get_xy_pad(slope,pad)
+        return slope*(rz-dx) + yint + dy
+    else:
+        return slope*rz + yint
+    
+def get_ELG_box(rz,gr, pad=None):
+    """
+    Args:
+        rz: r-z
+        gr: g-r
+        pad: magnitudes of padding to expand TS box
+    """
+    x1,y1= rz,y1_line(rz)
+    x2,y2= rz,y2_line(rz)
+    x3,y3= np.array([0.3]*len(rz)),gr
+    x4,y4= np.array([1.6]*len(rz)),gr
+    if pad:
+        dx,dy= get_xy_pad(1.15,pad)
+        x1,y1= x1-dx,y1+dy
+        dx,dy= get_xy_pad(-1.2,pad)
+        x2,y2= x2+dx,y2+dy
+        x3 -= pad
+        x4 += pad
+    return dict(x1=x1, y1=y1,
+                x2=x2, y2=y2,
+                x3=x3, y3=y3,
+                x4=x4, y4=y4)
+#####
 
 class TractorStamps(SimStamps):
     def __init__(self,ls_dir=None,outdir=None,
@@ -246,18 +295,98 @@ class TractorStamps(SimStamps):
         self.cat.set('id',self.cat.objid)
 
     def apply_cuts(self):
+        # Need extinction correction mag and colors
+        d= {}
+        for b in 'grz':
+            d[b]= flux2mag(self.cat.get('flux_'+b)/self.cat.get('mw_transmission_'+b))
+        df= pd.DataFrame(d)
+        df['g-r']= df['g'] - df['r']
+        df['r-z']= df['r'] - df['z']
+
+        hasGRZ= ((self.cat.brick_primary) &
+                 (self.cat.nobs_g >= 1) &
+                 (self.cat.nobs_r >= 1) &
+                 (self.cat.nobs_z >= 1)) 
+        noArtifacts= ((self.cat.allmask_g == 0) & 
+                      (self.cat.allmask_r == 0) & 
+                      (self.cat.allmask_z == 0)) 
+
+        keep= ((self.sim_sampling_cut(df)) &
+               (self.isFaint_cut(df)) &
+               #(noArtifacts) &
+               (hasGRZ))
+
         len_bef= len(self.cat)
-        self.cat.cut((self.cat.brick_primary) &
-                     (self.cat.nobs_g >= 1) &
-                     (self.cat.nobs_r >= 1) &
-                     (self.cat.nobs_z >= 1) & 
-                     (self.cat.allmask_g == 0) & 
-                     (self.cat.allmask_r == 0) & 
-                     (self.cat.allmask_z == 0)) 
-        self.cat.cut((flux2mag(self.cat.flux_g) > 20.) &
-                     (flux2mag(self.cat.flux_r) > 20.) &
-                     (flux2mag(self.cat.flux_z) > 19.))
+        self.cat.cut(keep)
         print('After cut, have %d/%d' % (len(self.cat),len_bef))
+
+
+    def sim_sampling_cut(self,df):
+        """same cut applied to simulated sources
+
+        Args:
+            df: pd.DataFrame have tractor cat extinction corrected grz mags 
+        """
+        # TS box w/0.5 mag padding
+        inBox= ((df['g-r'] <= y1_line(df['r-z'],pad=0.5)) &
+                (df['g-r'] <= y2_line(df['r-z'],pad=0.5)) & 
+                (df['r-z'] >= 0.3 - 0.5) & 
+                (df['r-z'] <= 1.6 + 0.5))
+
+        # Effective rhalf and drop comp, dev 
+        fwhm_or_rhalf= np.zeros(len(self.cat))-1 # arcsec
+        isPSF= np.char.strip(self.cat.type) == 'PSF'
+        isEXP= pd.Series(np.char.strip(self.cat.type)).isin(['EXP','REX'])
+        isDEV= np.char.strip(self.cat.type) == 'DEV'
+        isCOMP= np.char.strip(self.cat.type) == 'COMP'
+        # rhalf ~ fwhm/2
+        fwhm_or_rhalf[isPSF]= np.mean(np.array([self.cat[isPSF].psfsize_g,
+                                                self.cat[isPSF].psfsize_r,
+                                                self.cat[isPSF].psfsize_z]),axis=0)/2
+        fwhm_or_rhalf[isEXP]= self.cat[isEXP].shapeexp_r
+        fwhm_or_rhalf[isDEV]= self.cat[isDEV].shapedev_r
+
+        grz_gt0= ((self.cat.flux_g > 0) &
+                  (self.cat.flux_r > 0) &
+                  (self.cat.flux_z > 0) &
+                  (self.cat.flux_ivar_g > 0) &
+                  (self.cat.flux_ivar_r > 0) &
+                  (self.cat.flux_ivar_z > 0))
+
+        keep= ((grz_gt0) & 
+               (isCOMP == False) &
+               (isDEV == False) &
+               (fwhm_or_rhalf < 5)) 
+
+        #Last cut
+        rhalf_lim= (0.262/2,2.) # Camera, Data
+        g,r,z= tuple(np.array([24.0,23.4,22.5])+0.5)
+        bad= ((fwhm_or_rhalf < rhalf_lim[0]) |
+              (fwhm_or_rhalf > rhalf_lim[1]) |
+              (df['z'] >= z) | #beyond mag limit
+              (df['r'] >= r) |
+              (df['g'] >= g))
+
+        return (inBox) & (keep) & (bad == False)
+
+
+
+    def isFaint_cut(self,df):
+        """There are only faint sources in the deep2 matched sample, 
+        but in the tractor catalogus have a bright population presumably
+        stars. Remove these
+        
+        Args:
+            df: pd.DataFrame have tractor cat extinction corrected grz mags 
+        """
+        # "elg_sample_5dim_10k.fits"
+        min_mag= {'r': 20.4659, 
+                  'z': 19.4391, 
+                  'g': 20.6766}
+        keep= ((df['g'] >= min_mag['g']) &
+               (df['r'] >= min_mag['r']) &
+               (df['z'] >= min_mag['z']))
+        return keep
 
 
 def testcase_main(): 
@@ -314,7 +443,7 @@ def mpi_main(nproc=1,which=None,
 if __name__ == '__main__':
     #testcase_main()
 
-    which='sim' 
+    which='tractor' 
 
     # Data paths
     if os.environ['HOME'] == '/home/kaylan':
@@ -342,6 +471,4 @@ if __name__ == '__main__':
 
     mpi_main(nproc=1,which=which,bricks=['1126p220'],
              **d)
-    #mpi_main(nproc=1,which='tractor',bricks=['1126p220'],
-    #         **d)
 
