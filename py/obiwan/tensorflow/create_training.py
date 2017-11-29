@@ -9,7 +9,6 @@ from astrometry.util.fits import fits_table
 from legacypipe.survey import LegacySurveyData, wcs_for_brick
 from obiwan.qa.visual import readImage,sliceImage
 from obiwan.common import dobash,get_rsdir
-from obiwan.runmanager.status import get_final_dir
 
 import galsim
 
@@ -52,9 +51,9 @@ class SimStamps(object):
 
         self.img_fits,self.ivar_fits= {},{}
         for b in self.bands: 
-            self.img_fits[b]= readImage(coadd_dir,
+            self.img_fits[b]= readImage(os.path.join(coadd_dir,
                                         'legacysurvey-%s-image-%s.fits.fz' % (brick,b)))
-            self.ivar_fits[b]= readImage(coadd_dir,
+            self.ivar_fits[b]= readImage(os.path.join(coadd_dir,
                                         'legacysurvey-%s-invvar-%s.fits.fz' % (brick,b)))
         # galsim.Image() so can determine overlap w/cutouts
         self.img_gs,self.ivar_gs= {},{}
@@ -123,7 +122,6 @@ class SimStamps(object):
             zoom: if legacypipe was run with zoom option
         """
         self.get_brickwcs(brick)
-        assert(len(rs_dirs) > 0)
         # coadd fits images must exist
         self.set_paths_to_data(brick)
         coadd_fns= glob(os.path.join(self.coadd_dirs[0],
@@ -140,33 +138,45 @@ class SimStamps(object):
         self.set_hdf5_fns(brick,self.bands_str)
     
         if os.path.exists(self.hdf5_fn):
-            print('Skipping %s, hdf5 already exists: %s' % (brick,self.hdf5_fn))
-            return None
+            f= h5py.File(self.hdf5_fn, 'r')
+            f2= h5py.File(self.hdf5_fn_onedge, 'r')
+            if (len(f.keys()) == 0) & (len(f2.keys()) == 0):
+                # remove empty files then make them
+                for fn in [self.hdf5_fn,self.hdf5_fn_onedge]:
+                    dobash('rm %s' % fn)
+            else:
+                # processing done, skip this brick
+                print('Skipping %s, hdf5 already filled: %s' % (brick,self.hdf5_fn))
+                return None
         self.hdf5_obj = h5py.File(self.hdf5_fn, "w")
         self.hdf5_obj_onedge = h5py.File(self.hdf5_fn_onedge, "w")
         # Many rs*/ dirs per brick
         for cat_fn,coadd_dir in zip(self.cat_fns,self.coadd_dirs):
             self.load_data(brick,cat_fn,coadd_dir)
-            self.add_xyid(zoom=zoom)
+            self.set_xyid(zoom=zoom)
             self.apply_cuts()
             self.extract()
         self.hdf5_obj.close()
         self.hdf5_obj_onedge.close()
-        print('Wrote %s' % hdf5_fn)
-        print('Wrote %s'% hdf5_fn_onedge)
+        print('Wrote %s' % self.hdf5_fn)
+        print('Wrote %s'% self.hdf5_fn_onedge)
         
     def set_paths_to_data(self,brick):
         """lists of catalogues filenames and coadd dirs"""
-        rs_dirs= glob(os.path.join(self.outdir,'coadd',
-                                   brick[:3],brick,'*rs*'))
+        search= os.path.join(self.outdir,'coadd',
+                                   brick[:3],brick,'*rs*')
+        rs_dirs= glob(search)
         rs_dirs= [os.path.basename(a)
                   for a in rs_dirs]
-        for rs_dir in rs_dirs:
-            self.cat_fns= os.path.join(self.outdir,'obiwan',
-                                       brick[:3],brick,rs_dir,
-                                       'simcat.fits')
-            self.coadd_dirs= os.path.join(self.outdir,'coadd',
-                                       brick[:3],brick,rs_dir)
+        assert(len(rs_dirs) > 0)
+        self.cat_fns,self.coadd_dirs= \
+            zip(*[(os.path.join(self.outdir,'obiwan',
+                                brick[:3],brick,rs_dir,
+                                'simcat-elg-%s.fits' % brick),
+                   os.path.join(self.outdir,'coadd',
+                                brick[:3],brick,rs_dir)
+                   )
+                   for rs_dir in rs_dirs])
 
     def set_hdf5_fns(self,brick,bands_str):
         dr= os.path.join(self.outdir,'hdf5',
@@ -208,13 +218,11 @@ class TractorStamps(SimStamps):
     
     def set_paths_to_data(self,brick):
         """lists of catalogues filenames and coadd dirs"""
-        rs_dirs= 
-        for rs_dir in rs_dirs:
-            self.cat_fns= [os.path.join(self.outdir,'tractor',
-                                        brick[:3],
-                                        'tractor-%s.fits' % brick)]
-            self.coadd_dirs= [os.path.join(self.outdir,'coadd',
-                                           brick[:3],brick)]
+        self.cat_fns= [os.path.join(self.outdir,'tractor',
+                                    brick[:3],
+                                    'tractor-%s.fits' % brick)]
+        self.coadd_dirs= [os.path.join(self.outdir,'coadd',
+                                       brick[:3],brick)]
 
     def set_hdf5_fns(self,brick,bands_str):
         dr= os.path.join(self.savedir,'hdf5',
@@ -306,17 +314,34 @@ def mpi_main(nproc=1,which=None,
 if __name__ == '__main__':
     #testcase_main()
 
-    
+    which='sim' 
 
-    mpi_main(nproc=1,which='sim',
-             outdir='/global/cscratch1/sd/kaylanb/obiwan_out/elg_dr5_coadds',
-             savedir='',
-             ls_dir=None,
-             bricks=bricks)
+    # Data paths
+    if os.environ['HOME'] == '/home/kaylan':
+        # ubuntu
+        d= dict(ls_dir=os.path.join(os.environ['HOME'],
+                                 'mydata/legacysurveydir'))
+        if which == 'sim':
+            d.update(outdir=os.path.join(os.environ['HOME'],
+                                 'mydata/elg_dr5_coadds'))
+        elif which == 'tractor':
+            d.update(outdir=os.path.join(os.environ['HOME'],
+                                 'mydata/dr5_cutouts'),
+                     savedir=os.path.join(os.environ['HOME'],
+                                 'mydata/dr5_hdf5'))
+    else:
+        # nersc
+        if which == 'sim':
+            d=dict(outdir=os.path.join(os.environ['CSCRATCH'],
+                                 'obiwan_out/elg_dr5_coadds'))
+        elif which == 'tractor':
+            d.update(outdir='/global/project/projectdirs/cosmo/data/legacysurvey/dr5',
+                     savedir=os.path.join(os.environ['CSCRATCH'],
+                                 'obiwan_out/dr5_hdf5'))
 
-    mpi_main(nproc=1,which='tractor',
-             outdir='/global/project/projectdirs/cosmo/data/legacysurvey/dr5',
-             savedir='/global/cscratch1/sd/kaylanb/obiwan_out/dr5_cutouts',
-             ls_dir=None,
-             bricks=bricks)
+
+    mpi_main(nproc=1,which=which,bricks=['1126p220'],
+             **d)
+    #mpi_main(nproc=1,which='tractor',bricks=['1126p220'],
+    #         **d)
 
