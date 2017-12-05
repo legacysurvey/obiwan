@@ -8,9 +8,16 @@ Direct contributions to the code base:
 - `Dustin Lang <https://github.com/dstndstn>`_
 - `Kevin Napier <https://github.com/kjnapes>`_
 
-Comments, corrections & suggestions:
+Users & active participants:
 
 - Johan Comparat
-- Hui Kong
+- Eric Jullo
+- Hui Kong 
+- Jeff Newman
+- Peter Nugent
+- Will Percival
 - Anand Raichoor
+- Ashley Ross
 - David Schlegel
+- HuanYuan Shan
+
