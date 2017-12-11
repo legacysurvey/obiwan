@@ -137,6 +137,7 @@ class Testcase(object):
                   '--zoom', str(self.zoom[0]), str(self.zoom[1]), 
                             str(self.zoom[2]), str(self.zoom[3]),
                   '-o', self.obj, '--outdir', self.outdir,
+                  '--sort_sample_ids',
                   '--randoms_from_fits', randoms_fn] + extra_cmd_line
         parser= get_parser()
         args = parser.parse_args(args=cmd_line)
@@ -433,7 +434,7 @@ if __name__ == "__main__":
     #test_dataset_DR3()
     #test_dataset_DR5()
     # Various tests can do 
-    d=dict(z=False,grz=True,
+    d=dict(z=True,grz=False,
            obj='elg',
            all_blobs=False,onedge=False,
            early_coadds=False)
