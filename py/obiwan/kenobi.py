@@ -41,12 +41,14 @@ from astrometry.libkd.spherematch import match_radec
 from tractor.psfex import PsfEx, PsfExModel
 from tractor.basics import GaussianMixtureEllipsePSF, RaDecPos
 
+
 from legacypipe.runbrick import run_brick
 from legacypipe.decam import DecamImage
 from legacypipe.survey import LegacySurveyData, wcs_for_brick
 
 from obiwan.db_tools import getSrcsInBrick 
 from obiwan.common import get_outdir_runbrick, get_brickinfo_hack
+from tractor.sfd import SFDMap
 
 from astrometry.util.fits import fits_table, merge_tables
 from astrometry.util.ttime import Time
@@ -560,9 +562,16 @@ def build_simcat(Samp=None,brickwcs=None, meta=None):
 
     typ=meta.get('objtype')[0]
     # Mags
+    filts = ['%s %s' % ('DES', f) for f in 'grz'] 
     for band in ['g','r','z']:
-        # nanomags
-        cat.set('%sflux' % band, 1E9*10**(-0.4*Samp.get(band)) ) 
+        nanomag= 1E9*10**(-0.4*Samp.get(band)) 
+        # Add extinction (to stars too, b/c "decam-chatter 6517")
+        mw_transmission= SFDMap().extinction(['DES %s' % band], 
+                                             Samp.ra, Samp.dec)
+        mw_transmission= 10**(-mw_transmission[:,0].astype(np.float32)/2.5)
+        cat.set('%sflux' % band, nanomag * mw_transmission)
+        cat.set('mw_transmission_%s' % band, mw_transmission)
+
     # Galaxy Properties
     if typ in ['elg','lrg']:
         # Convert to e1,e2 if given ba,pa
