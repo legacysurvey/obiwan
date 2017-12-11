@@ -173,34 +173,41 @@ class AnalyzeTestcase(Testcase):
 
     def get_tolerances(self):
         if '_grz' in self.name:
+            mw_trans= 2.e-5 # Not 0 b/c ra,dec of model can vary
             # also amazing agreement
             return {'rhalf':0.65, 
                     'apflux':0.2,
                     'skyflux':2.,
-                    'modelflux':4.5}
+                    'modelflux':4.5,
+                    'mw_trans':mw_trans}
         else:
+            mw_trans= 5.e-6 # Not 0 b/c ra,dec of model can vary
             if self.add_noise:
                 # TODO: tune
                 return {'rhalf':0.11, 
                       'apflux':0.25,
                       'skyflux':1.1,
-                      'modelflux':6.0}
+                      'modelflux':6.0,
+                      'mw_trans':mw_trans}
             if self.onedge:
                 return {'rhalf':0.14, 
                       'apflux':0.2,
                       'skyflux':2.,
-                      'modelflux':5.5}
+                      'modelflux':5.5,
+                      'mw_trans':mw_trans}
             if self.obj == 'star':
                 # simcat-model amazing agreement
                 return {'apflux':0.2,
                         'skyflux':1.1,
-                        'modelflux':0.6}
+                        'modelflux':0.6,
+                        'mw_trans':mw_trans}
 
             
             return {'rhalf':0.11, 
                       'apflux':0.25,
                       'skyflux':1.1,
-                      'modelflux':6.0}
+                      'modelflux':6.0,
+                      'mw_trans':mw_trans}
 
 
     def load_outputs(self):
@@ -317,7 +324,7 @@ class AnalyzeTestcase(Testcase):
             rhalf= np.max((self.obitractor[itrac].shapeexp_r,
                            self.obitractor[itrac].shapedev_r),axis=0)
             diff= rhalf - self.simcat.rhalf
-            print('rhalf',diff)
+            print('delta_rhalf',diff)
             assert(np.all(np.abs(diff) < self.tol['rhalf']))
         # Tractor apflux is nearly bang on to my apflux for sims coadd 
         # plus my apflux for sky in coadd
@@ -327,6 +334,13 @@ class AnalyzeTestcase(Testcase):
                                            r=3.5/self.brickwcs.pixel_scale())
 
         for b in self.bands: 
+            print('band= %s' % b)
+
+            diff= self.simcat.get('mw_transmission_%s' % b)[isim] -\
+                  self.obitractor.get('mw_transmission_%s' % b)[itrac]
+            print('delta mw_trans',diff)
+            assert(np.all(np.abs(diff) < self.tol['mw_trans'])) 
+
             apy_table = photutils.aperture_photometry(self.img_fits[b], apers)
             img_apflux= np.array(apy_table['aperture_sum'])
             apy_table = photutils.aperture_photometry(self.sims_fits[b], apers)
@@ -334,16 +348,16 @@ class AnalyzeTestcase(Testcase):
             obitractor_apflux= self.obitractor[itrac].get('apflux_'+b)[:,5]
             # my apflux vs tractor apflux
             diff= img_apflux - obitractor_apflux
-            print('apflux',diff) 
+            print('delta_apflux',diff) 
             assert(np.all(np.abs(diff) < self.tol['apflux']))
             # sky flux is small
             diff= img_apflux - sims_apflux
-            print('skyflux',diff) 
+            print('delta_skyflux',diff) 
             assert(np.all(np.abs(diff) < self.tol['skyflux']))
             # tractor model flux within 5-6 nanomags of input flux 
             diff= self.simcat.get(b+'flux') -\
                     self.obitractor[itrac].get('flux_'+b)
-            print('modelflux',diff) 
+            print('delta_modelflux',diff) 
             assert(np.all(np.abs(diff) < self.tol['modelflux']))
         print('passed')
 
@@ -419,7 +433,7 @@ if __name__ == "__main__":
     #test_dataset_DR3()
     #test_dataset_DR5()
     # Various tests can do 
-    d=dict(z=True,grz=False,
+    d=dict(z=False,grz=True,
            obj='elg',
            all_blobs=False,onedge=False,
            early_coadds=False)
