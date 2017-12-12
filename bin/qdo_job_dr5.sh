@@ -3,7 +3,7 @@
 # Example
 # qdo launch obiwan 3 --cores_per_worker 4 --batchqueue debug --walltime 00:05:00 --script $obiwan_code/obiwan/bin/qdo_job_test.sh --keep_env
 
-export name_for_run=elg_dr5_coadds
+export name_for_run=elg_dr5
 export randoms_db=obiwan_elg_dr5
 export dataset=dr5
 export brick="$1"
@@ -11,12 +11,14 @@ export rowstart="$2"
 export do_skipids="$3"
 export do_more="$4"
 export object=elg
-export nobj=300
+export nobj=1000
 export threads=4
 
 # Load env, env vars
-#source $CSCRATCH/obiwan_code/obiwan/bin/run_atnersc/prodenv_obiwan 
-source $CSCRATCH/obiwan_code/obiwan/bin/run_atnersc/prodenv_desiconda_imaging
+# py2.7
+source $CSCRATCH/obiwan_code/obiwan/bin/run_atnersc/bashrc_obiwan
+# py3.5
+#source $CSCRATCH/obiwan_code/obiwan/bin/run_atnersc/prodenv_desiconda_imaging
 export LEGACY_SURVEY_DIR=$obiwan_data/legacysurveydir_${dataset}
 # assert we have some new env vars
 : ${obiwan_code:?}
@@ -72,7 +74,6 @@ python obiwan/kenobi.py --dataset ${dataset} -b ${brick} \
                         --outdir $outdir --add_sim_noise  \
                         --threads $threads  \
                         --do_skipids $do_skipids --do_more ${do_more} \
-                        --early_coadds \
                         >> $log 2>&1
 
 
