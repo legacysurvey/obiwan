@@ -137,7 +137,6 @@ class Testcase(object):
                   '--zoom', str(self.zoom[0]), str(self.zoom[1]), 
                             str(self.zoom[2]), str(self.zoom[3]),
                   '-o', self.obj, '--outdir', self.outdir,
-                  '--sort_sample_ids',
                   '--randoms_from_fits', randoms_fn] + extra_cmd_line
         parser= get_parser()
         args = parser.parse_args(args=cmd_line)
