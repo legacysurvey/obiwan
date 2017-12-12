@@ -168,6 +168,7 @@ class RunStatus(object):
             #"KeyError: 'do_skipds'",
             r'psycopg2\.OperationalError:',
             r'MemoryError',
+            r'astropy\.extern\.configobj\.configobj\.ParseError',
             r'RuntimeError:\ Command\ failed:\ sex\ -c',
             r'SystemError:\ \<built-in\ method\ flush']
         self.regex_errs_extra= ['Other','log does not exist']

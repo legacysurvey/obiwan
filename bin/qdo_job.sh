@@ -3,20 +3,22 @@
 # Example
 # qdo launch obiwan 3 --cores_per_worker 4 --batchqueue debug --walltime 00:05:00 --script $obiwan_code/obiwan/bin/qdo_job_test.sh --keep_env
 
-
-export name_for_run=elg_9deg2_ra175
-export randoms_db=obiwan_elg_ra175
+export name_for_run=elg_dr5
+export randoms_db=obiwan_elg_dr5
 export dataset=dr5
 export brick="$1"
 export rowstart="$2"
 export do_skipids="$3"
 export do_more="$4"
-export minid=240001
 export object=elg
-export nobj=300
+export nobj=1000
+export threads=4
 
 # Load env, env vars
-source $CSCRATCH/obiwan_code/obiwan/bin/run_atnersc/prodenv_obiwan 
+# py2.7
+source $CSCRATCH/obiwan_code/obiwan/bin/run_atnersc/bashrc_obiwan
+# py3.5
+#source $CSCRATCH/obiwan_code/obiwan/bin/run_atnersc/prodenv_desiconda_imaging
 export LEGACY_SURVEY_DIR=$obiwan_data/legacysurveydir_${dataset}
 # assert we have some new env vars
 : ${obiwan_code:?}
@@ -37,7 +39,7 @@ else
     export rsdir=more_skip_rs${rowstart}
   fi
 fi
-export log=${outdir}/${object}/${bri}/${brick}/${rsdir}/log.${brick}
+export log=${outdir}/logs/${bri}/${brick}/${rsdir}/log.${brick}
 mkdir -p $(dirname $log)
 echo Logging to: $log
 
@@ -46,8 +48,23 @@ export KMP_AFFINITY=disabled
 export MPICH_GNI_FORK_MODE=FULLCOPY
 export MKL_NUM_THREADS=1
 export OMP_NUM_THREADS=1
-# <= cores_per_worker
-export threads=4
+
+# Limit memory to avoid 1 srun killing whole node
+if [ "$NERSC_HOST" = "edison" ]; then
+    # 62 GB / Edison node = 65000000 kbytes
+    maxmem=65000000
+    let usemem=${maxmem}*${threads}/24
+else
+    # 128 GB / Cori node = 65000000 kbytes
+    maxmem=134000000
+    let usemem=${maxmem}*${threads}/32
+fi
+echo BEFORE
+ulimit -Sa
+ulimit -Sv $usemem
+echo AFTER
+ulimit -Sa
+
 
 cd $obiwan_code/obiwan/py
 export dataset=`echo $dataset | tr '[a-z]' '[A-Z]'`
@@ -56,8 +73,7 @@ python obiwan/kenobi.py --dataset ${dataset} -b ${brick} \
                         --randoms_db ${randoms_db} \
                         --outdir $outdir --add_sim_noise  \
                         --threads $threads  \
-                        --do_skipids $do_skipids \
-                        --do_more $do_more --minid $minid \
+                        --do_skipids $do_skipids --do_more ${do_more} \
                         >> $log 2>&1
 
 
