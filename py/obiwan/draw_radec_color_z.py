@@ -22,10 +22,10 @@ from astrometry.util.ttime import Time
 import datetime
 import sys
 from scipy import spatial
+import pandas as pd
 
 from astrometry.util.fits import fits_table, merge_tables
 
-from obiwan.common import fits2pandas
 
 class GaussianMixtureModel(object):
     """
@@ -212,8 +212,8 @@ def write_calling_seq(d):
     print('Wrote %s' % fn)
 
 
-def get_sample_fn(seed=None):
-    return 'randoms_rank_%d.fits' % seed
+def get_sample_fn(seed=None,startid=None):
+    return 'randoms_seed_%d_startid_%d.fits' % (seed,startid)
 
 def mog_param_dir():
     """path to Mixture of Gaussian directory, containing the fitted params"""
@@ -226,7 +226,17 @@ def get_py_version():
 
 
 def draw_points(radec,unique_ids,obj='star',seed=1,
-                outdir='./'):
+                outdir='./',survey=None,startid=1):
+    assert(survey in ['desi','eboss'])
+    if survey == 'desi':
+        return draw_points_desi(radec,unique_ids,obj=obj,seed=seed,
+                                outdir=outdir,startid=startid)
+    else:
+        return draw_points_eboss(radec,unique_ids,obj=obj,seed=seed,
+                                 outdir=outdir,startid=startid)
+
+def draw_points_desi(radec,unique_ids,obj='star',seed=1,
+                     outdir='./',startid=1):
     """
 	Args:
 		radec: dict with keys ra1,ra2,dec1,dec2
@@ -240,6 +250,7 @@ def draw_points(radec,unique_ids,obj='star',seed=1,
 		Nothing, but write a fits_table containing the unique id, ra, dec
 			and color + redshift + morphology info for each source
 	"""
+    from obiwan.common import fits2pandas
     print('entered draw_points')
     ndraws= len(unique_ids)
     random_state= np.random.RandomState(seed)
@@ -274,16 +285,266 @@ def draw_points(radec,unique_ids,obj='star',seed=1,
         T.set('ba', np.random.uniform(0.2,1.,size=ndraws))
         T.set('pa', np.random.uniform(0.,180.,size=ndraws))
     # Save
-    fn= os.path.join(get_sample_dir(outdir,obj),get_sample_fn(seed) )
+    fn= os.path.join(get_sample_dir(outdir,obj),
+                     get_sample_fn(seed,startid) )
     if os.path.exists(fn):
-        os.remove(fn)
-        print('Overwriting %s' % fn)
+        raise IOError('fn already exists, something is wrong!, %s' % fn)
     T.writeto(fn)
     print('Wrote %s' % fn)
+
+
+class EbossBox(object):
+    def get_xy_pad(self,slope,pad=0):
+        """Returns dx,dy"""
+        theta= np.arctan(abs(slope))
+        return pad*np.sin(theta), pad*np.cos(theta)
+    
+    def get_yint_pad(self,slope,pad=0):
+        """Returns dx,dy"""
+        theta= np.arctan(slope)
+        return pad / np.cos(theta)
+
+    def three_lines(self,rz,pad=0):
+        slopes= np.array([-0.068,0.112, 1/(-0.555)])
+        yints=  np.array([0.457,0.773,-1.901/(-0.555)])
+        lines= []
+        for cnt,slope,yint in zip(range(len(slopes)),slopes,yints):
+            dy= 0
+            #dx,dy= self.get_xy_pad(slope,pad)
+            dy= self.get_yint_pad(slope,pad)
+            if cnt == 0:
+                dy *= -1
+            #lines.append(slope*(rz-dx) + yint + dy)
+            lines.append(slope*rz + yint + dy)
+        return tuple(lines)
+    
+    def sgc_line(self,rz,pad=0):
+        slope,yint= 1/0.218, -0.571/0.218
+        dy=0.
+        #dx,dy= self.get_xy_pad(slope,pad)
+        dy= self.get_yint_pad(slope,pad)
+        return slope*rz + yint + dy
+
+    def ngc_line(self,rz,pad=0):
+        slope,yint= 1/0.637, -0.399/0.637
+        #dx,dy= self.get_xy_pad(slope,pad)
+        dy= self.get_yint_pad(slope,pad)
+        return slope*rz + yint + dy
+
+    def SGC(self,rz, pad):
+        """
+        Args:
+            rz: r-z
+            pad: magnitudes of padding to expand TS box
+        """
+        d={}
+        d['y1'],d['y2'],d['y3']= self.three_lines(rz,pad) 
+        d['y4']= self.sgc_line(rz,pad)
+        return d
+    
+    def NGC(self,rz, pad):
+        """
+        Args:
+            rz: r-z
+            pad: magnitudes of padding to expand TS box
+        """
+        d={}
+        d['y1'],d['y2'],d['y3']= self.three_lines(rz,pad) 
+        d['y4']= self.ngc_line(rz,pad)
+        return d
+
+
+def inEbossBox(rz,gr,pad=0.):
+    sgc_d= EbossBox().SGC(rz,pad=pad)
+    return ((gr > sgc_d['y1']) & 
+            (gr < sgc_d['y2']) &
+            (gr < sgc_d['y3']) &
+            (gr < sgc_d['y4']))
+
+def outside_lims_eboss(z):
+    red_lims=[0.,2.]
+    return ((z < red_lims[0]) | 
+            (z > red_lims[1])) 
+
+
+def draw_points_eboss(radec,unique_ids,obj='star',seed=1,
+                      outdir='./',startid=1):
+    """
+	Args:
+		radec: dict with keys ra1,ra2,dec1,dec2
+			the ra,dec limits for the sample
+		unique_ids: list of unique integers for each draw
+		obj: star,elg,lrg,qso
+		seed: to initialize random number generator
+		outdir: dir to write randoms to
+
+	Returns:
+		Nothing, but write a fits_table containing the unique id, ra, dec
+			and color + redshift + morphology info for each source
+	"""
+    print('entered draw_points')
+    ndraws= len(unique_ids)
+    random_state= np.random.RandomState(seed)
+    ra,dec= get_radec(radec,ndraws=ndraws,random_state=random_state)
+    # Load samples
+    gmm= GaussianMixtureModel.load(name='eboss_nz_elg',indir=mog_param_dir(),
+                                   py=get_py_version(),is1D=True)
+    dr3dp2_exp= pd.read_csv(os.path.join(mog_param_dir(),
+                            'eboss_elg_dr3deep2_EXP.csv')) # in my google drive
+    dr3dp2_dev= pd.read_csv(os.path.join(mog_param_dir(),
+                            'eboss_elg_dr3deep2_DEV.csv'))
+    eboss_exp= pd.read_csv(os.path.join(mog_param_dir(),
+                           'eboss_elg_tsspectra_EXP.csv'))
+    eboss_dev= pd.read_csv(os.path.join(mog_param_dir(),
+                           'eboss_elg_tsspectra_DEV.csv'))
+
+    dr3dp2_both= pd.concat([dr3dp2_exp,dr3dp2_dev],axis='rows')
+    assert(dr3dp2_both.shape[0] == dr3dp2_exp.shape[0] + dr3dp2_dev.shape[0])
+
+    trees= dict(dr3dp2_exp= spatial.KDTree(dr3dp2_exp['redshift'].values.reshape(-1,1)),
+                dr3dp2_dev= spatial.KDTree(dr3dp2_dev['redshift'].values.reshape(-1,1)),
+                dr3dp2_both= spatial.KDTree(dr3dp2_both['redshift'].values.reshape(-1,1)),
+                eboss_exp= spatial.KDTree(eboss_exp['redshift'].values.reshape(-1,1)),
+                eboss_dev= spatial.KDTree(eboss_dev['redshift'].values.reshape(-1,1)))
+
+    inBox=dict(dr3dp2_exp=inEbossBox(dr3dp2_exp['r'] - dr3dp2_exp['z'],
+                                     dr3dp2_exp['g'] - dr3dp2_exp['r']),
+               dr3dp2_dev=inEbossBox(dr3dp2_dev['r'] - dr3dp2_dev['z'],
+                                     dr3dp2_dev['g'] - dr3dp2_dev['r']))
+
+    # Draw z from n(z), if z not in [0,2] redraw
+    T= fits_table()
+    redshifts= gmm.sample(ndraws).reshape(-1) 
+
+    i=0
+    redraw= outside_lims_eboss(redshifts)
+    num= len(redshifts[redraw])
+    while num > 0:
+        i+=1
+        if i > 20:
+            raise ValueError
+        print('redrawing %d redshifts' % num)
+        redshifts[redraw]= gmm.sample(num).reshape(-1)
+        redraw= outside_lims_eboss(redshifts)
+        num= len(redshifts[redraw])
+    T.set('redshift',redshifts)
+
+    # flip coin, 90% assign type = EXP, 10% assign type = DEV, store type
+    types= np.array(['EXP']*9 + ['DEV'])
+    T.set('type',types[np.random.randint(0,len(types),size=len(T))])
+
+    # is NN redshift in the dr3_deep2 exp+dev sample, in the eboss box?
+    print('len T=',len(T))
+    _,i_both= trees['dr3dp2_both'].query(T.redshift.reshape(-1,1))
+    print('len i_both=',len(i_both))
+    inBox['dr3dp2_both']= inEbossBox(dr3dp2_both['r'].iloc[i_both] - dr3dp2_both['z'].iloc[i_both],
+                                     dr3dp2_both['g'].iloc[i_both] - dr3dp2_both['r'].iloc[i_both])
+    print('len inBox=',len(inBox['dr3dp2_both']))
+
+    # Assign g,r,z,rhalf for NNs + unique id + NN redshift
+    d= {}
+    mag_shapes= ['g','r','z','fwhm_or_rhalf']
+    for col in mag_shapes:
+        d[col]= np.zeros(len(T))-1
+    d['nn_redshift']= np.zeros(len(T))-1
+    d['id']= np.zeros(len(T)).astype(str)
+        
+    # inBox, use eBOSS data
+    keep= (inBox['dr3dp2_both']) & (T.type == 'EXP')
+    _,i_df= trees['eboss_exp'].query(T.redshift[keep].reshape(-1,1))
+    for col in mag_shapes:
+        d[col][keep]= eboss_exp[col].iloc[i_df]
+    d['id'][keep]= eboss_exp['sdss_id'].iloc[i_df]
+    d['nn_redshift'][keep]= eboss_exp['redshift'].iloc[i_df]
+        
+    keep= (inBox['dr3dp2_both']) & (T.type == 'DEV')
+    _,i_df= trees['eboss_dev'].query(T.redshift[keep].reshape(-1,1))
+    for col in mag_shapes:
+        d[col][keep]= eboss_dev[col].iloc[i_df]
+    d['id'][keep]= eboss_dev['sdss_id'].iloc[i_df]
+    d['nn_redshift'][keep]= eboss_dev['redshift'].iloc[i_df]
+
+    # outBox, use DR3-Deep2 data
+    keep= (~inBox['dr3dp2_both']) & (T.type == 'EXP')
+    _,i_df= trees['dr3dp2_exp'].query(T.redshift[keep].reshape(-1,1))
+    for col in mag_shapes:
+        d[col][keep]= dr3dp2_exp[col].iloc[i_df]
+    d['id'][keep]= dr3dp2_exp['tractor_id'].iloc[i_df]
+    d['nn_redshift'][keep]= dr3dp2_exp['redshift'].iloc[i_df]
+        
+    keep= (~inBox['dr3dp2_both']) & (T.type == 'DEV')
+    _,i_df= trees['dr3dp2_dev'].query(T.redshift[keep].reshape(-1,1))
+    for col in mag_shapes:
+        d[col][keep]= dr3dp2_dev[col].iloc[i_df]
+    d['id'][keep]= dr3dp2_dev['tractor_id'].iloc[i_df]
+    d['nn_redshift'][keep]= dr3dp2_dev['redshift'].iloc[i_df]
+
+    # Add sersic n
+    d['n']= np.zeros(len(T)) - 1
+    d['n'][T.type == 'EXP']= 1
+    d['n'][T.type == 'DEV']= 4
+
+    for col in mag_shapes + ['nn_redshift','n']:
+        assert(np.all(d[col] > 0))
+    assert(np.all(pd.Series(d['id']).str.len() > 1))
+
+    for col in mag_shapes + ['nn_redshift','n']:
+        T.set(col,d[col])
+    T.set('id_sample',d['id'])
+    T.delete_column('type')
+    T.rename('fwhm_or_rhalf','rhalf')
+
+    # Default code for desi or eboss
+    T.set('id',unique_ids)
+    # PSQL "integer" is 4 bytes
+    for key in ['id']:
+        T.set(key, T.get(key).astype(np.int32))
+    T.set('ra',ra)
+    T.set('dec',dec)
+    # fixed priors
+    if obj in ['elg','lrg']:
+        T.set('ba', np.random.uniform(0.2,1.,size=ndraws))
+        T.set('pa', np.random.uniform(0.,180.,size=ndraws))
+    # Save
+    fn= os.path.join(get_sample_dir(outdir,obj),
+                     get_sample_fn(seed,startid) )
+    if os.path.exists(fn):
+        raise IOError('fn already exists, something is wrong!, %s' % fn)
+    T.writeto(fn)
+    print('Wrote %s' % fn)
+
+    # sanity plots
+    if False:
+        import seaborn as sns
+        import matplotlib.pyplot as plt
+        sns.distplot(T.nn_redshift - T.redshift)
+        plt.savefig('delta_redshift.png')
+        
+        print(pd.Series(T.n).value_counts())
+
+        cols= ['g','r','z','rhalf'] + ['redshift']
+        fig,ax= plt.subplots(2,3,figsize=(12,9))
+        i=-1
+        for row in range(2):
+            for col in range(3):
+                i+=1
+                if i >= len(cols):
+                    continue 
+                _=ax[row,col].hist(T.get(cols[i])[T.n == 1],
+                                   histtype='step',normed=True,
+                                   bins=30,color='b',label='EXP')
+                _=ax[row,col].hist(T.get(cols[i])[T.n == 4.],
+                                   histtype='step',normed=True,
+                                   bins=30,color='r',label='DEV')
+                ax[row,col].set_xlabel(cols[i])
+        ax[1,1].legend()
+        plt.savefig('hists.png')
+ 
 
         
 def get_parser():
     parser = argparse.ArgumentParser(description='Generate a legacypipe-compatible CCDs file from a set of reduced imaging.')
+    parser.add_argument('--survey', type=str, choices=['desi','eboss'], default=None, required=True) 
     parser.add_argument('--obj', type=str, choices=['star','elg', 'lrg', 'qso'], default=None, required=True) 
     parser.add_argument('--ra1',type=float,action='store',help='bigbox',required=True)
     parser.add_argument('--ra2',type=float,action='store',help='bigbox',required=True)
@@ -295,6 +556,7 @@ def get_parser():
     parser.add_argument('--nproc', type=int, default=1, help='Number of CPUs to use.')
     parser.add_argument('--seed', type=int, default=1, help='seed for nproc=1')
     parser.add_argument('--startid', type=int, default=1, help='if generating additional randoms mid-run, will want to start from a specific id')
+    parser.add_argument('--max_prev_seed', type=int, default=0, help='if generating  additional randoms need to avoid repeating a previous seed')
     return parser 
 
 if __name__ == "__main__":
@@ -336,12 +598,13 @@ if __name__ == "__main__":
     t0=ptime('parse-args',t0)
 
     if args.nproc > 1:
-        seed = comm.rank
+        seed = comm.rank + args.max_prev_seed
         if comm.rank == 0:
             if not os.path.exists(args.outdir):
                 os.makedirs(args.outdir)
         draw_points(radec,unique_ids,obj=args.obj, seed=seed,
-                    outdir=args.outdir)
+                    outdir=args.outdir,survey=args.survey,
+                    startid=args.startid)
     else:
         seed= args.seed
         if not os.path.exists(args.outdir):
@@ -349,5 +612,6 @@ if __name__ == "__main__":
         if not os.path.exists(args.outdir):
             os.makedirs(args.outdir)
         draw_points(radec,unique_ids,obj=args.obj, seed=seed,
-                    outdir=args.outdir)
+                    outdir=args.outdir,survey=args.survey,
+                    startid=args.startid)
         
