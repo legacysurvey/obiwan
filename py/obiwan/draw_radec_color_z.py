@@ -38,7 +38,8 @@ class GaussianMixtureModel(object):
     """
     def __init__(self, weights, means, covars, 
                  py=None,covar_type='full',is1D=False):
-        assert(py in ['27','36'])
+        # CANNOT use py27, the draw_points_eboss func won't work
+        assert(py in ['36','35'])
         self.py= py
         self.is1D= is1D
         self.weights_ = weights
@@ -415,6 +416,7 @@ def draw_points_eboss(radec,unique_ids,obj='star',seed=1,
     # Draw z from n(z), if z not in [0,2] redraw
     T= fits_table()
     redshifts= gmm.sample(ndraws).reshape(-1) 
+    print('redshifts=',redshifts) 
 
     i=0
     redraw= outside_lims_eboss(redshifts)
@@ -437,6 +439,7 @@ def draw_points_eboss(radec,unique_ids,obj='star',seed=1,
     print('len T=',len(T))
     _,i_both= trees['dr3dp2_both'].query(T.redshift.reshape(-1,1))
     print('len i_both=',len(i_both))
+    #print('nn redshift=',
     inBox['dr3dp2_both']= inEbossBox(dr3dp2_both['r'].iloc[i_both] - dr3dp2_both['z'].iloc[i_both],
                                      dr3dp2_both['g'].iloc[i_both] - dr3dp2_both['r'].iloc[i_both])
     print('len inBox=',len(inBox['dr3dp2_both']))
@@ -485,7 +488,10 @@ def draw_points_eboss(radec,unique_ids,obj='star',seed=1,
     d['n'][T.type == 'DEV']= 4
 
     for col in mag_shapes + ['nn_redshift','n']:
-        assert(np.all(d[col] > 0))
+        if np.all(d[col] > 0) == False:
+            print('FAIL: col %s has <= 0 values' % col)
+            print('<= 0 values are: ',d[col][d[col] <= 0])
+            raise ValueError()
     assert(np.all(pd.Series(d['id']).str.len() > 1))
 
     for col in mag_shapes + ['nn_redshift','n']:
