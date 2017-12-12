@@ -65,6 +65,9 @@ ulimit -Sv $usemem
 echo AFTER
 ulimit -Sa
 
+# Protect against astropy configs
+export XDG_CONFIG_HOME=/dev/shm
+srun -n $SLURM_JOB_NUM_NODES mkdir -p $XDG_CONFIG_HOME/astropy
 
 cd $obiwan_code/obiwan/py
 export dataset=`echo $dataset | tr '[a-z]' '[A-Z]'`

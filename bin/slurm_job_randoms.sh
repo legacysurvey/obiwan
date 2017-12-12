@@ -41,6 +41,9 @@ export KMP_AFFINITY=disabled
 export MPICH_GNI_FORK_MODE=FULLCOPY
 export MKL_NUM_THREADS=1
 export OMP_NUM_THREADS=1
+# Protect against astropy configs
+export XDG_CONFIG_HOME=/dev/shm
+srun -n $SLURM_JOB_NUM_NODES mkdir -p $XDG_CONFIG_HOME/astropy
 
 #let tasks=32*$SLURM_JOB_NUM_NODES
 tasks=16

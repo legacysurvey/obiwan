@@ -2,30 +2,29 @@
 
 #SBATCH -p debug
 #SBATCH -N 1
-#SBATCH -t 00:05:00
+#SBATCH -t 00:10:00
 #SBATCH --account=desi
 #SBATCH -J obiwan
 #SBATCH -L SCRATCH,project
 #SBATCH -C haswell
 
-export name_for_run=elg_dr5_coadds
+export name_for_run=elg_dr5
 export randoms_db=obiwan_elg_dr5
 export dataset=dr5
-export brick=1814p157
+export brick=1158p195
 export rowstart=0
 export do_skipids=no
 export do_more=no
 export minid=1
 export object=elg
-export nobj=300
+export nobj=1000
 
 usecores=4
 threads=$usecores
 #threads=1
 
 # Load production env
-#source $CSCRATCH/obiwan_code/obiwan/bin/run_atnersc/prodenv_obiwan
-source $CSCRATCH/obiwan_code/obiwan/bin/run_atnersc/prodenv_desiconda_imaging
+source $CSCRATCH/obiwan_code/obiwan/bin/run_atnersc/bashrc_obiwan
 export LEGACY_SURVEY_DIR=$obiwan_data/legacysurveydir_${dataset}
 
 # Redirect logs
@@ -52,8 +51,10 @@ echo Logging to: $log
 export KMP_AFFINITY=disabled
 export MPICH_GNI_FORK_MODE=FULLCOPY
 export MKL_NUM_THREADS=1
-#export OMP_NUM_THREADS=1
-export OMP_NUM_THREADS=$threads
+export OMP_NUM_THREADS=1
+# Protect against astropy configs
+export XDG_CONFIG_HOME=/dev/shm
+srun -n $SLURM_JOB_NUM_NODES mkdir -p $XDG_CONFIG_HOME/astropy
 
 cd $obiwan_code/obiwan/py
 export dataset=`echo $dataset | tr '[a-z]' '[A-Z]'`
@@ -64,6 +65,5 @@ srun -n 1 -c $usecores python obiwan/kenobi.py --dataset ${dataset} -b ${brick} 
                        --threads $threads  \
                        --do_skipids $do_skipids \
                        --do_more $do_more --minid $minid \
-                       --early_coadds \
                        >> $log 2>&1
 
