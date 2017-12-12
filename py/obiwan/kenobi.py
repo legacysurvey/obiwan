@@ -606,7 +606,7 @@ def get_parser():
     parser.add_argument('--minid', type=int, default=None, help='set if do_more==yes, minimum id to consider, useful if adding more randoms mid-run')
     parser.add_argument('--randoms_db', default='obiwan_elg', help='desi db table name for randoms')
     parser.add_argument('--randoms_from_fits', default=None, help='set to read randoms from fits file instead of scidb2.nersc.gov db, set to absolute path of local fits file on computer')
-    parser.add_argument('--sort_sample_ids', action="store_true", default=False)
+    parser.add_argument('--dont_sort_sampleid', action="store_true", default=False, help='False to sort sample by id')
     parser.add_argument('-t', '--threads', type=int, default=1, metavar='', 
                         help='number of threads to use when calling The Tractor')
     parser.add_argument('-z', '--zoom', nargs=4, default=(0, 3600, 0, 3600), type=int, metavar='', 
@@ -883,7 +883,7 @@ def do_ith_cleanup(d=None):
 def get_sample(objtype,brick,randoms_db,
                minid=None,randoms_from_fits='',
                do_skipids='no',outdir=None,
-               sort_ids=True):
+               dont_sort_sampleid=False):
     """Gets all simulated randoms for a brick from PSQl db, and applies all relevant cuts
 
     Args:
@@ -894,7 +894,8 @@ def get_sample(objtype,brick,randoms_db,
         randoms_from_fits: None or filename of fits_table to use for randoms
         do_skipids: yes or no, rerunning on all skipped randoms?
         outdir: None if do_skipids='no'; otherwise path like $CSCRATCH/obiwan_out/elg_9deg2_ra175
-        sort_ids: sort returned sample from low to high id
+        dont_sort_sampleid: False to sort sample by id
+
     
     Returns:
         tupe: sample fits_table, seed
@@ -919,7 +920,7 @@ def get_sample(objtype,brick,randoms_db,
     # Apply cuts
     if minid:
       Samp.cut( Samp.id >= minid )
-    if sort_ids:
+    if dont_sort_sampleid == False:
         # breaks clustering but robus to adding more ids
         Samp= Samp[np.argsort(Samp.id) ]
     return Samp,seed
@@ -1006,7 +1007,7 @@ def main(args=None):
                     "minid":args.minid,
                     "do_skipids":args.do_skipids,
                     "randoms_from_fits":args.randoms_from_fits,
-                    "sort_ids":args.sort_sample_ids}
+                    "dont_sort_sampleid":args.dont_sort_sampleid}
     Samp,seed= get_sample(**sample_kwargs)
 
     Samp= Samp[args.rowstart:args.rowstart + args.nobj]
