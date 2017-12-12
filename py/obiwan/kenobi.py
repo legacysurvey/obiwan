@@ -883,7 +883,7 @@ def do_ith_cleanup(d=None):
 def get_sample(objtype,brick,randoms_db,
                minid=None,randoms_from_fits='',
                do_skipids='no',outdir=None,
-               sort_ids=False):
+               sort_ids=True):
     """Gets all simulated randoms for a brick from PSQl db, and applies all relevant cuts
 
     Args:
