@@ -5,7 +5,14 @@ Adapted from their CNN ipynb in chapter 13
 
 import numpy as np
 import os
+from datetime import datetime
 import tensorflow as tf
+
+# Tensorboard
+now = datetime.utcnow().strftime("%Y%m%d%H%M%S")
+root_logdir = "tf_logs"
+logdir = "{}/run-{}/".format(root_logdir, now)
+
 
 height,width,channels = (64,64,6) 
 
@@ -57,6 +64,11 @@ with tf.name_scope("train"):
     loss = tf.reduce_mean(xentropy)
     optimizer = tf.train.AdamOptimizer()
     training_op = optimizer.minimize(loss)
+
+# Tensorboard
+loss_summary = tf.summary.scalar('LOSS', loss)
+file_writer = tf.summary.FileWriter(logdir, tf.get_default_graph())
+
 
 with tf.name_scope("eval"):
     correct = tf.nn.in_top_k(logits, y, 1)
