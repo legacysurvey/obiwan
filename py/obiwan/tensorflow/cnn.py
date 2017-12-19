@@ -45,6 +45,8 @@ def BatchGen(brick,indir,batch_size=32):
             yield X[i,...],y[i].astype(np.int32) #.reshape(-1,1).astype(np.int32)
 
 def get_bricks(fn='cnn_bricks.txt'):
+    fn= os.path.join(os.path.dirname(__file__),
+                     '../../../etc',fn)
     if not os.path.exists(fn):
 	    raise IOError('Need to create brick list: %s' % fn)
     bricks= np.loadtxt(fn,dtype=str)
@@ -69,10 +71,6 @@ def get_bookmark(outdir):
         epoch,brick,ith_batch= f.read().strip().split(' ')
     return epoch,brick,ith_batch
         
-def first_epoch_and_brick():
-    brick= np.loadtxt('cnn_bricks.txt',dtype=str)[0]
-    return '0',brick
-
 def get_logdir(outdir):
     now = datetime.utcnow().strftime("%Y%m%d%H%M%S")
     logdir= os.path.join(outdir,'logs')
