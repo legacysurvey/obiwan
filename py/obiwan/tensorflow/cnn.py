@@ -10,19 +10,31 @@ from glob import glob
 
 import tensorflow as tf
 
-def get_xtrain_fns(brick):
-    if os.environ['HOME'] == '/global/homes/k/kaylanb':
-        dr= os.path.join(os.environ['CSCRATCH'],'obiwan_out')
-    else: 
-        dr= os.path.join(os.environ['HOME'],'Downloads')
-    xtrain_fns= glob( os.path.join(dr,'dr5_testtrain','testtrain',
+def get_indir(nersc=False):
+    '''Returns path to dr5_testtrain directory'''
+    if nersc: 
+        return os.path.join(os.environ['CSCRATCH'],'obiwan_out')
+    else:
+        return os.path.join(os.environ['HOME'],'Downloads')
+
+def get_outdir(nersc=False,knl=False):
+    '''Where to write ckpt and log files'''
+    if (nersc) & (knl): 
+        return os.path.join(os.environ['CSCRATCH'],'obiwan_out','cnn_knl')
+    elif (nersc) & (not knl): 
+        return os.path.join(os.environ['CSCRATCH'],'obiwan_out','cnn')
+    else:
+        return os.path.join(os.environ['HOME'],'Downloads','cnn')
+
+def get_xtrain_fns(brick,indir):
+    xtrain_fns= glob( os.path.join(indir,'dr5_testtrain','testtrain',
                                    brick[:3],brick,'xtrain_*.npy'))
     assert(len(xtrain_fns) > 0)
     return xtrain_fns
 
 #def BatchGen(X,y,brick,batch_size=32):
-def BatchGen(brick,batch_size=32):
-    fns= get_xtrain_fns(brick)
+def BatchGen(brick,indir,batch_size=32):
+    fns= get_xtrain_fns(brick,indir)
     for fn in fns:
         print('Loading %s' % fn)
         X= np.load(fns[0])
@@ -43,18 +55,17 @@ def get_bricks(fn='cnn_bricks.txt'):
     return bricks
 
 
-def get_checkpoint(epoch,brick):
-    dr= os.path.join(os.environ['HOME'],'Downloads','cnn','ckpts')
-    return os.path.join(dr,'epoch_%s_brick_%s.ckpt' % (epoch,brick))
+def get_checkpoint(epoch,brick,outdir):
+    return os.path.join(outdir,'ckpts',
+                        'epoch_%s_brick_%s.ckpt' % (epoch,brick))
 
-def bookmark_fn():
+def bookmark_fn(outdir):
 	"""Single line text file storing the epoch,brick,batch number of last ckpt"""
-	dr= os.path.join(os.environ['HOME'],'Downloads','cnn','ckpts')
-	return os.path.join(dr,'last_epoch_brick_batch.txt')
+	return os.path.join(outdir,'ckpts',
+                        'last_epoch_brick_batch.txt')
 
-def get_bookmark():
-    dr= os.path.join(os.environ['HOME'],'Downloads','cnn','ckpts')
-    with open(bookmark_fn(),'r') as f:
+def get_bookmark(outdir):
+    with open(bookmark_fn(outdir),'r') as f:
         epoch,brick,ith_batch= f.read().strip().split(' ')
     return epoch,brick,ith_batch
         
@@ -62,10 +73,9 @@ def first_epoch_and_brick():
     brick= np.loadtxt('cnn_bricks.txt',dtype=str)[0]
     return '0',brick
 
-def get_logdir():
+def get_logdir(outdir):
     now = datetime.utcnow().strftime("%Y%m%d%H%M%S")
-    logdir= os.path.join(os.environ['HOME'],'Downloads',
-                         "cnn",'logs')
+    logdir= os.path.join(outdir,'logs')
     return os.path.join(logdir,"{}/run-{}/".format(logdir, now))
 
 
@@ -135,62 +145,76 @@ loss_summary= tf.summary.scalar('loss', loss)
 accur_summary = tf.summary.scalar('accuracy', accuracy)
 
 
+if __name__ == '__main__':
+    from argparse import ArgumentParser
+    parser= ArgumentParser()
+    parser.add_argument('--outdir', type=str, default=None, help='optional output directory for the checkpoint and log files')
+    args= parser.parse_args()
 
+    knl=False
+    config=None
+    if 'isKNL' in os.environ.keys():
+        # Set in slurm_job_knl.sh
+        knl=True
+        config= tf.ConfigProto()
+        config.intra_op_parallelism_threads=os.environ['OMP_NUM_THREADS']
+        assert(os.environ['OMP_NUM_THREADS'] == 68)
+        config.inter_op_parallelism_threads=1
 
+    nersc=False
+    if 'CSCRATCH' in os.environ.keys():
+        nersc=True
+    indir= get_indir(nersc=nersc)
+    outdir= get_outdir(nersc=nersc,knl=knl)
+    if not args.outdir is None:
+        outdir= args.outdir
 
+    # Train
+    n_epochs = 4
+    batch_size = 16
+    bricks= get_bricks()
+    file_writer = tf.summary.FileWriter(get_logdir(outdir), 
+                                        tf.get_default_graph())
 
-# Train
-n_epochs = 4
-batch_size = 16
-bricks= get_bricks()
-file_writer = tf.summary.FileWriter(get_logdir(), 
-                                    tf.get_default_graph())
-
-first_epoch,first_brick,first_batch= '0',bricks[0],'0'
-fn= get_checkpoint(first_epoch,first_brick)+'.meta'
-if os.path.exists(fn):
-    last_epoch,last_brick,last_batch= get_bookmark()
-    ckpt_fn= get_checkpoint(last_epoch,last_brick)
-else:
-    last_epoch,last_brick,last_batch= first_epoch,first_brick,first_batch
-    ckpt_fn= None
-bricks= bricks[np.where(bricks == last_brick)[0][0]:]
-#bricks= ['1211p060']
-
-config=None
-if 'OMP_NUM_THREADS' in os.environ.keys():
-    # Many core CPU
-    config= tf.ConfigProto()
-    config.intra_op_parallelism_threads=68
-    config.inter_op_parallelism_threads=1
-with tf.Session(config=config) as sess:
-    if ckpt_fn is None: 
-        sess.run(init)
-        print('Starting from scratch')
+    first_epoch,first_brick,first_batch= '0',bricks[0],'0'
+    fn= get_checkpoint(first_epoch,first_brick,outdir)+'.meta'
+    if os.path.exists(fn):
+        last_epoch,last_brick,last_batch= get_bookmark(outdir)
+        ckpt_fn= get_checkpoint(last_epoch,last_brick,outdir)
     else:
-        saver.restore(sess, ckpt_fn)
-        print('Restored ckpt %s' % ckpt_fn)
-	
-    batch_index= int(last_batch)
-    for epoch in range(int(last_epoch),n_epochs+1):
-        for brick in bricks:
-            data_gen= BatchGen(brick,batch_size)
-            for X_,y_ in data_gen:
-                sess.run(training_op, feed_dict={X: X_, y: y_})
-                batch_index+=1
-                if batch_index % 2 == 0:
-                    step = batch_index
-                    file_writer.add_summary(loss_summary.eval(feed_dict={X: X_, y: y_}), 
-                                            step)
-                    file_writer.add_summary(accur_summary.eval(feed_dict={X: X_, y: y_}), 
-                                            step)
-                    
-            acc_train = accuracy.eval(feed_dict={X: X_, y: y_})
-            print(epoch, "Train accuracy:", acc_train)
-            fn= get_checkpoint(epoch,brick)
-            save_path = saver.save(sess, fn)
-            print('Wrote ckpt %s' % fn)
-            with open(bookmark_fn(),'w') as f:
-                f.write('%d %s %d' % (epoch,brick,batch_index))
-            print('Updated %s' % bookmark_fn())
+        last_epoch,last_brick,last_batch= first_epoch,first_brick,first_batch
+        ckpt_fn= None
+    bricks= bricks[np.where(bricks == last_brick)[0][0]:]
+    #bricks= ['1211p060']
+       
+    with tf.Session(config=config) as sess:
+        if ckpt_fn is None: 
+            sess.run(init)
+            print('Starting from scratch')
+        else:
+            saver.restore(sess, ckpt_fn)
+            print('Restored ckpt %s' % ckpt_fn)
+        
+        batch_index= int(last_batch)
+        for epoch in range(int(last_epoch),n_epochs+1):
+            for brick in bricks:
+                data_gen= BatchGen(brick,indir,batch_size)
+                for X_,y_ in data_gen:
+                    sess.run(training_op, feed_dict={X: X_, y: y_})
+                    batch_index+=1
+                    if batch_index % 2 == 0:
+                        step = batch_index
+                        file_writer.add_summary(loss_summary.eval(feed_dict={X: X_, y: y_}), 
+                                                step)
+                        file_writer.add_summary(accur_summary.eval(feed_dict={X: X_, y: y_}), 
+                                                step)
+                        
+                acc_train = accuracy.eval(feed_dict={X: X_, y: y_})
+                print(epoch, "Train accuracy:", acc_train)
+                fn= get_checkpoint(epoch,brick,outdir)
+                save_path = saver.save(sess, fn)
+                print('Wrote ckpt %s' % fn)
+                with open(bookmark_fn(outdir),'w') as f:
+                    f.write('%d %s %d' % (epoch,brick,batch_index))
+                print('Updated %s' % bookmark_fn(outdir))
 
