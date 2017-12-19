@@ -157,7 +157,13 @@ else:
 bricks= bricks[np.where(bricks == last_brick)[0][0]:]
 #bricks= ['1211p060']
 
-with tf.Session() as sess:
+config=None
+if 'OMP_NUM_THREADS' in os.environ.keys():
+    # Many core CPU
+    config= tf.ConfigProto()
+    config.intra_op_parallelism_threads=68
+    config.inter_op_parallelism_threads=1
+with tf.Session(config=config) as sess:
     if ckpt_fn is None: 
         sess.run(init)
         print('Starting from scratch')
