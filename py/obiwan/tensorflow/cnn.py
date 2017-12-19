@@ -13,23 +13,25 @@ import tensorflow as tf
 def get_indir(nersc=False):
     '''Returns path to dr5_testtrain directory'''
     if nersc: 
-        return os.path.join(os.environ['CSCRATCH'],'obiwan_out')
+        return os.path.join('/global/cscratch1/sd/kaylanb','obiwan_out')
     else:
         return os.path.join(os.environ['HOME'],'Downloads')
 
 def get_outdir(nersc=False,knl=False):
     '''Where to write ckpt and log files'''
     if (nersc) & (knl): 
-        return os.path.join(os.environ['CSCRATCH'],'obiwan_out','cnn_knl')
+        return os.path.join('/global/cscratch1/sd/kaylanb','obiwan_out','cnn_knl')
     elif (nersc) & (not knl): 
-        return os.path.join(os.environ['CSCRATCH'],'obiwan_out','cnn')
+        return os.path.join('/global/cscratch1/sd/kaylanb','obiwan_out','cnn')
     else:
         return os.path.join(os.environ['HOME'],'Downloads','cnn')
 
 def get_xtrain_fns(brick,indir):
-    xtrain_fns= glob( os.path.join(indir,'dr5_testtrain','testtrain',
-                                   brick[:3],brick,'xtrain_*.npy'))
-    assert(len(xtrain_fns) > 0)
+    search= os.path.join(indir,'dr5_testtrain','testtrain',
+                         brick[:3],brick,'xtrain_*.npy')
+    xtrain_fns= glob(search)
+    if len(xtrain_fns) == 0:
+        raise IOError('No training data found matching: %s' % search)
     return xtrain_fns
 
 #def BatchGen(X,y,brick,batch_size=32):
