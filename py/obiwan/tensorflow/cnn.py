@@ -11,10 +11,10 @@ from glob import glob
 import tensorflow as tf
 
 def get_xtrain_fns(brick):
-    if os.environ['HOME'] == '/Users/kaylan1':
-        dr= os.path.join(os.environ['HOME'],'Downloads')
-    else: 
+    if os.environ['HOME'] == '/global/homes/k/kaylanb':
         dr= os.path.join(os.environ['CSCRATCH'],'obiwan_out')
+    else: 
+        dr= os.path.join(os.environ['HOME'],'Downloads')
     xtrain_fns= glob( os.path.join(dr,'dr5_testtrain','testtrain',
                                    brick[:3],brick,'xtrain_*.npy'))
     assert(len(xtrain_fns) > 0)
@@ -32,12 +32,14 @@ def BatchGen(brick,batch_size=32):
         for i in ind:
             yield X[i,...],y[i].astype(np.int32) #.reshape(-1,1).astype(np.int32)
 
-def get_bricks():
-    bricks= np.loadtxt('cnn_bricks.txt',dtype=str)
+def get_bricks(fn='cnn_bricks.txt'):
+    if not os.path.exists(fn):
+	    raise IOError('Need to create brick list: %s' % fn)
+    bricks= np.loadtxt(fn,dtype=str)
     if len(bricks.shape) == 0:
         # single line
-        with open('cnn_bricks.txt','r') as f:
-            bricks= [f.read().strip()]
+        with open(fn,'r') as f:
+            bricks= np.array([f.read().strip()])
     return bricks
 
 
@@ -45,16 +47,16 @@ def get_checkpoint(epoch,brick):
     dr= os.path.join(os.environ['HOME'],'Downloads','cnn','ckpts')
     return os.path.join(dr,'epoch_%s_brick_%s.ckpt' % (epoch,brick))
 
-def last_epoch_and_brick_fn():
-    dr= os.path.join(os.environ['HOME'],'Downloads','cnn','ckpts')
-    fn= os.path.join(dr,'last_epoch_brick.txt')
-    return fn
+def bookmark_fn():
+	"""Single line text file storing the epoch,brick,batch number of last ckpt"""
+	dr= os.path.join(os.environ['HOME'],'Downloads','cnn','ckpts')
+	return os.path.join(dr,'last_epoch_brick_batch.txt')
 
-def last_epoch_and_brick():
+def get_bookmark():
     dr= os.path.join(os.environ['HOME'],'Downloads','cnn','ckpts')
-    with open(last_epoch_and_brick_fn(),'r') as f:
-        epoch,brick= f.read().strip().split(' ')
-    return epoch,brick
+    with open(bookmark_fn(),'r') as f:
+        epoch,brick,ith_batch= f.read().strip().split(' ')
+    return epoch,brick,ith_batch
         
 def first_epoch_and_brick():
     brick= np.loadtxt('cnn_bricks.txt',dtype=str)[0]
@@ -144,17 +146,15 @@ bricks= get_bricks()
 file_writer = tf.summary.FileWriter(get_logdir(), 
                                     tf.get_default_graph())
 
-first_epoch,first_brick= '0',bricks[0]
+first_epoch,first_brick,first_batch= '0',bricks[0],'0'
 fn= get_checkpoint(first_epoch,first_brick)+'.meta'
 if os.path.exists(fn):
-    last_epoch,last_brick= last_epoch_and_brick()
+    last_epoch,last_brick,last_batch= get_bookmark()
     ckpt_fn= get_checkpoint(last_epoch,last_brick)
 else:
-    last_epoch,last_brick= first_epoch,first_brick
+    last_epoch,last_brick,last_batch= first_epoch,first_brick,first_batch
     ckpt_fn= None
-
-#bricks= bricks[np.where(bricks == last_brick)[0]+1:]
-#raise ValueError
+bricks= bricks[np.where(bricks == last_brick)[0][0]:]
 #bricks= ['1211p060']
 
 with tf.Session() as sess:
@@ -164,7 +164,8 @@ with tf.Session() as sess:
     else:
         saver.restore(sess, ckpt_fn)
         print('Restored ckpt %s' % ckpt_fn)
-    batch_index=0
+	
+    batch_index= int(last_batch)
     for epoch in range(int(last_epoch),n_epochs+1):
         for brick in bricks:
             data_gen= BatchGen(brick,batch_size)
@@ -183,9 +184,7 @@ with tf.Session() as sess:
             fn= get_checkpoint(epoch,brick)
             save_path = saver.save(sess, fn)
             print('Wrote ckpt %s' % fn)
-            #if os.path.exists(last_epoch_and_brick_fn()):
-            #    os.remove(last_epoch_and_brick_fn())
-            with open(last_epoch_and_brick_fn(),'w') as f:
-                f.write('%d %s' % (epoch,brick))
-            print('Updated %s' % last_epoch_and_brick_fn())
+            with open(bookmark_fn(),'w') as f:
+                f.write('%d %s %d' % (epoch,brick,batch_index))
+            print('Updated %s' % bookmark_fn())
 
