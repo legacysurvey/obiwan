@@ -1,6 +1,6 @@
 """
 Credit: https://github.com/ageron/handson-ml
-Adapted from their CNN ipynb in chapter 13
+Adapted from the Chp 13 ipynb
 """
 
 import numpy as np
@@ -8,10 +8,37 @@ import os
 from datetime import datetime
 import tensorflow as tf
 
-# Tensorboard
-now = datetime.utcnow().strftime("%Y%m%d%H%M%S")
-root_logdir = "tf_logs"
-logdir = "{}/run-{}/".format(root_logdir, now)
+def BatchGen(X,y,batch_size=32):
+    # if not perfect divide, will drop extra training instances
+    N= X.shape[0]
+    ind= np.array_split(np.arange(N),N // batch_size)
+    for i in ind:
+        yield X[i,...],y[i].astype(np.int32) #.reshape(-1,1).astype(np.int32)
+
+def get_xtrain_fns(brick):
+    if os.environ['HOME'] == '/Users/kaylan1':
+        dr= os.path.join(os.environ['HOME'],'Downloads')
+    else: 
+        dr= os.path.join(os.environ['CSCRATCH'],'obiwan_out')
+    xtrain_fns= glob( os.path.join(dr,'dr5_testtrain','testtrain',
+                                   brick[:3],brick,'xtrain_*.npy'))
+    if len(xtrain_fns) > 0:
+        return xtrain_fns
+    else:
+        return None
+
+
+def get_checkpoint_fns():
+    dr= os.path.join(os.environ['HOME'],'Downloads','cnn') 
+    return os.path.join(dr,'check.ckpt'),
+           os.path.join(dr,'final.ckpt')
+
+def get_logdir():
+    now = datetime.utcnow().strftime("%Y%m%d%H%M%S")
+    logdir= os.path.join(os.environ['HOME'],'Downloads',
+                         "cnn",'logs')
+    return os.path.join(logdir,"{}/run-{}/".format(logdir, now))
+
 
 
 height,width,channels = (64,64,6) 
@@ -24,8 +51,7 @@ pool_kwargs= dict(ksize= [1,2,2,1],
                   padding='VALID')
 
 with tf.name_scope("inputs"):
-    X = tf.placeholder(tf.float32, shape=[None,height,width,channels], name="X") #training data shape
-    #X_reshaped = tf.reshape(X, shape=[-1, height, width, channels])
+    X = tf.placeholder(tf.float32, shape=[None,height,width,channels], name="X")
     y = tf.placeholder(tf.int32, shape=[None], name="y") 
 
 
@@ -65,11 +91,6 @@ with tf.name_scope("train"):
     optimizer = tf.train.AdamOptimizer()
     training_op = optimizer.minimize(loss)
 
-# Tensorboard
-loss_summary = tf.summary.scalar('LOSS', loss)
-file_writer = tf.summary.FileWriter(logdir, tf.get_default_graph())
-
-
 with tf.name_scope("eval"):
     correct = tf.nn.in_top_k(logits, y, 1)
     accuracy = tf.reduce_mean(tf.cast(correct, tf.float32))
@@ -78,47 +99,51 @@ with tf.name_scope("init_and_save"):
     init = tf.global_variables_initializer()
     saver = tf.train.Saver()
 
+init = tf.global_variables_initializer()
+saver = tf.train.Saver()
 
-# Sanity check
-def get_data_dir(brick):
-    if os.environ['HOME'] == '/Users/kaylan1':
-        dr= os.path.join(os.environ['HOME'],'Downloads')
-    else: 
-        dr= os.path.join(os.environ['CSCRATCH'],'obiwan_out')
-    return os.path.join(dr,'dr5_testtrain','testtrain',brick[:3],brick) 
-    
-dr= get_data_dir('1211p060')
-Xtrain= np.load(os.path.join(dr,'xtrain_1.npy'))
-Ytrain= np.load(os.path.join(dr,'ytrain_1.npy'))
+loss_summary= tf.summary.scalar('loss', loss)
+accur_summary = tf.summary.scalar('accuracy', accuracy)
 
-batch_size=32
-X_batch,y_batch= Xtrain[:batch_size,...],Ytrain[:batch_size]
 
-with tf.Session() as sess:
-    init.run()
-    print(sess.run(X, feed_dict={X: X_batch}).shape)
-    print(sess.run(conv1, feed_dict={X: X_batch}).shape)
-    print(sess.run(pool1, feed_dict={X: X_batch}).shape)
-    print(sess.run(conv2, feed_dict={X: X_batch}).shape)
-    print(sess.run(pool2, feed_dict={X: X_batch}).shape)
-    print(sess.run(conv3, feed_dict={X: X_batch}).shape)
-    print(sess.run(pool3, feed_dict={X: X_batch}).shape)
-    print(sess.run(pool3_flat, feed_dict={X: X_batch}).shape)
-    print(sess.run(fc, feed_dict={X: X_batch}).shape)
-    print(sess.run(logits, feed_dict={X: X_batch}).shape) 
+
+
+#bricks= np.loadtxt('../../../etc/bricks_dr5_grz.txt',
+#                   dtype=str)
+xtrain_fns= get_xtrain_fns('1211p060')
+assert(not xtrain_fns is None)
+xtrain= np.load(xtrain_fns[0])
+ytrain= np.load(xtrain_fns[0].replace('xtrain_','ytrain_'))
 
 # Train
-n_epochs = 8
+n_epochs = 4
 batch_size = 32
+n_batches= ytrain.shape[0]//batch_size + 1
+file_writer = tf.summary.FileWriter(get_logdir(), 
+                                    tf.get_default_graph())
+check_fn,final_fn= get_checkpoint_fns()
 
 with tf.Session() as sess:
-    init.run()
+    if os.path.exists(final_fn):
+        saver.restore(sess, final_fn)
+    else: 
+        sess.run(init)
     for epoch in range(n_epochs):
-        for cnt in range(Xtrain.shape[0] // batch_size):
-            slc= slice(cnt*batch_size,(cnt+1)*batch_size)
-            X_batch, y_batch= Xtrain[slc,...],Ytrain[slc]
-            sess.run(training_op, feed_dict={X: X_batch, y: y_batch})
-        acc_train = accuracy.eval(feed_dict={X: X_batch, y: y_batch})
+        data_gen= BatchGen(xtrain,ytrain,batch_size)
+        batch_index=0
+        for X_,y_ in data_gen:
+            sess.run(training_op, feed_dict={X: X_, y: y_})
+            batch_index+=1
+            if i % 1 == 0:
+                step = epoch * n_batches + batch_index
+                file_writer.add_summary(loss_summary.eval(feed_dict={X: X_, y: y_}), 
+                                        step)
+                file_writer.add_summary(accur_summary.eval(feed_dict={X: X_, y: y_}), 
+                                        step)
+                
+        acc_train = accuracy.eval(feed_dict={X: X_, y: y_})
         print(epoch, "Train accuracy:", acc_train)
+        if epoch % 2 == 0:
+            save_path = saver.save(sess, check_fn)
+    save_path = saver.save(sess, final_fn)
 
-        save_path = saver.save(sess, "./cnn_model")
