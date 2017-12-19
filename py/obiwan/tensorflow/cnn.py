@@ -6,14 +6,9 @@ Adapted from the Chp 13 ipynb
 import numpy as np
 import os
 from datetime import datetime
-import tensorflow as tf
+from glob import glob
 
-def BatchGen(X,y,batch_size=32):
-    # if not perfect divide, will drop extra training instances
-    N= X.shape[0]
-    ind= np.array_split(np.arange(N),N // batch_size)
-    for i in ind:
-        yield X[i,...],y[i].astype(np.int32) #.reshape(-1,1).astype(np.int32)
+import tensorflow as tf
 
 def get_xtrain_fns(brick):
     if os.environ['HOME'] == '/Users/kaylan1':
@@ -22,16 +17,48 @@ def get_xtrain_fns(brick):
         dr= os.path.join(os.environ['CSCRATCH'],'obiwan_out')
     xtrain_fns= glob( os.path.join(dr,'dr5_testtrain','testtrain',
                                    brick[:3],brick,'xtrain_*.npy'))
-    if len(xtrain_fns) > 0:
-        return xtrain_fns
-    else:
-        return None
+    assert(len(xtrain_fns) > 0)
+    return xtrain_fns
+
+#def BatchGen(X,y,brick,batch_size=32):
+def BatchGen(brick,batch_size=32):
+    fns= get_xtrain_fns(brick)
+    for fn in fns:
+        print('Loading %s' % fn)
+        X= np.load(fns[0])
+        y= np.load(fns[0].replace('xtrain_','ytrain_'))
+        N= X.shape[0]
+        ind= np.array_split(np.arange(N),N // batch_size + 1)
+        for i in ind:
+            yield X[i,...],y[i].astype(np.int32) #.reshape(-1,1).astype(np.int32)
+
+def get_bricks():
+    bricks= np.loadtxt('cnn_bricks.txt',dtype=str)
+    if len(bricks.shape) == 0:
+        # single line
+        with open('cnn_bricks.txt','r') as f:
+            bricks= [f.read().strip()]
+    return bricks
 
 
-def get_checkpoint_fns():
-    dr= os.path.join(os.environ['HOME'],'Downloads','cnn') 
-    return os.path.join(dr,'check.ckpt'),
-           os.path.join(dr,'final.ckpt')
+def get_checkpoint(epoch,brick):
+    dr= os.path.join(os.environ['HOME'],'Downloads','cnn','ckpts')
+    return os.path.join(dr,'epoch_%s_brick_%s.ckpt' % (epoch,brick))
+
+def last_epoch_and_brick_fn():
+    dr= os.path.join(os.environ['HOME'],'Downloads','cnn','ckpts')
+    fn= os.path.join(dr,'last_epoch_brick.txt')
+    return fn
+
+def last_epoch_and_brick():
+    dr= os.path.join(os.environ['HOME'],'Downloads','cnn','ckpts')
+    with open(last_epoch_and_brick_fn(),'r') as f:
+        epoch,brick= f.read().strip().split(' ')
+    return epoch,brick
+        
+def first_epoch_and_brick():
+    brick= np.loadtxt('cnn_bricks.txt',dtype=str)[0]
+    return '0',brick
 
 def get_logdir():
     now = datetime.utcnow().strftime("%Y%m%d%H%M%S")
@@ -108,42 +135,57 @@ accur_summary = tf.summary.scalar('accuracy', accuracy)
 
 
 
-#bricks= np.loadtxt('../../../etc/bricks_dr5_grz.txt',
-#                   dtype=str)
-xtrain_fns= get_xtrain_fns('1211p060')
-assert(not xtrain_fns is None)
-xtrain= np.load(xtrain_fns[0])
-ytrain= np.load(xtrain_fns[0].replace('xtrain_','ytrain_'))
+
 
 # Train
 n_epochs = 4
-batch_size = 32
-n_batches= ytrain.shape[0]//batch_size + 1
+batch_size = 16
+bricks= get_bricks()
 file_writer = tf.summary.FileWriter(get_logdir(), 
                                     tf.get_default_graph())
-check_fn,final_fn= get_checkpoint_fns()
+
+first_epoch,first_brick= '0',bricks[0]
+fn= get_checkpoint(first_epoch,first_brick)+'.meta'
+if os.path.exists(fn):
+    last_epoch,last_brick= last_epoch_and_brick()
+    ckpt_fn= get_checkpoint(last_epoch,last_brick)
+else:
+    last_epoch,last_brick= first_epoch,first_brick
+    ckpt_fn= None
+
+#bricks= bricks[np.where(bricks == last_brick)[0]+1:]
+#raise ValueError
+#bricks= ['1211p060']
 
 with tf.Session() as sess:
-    if os.path.exists(final_fn):
-        saver.restore(sess, final_fn)
-    else: 
+    if ckpt_fn is None: 
         sess.run(init)
-    for epoch in range(n_epochs):
-        data_gen= BatchGen(xtrain,ytrain,batch_size)
-        batch_index=0
-        for X_,y_ in data_gen:
-            sess.run(training_op, feed_dict={X: X_, y: y_})
-            batch_index+=1
-            if i % 1 == 0:
-                step = epoch * n_batches + batch_index
-                file_writer.add_summary(loss_summary.eval(feed_dict={X: X_, y: y_}), 
-                                        step)
-                file_writer.add_summary(accur_summary.eval(feed_dict={X: X_, y: y_}), 
-                                        step)
-                
-        acc_train = accuracy.eval(feed_dict={X: X_, y: y_})
-        print(epoch, "Train accuracy:", acc_train)
-        if epoch % 2 == 0:
-            save_path = saver.save(sess, check_fn)
-    save_path = saver.save(sess, final_fn)
+        print('Starting from scratch')
+    else:
+        saver.restore(sess, ckpt_fn)
+        print('Restored ckpt %s' % ckpt_fn)
+    batch_index=0
+    for epoch in range(int(last_epoch),n_epochs+1):
+        for brick in bricks:
+            data_gen= BatchGen(brick,batch_size)
+            for X_,y_ in data_gen:
+                sess.run(training_op, feed_dict={X: X_, y: y_})
+                batch_index+=1
+                if batch_index % 2 == 0:
+                    step = batch_index
+                    file_writer.add_summary(loss_summary.eval(feed_dict={X: X_, y: y_}), 
+                                            step)
+                    file_writer.add_summary(accur_summary.eval(feed_dict={X: X_, y: y_}), 
+                                            step)
+                    
+            acc_train = accuracy.eval(feed_dict={X: X_, y: y_})
+            print(epoch, "Train accuracy:", acc_train)
+            fn= get_checkpoint(epoch,brick)
+            save_path = saver.save(sess, fn)
+            print('Wrote ckpt %s' % fn)
+            #if os.path.exists(last_epoch_and_brick_fn()):
+            #    os.remove(last_epoch_and_brick_fn())
+            with open(last_epoch_and_brick_fn(),'w') as f:
+                f.write('%d %s' % (epoch,brick))
+            print('Updated %s' % last_epoch_and_brick_fn())
 
