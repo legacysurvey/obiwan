@@ -22,6 +22,10 @@ At [NERSC](http://www.nersc.gov/)
 Randoms are stored in this PSQL database
 /usr/bin/psql -U desi_user -d desi -h scidb2.nersc.gov
 
+# Acknowledgements
+
+Fill in.
+
 # License
 
 obiwan is free software licensed under a 3-clause BSD-style license. For details see

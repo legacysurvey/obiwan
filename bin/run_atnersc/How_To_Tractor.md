@@ -34,5 +34,11 @@ cd $CSCRATCH/legacypipe_out
 python $CSCRATCH/legacypipe/py/test/runbrick_test.py 
 ```
 
-If that succeeds then let's decide on the next steps
-
+# Clone the existing desiconda install
+you can also do 
+```sh
+module use /global/common/${NERSC_HOST}/contrib/desi/desiconda/20170818-1.1.12-spec/modulefiles
+module load desiconda/20170818-1.1.12-spec
+conda create --prefix $SCRATCH/desiconda_20170818-1.1.12-img --file $DESICONDA/pkg_list.txt
+source activate /scratch2/scratchdirs/kaylanb/desiconda_20170818-1.1.12-img
+```
