@@ -1,3 +1,5 @@
+"""Dowloads data from urls"""
+
 from six.moves import urllib
 import tarfile
 import os

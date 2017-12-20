@@ -1,16 +1,9 @@
 # See LICENSE.rst for BSD 3-clause license info
 # -*- coding: utf-8 -*-
 """
-=========================
-obiwan.draw_radec_color_z
-=========================
-
-mpi4py to draw N random ra,dec with grzW1,Re,redshift info from KDEs
-These N ra,dec rows are written to N/n_tasks fits files
-fits2db to load those N/n_tasks fits files into the PostgresQL DB
-Add bricks table to DB and index on that
-func(brick) -- returns all ra,dec in a given brick
-Write n_bricks fits files containing these various ra,dec
+Uses mpi4py to draw millions of random ra,dec points and color, shape, 
+redshift information from Gaussian Mixture Models. Writes a fits tables
+for each mpi task.
 """
 
 from __future__ import division, print_function
