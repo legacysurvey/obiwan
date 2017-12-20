@@ -1,6 +1,7 @@
 """
-Credit: https://github.com/ageron/handson-ml
-Adapted from the Chp 13 ipynb
+Trains a CNN on 64x64x6 image cutouts of real and fake galaxies
+
+Credit: Adapted from Chp 13 of https://github.com/ageron/handson-ml
 """
 
 import numpy as np

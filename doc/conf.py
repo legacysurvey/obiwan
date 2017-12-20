@@ -76,7 +76,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = u'obiwan'
-copyright = u'2014-2018, DESI Collaboration'
+copyright = u'2014-2018, Kaylan Burleigh, John Moustakas'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
@@ -135,7 +135,19 @@ napoleon_include_private_with_doc = True
 # some external dependencies are not met at build time and break the
 # building process.
 autodoc_mock_imports = ['astrometry','tractor','galsim', 
-                        'legacypipe','theValidator']
+                        'legacypipe','theValidator',
+                        'legacypipe.runbrick',
+                        'legacypipe.decam',
+                        'legacypipe.survey',
+                        'astrometry.libkd.spherematch',
+                        'tractor.psfex',
+                        'tractor.basics',
+                        'tractor.sfd',
+                        'tractor.brightness',
+                        'theValidator.catalogues',
+                        'tensorflow',
+                        'tf.name_scope',
+                        ]
 
 # -- Options for HTML output ----------------------------------------------
 
@@ -158,12 +170,17 @@ html_theme_options = {
     'navbar_title': 'Obiwan',
     'navbar_site_name': 'Pages',
     'navbar_pagenav_name': 'This Page',
-    'navbar_fixed_top': 'false',
+    'navbar_fixed_top': 'true',
     'source_link_position': 'none',
     #'bootswatch_theme': 'cosmo',
     #'bootswatch_theme': 'lumen',
     #'bootswatch_theme': 'sandstone',
     'bootswatch_theme': 'spacelab',
+    'navbar_links': [
+    ("Tutorials", "tutorials"),
+    ("Deep Learning","deeplearning"),
+    ("API", "api")
+    ],
 }
 
 # Theme options are theme-specific and customize the look and feel of a theme

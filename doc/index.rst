@@ -9,19 +9,10 @@ Use the links at the top of the page to learn more about the code or see the tab
 .. toctree::
    :caption: Table of Contents
 
-Production Runs
----------------
+Science Being Done
+------------------
 
-
-API
----
-
-* :doc:`api.rst`
-
-Tutorials
-----------
-
-* :doc:`nb/TestCases.ipynb`
+The following science is being done
 
 
 Indices and tables
