@@ -41,12 +41,15 @@ except ImportError:
 # ones.
 extensions = [
     'sphinx.ext.autodoc',
+    'sphinx.ext.autosummary',
     'sphinx.ext.intersphinx',
-    'sphinx.ext.todo',
     'sphinx.ext.mathjax',
+    'sphinx.ext.todo',
     'sphinx.ext.viewcode',
+    'nbsphinx',
     napoleon_extension
 ]
+nbsphinx_execute = 'never'
 
 # Configuration for intersphinx, copied from astropy.
 intersphinx_mapping = {
@@ -73,7 +76,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = u'obiwan'
-copyright = u'2014-2017, DESI Collaboration'
+copyright = u'2014-2018, DESI Collaboration'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
@@ -99,7 +102,7 @@ release = package.__version__
 
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
-exclude_patterns = ['_build']
+exclude_patterns = ['_build','**.ipynb_checkpoints']
 
 # The reST default role (used for this markup: `text`) to use for all
 # documents.
@@ -131,7 +134,8 @@ napoleon_include_private_with_doc = True
 # This value contains a list of modules to be mocked up. This is useful when
 # some external dependencies are not met at build time and break the
 # building process.
-# autodoc_mock_imports = ['astropy', 'astropy.io']
+autodoc_mock_imports = ['astrometry','tractor','galsim', 
+                        'legacypipe','theValidator']
 
 # -- Options for HTML output ----------------------------------------------
 
@@ -139,12 +143,28 @@ napoleon_include_private_with_doc = True
 # a list of builtin themes.
 #html_theme = 'default'
 #html_theme = 'haiku'
-try:
-    import sphinx_rtd_theme
-    html_theme = 'sphinx_rtd_theme'
-    html_theme_path = [sphinx_rtd_theme.get_html_theme_path()]
-except ImportError:
-    pass
+
+import sphinx_rtd_theme
+#html_theme = 'sphinx_rtd_theme'
+#html_theme_path = [sphinx_rtd_theme.get_html_theme_path()]
+#import juliadoc
+#html_theme = 'julia'
+#html_theme_path = [juliadoc.get_theme_dir()]
+#html_sidebars = juliadoc.default_sidebars()
+import sphinx_bootstrap_theme
+html_theme = 'bootstrap'
+html_theme_path = sphinx_bootstrap_theme.get_html_theme_path()
+html_theme_options = {
+    'navbar_title': 'Obiwan',
+    'navbar_site_name': 'Pages',
+    'navbar_pagenav_name': 'This Page',
+    'navbar_fixed_top': 'false',
+    'source_link_position': 'none',
+    #'bootswatch_theme': 'cosmo',
+    #'bootswatch_theme': 'lumen',
+    #'bootswatch_theme': 'sandstone',
+    'bootswatch_theme': 'spacelab',
+}
 
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the
@@ -222,7 +242,7 @@ except ImportError:
 #html_file_suffix = None
 
 # Output file base name for HTML help builder.
-htmlhelp_basename = 'desitemplatedoc'
+htmlhelp_basename = 'obiwandoc'
 
 
 # -- Options for LaTeX output ---------------------------------------------
@@ -242,7 +262,7 @@ latex_elements = {
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
-  ('index', 'desitemplate.tex', u'desitemplate Documentation',
+  ('index', 'obiwan.tex', u'obiwan Documentation',
    u'DESI', 'manual'),
 ]
 
@@ -272,7 +292,7 @@ latex_documents = [
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
 man_pages = [
-    ('index', 'desitemplate', u'desitemplate Documentation',
+    ('index', 'obiwan', u'obiwan Documentation',
      [u'DESI'], 1)
 ]
 
@@ -286,8 +306,8 @@ man_pages = [
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
 texinfo_documents = [
-  ('index', 'desitemplate', u'desitemplate Documentation',
-   u'DESI', 'desitemplate', 'One line description of project.',
+  ('index', 'obiwan', u'obiwan Documentation',
+   u'DESI', 'obiwan', 'One line description of project.',
    'Miscellaneous'),
 ]
 

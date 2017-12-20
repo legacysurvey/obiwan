@@ -1,0 +1,41 @@
+# Following what Nick Hand did for https://github.com/bccp/nbodykit
+# environment.yml
+# Can test that this environment works with
+#   $ conda env create --name legacyzpts-docs -f environment.yml
+
+name: obiwan-docs
+
+channels:
+- defaults
+- bccp
+- astropy
+- conda-forge
+
+dependencies:
+- python=3.5
+- numpy
+- scipy
+- astropy
+- Cython
+- mpi4py
+- pandas
+- fitsio
+- photutils
+- IPython
+- sphinx<1.6
+- matplotlib
+- psycopg2
+- scikit-image
+- scikit-learn
+- h5py
+- pip
+- pandoc
+- pip:
+  - nbsphinx
+  - sphinx_rtd_theme
+  - sphinx_bootstrap_theme
+  - git+https://github.com/JuliaLang/JuliaDoc.git
+  #- -e git+https://github.com/dstndstn/astrometry.net.git@0.72#egg=astrometry
+  #- -e git+https://github.com/dstndstn/tractor.git@dr5.2#egg=tractor
+  #- -e git+https://github.com/legacysurvey/legacypipe.git@dr5.0#egg=legacypipe
+

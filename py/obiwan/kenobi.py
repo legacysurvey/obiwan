@@ -10,7 +10,6 @@ if __name__ == '__main__':
     import matplotlib
     matplotlib.use('Agg')
 import h5py
-import galsim
 import os
 import sys
 import shutil
@@ -26,7 +25,6 @@ from pickle import dump
 from glob import glob
 import csv
 
-
 from astropy.table import Table, Column, vstack
 from astropy.io import fits
 #from astropy import wcs as astropy_wcs
@@ -36,24 +34,23 @@ import fitsio
 from astropy import units
 from astropy.coordinates import SkyCoord
 
-from astrometry.libkd.spherematch import match_radec
-
-from tractor.psfex import PsfEx, PsfExModel
-from tractor.basics import GaussianMixtureEllipsePSF, RaDecPos
-
+from obiwan.db_tools import getSrcsInBrick 
+from obiwan.common import get_outdir_runbrick, get_brickinfo_hack
 
 from legacypipe.runbrick import run_brick
 from legacypipe.decam import DecamImage
 from legacypipe.survey import LegacySurveyData, wcs_for_brick
 
-from obiwan.db_tools import getSrcsInBrick 
-from obiwan.common import get_outdir_runbrick, get_brickinfo_hack
-from tractor.sfd import SFDMap
-
 from astrometry.util.fits import fits_table, merge_tables
 from astrometry.util.ttime import Time
+from astrometry.libkd.spherematch import match_radec
+
+from tractor.psfex import PsfEx, PsfExModel
+from tractor.basics import GaussianMixtureEllipsePSF, RaDecPos
+from tractor.sfd import SFDMap
 
 from theValidator.catalogues import CatalogueFuncs
+import galsim
 
 def write_dict(fn,d):
     '''d -- dictionary'''
