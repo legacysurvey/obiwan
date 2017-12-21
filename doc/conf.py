@@ -62,8 +62,50 @@ intersphinx_mapping = {
     'h5py': ('http://docs.h5py.org/en/latest/', None)
     }
 
+from glob import glob
+def get_rel_path(name):
+    return dict(tests= '../tests/end_to_end',
+           obiwan= '../py/obiwan',
+           qa= '../py/obiwan/qa',
+           tensorflow= '../py/obiwan/tensorflow')[name]
+    
+def get_rm_modules(name):
+    general= ['__init__']
+    return dict(tests=['test_decam_rex'],
+                obiwan=['_version','mk_fits_image','priors','priors_MoG',
+                        'runs','time_per_brick'],
+                qa=['aaron_healpix','merge_and_match_ccds',
+                    'plots','tally'],
+                tensorflow=[]
+                )[name] + general
 
-def autogen_modules():
+import pandas as pd
+def get_modules(name):
+    assert(name in ['obiwan','tests','qa','tensorflow'])
+    rel_path= get_rel_path(name)
+    print('name=%s, rel_path=' % name,rel_path)
+    mods=glob(os.path.join(rel_path,"*.py"))
+    mods= [(mod.replace('../py/','')
+               .replace('../tests/','tests/')
+               .replace('.py','')
+               .replace('/','.')) 
+           for mod in mods]
+    print('mods=',mods)
+    print('get_rm_modules=',get_rm_modules(name))
+    print(pd.Series(get_rm_modules(name)).isin(mods).iloc[:])
+    suffix= (get_rel_path(name).replace('../py/','')
+                               .replace('../tests/','tests/')
+                               .replace('.py','')
+                               .replace('/','.')) 
+    for key in get_rm_modules(name):
+        print('name=%s, removing=%s' % (name,key))
+        key= suffix + '.' + key
+        print('name=%s, removing=%s' % (name,key))
+        mods.remove(key)
+    return mods
+
+
+def create_api_rst():
     """
     Credit: https://github.com/bccp/nbodykit
 
@@ -75,22 +117,46 @@ def autogen_modules():
     """
     # current directory
     cur_dir = os.path.abspath(os.path.dirname(__file__))
-
-    # where to dump the list of modules
-    output_path = os.path.join(cur_dir, 'api')
-
-    # write the output modules file
-    modules= ['obiwan.draw_radec_color_z',
-              'obiwan.common',
-              'obiwan.kenobi']
-    output_file = os.path.join(output_path, 'modules.rst')
+    output_file = os.path.join(cur_dir, 'api.rst')
     with open(output_file, 'w') as ff:
-        header = "Modules"
-        header += "\n" + "="*len(header) + "\n"
-        header = ":orphan:\n\n" + header
-        ff.write(header+".. autosummary::\n\t:toctree: _autosummary\n\t:template: module.rst\n\n")
+        title = "API Documentation"
+        title += "\n" + "="*len(title) + "\n"
+        title = ":orphan:\n\n" + title
+        ff.write(title + "\n")
+        section=  "Modules"
+        section += "\n" + "-"*len(section) + "\n"
+        ff.write(section+".. autosummary::\n\t:toctree: _autosummary\n\t:template: module.rst\n\n")
+        # modules= ['obiwan.common',
+        #           'obiwan.draw_radec_color_z',
+        #           'obiwan.kenobi']
+        modules= get_modules('obiwan')
         for module in modules:
             ff.write("\t" + module + "\n")
+        ff.write("\n")
+        section=  "Tests"
+        section += "\n" + "-"*len(section) + "\n"
+        ff.write(section+".. autosummary::\n\t:toctree: _autosummary\n\t:template: module.rst\n\n")
+        # modules= ['tests.end_to_end.test_datasets']
+        modules= get_modules('tests')
+        for module in modules:
+            ff.write("\t" + module + "\n")
+        ff.write("\n")
+        section=  "Compute Jobs"
+        section += "\n" + "-"*len(section) + "\n"
+        ff.write(section+".. autosummary::\n\t:toctree: _autosummary\n\t:template: module.rst\n\n")
+        #modules= ['obiwan.qa.cpu_hours']
+        modules= get_modules('qa')
+        for module in modules:
+            ff.write("\t" + module + "\n")
+        ff.write("\n")
+        section=  "Deep Learning"
+        section += "\n" + "-"*len(section) + "\n"
+        ff.write(section+".. autosummary::\n\t:toctree: _autosummary\n\t:template: module.rst\n\n")
+        #modules= ['obiwan.tensorflow.cnn']
+        modules= get_modules('tensorflow')
+        for module in modules:
+            ff.write("\t" + module + "\n")
+        ff.write("\n")
 
     # make the output directory if it doesn't exist
     output_path = os.path.join(cur_dir, 'api', '_autosummary')
@@ -103,9 +169,9 @@ def setup(app):
 
     Setup steps to prepare the docs build.
     """
-    # automatically generate modules.rst file containing all modules
+    # automatically generate api.rst file containing all modules
     # in a autosummary directive listing with 'toctree' option
-    autogen_modules()
+    create_api_rst()
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
@@ -222,9 +288,8 @@ html_theme_options = {
     #'bootswatch_theme': 'sandstone',
     'bootswatch_theme': 'spacelab',
     'navbar_links': [
+    ("API", "api"),
     ("Tutorials", "tutorials"),
-    ("Modules", "api/modules"),
-    ("API", "api/api"),
     ("Deep Learning",'deeplearning.rst')
     ],
 }
