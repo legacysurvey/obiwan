@@ -184,7 +184,7 @@ if __name__ == '__main__':
     else:
         last_epoch,last_brick,last_batch= first_epoch,first_brick,first_batch
         ckpt_fn= None
-    bricks= bricks[np.where(bricks == last_brick)[0][0]:]
+    last_ibrick= np.where(bricks == last_brick)[0][0] #+ 1 creates bug where last break skips all epochs
     #bricks= ['1211p060']
        
     with tf.Session(config=config) as sess:
@@ -197,7 +197,11 @@ if __name__ == '__main__':
         
         batch_index= int(last_batch)
         for epoch in range(int(last_epoch),n_epochs+1):
-            for brick in bricks:
+            for ibrick,brick in enumerate(bricks):
+                # Don't repeat bricks when restart from ckpt
+                if ibrick < last_ibrick:
+                    print('skipping: epoch,ibrick,last_ibrick', epoch,ibrick,last_ibrick)
+                    continue
                 data_gen= BatchGen(brick,indir,batch_size)
                 for X_,y_ in data_gen:
                     sess.run(training_op, feed_dict={X: X_, y: y_})
@@ -208,13 +212,15 @@ if __name__ == '__main__':
                                                 step)
                         file_writer.add_summary(accur_summary.eval(feed_dict={X: X_, y: y_}), 
                                                 step)
-                        
                 acc_train = accuracy.eval(feed_dict={X: X_, y: y_})
                 print(epoch, "Train accuracy:", acc_train)
+                # Save progress
                 fn= get_checkpoint(epoch,brick,outdir)
                 save_path = saver.save(sess, fn)
                 print('Wrote ckpt %s' % fn)
                 with open(bookmark_fn(outdir),'w') as f:
                     f.write('%d %s %d' % (epoch,brick,batch_index))
                 print('Updated %s' % bookmark_fn(outdir))
+                # Reset last_ibrick so use all bricks in next epoch
+                last_ibrick= 0
 
