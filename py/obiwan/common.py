@@ -9,10 +9,10 @@ import pandas as pd
 import fitsio
 
 # Sphinx build would crash
-try:
-    from astrometry.util.fits import fits_table
-except ImportError:
-    pass
+#try:
+from astrometry.util.fits import fits_table
+#except ImportError:
+#    pass
 
 def inJupyter():
     return 'inline' in matplotlib.get_backend()

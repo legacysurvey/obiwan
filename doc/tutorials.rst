@@ -8,7 +8,7 @@ Jupyter notebooks for getting you familiar with the outputs of the code.
 :ref:`Travis continuous integration tests of the entire pipeline <nb/TestCases.ipynb>`
 ----------------------------------------------------------------------------------------
 
-The module :py:meth:`tests.end_to_end.test_datasets` and :mod:`tests.end_to_end.test_datasets` or :doc:`tests.end_to_end.test_datasets`. carries out these tests. See the visualizations below for what these tests do. module :ref:`path to test_datasets <tests/end_to_end/test_datasets.py>`
+The module :mod:`tests.end_to_end.test_datasets` carries out these tests. See the visualizations below for what these tests do. 
 
 * :ref:`Stars <nb/TestCases.ipynb#star:-testcase_DR_z>`
 * :ref:`Galaxies <nb/TestCases.ipynb#allblobs=False:-testcase_DR_z>`

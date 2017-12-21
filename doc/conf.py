@@ -62,8 +62,54 @@ intersphinx_mapping = {
     'h5py': ('http://docs.h5py.org/en/latest/', None)
     }
 
+
+def autogen_modules():
+    """
+    Credit: https://github.com/bccp/nbodykit
+
+    Produce a file "modules.rst" that includes an ``autosummary`` directive
+    listing all of the modules in nbodykit.
+
+    The ``toctree`` option is set such that the corresponding rst files
+    will be auto-generated in ``source/api/_autosummary``.
+    """
+    # current directory
+    cur_dir = os.path.abspath(os.path.dirname(__file__))
+
+    # where to dump the list of modules
+    output_path = os.path.join(cur_dir, 'api')
+
+    # write the output modules file
+    modules= ['obiwan.draw_radec_color_z',
+              'obiwan.common',
+              'obiwan.kenobi']
+    output_file = os.path.join(output_path, 'modules.rst')
+    with open(output_file, 'w') as ff:
+        header = "Modules"
+        header += "\n" + "="*len(header) + "\n"
+        header = ":orphan:\n\n" + header
+        ff.write(header+".. autosummary::\n\t:toctree: _autosummary\n\t:template: module.rst\n\n")
+        for module in modules:
+            ff.write("\t" + module + "\n")
+
+    # make the output directory if it doesn't exist
+    output_path = os.path.join(cur_dir, 'api', '_autosummary')
+    if not os.path.exists(output_path):
+        os.makedirs(output_path)
+
+def setup(app):
+    """
+    Credit: https://github.com/bccp/nbodykit
+
+    Setup steps to prepare the docs build.
+    """
+    # automatically generate modules.rst file containing all modules
+    # in a autosummary directive listing with 'toctree' option
+    autogen_modules()
+
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
+autosummary_generate = True 
 
 # The suffix of source filenames.
 source_suffix = '.rst'
@@ -140,13 +186,12 @@ autodoc_mock_imports = ['astrometry','tractor','galsim',
                         'legacypipe.decam',
                         'legacypipe.survey',
                         'astrometry.libkd.spherematch',
+                        'astrometry.util.ttime',
                         'tractor.psfex',
                         'tractor.basics',
                         'tractor.sfd',
                         'tractor.brightness',
                         'theValidator.catalogues',
-                        'tensorflow',
-                        'tf.name_scope',
                         ]
 
 # -- Options for HTML output ----------------------------------------------
@@ -178,8 +223,9 @@ html_theme_options = {
     'bootswatch_theme': 'spacelab',
     'navbar_links': [
     ("Tutorials", "tutorials"),
-    ("Deep Learning","deeplearning"),
-    ("API", "api")
+    ("Modules", "api/modules"),
+    ("API", "api/api"),
+    ("Deep Learning",'deeplearning.rst')
     ],
 }
 
