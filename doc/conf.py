@@ -290,7 +290,7 @@ html_theme_options = {
     'navbar_links': [
     ("API", "api"),
     ("Tutorials", "tutorials"),
-    ("Deep Learning",'deeplearning.rst')
+    ("Deep Learning",'deeplearning')
     ],
 }
 
