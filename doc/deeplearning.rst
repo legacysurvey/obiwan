@@ -3,7 +3,5 @@
 Deep Learning
 -------------
 
-.. autosummary:: 
-
-    ~obiwan.tensorflow.cnn
+Fake versus real galaxies
 
