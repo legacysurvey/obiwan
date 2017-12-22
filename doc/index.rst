@@ -1,43 +1,29 @@
-=========================================
-Welcome to obiwan's documentation!
-=========================================
+=======
+Obiwan
+=======
 
-Introduction
-============
+Obiwan is a code to forward model blah.
 
-This is the documentation for obiwan.
-
-Contents
-========
-
-.. _`the toctree documentation`: http://sphinx-doc.org/markup/toctree.html
+Use the links at the top of the page to learn more about the code or see the table of contents below.
 
 .. toctree::
-   :maxdepth: 1
+   :caption: Table of Contents
 
-   priors.rst
-   draw_radec_color_z.rst
-   kenobi.rst
-   changes.rst
+Science Being Done
+------------------
 
-The obiwan package/API
-=========================
+The following science is being done
 
-.. automodule:: obiwan
-    :members:
+Changelog
+----------
 
-.. automodule:: obiwan.kenobi
-    :members:
-
-.. automodule:: obiwan.priors
-    :members:
-
-.. automodule:: obiwan.draw_radec_color_z
-    :members:
+* :doc:`changes`
 
 Indices and tables
-==================
+------------------
 
 * :ref:`genindex`
 * :ref:`modindex`
 * :ref:`search`
+
+
