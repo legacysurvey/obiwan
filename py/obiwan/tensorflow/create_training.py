@@ -148,7 +148,7 @@ class SimStamps(object):
         # One hdf5 file for this brick, like '_rz.hdf5'
         self.bands_str= ''.join(sorted(self.bands))
         assert(self.bands_str in HDF5_KEYS)
-        self.set_hdf5_fns(brick,self.bands_str)
+        self.set_output_fns(brick,self.bands_str)
     
         if os.path.exists(self.hdf5_fn):
             try:
@@ -179,6 +179,7 @@ class SimStamps(object):
             self.load_data(brick,cat_fn,coadd_dir)
             self.set_xyid(zoom=zoom)
             self.apply_cuts()
+            self.write_mag_sorted_ids()
             self.extract()
         self.hdf5_obj.close()
         self.hdf5_obj_onedge.close()
@@ -206,14 +207,18 @@ class SimStamps(object):
                    )
                    for rs_dir in rs_dirs])
 
-    def set_hdf5_fns(self,brick,bands_str):
+    def set_output_fns(self,brick,bands_str):
         dr= os.path.join(self.savedir,'hdf5',
                          brick[:3],brick)
+        # hdf5
         self.hdf5_fn= os.path.join(dr,
                                    'img_ivar_%s.hdf5' % bands_str)
         self.hdf5_fn_onedge= self.hdf5_fn.replace('.hdf5',
                                         '_onedge.hdf5')
         self.hdf5_fn_jpeg= self.hdf5_fn.replace('img_ivar_','jpeg_')
+        # table of mag sorted ids
+        self.sorted_ids_fn= self.hdf5_fn.replace(os.path.basename(self.hdf5_fn),
+                                                'sorted_ids.fits')
         try:
             dobash('mkdir -p %s' % dr)
         except ValueError:
@@ -231,12 +236,23 @@ class SimStamps(object):
     def apply_cuts(self):
         len_bef=len(self.cat)
         print('After cut, have %d/%d' % (len(self.cat),len_bef))
+    
+    def write_mag_sorted_ids(self,band='g'):
+        mag= self.get_mag(band)
+        inds= np.argsort(mag) # small to large (mag, so brightest to faintest)
+        T= fits_table()
+        T.set('id',self.cat.id)
+        T.set('mag_'+band,mag)
+        T= T[inds]
+        T.writeto(self.sorted_ids_fn)
+        print('Wrote %s' % self.sorted_ids_fn)
+   
+    def get_mag(self,band='g'):
+        return flux2mag(self.cat.get(band+'flux'))
 
 
 #######
 # Funcs to apply simulated source cuts to tractor catalogues sources 
-def flux2mag(nmgy):
-    return -2.5 * (np.log10(nmgy) - 9)
 
 def get_xy_pad(slope,pad):
     """Returns dx,dy"""
@@ -316,6 +332,10 @@ class TractorStamps(SimStamps):
         self.cat.set('x',x.astype(int))
         self.cat.set('y',y.astype(int))
         self.cat.set('id',self.cat.objid)
+
+    def get_mag(self,band='g'):
+        return flux2mag(self.cat.get('flux_'+band)/self.cat.get('mw_transmission_'+band))
+
 
     def apply_cuts(self):
         # Need extinction correction mag and colors
