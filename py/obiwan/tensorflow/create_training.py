@@ -25,14 +25,19 @@ class SimStamps(object):
             outdir: path to dir containing obiwan,coadd,tractor dirs
     """
 
-    def __init__(self,outdir=None,
-                 ls_dir=None):
+    def __init__(self,ls_dir=None,outdir=None,
+                 savedir=None, jpeg=False):
         """outdir: required
            ls_dir: not needed if env var LEGACY_SURVEY_DIR already set
+           save_dir: where write hdf5 files, outdir if None
         """
         self.outdir= outdir
+        self.jpeg= jpeg
         if ls_dir:
             os.environ["LEGACY_SURVEY_DIR"]= ls_dir
+        self.savedir= savedir
+        if self.savedir is None:
+            self.savedir= self.outdir
         self.survey = LegacySurveyData()
 
     def get_brickwcs(self,brick):
@@ -44,7 +49,7 @@ class SimStamps(object):
 
         Args:
             brick:
-            rs_dir: path/to/rs0, rs300, rs300_skipid, etc
+            coadd_dir: path/to/rs0, rs300, rs300_skipid, etc
         """
         print('Loading from %s' % coadd_dir)
         self.cat= fits_table(cat_fn)
@@ -55,9 +60,12 @@ class SimStamps(object):
                                         'legacysurvey-%s-image-%s.fits.fz' % (brick,b)))
             self.ivar_fits[b]= readImage(os.path.join(coadd_dir,
                                         'legacysurvey-%s-invvar-%s.fits.fz' % (brick,b)))
+        self.img_jpeg= readImage(os.path.join(coadd_dir,
+                                 'legacysurvey-%s-image.jpg' % (brick)),
+                                 jpeg=True)
         # galsim.Image() so can determine overlap w/cutouts
-        self.img_gs,self.ivar_gs= {},{}
-        for b in self.bands:
+        self.img_gs,self.ivar_gs,self.jpeg_gs= {},{},{}
+        for ib,b in enumerate(self.bands):
             self.img_gs[b]= galsim.Image(self.img_fits[b])
             self.ivar_gs[b]= galsim.Image(self.ivar_fits[b])
 
@@ -89,6 +97,10 @@ class SimStamps(object):
                                                xslice=xslc,yslice=yslc)
                                     for band in self.bands_str]).T)
 
+                _ = self.hdf5_jpeg.create_dataset(str(cat.id)+'/img', 
+                                                  chunks=True,dtype=np.uint8, \
+                    data= sliceImage(self.img_jpeg,
+                                     xslice=xslc,yslice=yslc))
                 # _ = self.hdf5_obj.create_dataset(str(cat.id)+'/img', 
                 #                                  chunks=True, \
                 #     data= np.array([self.img_fits[band][olap].array
@@ -136,15 +148,16 @@ class SimStamps(object):
         # One hdf5 file for this brick, like '_rz.hdf5'
         self.bands_str= ''.join(sorted(self.bands))
         assert(self.bands_str in HDF5_KEYS)
-        self.set_hdf5_fns(brick,self.bands_str)
+        self.set_output_fns(brick,self.bands_str)
     
         if os.path.exists(self.hdf5_fn):
             try:
                 f= h5py.File(self.hdf5_fn, 'r')
                 f2= h5py.File(self.hdf5_fn_onedge, 'r')
+                f3= h5py.File(self.hdf5_fn_jpeg, 'r')
                 if (len(f.keys()) == 0) & (len(f2.keys()) == 0):
                     # remove empty files then make them
-                    for fn in [self.hdf5_fn,self.hdf5_fn_onedge]:
+                    for fn in [self.hdf5_fn,self.hdf5_fn_onedge,self.hdf5_fn_jpeg]:
                         dobash('rm %s' % fn)
                 else:
                     # processing done, skip this brick
@@ -152,21 +165,28 @@ class SimStamps(object):
                     return None
             except OSError:
                 # One of these got messed up, redo it
-                for fn in [self.hdf5_fn,self.hdf5_fn_onedge]:
+                for fn in [self.hdf5_fn,self.hdf5_fn_onedge,self.hdf5_fn_jpeg]:
                     os.remove(fn)
                     print('removed ',fn)
         self.hdf5_obj = h5py.File(self.hdf5_fn, "w")
         self.hdf5_obj_onedge = h5py.File(self.hdf5_fn_onedge, "w")
+        self.hdf5_jpeg = h5py.File(self.hdf5_fn_jpeg, "w")
         # Many rs*/ dirs per brick
         for cat_fn,coadd_dir in zip(self.cat_fns,self.coadd_dirs):
+            if (self.jpeg) & (os.path.basename(coadd_dir) != 'rs0'): 
+                print('jpeg=True, so skipping %s' % coadd_dir)
+                continue
             self.load_data(brick,cat_fn,coadd_dir)
             self.set_xyid(zoom=zoom)
             self.apply_cuts()
+            self.write_mag_sorted_ids()
             self.extract()
         self.hdf5_obj.close()
         self.hdf5_obj_onedge.close()
+        self.hdf5_jpeg.close()
         print('Wrote %s' % self.hdf5_fn)
-        print('Wrote %s'% self.hdf5_fn_onedge)
+        print('Wrote %s' % self.hdf5_fn_onedge)
+        print('Wrote %s' % self.hdf5_fn_jpeg)
         
     def set_paths_to_data(self,brick):
         """lists of catalogues filenames and coadd dirs"""
@@ -187,13 +207,18 @@ class SimStamps(object):
                    )
                    for rs_dir in rs_dirs])
 
-    def set_hdf5_fns(self,brick,bands_str):
-        dr= os.path.join(self.outdir,'hdf5',
+    def set_output_fns(self,brick,bands_str):
+        dr= os.path.join(self.savedir,'hdf5',
                          brick[:3],brick)
+        # hdf5
         self.hdf5_fn= os.path.join(dr,
                                    'img_ivar_%s.hdf5' % bands_str)
         self.hdf5_fn_onedge= self.hdf5_fn.replace('.hdf5',
                                         '_onedge.hdf5')
+        self.hdf5_fn_jpeg= self.hdf5_fn.replace('img_ivar_','jpeg_')
+        # table of mag sorted ids
+        self.sorted_ids_fn= self.hdf5_fn.replace(os.path.basename(self.hdf5_fn),
+                                                'sorted_ids.fits')
         try:
             dobash('mkdir -p %s' % dr)
         except ValueError:
@@ -211,12 +236,23 @@ class SimStamps(object):
     def apply_cuts(self):
         len_bef=len(self.cat)
         print('After cut, have %d/%d' % (len(self.cat),len_bef))
+    
+    def write_mag_sorted_ids(self,band='g'):
+        mag= self.get_mag(band)
+        inds= np.argsort(mag) # small to large (mag, so brightest to faintest)
+        T= fits_table()
+        T.set('id',self.cat.id)
+        T.set('mag_'+band,mag)
+        T= T[inds]
+        T.writeto(self.sorted_ids_fn)
+        print('Wrote %s' % self.sorted_ids_fn)
+   
+    def get_mag(self,band='g'):
+        return flux2mag(self.cat.get(band+'flux'))
 
 
 #######
 # Funcs to apply simulated source cuts to tractor catalogues sources 
-def flux2mag(nmgy):
-    return -2.5 * (np.log10(nmgy) - 9)
 
 def get_xy_pad(slope,pad):
     """Returns dx,dy"""
@@ -265,15 +301,16 @@ def get_ELG_box(rz,gr, pad=None):
 
 class TractorStamps(SimStamps):
     def __init__(self,ls_dir=None,outdir=None,
-                 savedir=None):
+                 savedir=None, jpeg=False):
         """Same as SimStamps but for tractor catalogues
 
         Args:
             savedir: required for tractor not sims b/c cannot write to dr5 dir
         """
         super(TractorStamps,self).__init__(ls_dir=ls_dir,
-                                           outdir=outdir)
-        self.savedir= savedir
+                                           outdir=outdir,
+                                           savedir=savedir,
+                                           jpeg=jpeg)
     
     def set_paths_to_data(self,brick):
         """lists of catalogues filenames and coadd dirs"""
@@ -287,18 +324,6 @@ class TractorStamps(SimStamps):
             raise OSError('does not exist: %s OR %s' % \
                     (self.cat_fns[0],self.coadd_dirs[0]))
 
-    def set_hdf5_fns(self,brick,bands_str):
-        dr= os.path.join(self.savedir,'hdf5',
-                         brick[:3],brick)
-        self.hdf5_fn= os.path.join(dr,
-                                   'img_ivar_%s.hdf5' % bands_str)
-        self.hdf5_fn_onedge= self.hdf5_fn.replace('.hdf5',
-                                        '_onedge.hdf5')
-        try:
-            dobash('mkdir -p %s' % dr)
-        except ValueError:
-            print('hdf5 dir already exists: ',dr)
-
     def set_xyid(self,zoom=None):
         x,y=self.cat.bx,self.cat.by
         if zoom:
@@ -307,6 +332,10 @@ class TractorStamps(SimStamps):
         self.cat.set('x',x.astype(int))
         self.cat.set('y',y.astype(int))
         self.cat.set('id',self.cat.objid)
+
+    def get_mag(self,band='g'):
+        return flux2mag(self.cat.get('flux_'+band)/self.cat.get('mw_transmission_'+band))
+
 
     def apply_cuts(self):
         # Need extinction correction mag and colors
@@ -428,6 +457,7 @@ def testcase_main():
 
 def mpi_main(nproc=1,which=None,
              outdir=None,ls_dir=None,savedir=None,
+             jpeg=False,
              bricks=[]):
     """
 
@@ -436,7 +466,8 @@ def mpi_main(nproc=1,which=None,
         which: one of ['tractor','sim']
         outdir: path to coadd,tractor dirs
         ls_dir: not needed if legacy_survey_dir env var already set
-        savedir: only needed if which = tractor, where to write the hdf5 files
+        savedir: where to write the hdf5 files, outdir if None
+        jpeg: extract .jpg instead of .fits
         bricks: list bricks to make hdf5 cutouts from
     """
     assert(which in ['tractor','sim'])
@@ -444,11 +475,12 @@ def mpi_main(nproc=1,which=None,
         from mpi4py.MPI import COMM_WORLD as comm
         bricks= np.array_split(bricks, comm.size)[comm.rank]
 
+    d= dict(outdir=outdir,ls_dir=ls_dir,
+            savedir=savedir, jpeg=jpeg)
     if which == 'sim':
-        Obj= SimStamps(outdir=outdir,ls_dir=ls_dir)
+        Obj= SimStamps(**d)
     else:
-        Obj= TractorStamps(outdir=outdir,ls_dir=ls_dir,
-                           savedir=savedir)
+        Obj= TractorStamps(**d)
     
     for brick in bricks:
         Obj.run(brick)
@@ -461,34 +493,40 @@ if __name__ == '__main__':
     parser.add_argument('--which', type=str, choices=['tractor','sim'], required=True, help='whether to make training hdf5 cutouts of real (DR5) or simulated (elg_dr5_coadds) outputs') 
     parser.add_argument('--nproc', type=int, default=1, help='set to > 1 to run mpi4py') 
     parser.add_argument('--bricks_fn', type=str, default=None, help='specify a fn listing bricks to run, or a single default brick will be ran') 
+    parser.add_argument('--savedir', type=str, default=None, help='specify a fn listing bricks to run, or a single default brick will be ran') 
+    parser.add_argument('--jpeg', action='store_true', default=False, help='put jpeg images in hdf5 file instead of fits coadss') 
     args = parser.parse_args()
 
     # Data paths
+    d= dict(savedir=args.savedir,
+            jpeg=args.jpeg)
     if os.environ['HOME'] == '/home/kaylan':
         # ubuntu
-        d= dict(ls_dir=os.path.join(os.environ['HOME'],
+        d.update(ls_dir=os.path.join(os.environ['HOME'],
                                  'mydata/legacysurveydir'))
         if args.which == 'sim':
             d.update(outdir=os.path.join(os.environ['HOME'],
                                  'mydata/elg_dr5_coadds'))
         elif args.which == 'tractor':
             d.update(outdir=os.path.join(os.environ['HOME'],
-                                 'mydata/dr5_cutouts'),
-                     savedir=os.path.join(os.environ['HOME'],
-                                 'mydata/dr5_hdf5'))
+                                 'mydata/dr5_cutouts'))
+            if args.savedir is None:
+                d.update(savedir=os.path.join(os.environ['HOME'],
+                                              'mydata/dr5_hdf5'))
     else:
         # nersc
         if args.which == 'sim':
-            d=dict(outdir=os.path.join(os.environ['CSCRATCH'],
+            d.update(outdir=os.path.join(os.environ['CSCRATCH'],
                                  'obiwan_out/elg_dr5_coadds'))
         elif args.which == 'tractor':
-            d=dict(outdir='/global/project/projectdirs/cosmo/data/legacysurvey/dr5',
-                   savedir=os.path.join(os.environ['CSCRATCH'],
-                                 'obiwan_out/dr5_hdf5'))
+            d.update(outdir='/global/project/projectdirs/cosmo/data/legacysurvey/dr5')
+            if args.savedir is None:
+                d.update(savedir=os.path.join(os.environ['CSCRATCH'],
+                                              'obiwan_out/dr5_hdf5'))
     
     # Bricks to run
     if args.bricks_fn is None:
-        bricks= ['1126p220']
+        bricks= ['1211p060'] #['1126p220']
     else:
         bricks= np.loadtxt(args.bricks_fn,dtype=str)
 
