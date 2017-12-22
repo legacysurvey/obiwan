@@ -14,7 +14,7 @@ class plotImage(object):
             use img, need its shape at least, see circles()
     """
     def imshow(self,img,ax,qs=[0.5,99.5]):
-        if img.shape[-1] == 3:
+        if (img.shape[-1] == 3) | (img.shape[0] == 3):
             #minmax=np.percentile(np.sum(img,axis=2),q=qs)
             minmax=[None,None]
             cmap=None
