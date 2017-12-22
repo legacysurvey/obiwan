@@ -14,10 +14,16 @@ Science Being Done
 
 The following science is being done
 
+Changelog
+----------
+
+* :doc:`changes`
 
 Indices and tables
-==================
+------------------
 
 * :ref:`genindex`
 * :ref:`modindex`
 * :ref:`search`
+
+

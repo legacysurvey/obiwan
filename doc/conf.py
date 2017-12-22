@@ -83,24 +83,18 @@ import pandas as pd
 def get_modules(name):
     assert(name in ['obiwan','tests','qa','tensorflow'])
     rel_path= get_rel_path(name)
-    print('name=%s, rel_path=' % name,rel_path)
     mods=glob(os.path.join(rel_path,"*.py"))
     mods= [(mod.replace('../py/','')
                .replace('../tests/','tests/')
                .replace('.py','')
                .replace('/','.')) 
            for mod in mods]
-    print('mods=',mods)
-    print('get_rm_modules=',get_rm_modules(name))
-    print(pd.Series(get_rm_modules(name)).isin(mods).iloc[:])
     suffix= (get_rel_path(name).replace('../py/','')
                                .replace('../tests/','tests/')
                                .replace('.py','')
                                .replace('/','.')) 
     for key in get_rm_modules(name):
-        print('name=%s, removing=%s' % (name,key))
         key= suffix + '.' + key
-        print('name=%s, removing=%s' % (name,key))
         mods.remove(key)
     return mods
 
@@ -248,7 +242,7 @@ napoleon_include_private_with_doc = True
 # building process.
 autodoc_mock_imports = ['astrometry','tractor','galsim', 
                         'legacypipe','theValidator',
-                        'legacypipe.runbrick',
+                        'legacypipe.runbrick','run_brick',
                         'legacypipe.decam',
                         'legacypipe.survey',
                         'astrometry.libkd.spherematch',
@@ -258,6 +252,8 @@ autodoc_mock_imports = ['astrometry','tractor','galsim',
                         'tractor.sfd',
                         'tractor.brightness',
                         'theValidator.catalogues',
+                        'Tractor', 'PointSource', 'Image',
+                        'NanoMaggies', 'Catalog', 'RaDecPos',
                         ]
 
 # -- Options for HTML output ----------------------------------------------
