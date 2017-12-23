@@ -3,22 +3,47 @@
 Tutorials
 ==========
 
-The following Jupyter notebooks give key insights into Obiwan
+Each section below shows lessons learned via ipython notebooks and/or exploratory data analysis.
 
+Test Cases
+----------
 .. toctree::
   :maxdepth: 3
 
   nb/TestCases.ipynb
 
-First, lets look at the Data Release-like files that Obiwan creates.
+Modeling the color, shape, and redshift of real (ELG-like) galaxies
+--------------------------------------------------------------------
 
-10 deg2 Test Region
--------------------
+.. toctree::
+  :maxdepth: 3
 
-Production run described in :ref:'PRODUCTION_RUN.md'. 
-* Sources are clustered in the Data Base :ref:`nb/10deg2_region.ipynb#Sources-are-clustered-in-the-Data-Base`
+  nb/eBOSS_DESI_Priors.ipynb
 
-* :ref:`Early coadds <nb/TestCases.ipynb#Early-coadds:-elg-grz>`
+
+Test Region: 10 deg2
+---------------------
+
+The first true test of Obiwan was a 10 deg2 test region, described here :ref:`PRODUCTION_RUN.md`. 
+
+.. toctree::
+  :maxdepth: 3
+
+  nb/10deg2_region.ipynb
+
+
+Correlation Functions
+---------------------
+
+We use `nbodykit` to compute correlation functions. The randoms are Obiwan Randoms.
+
+.. toctree::
+  :maxdepth: 3
+
+  nb/AngCorr_Func.ipynb
+
+.. _nbodykit: http://github.com/bccp/nbodykit
+
 
 
 
