@@ -277,7 +277,7 @@ html_theme_options = {
     'navbar_title': 'Obiwan',
     'navbar_site_name': 'Pages',
     'navbar_pagenav_name': 'This Page',
-    'navbar_fixed_top': 'true',
+    'navbar_fixed_top': 'false',
     'source_link_position': 'none',
     #'bootswatch_theme': 'cosmo',
     #'bootswatch_theme': 'lumen',

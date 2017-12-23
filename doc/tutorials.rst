@@ -3,16 +3,27 @@
 Tutorials
 ==========
 
-Jupyter notebooks for getting you familiar with the outputs of the code.
+The following Jupyter notebooks give key insights into Obiwan
 
-:ref:`Travis continuous integration tests of the entire pipeline <nb/TestCases.ipynb>`
-----------------------------------------------------------------------------------------
+.. toctree::
+  :maxdepth: 3
 
-The module :mod:`tests.end_to_end.test_datasets` carries out these tests. See the visualizations below for what these tests do. 
+  nb/TestCases.ipynb
 
-* :ref:`Stars <nb/TestCases.ipynb#star:-testcase_DR_z>`
-* :ref:`Galaxies <nb/TestCases.ipynb#allblobs=False:-testcase_DR_z>`
-* :ref:`Sources on the edges of images <nb/TestCases.ipynb#onedge:-testcase_DR_z>`
+First, lets look at the Data Release-like files that Obiwan creates.
+
+10 deg2 Test Region
+-------------------
+
+Production run described in :ref:'PRODUCTION_RUN.md'. 
+* Sources are clustered in the Data Base :ref:`nb/10deg2_region.ipynb#Sources-are-clustered-in-the-Data-Base`
+
 * :ref:`Early coadds <nb/TestCases.ipynb#Early-coadds:-elg-grz>`
+
+
+
+
+
+
 
 
