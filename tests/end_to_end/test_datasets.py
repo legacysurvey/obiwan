@@ -4,6 +4,8 @@ from __future__ import print_function
 import os
 import matplotlib.pyplot as plt
 import numpy as np
+import re
+import sys
 
 import fitsio
 import photutils
@@ -81,18 +83,20 @@ class Testcase(object):
     """
 
     def __init__(self, name='testcase_DR5_z',dataset='DR5',
-                 obj='elg',
+                 obj='elg',rowstart=0,
                  add_noise=False,all_blobs=False,
-                 onedge=False,
-                 early_coadds=False):
+                 onedge=False, early_coadds=False,
+                 checkpoint=False):
         assert(dataset in DATASETS)
         self.name= name
         self.dataset= dataset
         self.obj= obj
+        self.rowstart= rowstart
         self.all_blobs= all_blobs
         self.add_noise= add_noise
         self.onedge= onedge
         self.early_coadds= early_coadds
+        self.checkpoint= checkpoint
         self.outname= 'out_%s_%s' % (self.name,self.obj)
         if self.all_blobs:
             self.outname += '_allblobs'
@@ -104,6 +108,7 @@ class Testcase(object):
             self.outname += '_coadds'
         self.outdir= os.path.join(os.path.dirname(__file__), 
                                   self.outname)
+        self.logfn=os.path.join(self.outdir,'log.txt')
         
         if '_grz' in self.name:
             self.brick='0285m165' 
@@ -127,13 +132,23 @@ class Testcase(object):
             extra_cmd_line += ['--all_blobs']
         if self.early_coadds:
             extra_cmd_line += ['--early_coadds']
+        if self.checkpoint:
+            # Run through fitblobs but don't cleanup
+            checkpoint_fn= os.path.join(self.outdir,
+                            'checkpoint',self.brick[:3],self.brick,
+                            'checkpoint_rs%d.pickle' % self.rowstart)
+            extra_cmd_line += ['--checkpoint',checkpoint_fn,
+                               '--stage','fitblobs',
+                               '--no_cleanup']
 
         randoms_fn= os.path.join(os.environ["LEGACY_SURVEY_DIR"], 
                                  'randoms_%s.fits' % self.obj)
         if self.onedge:
             randoms_fn= randoms_fn.replace('.fits','_onedge.fits')
 
-        cmd_line=['--dataset', self.dataset, '-b', self.brick, '-n', '4', 
+
+        cmd_line=['--dataset', self.dataset, '-b', self.brick, 
+                  '-rs',str(self.rowstart), '-n', '4', 
                   '--zoom', str(self.zoom[0]), str(self.zoom[1]), 
                             str(self.zoom[2]), str(self.zoom[3]),
                   '-o', self.obj, '--outdir', self.outdir,
@@ -141,7 +156,26 @@ class Testcase(object):
         parser= get_parser()
         args = parser.parse_args(args=cmd_line)
 
+        if self.checkpoint:
+            # Globally redirect stdout
+            if os.path.exists(self.logfn):
+                os.remove(self.logfn)
+            try:
+                os.makedirs(os.path.dirname(self.logfn))
+            except OSError:
+                pass # already exists
+            sys.stdout = open(self.logfn, "w")
+
         main(args=args)
+
+        if self.checkpoint:
+            # Reset stdout
+            sys.stdout = sys.__stdout__
+            # The checkpoint file and log should exist
+            assert(os.path.exists(checkpoint_fn))
+            assert(os.path.exists(self.logfn))
+
+
 
 
 class AnalyzeTestcase(Testcase):
@@ -359,13 +393,27 @@ class AnalyzeTestcase(Testcase):
                     self.obitractor[itrac].get('flux_'+b)
             print('delta_modelflux',diff) 
             assert(np.all(np.abs(diff) < self.tol['modelflux']))
-        print('passed')
+        print('passed: Numeric Tests')
+
+    def qualitative_tests(self):
+        """T: TestcaseOutputs() object """
+        if self.checkpoint:
+            # log file is assumed to exist and it must have
+            # skipped the correct number of blobs
+            assert(self.logfn)
+            assert(os.path.exists(self.logfn))
+            with open(self.logfn,'r') as foo:
+                text= foo.read()
+            foundIt= re.search(r'Skipping\s4\sblobs\sfrom\scheckpoint\sfile', text)
+            assert(foundIt)
+        print('passed: Qualitative Tests')
 
 
-def test_cases(z=True,grz=True,
+def test_case(z=True,grz=False,
                obj='elg',
                add_noise=False,all_blobs=False,
                onedge=False, early_coadds=False,
+               checkpoint=False,
                dataset='DR5'):
     """
     Args:
@@ -379,54 +427,59 @@ def test_cases(z=True,grz=True,
     d= dict(obj=obj,
             add_noise=add_noise,all_blobs=all_blobs,
             onedge=onedge,early_coadds=early_coadds,
+            checkpoint=checkpoint,
             dataset=dataset)    
     if z:
         d.update(name='testcase_DR5_z')
-        T= Testcase(**d)
-        T.run()
-
-        if not early_coadds:
-            A= AnalyzeTestcase(**d)
-            A.load_outputs()
-            A.simcat_xy()
-            A.plots()
-            A.numeric_tests()
-
-    if grz:
+    elif grz:
         d.update(name='testcase_DR5_grz')
-        T= Testcase(**d)
-        T.run()
 
-        if not early_coadds:
-            A= AnalyzeTestcase(**d)
+    T= Testcase(**d)
+    T.run()
+    if checkpoint:
+        # Rerun to see whether checkpoint is used
+        T.run() 
+
+    if not early_coadds:
+        A= AnalyzeTestcase(**d)
+        if not checkpoint:
+            # checkpoint doesn't run cleanup
             A.load_outputs()
             A.simcat_xy()
             A.plots()
             A.numeric_tests()
+        A.qualitative_tests()
+
 
 def test_main():
     """travis CI"""
     d=dict(z=True,grz=False,
            obj='elg',
            all_blobs=False,onedge=False,
-           early_coadds=False)
+           early_coadds=False,
+           checkpoint=False)
 
     d.update(early_coadds=True)
-    test_cases(**d)
+    test_case(**d)
     
     d.update(early_coadds=False)
-    test_cases(**d)
+    test_case(**d)
     d.update(all_blobs=True)
-    test_cases(**d)
+    test_case(**d)
 
     d.update(all_blobs=False,onedge=True)
-    test_cases(**d)
+    test_case(**d)
 
     d.update(obj='star',onedge=False)
-    test_cases(**d)
+    test_case(**d)
 
     d.update(obj='elg',z=False,grz=True)
-    test_cases(**d)
+    test_case(**d)
+
+    d.update(z=True,grz=False,
+             all_blobs=False,
+             checkpoint=True)
+    test_case(**d)
 
 
 if __name__ == "__main__":
@@ -436,12 +489,16 @@ if __name__ == "__main__":
     d=dict(z=True,grz=False,
            obj='elg',
            all_blobs=False,onedge=False,
-           early_coadds=False)
+           early_coadds=False,
+           checkpoint=False)
+
+    test_main()
     
     #d.update(early_coadds=True)
-    #test_cases(**d)
+    #test_case(**d)
 
-    d.update(early_coadds=False)
-    test_cases(**d)
-
+    #d.update(z=True,grz=False,
+    #         all_blobs=False,
+    #         checkpoint=True)
+    #test_case(**d)
     
