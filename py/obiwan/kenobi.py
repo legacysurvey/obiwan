@@ -594,6 +594,7 @@ def get_parser():
     parser.add_argument('-o', '--objtype', type=str, choices=['star','elg', 'lrg', 'qso'], default='star', required=True) 
     parser.add_argument('-b', '--brick', type=str, default='2428p117', required=True)
     parser.add_argument('--outdir', default='./', required=False)
+    parser.add_argument('--logfn', default='./', required=False)
     parser.add_argument('-n', '--nobj', type=int, default=500, metavar='', 
                         help='number of objects to simulate (required input)')
     parser.add_argument('-rs', '--rowstart', type=int, default=0, metavar='', 
@@ -614,8 +615,10 @@ def get_parser():
     parser.add_argument('-testA','--image_eq_model', action="store_true", help="set to set image,inverr by model only (ignore real image,invvar)")
     parser.add_argument('--all-blobs', action='store_true', 
                         help='Process all the blobs, not just those that contain simulated sources.')
-    #parser.add_argument('--stage', choices=['tims', 'image_coadds', 'srcs', 'fitblobs', 'coadds'],
-    #                    type=str, default=None, metavar='', help='Run up to the given stage')
+    parser.add_argument('--stage', choices=['tims', 'image_coadds', 'srcs', 'fitblobs', 'coadds'],
+                        type=str, default=None, metavar='', help='Run through the stage then stop')
+    parser.add_argument('--no_cleanup', action='store_true',default=False,
+                        help='useful for test_checkpoint function')
     parser.add_argument('--early_coadds', action='store_true',default=False,
                         help='add this option to make the JPGs before detection/model fitting')
     parser.add_argument('--bricklist',action='store',default='bricks-eboss-ngc.txt',\
@@ -624,6 +627,8 @@ def get_parser():
                         help='if using mpi4py')
     parser.add_argument('--all_blobs', action='store_true',default=False,
                         help='fit models to all blobs, not just those containing sim sources')
+    parser.add_argument('--checkpoint', default=None,
+                        help='fn for checkpoint file, None for no checkpointing')
     parser.add_argument('-v', '--verbose', action='store_true', help='toggle on verbose output')
     return parser
  
@@ -753,6 +758,10 @@ def get_runbrick_setup(**kwargs):
     cmd_line= ['--no-write', '--skip','--force-all',
            '--zoom','%d' % zm[0],'%d' % zm[1],'%d' % zm[2],'%d' % zm[3],
            '--no-wise', '--threads','%d' % kwargs['threads']]
+    if kwargs['checkpoint']:
+        cmd_line += ['--checkpoint',kwargs['checkpoint']]
+    if kwargs['stage']:
+        cmd_line += ['--stage', kwargs['stage']]
     if kwargs['early_coadds']:
         cmd_line += ['--early-coadds', '--stage', 'image_coadds']
     #if kwargs['stage']:
@@ -811,6 +820,7 @@ def do_one_chunk(d=None):
     print('runbrick_kwards= ',runbrick_kwargs)
     # Run it: run_brick(brick, survey obj, **kwargs)
     np.random.seed(d['seed'])
+    print(runbrick_kwargs)
     run_brick(d['brickname'], simdecals, **runbrick_kwargs)
 
 def dobash(cmd):
@@ -1018,6 +1028,7 @@ def main(args=None):
     # Store args in dict for easy func passing
     kwargs=dict(Samp=Samp,\
                 brickname=brickname, \
+                checkpoint=args.checkpoint, \
                 seed= seed,
                 decals_sim_dir= decals_sim_dir,\
                 brickwcs= brickwcs, \
@@ -1053,7 +1064,8 @@ def main(args=None):
     do_one_chunk(d=kwargs)
     t0= ptime('do_one_chunk',t0)
     # Clean up output
-    do_ith_cleanup(d=kwargs)
+    if args.no_cleanup == False:
+        do_ith_cleanup(d=kwargs)
     t0= ptime('do_ith_cleanup',t0)
     log.info('All done!')
     return 0
