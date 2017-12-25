@@ -627,8 +627,8 @@ def get_parser():
                         help='if using mpi4py')
     parser.add_argument('--all_blobs', action='store_true',default=False,
                         help='fit models to all blobs, not just those containing sim sources')
-    parser.add_argument('--checkpoint', default=None,
-                        help='fn for checkpoint file, None for no checkpointing')
+    parser.add_argument('--checkpoint', action='store_true',default=False,
+                        help='turn on checkpointing')
     parser.add_argument('-v', '--verbose', action='store_true', help='toggle on verbose output')
     return parser
  
@@ -734,6 +734,11 @@ def create_ith_simcat(d=None):
     d['simcat']= simcat
     d['simcat_dir']= simcat_dir
 
+def get_checkpoint_fn(outdir,brick,rowstart):
+    return os.path.join(outdir,'checkpoint',
+                        brick[:3],brick,
+                        'checkpoint_rs%d.pickle' % rowstart)
+
 def get_runbrick_setup(**kwargs):
     """Convert runbrick.py cmd line options into `**kwargs` for run_brick()
     
@@ -759,7 +764,9 @@ def get_runbrick_setup(**kwargs):
            '--zoom','%d' % zm[0],'%d' % zm[1],'%d' % zm[2],'%d' % zm[3],
            '--no-wise', '--threads','%d' % kwargs['threads']]
     if kwargs['checkpoint']:
-        cmd_line += ['--checkpoint',kwargs['checkpoint']]
+        checkpoint_fn= get_checkpoint_fn(kwargs['outdir'],
+                        kwargs['brick'], kwargs['rowstart'])
+        cmd_line += ['--checkpoint',checkpoint_fn]
     if kwargs['stage']:
         cmd_line += ['--stage', kwargs['stage']]
     if kwargs['early_coadds']:
@@ -856,6 +863,7 @@ def do_ith_cleanup(d=None):
     for dr in drs:
         dobash('mkdir -p %s/%s/%s/%s/%s' % \
                 (base,dr,bri,brick,rsdir))
+
     # obiwan
     dobash('mv %s/*.fits %s/obiwan/%s/%s/%s/' % \
             (outdir,  base,bri,brick,rsdir))
