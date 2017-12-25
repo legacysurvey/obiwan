@@ -11,7 +11,7 @@ from setuptools import setup, find_packages
 #
 # DESI support code.
 #
-from desiutil.setup import DesiTest, DesiVersion, get_version
+#from desiutil.setup import DesiTest, DesiVersion, get_version
 #
 # Begin setup
 #
@@ -28,7 +28,7 @@ setup_keywords['url'] = 'https://github.com/desihub/obiwan'
 #
 # END OF SETTINGS THAT NEED TO BE CHANGED.
 #
-setup_keywords['version'] = get_version(setup_keywords['name'])
+setup_keywords['version'] = '1.2.0' #get_version(setup_keywords['name'])
 #
 # Use README.rst as long_description.
 #
@@ -52,7 +52,7 @@ setup_keywords['zip_safe'] = False
 setup_keywords['use_2to3'] = False
 setup_keywords['packages'] = find_packages('py')
 setup_keywords['package_dir'] = {'':'py'}
-setup_keywords['cmdclass'] = {'version': DesiVersion,'test': DesiTest}
+#setup_keywords['cmdclass'] = {'version': DesiVersion,'test': DesiTest}
 setup_keywords['test_suite']='{name}.test.{name}_test_suite.{name}_test_suite'.format(**setup_keywords)
 #
 # Autogenerate command-line scripts.

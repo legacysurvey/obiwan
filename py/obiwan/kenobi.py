@@ -10,7 +10,6 @@ if __name__ == '__main__':
     import matplotlib
     matplotlib.use('Agg')
 import h5py
-import galsim
 import os
 import sys
 import shutil
@@ -26,7 +25,6 @@ from pickle import dump
 from glob import glob
 import csv
 
-
 from astropy.table import Table, Column, vstack
 from astropy.io import fits
 #from astropy import wcs as astropy_wcs
@@ -36,24 +34,23 @@ import fitsio
 from astropy import units
 from astropy.coordinates import SkyCoord
 
-from astrometry.libkd.spherematch import match_radec
-
-from tractor.psfex import PsfEx, PsfExModel
-from tractor.basics import GaussianMixtureEllipsePSF, RaDecPos
-
+from obiwan.db_tools import getSrcsInBrick 
+from obiwan.common import get_outdir_runbrick, get_brickinfo_hack
 
 from legacypipe.runbrick import run_brick
 from legacypipe.decam import DecamImage
 from legacypipe.survey import LegacySurveyData, wcs_for_brick
 
-from obiwan.db_tools import getSrcsInBrick 
-from obiwan.common import get_outdir_runbrick, get_brickinfo_hack
-from tractor.sfd import SFDMap
-
 from astrometry.util.fits import fits_table, merge_tables
 from astrometry.util.ttime import Time
+from astrometry.libkd.spherematch import match_radec
+
+from tractor.psfex import PsfEx, PsfExModel
+from tractor.basics import GaussianMixtureEllipsePSF, RaDecPos
+from tractor.sfd import SFDMap
 
 from theValidator.catalogues import CatalogueFuncs
+import galsim
 
 def write_dict(fn,d):
     '''d -- dictionary'''
@@ -597,6 +594,7 @@ def get_parser():
     parser.add_argument('-o', '--objtype', type=str, choices=['star','elg', 'lrg', 'qso'], default='star', required=True) 
     parser.add_argument('-b', '--brick', type=str, default='2428p117', required=True)
     parser.add_argument('--outdir', default='./', required=False)
+    parser.add_argument('--logfn', default='./', required=False)
     parser.add_argument('-n', '--nobj', type=int, default=500, metavar='', 
                         help='number of objects to simulate (required input)')
     parser.add_argument('-rs', '--rowstart', type=int, default=0, metavar='', 
@@ -617,8 +615,10 @@ def get_parser():
     parser.add_argument('-testA','--image_eq_model', action="store_true", help="set to set image,inverr by model only (ignore real image,invvar)")
     parser.add_argument('--all-blobs', action='store_true', 
                         help='Process all the blobs, not just those that contain simulated sources.')
-    #parser.add_argument('--stage', choices=['tims', 'image_coadds', 'srcs', 'fitblobs', 'coadds'],
-    #                    type=str, default=None, metavar='', help='Run up to the given stage')
+    parser.add_argument('--stage', choices=['tims', 'image_coadds', 'srcs', 'fitblobs', 'coadds'],
+                        type=str, default=None, metavar='', help='Run through the stage then stop')
+    parser.add_argument('--no_cleanup', action='store_true',default=False,
+                        help='useful for test_checkpoint function')
     parser.add_argument('--early_coadds', action='store_true',default=False,
                         help='add this option to make the JPGs before detection/model fitting')
     parser.add_argument('--bricklist',action='store',default='bricks-eboss-ngc.txt',\
@@ -627,6 +627,8 @@ def get_parser():
                         help='if using mpi4py')
     parser.add_argument('--all_blobs', action='store_true',default=False,
                         help='fit models to all blobs, not just those containing sim sources')
+    parser.add_argument('--checkpoint', action='store_true',default=False,
+                        help='turn on checkpointing')
     parser.add_argument('-v', '--verbose', action='store_true', help='toggle on verbose output')
     return parser
  
@@ -732,6 +734,11 @@ def create_ith_simcat(d=None):
     d['simcat']= simcat
     d['simcat_dir']= simcat_dir
 
+def get_checkpoint_fn(outdir,brick,rowstart):
+    return os.path.join(outdir,'checkpoint',
+                        brick[:3],brick,
+                        'checkpoint_rs%d.pickle' % rowstart)
+
 def get_runbrick_setup(**kwargs):
     """Convert runbrick.py cmd line options into `**kwargs` for run_brick()
     
@@ -756,6 +763,12 @@ def get_runbrick_setup(**kwargs):
     cmd_line= ['--no-write', '--skip','--force-all',
            '--zoom','%d' % zm[0],'%d' % zm[1],'%d' % zm[2],'%d' % zm[3],
            '--no-wise', '--threads','%d' % kwargs['threads']]
+    if kwargs['checkpoint']:
+        checkpoint_fn= get_checkpoint_fn(kwargs['outdir'],
+                        kwargs['brick'], kwargs['rowstart'])
+        cmd_line += ['--checkpoint',checkpoint_fn]
+    if kwargs['stage']:
+        cmd_line += ['--stage', kwargs['stage']]
     if kwargs['early_coadds']:
         cmd_line += ['--early-coadds', '--stage', 'image_coadds']
     #if kwargs['stage']:
@@ -814,6 +827,7 @@ def do_one_chunk(d=None):
     print('runbrick_kwards= ',runbrick_kwargs)
     # Run it: run_brick(brick, survey obj, **kwargs)
     np.random.seed(d['seed'])
+    print(runbrick_kwargs)
     run_brick(d['brickname'], simdecals, **runbrick_kwargs)
 
 def dobash(cmd):
@@ -849,6 +863,7 @@ def do_ith_cleanup(d=None):
     for dr in drs:
         dobash('mkdir -p %s/%s/%s/%s/%s' % \
                 (base,dr,bri,brick,rsdir))
+
     # obiwan
     dobash('mv %s/*.fits %s/obiwan/%s/%s/%s/' % \
             (outdir,  base,bri,brick,rsdir))
@@ -1021,6 +1036,7 @@ def main(args=None):
     # Store args in dict for easy func passing
     kwargs=dict(Samp=Samp,\
                 brickname=brickname, \
+                checkpoint=args.checkpoint, \
                 seed= seed,
                 decals_sim_dir= decals_sim_dir,\
                 brickwcs= brickwcs, \
@@ -1056,7 +1072,8 @@ def main(args=None):
     do_one_chunk(d=kwargs)
     t0= ptime('do_one_chunk',t0)
     # Clean up output
-    do_ith_cleanup(d=kwargs)
+    if args.no_cleanup == False:
+        do_ith_cleanup(d=kwargs)
     t0= ptime('do_ith_cleanup',t0)
     log.info('All done!')
     return 0

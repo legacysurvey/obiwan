@@ -1,43 +1,39 @@
-=========================================
-Welcome to obiwan's documentation!
-=========================================
+=======
+Obiwan
+=======
 
-Introduction
-============
+Obiwan is a code to forward model blah.
 
-This is the documentation for obiwan.
-
-Contents
-========
-
-.. _`the toctree documentation`: http://sphinx-doc.org/markup/toctree.html
+Use the links at the top of the page to learn more about the code or see the table of contents below.
 
 .. toctree::
-   :maxdepth: 1
+   :caption: Table of Contents
 
-   priors.rst
-   draw_radec_color_z.rst
-   kenobi.rst
-   changes.rst
+Science Being Done
+------------------
 
-The obiwan package/API
-=========================
+The following science is being done
 
-.. automodule:: obiwan
-    :members:
+:ref:`Travis continuous integration tests of the entire pipeline <nb/TestCases.ipynb>`
+----------------------------------------------------------------------------------------
 
-.. automodule:: obiwan.kenobi
-    :members:
+The module :mod:`tests.end_to_end.test_datasets` carries out these tests. See the visualizations below for what these tests do. 
 
-.. automodule:: obiwan.priors
-    :members:
+* :ref:`Stars <nb/TestCases.ipynb#star:-testcase_DR_z>`
+* :ref:`Galaxies <nb/TestCases.ipynb#allblobs=False:-testcase_DR_z>`
+* :ref:`Sources on the edges of images <nb/TestCases.ipynb#onedge:-testcase_DR_z>`
+* :ref:`Early coadds <nb/TestCases.ipynb#Early-coadds:-elg-grz>`
 
-.. automodule:: obiwan.draw_radec_color_z
-    :members:
+Changelog
+----------
+
+* :doc:`changes`
 
 Indices and tables
-==================
+------------------
 
 * :ref:`genindex`
 * :ref:`modindex`
 * :ref:`search`
+
+

@@ -5,6 +5,7 @@ function to query PSQL db for all sources in a Brick
 import psycopg2
 import os
 import numpy as np
+
 from astrometry.util.fits import fits_table, merge_tables
 
 class PsqlWorker(object):

@@ -41,12 +41,15 @@ except ImportError:
 # ones.
 extensions = [
     'sphinx.ext.autodoc',
+    'sphinx.ext.autosummary',
     'sphinx.ext.intersphinx',
-    'sphinx.ext.todo',
     'sphinx.ext.mathjax',
+    'sphinx.ext.todo',
     'sphinx.ext.viewcode',
+    'nbsphinx',
     napoleon_extension
 ]
+nbsphinx_execute = 'never'
 
 # Configuration for intersphinx, copied from astropy.
 intersphinx_mapping = {
@@ -59,8 +62,114 @@ intersphinx_mapping = {
     'h5py': ('http://docs.h5py.org/en/latest/', None)
     }
 
+from glob import glob
+def get_rel_path(name):
+    return dict(tests= '../tests/end_to_end',
+           obiwan= '../py/obiwan',
+           qa= '../py/obiwan/qa',
+           tensorflow= '../py/obiwan/tensorflow')[name]
+    
+def get_rm_modules(name):
+    general= ['__init__']
+    return dict(tests=['test_decam_rex'],
+                obiwan=['_version','mk_fits_image','priors','priors_MoG',
+                        'runs','time_per_brick'],
+                qa=['aaron_healpix','merge_and_match_ccds',
+                    'plots','tally'],
+                tensorflow=[]
+                )[name] + general
+
+import pandas as pd
+def get_modules(name):
+    assert(name in ['obiwan','tests','qa','tensorflow'])
+    rel_path= get_rel_path(name)
+    mods=glob(os.path.join(rel_path,"*.py"))
+    mods= [(mod.replace('../py/','')
+               .replace('../tests/','tests/')
+               .replace('.py','')
+               .replace('/','.')) 
+           for mod in mods]
+    suffix= (get_rel_path(name).replace('../py/','')
+                               .replace('../tests/','tests/')
+                               .replace('.py','')
+                               .replace('/','.')) 
+    for key in get_rm_modules(name):
+        key= suffix + '.' + key
+        mods.remove(key)
+    return mods
+
+
+def create_api_rst():
+    """
+    Credit: https://github.com/bccp/nbodykit
+
+    Produce a file "modules.rst" that includes an ``autosummary`` directive
+    listing all of the modules in nbodykit.
+
+    The ``toctree`` option is set such that the corresponding rst files
+    will be auto-generated in ``source/api/_autosummary``.
+    """
+    # current directory
+    cur_dir = os.path.abspath(os.path.dirname(__file__))
+    output_file = os.path.join(cur_dir, 'api.rst')
+    with open(output_file, 'w') as ff:
+        title = "API Documentation"
+        title += "\n" + "="*len(title) + "\n"
+        title = ":orphan:\n\n" + title
+        ff.write(title + "\n")
+        section=  "Modules"
+        section += "\n" + "-"*len(section) + "\n"
+        ff.write(section+".. autosummary::\n\t:toctree: _autosummary\n\t:template: module.rst\n\n")
+        # modules= ['obiwan.common',
+        #           'obiwan.draw_radec_color_z',
+        #           'obiwan.kenobi']
+        modules= get_modules('obiwan')
+        for module in modules:
+            ff.write("\t" + module + "\n")
+        ff.write("\n")
+        section=  "Tests"
+        section += "\n" + "-"*len(section) + "\n"
+        ff.write(section+".. autosummary::\n\t:toctree: _autosummary\n\t:template: module.rst\n\n")
+        # modules= ['tests.end_to_end.test_datasets']
+        modules= get_modules('tests')
+        for module in modules:
+            ff.write("\t" + module + "\n")
+        ff.write("\n")
+        section=  "Compute Jobs"
+        section += "\n" + "-"*len(section) + "\n"
+        ff.write(section+".. autosummary::\n\t:toctree: _autosummary\n\t:template: module.rst\n\n")
+        #modules= ['obiwan.qa.cpu_hours']
+        modules= get_modules('qa')
+        for module in modules:
+            ff.write("\t" + module + "\n")
+        ff.write("\n")
+        section=  "Deep Learning"
+        section += "\n" + "-"*len(section) + "\n"
+        ff.write(section+".. autosummary::\n\t:toctree: _autosummary\n\t:template: module.rst\n\n")
+        #modules= ['obiwan.tensorflow.cnn']
+        modules= get_modules('tensorflow')
+        for module in modules:
+            ff.write("\t" + module + "\n")
+        ff.write("\n")
+
+    # make the output directory if it doesn't exist
+    output_path = os.path.join(cur_dir, 'api', '_autosummary')
+    if not os.path.exists(output_path):
+        os.makedirs(output_path)
+
+def setup(app):
+    """
+    Credit: https://github.com/bccp/nbodykit
+
+    Setup steps to prepare the docs build.
+    """
+    # automatically generate api.rst file containing all modules
+    # in a autosummary directive listing with 'toctree' option
+    create_api_rst()
+
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
+autosummary_generate = True 
 
 # The suffix of source filenames.
 source_suffix = '.rst'
@@ -73,7 +182,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = u'obiwan'
-copyright = u'2014-2017, DESI Collaboration'
+copyright = u'2014-2018, Kaylan Burleigh, John Moustakas'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
@@ -99,7 +208,7 @@ release = package.__version__
 
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
-exclude_patterns = ['_build']
+exclude_patterns = ['_build','**.ipynb_checkpoints']
 
 # The reST default role (used for this markup: `text`) to use for all
 # documents.
@@ -131,7 +240,21 @@ napoleon_include_private_with_doc = True
 # This value contains a list of modules to be mocked up. This is useful when
 # some external dependencies are not met at build time and break the
 # building process.
-# autodoc_mock_imports = ['astropy', 'astropy.io']
+autodoc_mock_imports = ['astrometry','tractor','galsim', 
+                        'legacypipe','theValidator',
+                        'legacypipe.runbrick','run_brick',
+                        'legacypipe.decam',
+                        'legacypipe.survey',
+                        'astrometry.libkd.spherematch',
+                        'astrometry.util.ttime',
+                        'tractor.psfex',
+                        'tractor.basics',
+                        'tractor.sfd',
+                        'tractor.brightness',
+                        'theValidator.catalogues',
+                        'Tractor', 'PointSource', 'Image',
+                        'NanoMaggies', 'Catalog', 'RaDecPos',
+                        ]
 
 # -- Options for HTML output ----------------------------------------------
 
@@ -139,12 +262,33 @@ napoleon_include_private_with_doc = True
 # a list of builtin themes.
 #html_theme = 'default'
 #html_theme = 'haiku'
-try:
-    import sphinx_rtd_theme
-    html_theme = 'sphinx_rtd_theme'
-    html_theme_path = [sphinx_rtd_theme.get_html_theme_path()]
-except ImportError:
-    pass
+
+import sphinx_rtd_theme
+#html_theme = 'sphinx_rtd_theme'
+#html_theme_path = [sphinx_rtd_theme.get_html_theme_path()]
+#import juliadoc
+#html_theme = 'julia'
+#html_theme_path = [juliadoc.get_theme_dir()]
+#html_sidebars = juliadoc.default_sidebars()
+import sphinx_bootstrap_theme
+html_theme = 'bootstrap'
+html_theme_path = sphinx_bootstrap_theme.get_html_theme_path()
+html_theme_options = {
+    'navbar_title': 'Obiwan',
+    'navbar_site_name': 'Pages',
+    'navbar_pagenav_name': 'This Page',
+    'navbar_fixed_top': 'false',
+    'source_link_position': 'none',
+    #'bootswatch_theme': 'cosmo',
+    #'bootswatch_theme': 'lumen',
+    #'bootswatch_theme': 'sandstone',
+    'bootswatch_theme': 'spacelab',
+    'navbar_links': [
+    ("API", "api"),
+    ("Tutorials", "tutorials"),
+    ("Deep Learning",'deeplearning')
+    ],
+}
 
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the
@@ -222,7 +366,7 @@ except ImportError:
 #html_file_suffix = None
 
 # Output file base name for HTML help builder.
-htmlhelp_basename = 'desitemplatedoc'
+htmlhelp_basename = 'obiwandoc'
 
 
 # -- Options for LaTeX output ---------------------------------------------
@@ -242,7 +386,7 @@ latex_elements = {
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
-  ('index', 'desitemplate.tex', u'desitemplate Documentation',
+  ('index', 'obiwan.tex', u'obiwan Documentation',
    u'DESI', 'manual'),
 ]
 
@@ -272,7 +416,7 @@ latex_documents = [
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
 man_pages = [
-    ('index', 'desitemplate', u'desitemplate Documentation',
+    ('index', 'obiwan', u'obiwan Documentation',
      [u'DESI'], 1)
 ]
 
@@ -286,8 +430,8 @@ man_pages = [
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
 texinfo_documents = [
-  ('index', 'desitemplate', u'desitemplate Documentation',
-   u'DESI', 'desitemplate', 'One line description of project.',
+  ('index', 'obiwan', u'obiwan Documentation',
+   u'DESI', 'obiwan', 'One line description of project.',
    'Miscellaneous'),
 ]
 

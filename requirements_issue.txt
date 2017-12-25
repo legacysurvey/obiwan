@@ -1,4 +1,0 @@
-git+https://github.com/legacysurvey/legacypipe.git#egg=legacypipe
-git+https://github.com/GalSim-developers/GalSim.git@v1.4.4#egg=galsim
-git+https://github.com/dstndstn/tractor.git@dr5.2#egg=tractor
-git+https://github.com/dstndstn/astrometry.net.git@0.72##egg=astrometry
