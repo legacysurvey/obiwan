@@ -14,7 +14,7 @@ from astrometry.libkd.spherematch import match_radec
 from astrometry.util.fits import fits_table
 from legacypipe.survey import LegacySurveyData, wcs_for_brick
 
-from obiwan.kenobi import main,get_parser
+from obiwan.kenobi import main,get_parser, get_checkpoint_fn
 from obiwan.qa.visual import plotImage, readImage
 from obiwan.common import get_brickinfo_hack
 
@@ -86,7 +86,8 @@ class Testcase(object):
                  obj='elg',rowstart=0,
                  add_noise=False,all_blobs=False,
                  onedge=False, early_coadds=False,
-                 checkpoint=False):
+                 checkpoint=False,
+                 no_cleanup=False,stage=None):
         assert(dataset in DATASETS)
         self.name= name
         self.dataset= dataset
@@ -97,6 +98,8 @@ class Testcase(object):
         self.onedge= onedge
         self.early_coadds= early_coadds
         self.checkpoint= checkpoint
+        self.no_cleanup=no_cleanup
+        self.stage=stage
         self.outname= 'out_%s_%s' % (self.name,self.obj)
         if self.all_blobs:
             self.outname += '_allblobs'
@@ -123,7 +126,11 @@ class Testcase(object):
                                                       self.name)
          
     def run(self):
-        """run it"""
+        """run it
+
+        Args:
+            no_cleanup: don't run cleanup step
+        """
         print('Running testcase: %s' % self.name)
         extra_cmd_line = []
         if self.add_noise:
@@ -133,13 +140,11 @@ class Testcase(object):
         if self.early_coadds:
             extra_cmd_line += ['--early_coadds']
         if self.checkpoint:
-            # Run through fitblobs but don't cleanup
-            checkpoint_fn= os.path.join(self.outdir,
-                            'checkpoint',self.brick[:3],self.brick,
-                            'checkpoint_rs%d.pickle' % self.rowstart)
-            extra_cmd_line += ['--checkpoint',checkpoint_fn,
-                               '--stage','fitblobs',
-                               '--no_cleanup']
+            extra_cmd_line += ['--checkpoint']
+        if self.stage:
+            extra_cmd_line += ['--stage',self.stage]
+        if self.no_cleanup:
+            extra_cmd_line += ['--no_cleanup']
 
         randoms_fn= os.path.join(os.environ["LEGACY_SURVEY_DIR"], 
                                  'randoms_%s.fits' % self.obj)
@@ -172,7 +177,9 @@ class Testcase(object):
             # Reset stdout
             sys.stdout = sys.__stdout__
             # The checkpoint file and log should exist
-            assert(os.path.exists(checkpoint_fn))
+            ckpt_fn= get_checkpoint_fn(self.outdir,
+                              self.brick,self.rowstart)
+            assert(os.path.exists(ckpt_fn))
             assert(os.path.exists(self.logfn))
 
 
@@ -424,30 +431,37 @@ def test_case(z=True,grz=False,
         early_coadds: write coadds before model fitting and stop there
         dataset: no reason to be anything other than DR5 for these tests
     """
-    d= dict(obj=obj,
+    d= dict(obj=obj,dataset=dataset,
             add_noise=add_noise,all_blobs=all_blobs,
             onedge=onedge,early_coadds=early_coadds,
-            checkpoint=checkpoint,
-            dataset=dataset)    
+            checkpoint=checkpoint)    
     if z:
         d.update(name='testcase_DR5_z')
     elif grz:
         d.update(name='testcase_DR5_grz')
 
+    if checkpoint:
+        # create checkpoint file
+        d.update(no_cleanup=True,stage='fitblobs')
+
     T= Testcase(**d)
     T.run()
+    
     if checkpoint:
-        # Rerun to see whether checkpoint is used
-        T.run() 
+        # restart from checkpoint and finish
+        d.update(no_cleanup=False,stage=None)
+        T= Testcase(**d)
+        T.run()
+     
 
     if not early_coadds:
         A= AnalyzeTestcase(**d)
-        if not checkpoint:
-            # checkpoint doesn't run cleanup
-            A.load_outputs()
-            A.simcat_xy()
-            A.plots()
-            A.numeric_tests()
+        #if not checkpoint:
+        # checkpoint doesn't run cleanup
+        A.load_outputs()
+        A.simcat_xy()
+        A.plots()
+        A.numeric_tests()
         A.qualitative_tests()
 
 
