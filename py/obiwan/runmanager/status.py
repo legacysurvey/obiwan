@@ -170,6 +170,7 @@ class RunStatus(object):
             r'MemoryError',
             r'astropy\.extern\.configobj\.configobj\.ParseError',
             r'RuntimeError:\ Command\ failed:\ sex\ -c',
+            r'multiprocessing\/pool\.py\",\sline\s567',
             r'SystemError:\ \<built-in\ method\ flush']
         self.regex_errs_extra= ['Other','log does not exist']
 

@@ -26,7 +26,7 @@ def dobash(cmd):
     if os.system(cmd): raise ValueError
 
 if __name__ == '__main__':
-    #sacct -A desi --user=kaylanb --format=JobID,State,NNodes,Elapsed -S 11/17/17 -E 12/03/17|grep COMPLETED > my_sacct.txt
+    #sacct -A desi --user=kaylanb --format=JobID,State,NNodes,Elapsed,Start -S 11/17/17 -E 12/03/17|grep COMPLETED > my_sacct.txt
 
     from argparse import ArgumentParser
     parser = ArgumentParser()
@@ -35,7 +35,7 @@ if __name__ == '__main__':
 
     a=pd.read_csv(args.sacct_fn,
                   delim_whitespace=True,header=None,
-                  names=['slurm_id','status','num_nodes','time'])
+                  names=['slurm_id','status','num_nodes','time','start'])
 
     for i,name in zip([0,1,2],['multi_hr','min','sec']):
         a[name]= a['time'].str.split(':').str[i]
