@@ -511,8 +511,8 @@ if __name__ == "__main__":
     #d.update(early_coadds=True)
     #test_case(**d)
 
-    #d.update(z=True,grz=False,
-    #         all_blobs=False,
-    #         checkpoint=True)
-    #test_case(**d)
+    d.update(z=True,grz=False,
+             all_blobs=False,
+             checkpoint=True)
+    test_case(**d)
     

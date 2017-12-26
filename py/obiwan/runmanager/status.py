@@ -41,6 +41,13 @@ def get_deldirs(outdir,brick,rowstart,
                           do_skipids,do_more)]
     return dirs
 
+def get_checkpoint_fn(outdir,brick,rowstart):
+    return os.path.join(outdir,'checkpoint',
+                        brick[:3],brick,
+                        'checkpoint_rs%d.pickle' % int(rowstart))
+
+
+
 def get_logdir(outdir,brick,rowstart, 
                do_skipids='no',do_more='no'):
    return (get_final_dir(outdir,brick,rowstart, 
@@ -111,13 +118,13 @@ class QdoList(object):
                 logs[res].append( logfn )
         return tasks,ids,logs
 
-    def change_task_state(self,task_ids,to=None, modify=False):
+    def change_task_state(self,task_ids,to=None, modify=False,rm_files=False):
         """change qdo tasks state, for tasks with task_ids, to pending,failed, etc
 
         Args:
           to: change qdo state to this, pending,failed
-          modify: True to actually reset the qdo tasks state AND to delete
-            all output files for that task
+          rm_files: delete the output files for that task
+          modify: actually do the modifications (fail safe option)
         """
         assert(to in ['pending','failed'])
         q = qdo.connect(self.que_name)
@@ -128,19 +135,24 @@ class QdoList(object):
                 del_dirs= get_deldirs(self.outdir,brick,rs, 
                                        do_skipids=do_skipids,
                                        do_more=do_more)
+                del_fns= [get_checkpoint_fn(self.outdir,brick,rs)]
                 if modify:
                     if to == 'pending':
                         # Stuck in pending b/c slurm job timed out
                         task_obj.set_state(qdo.Task.PENDING)
-                        # rerun from scratch
-                        for dr in del_dirs:
-                            dobash('rm -r %s/*' % dr)
+                        print('id %s RUNNING --> PENDING' % task_id)
                     elif to == 'failed':
                         # Manually force to failed, keep whatever outputs have
                         task_obj.set_state(qdo.Task.FAILED)
+                        print('id %s RUNNING --> FAILED' % task_id)
+                    if rm_files:
+                        for dr in del_dirs:
+                            dobash('rm -r %s/*' % dr)
+                        for fn in del_fns:
+                            dobash('rm %s' % fn)
                 else:
                     print('set --modify to affect id=%d, which corresponds to taks_obj=' % task_id,task_obj)
-                    print('if pending, would removed:',del_dirs)
+                    print('set --rm_files to remove',del_dirs,del_fns)
             except ValueError:
                 print('cant find task_id=%d' % task_id)
 
@@ -276,14 +288,17 @@ if __name__ == '__main__':
     # Rerun tasks and delete those tasks' outputs
     if len(ids['running']) > 0:
         if args.running_to_pending:
-            Q.change_task_state(ids['running'], to='pending',modify=args.modify)
+            Q.change_task_state(ids['running'], to='pending',modify=args.modify,
+                                rm_files=False)
         elif args.running_to_failed:
-            Q.change_task_state(ids['running'], to='failed',modify=args.modify)
+            Q.change_task_state(ids['running'], to='failed',modify=args.modify,
+                                rm_files=False)
     
     if args.failed_message_to_pending:
         hasMessage= np.where(tally['failed'] == args.failed_message_to_pending)[0]
         if hasMessage.size > 0:
             theIds= np.array(ids['failed'])[hasMessage]
-            Q.change_task_state(theIds, to='pending', modify=args.modify)
+            Q.change_task_state(theIds, to='pending', modify=args.modify,
+                                rm_files=False)
 
     print('done')
