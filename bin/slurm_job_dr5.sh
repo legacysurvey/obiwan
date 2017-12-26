@@ -11,7 +11,8 @@
 export name_for_run=elg_dr5
 export randoms_db=obiwan_elg_dr5
 export dataset=dr5
-export brick=1158p195
+#export brick=1090p295
+export brick=1091p297
 export rowstart=0
 export do_skipids=no
 export do_more=no
@@ -25,6 +26,8 @@ threads=$usecores
 
 # Load production env
 source $CSCRATCH/obiwan_code/obiwan/bin/run_atnersc/bashrc_obiwan
+
+set +x
 export LEGACY_SURVEY_DIR=$obiwan_data/legacysurveydir_${dataset}
 
 # Redirect logs
@@ -53,8 +56,8 @@ export MPICH_GNI_FORK_MODE=FULLCOPY
 export MKL_NUM_THREADS=1
 export OMP_NUM_THREADS=1
 # Protect against astropy configs
-export XDG_CONFIG_HOME=/dev/shm
-srun -n $SLURM_JOB_NUM_NODES mkdir -p $XDG_CONFIG_HOME/astropy
+#export XDG_CONFIG_HOME=/dev/shm
+#srun -n $SLURM_JOB_NUM_NODES mkdir -p $XDG_CONFIG_HOME/astropy
 
 cd $obiwan_code/obiwan/py
 export dataset=`echo $dataset | tr '[a-z]' '[A-Z]'`

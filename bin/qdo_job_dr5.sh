@@ -11,14 +11,14 @@ export rowstart="$2"
 export do_skipids="$3"
 export do_more="$4"
 export object=elg
-export nobj=1000
+export nobj=500
 export threads=4
 
 # Load env, env vars
 # py2.7
 source $CSCRATCH/obiwan_code/obiwan/bin/run_atnersc/bashrc_obiwan
 # py3.5
-#source $CSCRATCH/obiwan_code/obiwan/bin/run_atnersc/prodenv_desiconda_imaging
+#source $CSCRATCH/obiwan_code/obiwan/bin/run_atnersc/bashrc_desiconda_cori
 export LEGACY_SURVEY_DIR=$obiwan_data/legacysurveydir_${dataset}
 # assert we have some new env vars
 : ${obiwan_code:?}
@@ -52,11 +52,11 @@ export OMP_NUM_THREADS=1
 # Limit memory to avoid 1 srun killing whole node
 if [ "$NERSC_HOST" = "edison" ]; then
     # 62 GB / Edison node = 65000000 kbytes
-    maxmem=65000000
+    maxmem=60000000
     let usemem=${maxmem}*${threads}/24
 else
     # 128 GB / Cori node = 65000000 kbytes
-    maxmem=134000000
+    maxmem=130000000
     let usemem=${maxmem}*${threads}/32
 fi
 echo BEFORE
@@ -66,8 +66,8 @@ echo AFTER
 ulimit -Sa
 
 # Protect against astropy configs
-export XDG_CONFIG_HOME=/dev/shm
-srun -n $SLURM_JOB_NUM_NODES mkdir -p $XDG_CONFIG_HOME/astropy
+#export XDG_CONFIG_HOME=/dev/shm
+#srun -n $SLURM_JOB_NUM_NODES mkdir -p $XDG_CONFIG_HOME/astropy
 
 cd $obiwan_code/obiwan/py
 export dataset=`echo $dataset | tr '[a-z]' '[A-Z]'`
@@ -77,6 +77,7 @@ python obiwan/kenobi.py --dataset ${dataset} -b ${brick} \
                         --outdir $outdir --add_sim_noise  \
                         --threads $threads  \
                         --do_skipids $do_skipids --do_more ${do_more} \
+                        --checkpoint \
                         >> $log 2>&1
 
 
