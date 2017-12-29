@@ -17,7 +17,7 @@ setup_kwargs= dict(
     version='1.2',
     license='BSD',
     description='Code to Monte Carlo fake sources through the Legacypipe pipeline',
-    long_description=''
+    long_description='',
     author='Kaylan Burleigh, John Moustakas',
     author_email='kburleigh@lbl.gov',
     url='https://github.com/legacysurvey/obiwan',
@@ -27,7 +27,7 @@ setup_kwargs= dict(
                 for path in glob('py/obiwan/*.py')],
 )
 with open('README.md') as readme:
-    setup_keywords['long_description'] = readme.read()
+    setup_kwargs['long_description'] = readme.read()
 
 setup(**setup_kwargs)
 
