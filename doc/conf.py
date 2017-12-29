@@ -19,7 +19,8 @@ import os.path
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
-sys.path.insert(0, os.path.abspath('../py'))
+sys.path.insert(0, os.path.abspath('../')) # test dirs
+sys.path.insert(0, os.path.abspath('../py')) #pkg
 
 # -- General configuration ------------------------------------------------
 
@@ -71,8 +72,8 @@ def get_rel_path(name):
     
 def get_rm_modules(name):
     general= ['__init__']
-    return dict(tests=['test_decam_rex'],
-                obiwan=['_version','mk_fits_image','priors','priors_MoG',
+    return dict(tests=[],
+                obiwan=['_version','mk_fits_image',
                         'runs','time_per_brick'],
                 qa=['aaron_healpix','merge_and_match_ccds',
                     'plots','tally'],

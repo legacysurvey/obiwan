@@ -2,6 +2,21 @@
 Obiwan
 =======
 
+Import Testing
+--------------
+
+.. automodule:: obiwan.kenobi
+    :members:
+
+.. automodule:: obiwan.tensorflow.create_training
+    :members:
+
+.. automodule:: tests.end_to_end.test_datasets
+    :members:
+
+Intro
+-----
+
 Obiwan is a code to forward model blah.
 
 Use the links at the top of the page to learn more about the code or see the table of contents below.
