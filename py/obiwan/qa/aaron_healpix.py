@@ -9,7 +9,6 @@ from collections import defaultdict
 from astropy.coordinates import Galactic,ICRS
 from astropy import units
 
-#from theValidator.catalogues import Matcher,CatalogueFuncs
 from astrometry.libkd.spherematch import match_radec
 from astrometry.util.fits import fits_table, merge_tables
 
@@ -341,7 +340,6 @@ def get_DR5_ccds(bricknames):
     savefn= 'brick_allccds.fits'
     TT.writeto(savefn)
     print('Wrote %s' % savefn)
-    #CatalogueFuncs().stack(ccd_fns, textfile=False)
 
 #for brick in bricks:
 #    T=fits_table()

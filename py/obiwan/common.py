@@ -10,7 +10,7 @@ import fitsio
 
 # Sphinx build would crash
 #try:
-from astrometry.util.fits import fits_table
+from astrometry.util.fits import fits_table, merge_tables
 #except ImportError:
 #    pass
 
@@ -33,6 +33,39 @@ def save_png(outdir,fig_id, tight=True):
 def dobash(cmd):
     print('UNIX cmd: %s' % cmd)
     if os.system(cmd): raise ValueError
+
+def stack_tables(self,fn_list,textfile=True,
+                 shuffle=None):
+    '''concatenates fits tables
+    shuffle: set to an integer to randomly reads up to the first "shuffle" cats only
+    '''
+    if shuffle:
+        assert( isinstance(shuffle, int))
+    if textfile: 
+        fns=read_lines(fn_list)
+    else:
+        fns= fn_list
+    if len(fns) < 1: raise ValueError('Error: fns=',fns)
+    if shuffle:
+        print('shuffling %d' % shuffle)
+        seed=7
+        np.random.seed(seed)
+        inds= np.arange(len(fns)) 
+        np.random.shuffle(inds) 
+        fns= fns[inds]
+    cats= []
+    for i,fn in enumerate(fns):
+        print('reading %s %d/%d' % (fn,i+1,len(fns)))
+        if shuffle and i >= shuffle: 
+            print('shuffle_1000 turned ON, stopping read') 
+            break 
+        try:
+            tab= fits_table(fn) 
+            cats.append( tab )
+        except IOError:
+            print('Fits file does not exist: %s' % fn)
+    return merge_tables(cats, columns='fillzero')
+
 
 def writelist(lis,fn):
     if os.path.exists(fn):

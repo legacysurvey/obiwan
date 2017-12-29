@@ -458,7 +458,7 @@ if __name__ == "__main__":
            early_coadds=False,
            checkpoint=False)
 
-    #test_main()
+    test_main()
     
     #d.update(early_coadds=True)
     #test_case(**d)

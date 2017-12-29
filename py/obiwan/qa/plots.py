@@ -41,7 +41,7 @@ from PIL import Image, ImageDraw
 import photutils
 
 from obiwan.kenobi import get_savedir
-from obiwan.theValidator.catalogues import CatalogueFuncs
+from obiwan.common import stack_tables
 
 class EmptyClass(object):
     pass
@@ -766,8 +766,8 @@ if __name__ == "__main__":
                              realtractor_fn)
 
     # Merge
-    simcat= CatalogueFuncs().stack(simcat_fns,textfile=False)
-    simtractor= CatalogueFuncs().stack(simtractor_fns,textfile=False)
+    simcat= stack_tables(simcat_fns,textfile=False)
+    simtractor= stack_tables(simtractor_fns,textfile=False)
     realtractor= fits_table(realtractor_fn)
     print('Injected %d sources, Real %d sources, Recovered sims + real %d' % 
           (len(simcat),len(realtractor),len(simtractor)))

@@ -6,7 +6,7 @@ import os
 from glob import glob
 import numpy as np
 
-from theValidator.catalogues import CatalogueFuncs
+from obiwan.common import stack_tables
 from astrometry.util.fits import fits_table, merge_tables
 
 DOWNLOAD_ROOT = "http://portal.nersc.gov/project/desi/users/kburleigh/obiwan/"
@@ -60,8 +60,8 @@ if __name__ == "__main__":
     assert(len(eboss_fns) > 0)
     assert(len(dr3_fns) > 0)
 
-    dr3= CatalogueFuncs().stack(dr3_fns,textfile=False)
-    eboss= CatalogueFuncs().stack(eboss_fns,textfile=False)
+    dr3= stack_tables(dr3_fns,textfile=False)
+    eboss= stack_tables(eboss_fns,textfile=False)
 
     dr3.set('pid', add_str_arrays([dr3.expnum.astype(str),
                                  np.char.strip(dr3.image_filename)]))
