@@ -30,6 +30,39 @@ Split into two separate runs, for ELGs and Stars, but having same ra,dec
 * psql db, desi, table for randoms: obiwan_elg_9deg
 * psql db, qdo, table for tasks: obiwan_9deg, obiwan_9deg_doskip
 
+### Data Sets
+
+ (1) DR5
+ * DR5 zeropoints (from legacy_zeropoints, minimum set of columns needed for legacypip)e)
+ * DR5 CCDs
+ (2) DR3
+ * DR3 zeropoints (from IDL zeropoints)
+ * DR3 CCDs
+ 3) `DR3_eBOSS`: 
+ * DR3 zeropoints (from IDL zeropoints)many more columns than legacypipe need, and comput
+ * DR3 CCDs
+ * additional eBOSS CCDs (e.g. beyond MJD cutoff of March 2016)
+
+The "dataset" keyword tells obiwan which dataset to run on, e.g.
+```sh 
+python obiwan/kenobi.py --dataset {dr5,dr3,`dr3_eboss`}
+```
+
+The corresponding config in Legacypipe:
+ (1) DR5
+ * --run dr5
+ * only use survey-ccds files ignore "survey-ccds-kd" files
+ (2) DR3
+ * --run dr3
+ * only use survey-ccds files 
+ * --no-rex --use-simp: turn off REX model, use SIMP instead 
+ * --nsigma 6: default is 6 but enforce this 
+ (3) `DR3_eBOSS`
+ * --run `dr3_eboss`
+ * only use the survey-ccds files I made that exactly includes the `DR3_eBOSS` image list using idl zeropoints, also ignore "survey-ccds-kd" files
+ * --no-rex --use-simp: turn off REX model, use SIMP instead 
+ * --nsigma 6: default is 6 but enforce this 
+
 ### Randoms + PSQL DB
 
 You need a fit Mixture of Gaussians to the desired n(z) and a seperate joint-sample of color,shape,redshift (10k row fits table) to sample from. Put the 10k row fits table here
