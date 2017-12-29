@@ -10,13 +10,17 @@ import sys
 import fitsio
 import photutils
 
-from astrometry.libkd.spherematch import match_radec
 from astrometry.util.fits import fits_table
-from legacypipe.survey import LegacySurveyData, wcs_for_brick
 
-from obiwan.kenobi import main,get_parser, get_checkpoint_fn
 from obiwan.qa.visual import plotImage, readImage
 from obiwan.common import get_brickinfo_hack
+
+try: 
+    from astrometry.libkd.spherematch import match_radec
+    from legacypipe.survey import LegacySurveyData, wcs_for_brick
+    from obiwan.kenobi import main,get_parser, get_checkpoint_fn
+except ImportError:
+    pass
 
 DATASETS= ['DR3','DR5','DR3_eBOSS']
 
