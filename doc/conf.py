@@ -12,6 +12,9 @@
 # All configuration values have a default; values that are commented out
 # serve to show the default.
 
+# obiwan readthedocs home page is
+#http://readthedocs.org/projects/obiwan/
+
 import sys
 import os
 import os.path
@@ -20,7 +23,7 @@ import os.path
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 sys.path.insert(0, os.path.abspath('../')) # test dirs
-sys.path.insert(0, os.path.abspath('../py')) #pkg
+#sys.path.insert(0, os.path.abspath('../py')) #pkg
 
 # -- General configuration ------------------------------------------------
 
@@ -102,13 +105,13 @@ def get_modules(name):
 
 def create_api_rst():
     """
-    Credit: https://github.com/bccp/nbodykit
+    Adapted from: https://github.com/bccp/nbodykit
 
     Produce a file "modules.rst" that includes an ``autosummary`` directive
     listing all of the modules in nbodykit.
 
     The ``toctree`` option is set such that the corresponding rst files
-    will be auto-generated in ``source/api/_autosummary``.
+    will be auto-generated in ``./_autosummary/*.rst``.
     """
     # current directory
     cur_dir = os.path.abspath(os.path.dirname(__file__))
