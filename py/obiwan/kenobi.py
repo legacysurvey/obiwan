@@ -35,7 +35,8 @@ from astropy import units
 from astropy.coordinates import SkyCoord
 
 from obiwan.db_tools import getSrcsInBrick 
-from obiwan.common import get_outdir_runbrick, get_brickinfo_hack
+from obiwan.common import get_outdir_runbrick, get_brickinfo_hack 
+from obiwan.common import stack_tables
 
 from legacypipe.runbrick import run_brick
 from legacypipe.decam import DecamImage
@@ -49,7 +50,6 @@ from tractor.psfex import PsfEx, PsfExModel
 from tractor.basics import GaussianMixtureEllipsePSF, RaDecPos
 from tractor.sfd import SFDMap
 
-from theValidator.catalogues import CatalogueFuncs
 import galsim
 
 def write_dict(fn,d):
@@ -99,7 +99,7 @@ def get_skip_ids(decals_sim_dir, brickname, objtype):
                          '*','obiwan','skippedids-*.fits'))
     if len(fns) == 0:
         raise ValueError("no skippedids.fits files exist for this brick %s" % brickname)
-    T= CatalogueFuncs().stack(fns, textfile=False)
+    T= stack_tables(fns, textfile=False)
     return T.ids.astype(str)
 
 def get_fnsuffix(**kwargs):
