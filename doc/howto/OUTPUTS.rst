@@ -1,9 +1,7 @@
-# Description of Obiwan Outputs
-I completed a full obiwan production run on a 9 deg2 region, which is a box having ra = (173.5,176.5) and dec = (23.0,26.0). Below Im using the outputs from this production run to describe what the outputs from Obiwan look like and how they are organized. All outputs from the run are in this directory
-`/global/cscratch1/sd/kaylanb/obiwan_out/elg_9deg2_ra175`
-and has "chmod a+r" permissions so you can open and inspect the files yourself. The initial set of randoms are here `/global/cscratch1/sd/kaylanb/obiwan_out/randoms/elg_9deg2_ra175`, and also stored in a NERSC psql db.
+Data Model for Obiwan
+======================
 
-For info on how I created the files or ran the production run, see [PRODUCTION_RUN.md](https://github.com/legacysurvey/obiwan/blob/master/PRODUCTION_RUN.md)
+I completed a full obiwan production run on a 9 deg2 region, which is a box having ra = (173.5,176.5) and dec = (23.0,26.0). Below I describe what the outputs from Obiwan look like and how they are organized, for the :ref:`9 deg2 <elg-9deg2-ra175>` and :ref:`half of DR5 <elg-dr5>` production runs. 
 
 ### Randoms
 `randoms/elg_9deg2_ra175/`
