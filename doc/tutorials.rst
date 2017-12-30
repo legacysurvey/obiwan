@@ -7,6 +7,9 @@ Each section below shows lessons learned via ipython notebooks and/or explorator
 
 Test Cases
 ----------
+
+.. end-to-end-tests
+
 .. toctree::
   :maxdepth: 3
 
