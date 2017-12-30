@@ -9,10 +9,10 @@ Use the links at the top of the page to learn more about the code or see the tab
 .. toctree::
    :caption: Table of Contents
 
-Production runs on NERSC
+Using Obiwan at the National Energy Researc Scientific Computing Center (NERSC)
 
-* :doc:`Production runs <howto/PRODUCTION_RUN>`
-
+* :doc:`Production Runs <howto/PRODUCTION_RUN>`
+* :doc:`Data Model <howto/OUTPUTS>`
 
 The following science is being done
 

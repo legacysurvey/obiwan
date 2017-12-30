@@ -4,6 +4,7 @@ Instructions for doing a production run
 On-going production runs
 ^^^^^^^^^^^^^^^^^^^^^^^^^
 
+.. _elg-dr5:
 1. ELGs for 1/2 of DR5
 
     * /global/cscratch1/sd/kaylanb/obiwan_out/elg_dr5
@@ -24,6 +25,7 @@ On-going production runs
 Completed production runs
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+.. _elg-9deg2-ra175:
 1. ELGs for 9deg2 region centered at ra,dec= 175.0,24.5
 
     * /global/cscratch1/sd/kaylanb/obiwan_out/elg_9deg2_ra175
@@ -209,16 +211,14 @@ Now add `obiwan_test` to the end of the randoms table and delete `obiwan_test`::
     desi=> insert into obiwan_elg_ra175 select * from obiwan_test;
     desi=> drop table obiwan_test;
 
-Make a QDO task list for your additional randoms. Specify `minid` to skip all primary keys below your 240,001
+Make a QDO task list for your additional randoms. Specify `minid` to skip all primary keys below your 240,001::
 
-.. ipython::
-
-    In [1]: from obiwan.runmanager.qdo_tasks import TaskList
-    In [100]: T= TaskList(ra1=173.5,ra2=176.5, dec1=23.0,dec2=26.0,
-                          nobj_per_run=300,
-                          nobj_total=240000 + 720000)
-    In [25]: T.bricks()
-    In [5]: T.tasklist(do_skipid='no',do_more='yes',minid=240001)
+    from obiwan.runmanager.qdo_tasks import TaskList
+    T= TaskList(ra1=173.5,ra2=176.5, dec1=23.0,dec2=26.0,
+                nobj_per_run=300,
+                nobj_total=240000 + 720000)
+    T.bricks()
+    T.tasklist(do_skipid='no',do_more='yes',minid=240001)
 
 then run these randoms from a new QDO queue::
 
@@ -236,10 +236,10 @@ Once you finish all the above runs, you will make a second qdo que. We previousl
 
     cat tasks_inregion | awk '{print $1}'|sort|uniq > brick_list.txt
 
-.. ipython::
+::
 
-    In [1]: from obiwan.runmanager.qdo_tasks import write_qdo_tasks_skipids
-    In [2]: write_qdo_tasks_skipids('brick_list.txt', nobj_per_run=300)
+    from obiwan.runmanager.qdo_tasks import write_qdo_tasks_skipids
+    write_qdo_tasks_skipids('brick_list.txt', nobj_per_run=300)
 
 which outputs a file `tasks_skipids.txt`. Now create a new qdo queue_name for the skipid runs and load the new tasks::
 
