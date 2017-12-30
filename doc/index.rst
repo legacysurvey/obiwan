@@ -27,7 +27,7 @@ End-to-End test cases
 
 We created various tests that add fake galaxies to small 200x200 pixel multi-color images, run our pipeline, and assert that the fake galaxies are detected and have shape and multi-color brightness very close to truth.
 
-The Turorials section shows what these End-to-End tests look like, which come from this :ref:`ipython notebook <nb/TestCases.ipynb>`. We carray out the tests with :mod:`tests.end_to_end.test_datasets` python module.
+The Turorials section shows what these End-to-End tests look like, which come from this :ref:`ipython notebook <nb/TestCases.ipynb>`. We carry out the tests with :mod:`tests.end_to_end.test_datasets` python module.
 
 Running the code at NERSC
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -37,13 +37,19 @@ Using Obiwan at the National Energy Researc Scientific Computing Center (NERSC)
 * :doc:`Production Runs <howto/PRODUCTION_RUN>`
 * :doc:`Data Model <howto/OUTPUTS>`
 
+Acknowledgements
+^^^^^^^^^^^^^^^^^^
+
+See the `offical Acknowledgements <http://legacysurvey.org/#Acknowledgements>`_ for the Legacy Survey.
+
+
 Changelog
-----------
+^^^^^^^^^^^
 
 * :doc:`changes`
 
 Indices and tables
-------------------
+^^^^^^^^^^^^^^^^^^^
 
 * :ref:`genindex`
 * :ref:`modindex`

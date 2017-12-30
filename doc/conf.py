@@ -159,9 +159,9 @@ def create_api_rst():
         ff.write("\n")
 
     # make the output directory if it doesn't exist
-    output_path = os.path.join(cur_dir, 'api', '_autosummary')
-    if not os.path.exists(output_path):
-        os.makedirs(output_path)
+    #output_path = os.path.join(cur_dir, 'api', '_autosummary')
+    #if not os.path.exists(output_path):
+    #    os.makedirs(output_path)
 
 def setup(app):
     """
