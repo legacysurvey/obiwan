@@ -2,7 +2,7 @@
 Obiwan
 =======
 
-Obiwan is a code to forward model blah.
+Obiwan is a Monte Carlo method for adding fake galaxies and stars to the Legacy Survey imaging data. We forward model astrophysical sources in the images with the legacypipe code, by identifying Signal to Noise (S/N) > 6 sources and finding the best fitting 2D model for a star or galaxy by minimizing a regularized L2 Loss function.
 
 Use the links at the top of the page to learn more about the code or see the table of contents below.
 
