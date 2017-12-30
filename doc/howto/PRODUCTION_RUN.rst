@@ -5,13 +5,14 @@ On-going production runs
 ^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. _elg-dr5:
-1. ELGs for 1/2 of DR5
 
-    * /global/cscratch1/sd/kaylanb/obiwan_out/elg_dr5
-    * name "elg_dr5"
-    * ra [109.0,278.5], dec [-11.1,35.4]
-    * all dr5 bricks in Middle region (90 < ra < 280) with grz coverage
-    * randoms dir: /global/cscratch1/sd/kaylanb/obiwan_out/randoms/elg_dr5
+#. ELGs for 1/2 of DR5
+
+    - /global/cscratch1/sd/kaylanb/obiwan_out/elg_dr5
+    - name "elg_dr5"
+    - ra [109.0,278.5], dec [-11.1,35.4]
+    - all dr5 bricks in Middle region (90 < ra < 280) with grz coverage
+    - randoms dir: /global/cscratch1/sd/kaylanb/obiwan_out/randoms/elg_dr5
 
         * 5x ELG density: 2400 * 10 * area * 4
         * 170*47*2400*5*4/1e9 = 0.383e9
@@ -20,13 +21,14 @@ On-going production runs
     * psql db "desi", table for randoms "obiwan_elg_dr5"
     * psql db "qdo", table for tasks "obiwan_elg_dr5"
 
-2. Same as #1 but Stars 
+#. Same as #1 but Stars 
 
 Completed production runs
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. _elg-9deg2-ra175:
-1. ELGs for 9deg2 region centered at ra,dec= 175.0,24.5
+
+#. ELGs for 9deg2 region centered at ra,dec= 175.0,24.5
 
     * /global/cscratch1/sd/kaylanb/obiwan_out/elg_9deg2_ra175
     * name "elg_9deg2_ra175"
@@ -36,7 +38,7 @@ Completed production runs
     * psql db "desi", table for randoms "obiwan_elg_ra175"
     * psql db "qdo", table for tasks "obiwan_ra175", "obiwan_ra175_doskip"
 
-2. ELGs for 9deg2 region centered at ra,dec= 124.8,24.5
+#. ELGs for 9deg2 region centered at ra,dec= 124.8,24.5
 
     * /global/cscratch1/sd/kaylanb/obiwan_out/obiwan_elg_9deg
     * name_for_run: elg_9deg2_ra125
@@ -49,12 +51,12 @@ Completed production runs
 Data Sets that Obiwan Supports
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-1. DR5
+#. DR5
 
 .. * DR5 zeropoints (from legacy_zeropoints, minimum set of columns needed for legacypip)e)
 .. * DR5 CCDs
  
-2. DR3_eBOSS 
+#. DR3_eBOSS 
 
     * DR3 zeropoints (from IDL zeropoints)many more columns than legacypipe need, and comput
     * DR3 CCDs
@@ -66,12 +68,12 @@ The "dataset" keyword tells obiwan which dataset to run. For example::
 
 The corresponding config in Legacypipe:
 
-1. DR5
+#. DR5
 
     * --run dr5
     * only use survey-ccds files ignore "survey-ccds-kd" files
 
-2. DR3_eBOSS
+#. DR3_eBOSS
 
     * --run dr3_eboss
     * --no-rex --use-simp: turn off REX model, use SIMP instead 

@@ -1,35 +1,65 @@
 Data Model for Obiwan
 ======================
 
-I completed a full obiwan production run on a 9 deg2 region, which is a box having ra = (173.5,176.5) and dec = (23.0,26.0). Below I describe what the outputs from Obiwan look like and how they are organized, for the :ref:`9 deg2 <elg-9deg2-ra175>` and :ref:`half of DR5 <elg-dr5>` production runs. 
+The data and directory structure for the :ref:`9 deg2 <elg-9deg2-ra175>` and :ref:`half of DR5 <elg-dr5>` production runs is described below. 
 
-### Randoms
-`randoms/elg_9deg2_ra175/`
-* `elg_randoms/*.fits`: fits tables of random ra,dec from unit sphere and random draw from above KDE 
+Monte Carlo simulation files
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+The root directore for all Monte Carlo simulation products is, on NERSC:
 
-### Obiwan Outputs
-`obiwan_out/elg_9deg2_ra175/`
-* `slurm-*.out`: top level logs from slurm job scripts
-* `elg/bri/brick/`: Tractor Catalogues and Obiwan meta data for each brick
-where bri is the first three letters of each brick.
+- **/global/cscratch1/sd/kaylanb/obiwan_out/**
 
-For example, brick=1757p240 has outputs in
-`obiwan_out/elg_9deg2_ra175/elg/175/1757p240/`
-* `rs{0,300,600,...}/`: outputs from injecting first 300 randoms, next 300, etc.
-* `skip_rs{0,300}/`: outputs from injecting first 300 randoms *that were skipped* because withthin 5 arcsec of another random in all `rs{0,300,600,...}/` directories above
-* `more_rs{0,300,600,...}/`: same as rs*/ but for randoms that were added to the randoms DB *after* the rs*/ runs completed. These "more_" prefixes will appear whenever there are less randoms that 10x target density.
-* `more_skip_rs{0,300,600,...}/`: same as skip_rs*/ but for the more_rs*/ directories.
+Randoms
+^^^^^^^^^^
+The randoms are stored in FITS tables here:
 
-All `*rs*/` directories have the same data model. For example,
-`obiwan_out/elg_9deg2_ra175/elg/175/1757p240/rs0`
-* `log.1757p240`: log file for this run
-* `obiwan/`: obiwan metadata
-* `coadd/, metrics/, tractor/, tractor-i/`: usual imaging pipeline outputs
+- **.../randoms/elg_9deg2_ra175/elg_randoms/**
 
-Note, `coadd/` is the largest output so only the `rs0/coadd/` directory has model, chi2, etc. images. All other `*rs*/coadd/` directories do not have these; they only have the much smaller .jpg files.
+and in the PostreSQL DB
 
-Within the `*rs*/` directories, the data model is *identical* to the Data Releases except for one additional directory `obiwan/`. For example,
-`obiwan_out/elg_9deg2_ra175/elg/175/1757p240/rs0/obiwan/`
-* `metacat-elg-1757p240.fits`: info about how obiwan was run (e.g. brickname)
-* `simcat-elg-1757p240.fits`: binary table with 1 row for each random that was injected, colums are: id, seed, ra, dec, grz flux, and other source properties 
-* `skippedids-elg-1757p240.fits`: binary table with 1 row for each random that was skipped because within 5 arcsec of another. Only 1 column: id, which is how the random is looked up in the randoms PSQl db 
+- **-h nerscdb03.nersc.gov -d desi -U desi_user**
+
+Each random has a unique id, positon (Ra, DEC), and realistic properties (brightness, shape). Each position is a random draw from the unit sphere and each set of properties is a random draw from a Gaussian Mixture model. 
+
+Obiwan Outputs
+^^^^^^^^^^^^^^^
+Results from running our :ref:`pipeline <https://github.com/legacysurvey/legacypipe>` on the modified images are here:
+
+- **.../elg_9deg2_ra175/**
+
+The top level directory has these files
+
+* The usual six directories: *tractor,tractor-i,coadd,metrics,checkpoint,logs*
+    
+    * The coadd/ directory has a subset of the usual outputs because it is the directory with the largest file sizes 
+
+* Monte Carlo simulation metadata directory: *obiwan*
+* slurm-[0-9]+.out: stdout, stderr from the SLURM job scripts
+
+Subdirectories follow the usual Data Relase format of **.../bri/brick/**, where *bri* is the first three letters of each brick. The multiple iteractions per brick are identified by directories named **rs[0-9]+**, where the *rs* stands for the *Row* of the unique id-sorted table of randoms in the brick to *Start* from. The *[0-9]+* is the index of that row, which would be 0, 500, 1000, etc. when 500 fake galaxies are added to the images in each iteration.
+
+For example, the tractor catalogues containing the first 1500 fake sources in brick *1757p240* are in 
+
+- .../tractor/175/1757p240/**rs0**/
+- .../tractor/175/1757p240/**rs500**/
+- .../tractor/175/1757p240/**rs1000**/
+
+However, there will be additional directories to **rs[0-9]+**, such as **skip_rs[0-9]+**. These are the sources that were *skipped* because they were within 5 arcsec of another random. There are actually four sets of directories like this:
+
+- **rs[0-9]+**: initial set of iterations per brick
+- **skip_rs[0-9]+**: skipped sources from the initial set of iterations
+- **more_rs[0-9]+**: new set of iterations per brick for randoms that were added to the database after the run completed (e.g. more randoms were needed)
+- **more_skip_rs[0-9]+**: skipped sources from the new set of iterations
+
+Simulation Metadata
+^^^^^^^^^^^^^^^^^^^^
+The metadata for each Monte Carlo simulation is stored in 
+
+- **.../obiwan/bri/brick/rs[0-9]+/**
+
+It consists of four files:
+
+- **metacat-elg-brick.fits**: how obiwan was run (e.g. brickname)
+- **simcat-elg-brick.fits**: truth table of the final properties of the sources added to the images (e.g. guassian noise and galactic extinction make the fluxes actually added different from those in the DB) 
+- **skippedids-elg-brick.fits**: ids of the randoms that were skipped because the within 5 arcsec of another random 
+- **sim_ids_added.fits**: unique ids of the randoms that overlap with at least one CCD so are actually added to the images
