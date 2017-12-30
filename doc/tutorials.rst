@@ -5,8 +5,10 @@ Tutorials
 
 Each section below shows lessons learned via ipython notebooks and/or exploratory data analysis.
 
-Test Cases
-----------
+End-to-End test cases
+-----------------------
+
+We created our End-to-End test cases using the `create_testcase.py <https://github.com/legacysurvey/legacypipe/blob/master/py/legacyanalysis/create_testcase.py>`_ script in our Legacypipe pipeline. You can visualize the various Test Cases by clicking on the links below.
 
 .. end-to-end-tests
 
