@@ -9,8 +9,10 @@ Use the links at the top of the page to learn more about the code or see the tab
 .. toctree::
    :caption: Table of Contents
 
-Science Being Done
-------------------
+Production runs on NERSC
+
+* :doc:`Production runs <howto/PRODUCTION_RUN>`
+
 
 The following science is being done
 
