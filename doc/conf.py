@@ -51,6 +51,8 @@ extensions = [
     'sphinx.ext.todo',
     'sphinx.ext.viewcode',
     'nbsphinx',
+    'IPython.sphinxext.ipython_console_highlighting',
+    'IPython.sphinxext.ipython_directive',
     napoleon_extension
 ]
 nbsphinx_execute = 'never'
