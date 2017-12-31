@@ -1,38 +1,49 @@
-=======
+===========
 obiwan
-=======
+=========
 
-An extension of the legacypipe/Tractor pipeline for the [DECALS, MzLS, and BASS Legacy Surveys](http://legacysurvey.org/dr4/description). This package injects artificial stars and galaxy-targets (ELGs, LRGs, and QSOs) into individual images for uncerstanding imaging systematic for [DESI](https://desi.lbl.gov). It re-runs the legacypipe/Tractor pipeline on the modified images and the resulting _simulated_ Tractor catalogues can be used as a Data Release.
+An extension of the legacypipe/Tractor pipeline for the `DECALS, MzLS, and BASS Legacy Surveys <http://legacysurvey.org/dr4/description>`_. This package injects artificial stars and galaxy-targets (ELGs, LRGs, and QSOs) into individual images for uncerstanding imaging systematic for `DESI <https://desi.lbl.gov>`. It re-runs the legacypipe/Tractor pipeline on the modified images and the resulting *simulated* Tractor catalogues can be used as a Data Release.
 
-[![Docs](https://readthedocs.org/projects/obiwan/badge/?version=latest)](http://obiwan.readthedocs.org/en/latest/)
-[![Build Status](https://travis-ci.org/legacysurvey/obiwan.png?branch=master)](https://travis-ci.org/legacysurvey/obiwan)
-[![Coverage Status](https://coveralls.io/repos/github/legacysurvey/obiwan/badge.svg?branch=master)](https://coveralls.io/github/legacysurvey/obiwan)
+|docs| |build-status| |coverage|
+
+.. |docs| image:: https://readthedocs.org/projects/obiwan/badge/?version=latest
+    :alt: Documentation Status
+    :scale: 100%
+    :target: http://obiwan.readthedocs.io/en/latest/?badge=latest
+
+.. |build-status| image:: https://travis-ci.org/legacysurvey/obiwan.svg?branch=master
+    :alt: Build Status
+    :scale: 100%
+    :target: https://travis-ci.org/legacysurvey/obiwan
+
+.. |coverage| image:: https://coveralls.io/repos/github/legacysurvey/obiwan/badge.svg?branch=master
+    :alt: Coverage Status
+    :scale: 100%
+    :target: https://coveralls.io/github/legacysurvey/obiwan
+
 
 Documentation
----------------
+^^^^^^^^^^^^^^
 
-Please visit [obiwan on locally built Docs](https://legacysurvey.github.io/obiwan)
+See our `RTD page <http://obiwan.readthedocs.io/en/latest/?badge=latest>
 
-The Docs are built locally from these [instructions](https://github.com/legacysurvey/obiwan/tree/gh-pages/README.md), because the galsim install is so complicated that getting .travis.yml installing everything correctly I didn't want to repeat with the Sphinx/Read the Docs build script. The deprecated documentation is here [obiwan on Read the Docs](http://obiwan.readthedocs.org/en/latest/)
+Run at `NERSC <http://www.nersc.gov/>`
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Run at NERSC
--------------
-
-At [NERSC](http://www.nersc.gov/)
-* see [instructions](https://github.com/legacysurvey/obiwan/blob/master/bin/run_atnersc/README.md)
+See the :doc:`Run Instructions <bin/run_atnersc/README.md>`.
 
 Need Help?
------------
+^^^^^^^^^^^^^
 
 Email us: desi-image-sims 'at' googlegroups.com 
 
 Acknowledgements
------------------
+^^^^^^^^^^^^^^^^
 
-See `http://legacysurvey.org/#Acknowledgements`_.
+See the `Legacy Survey Acknowledgements` <http://legacysurvey.org/#Acknowledgements>`.
 
 License
---------
+^^^^^^^^^^^
 
 obiwan is free software licensed under a 3-clause BSD-style license. For details see
-the ``LICENSE.rst`` file.
+our :doc:`LICENSE <LICENSE.rst>`.
