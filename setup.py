@@ -26,7 +26,7 @@ setup_kwargs= dict(
     py_modules=[os.path.splitext(os.path.basename(path))[0] 
                 for path in glob('py/obiwan/*.py')],
 )
-with open('README.rst') as text:
+with open('README.md') as text:
     setup_kwargs['long_description'] = text.read()
 with open('LICENSE.rst') as text:
     setup_kwargs['license'] = text.read()
