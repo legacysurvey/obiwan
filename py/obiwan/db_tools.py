@@ -6,7 +6,10 @@ import psycopg2
 import os
 import numpy as np
 
-from astrometry.util.fits import fits_table, merge_tables
+try:
+    from astrometry.util.fits import fits_table, merge_tables
+except ImportError:
+    pass
 
 class PsqlWorker(object):
     def __init__(self):
