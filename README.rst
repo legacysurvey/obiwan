@@ -1,8 +1,8 @@
 ===========
 obiwan
-=========
+===========
 
-An extension of the legacypipe/Tractor pipeline for the `DECALS, MzLS, and BASS Legacy Surveys <http://legacysurvey.org/dr4/description>`_. This package injects artificial stars and galaxy-targets (ELGs, LRGs, and QSOs) into individual images for uncerstanding imaging systematic for `DESI <https://desi.lbl.gov>`. It re-runs the legacypipe/Tractor pipeline on the modified images and the resulting *simulated* Tractor catalogues can be used as a Data Release.
+An extension of the legacypipe/Tractor pipeline for the `DECALS, MzLS, and BASS Legacy Surveys <http://legacysurvey.org/dr4/description>`_. This package injects artificial stars and galaxy-targets (ELGs, LRGs, and QSOs) into individual images for uncerstanding imaging systematic for `DESI <https://desi.lbl.gov>`_. It re-runs the legacypipe/Tractor pipeline on the modified images and the resulting *simulated* Tractor catalogues can be used as a Data Release.
 
 |docs| |build-status| |coverage|
 
@@ -25,12 +25,12 @@ An extension of the legacypipe/Tractor pipeline for the `DECALS, MzLS, and BASS 
 Documentation
 ^^^^^^^^^^^^^^
 
-See our `RTD page <http://obiwan.readthedocs.io/en/latest/?badge=latest>
+See our `RTD page <http://obiwan.readthedocs.io/en/latest/?badge=latest>`_
 
-Run at `NERSC <http://www.nersc.gov/>`
+Run at `NERSC <http://www.nersc.gov/>`_
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-See the :doc:`Run Instructions <bin/run_atnersc/README.md>`.
+See the `Run Instructions <https://github.com/legacysurvey/obiwan/blob/master/bin/run_atnersc/README.md>`_.
 
 Need Help?
 ^^^^^^^^^^^^^
@@ -40,10 +40,11 @@ Email us: desi-image-sims 'at' googlegroups.com
 Acknowledgements
 ^^^^^^^^^^^^^^^^
 
-See the `Legacy Survey Acknowledgements` <http://legacysurvey.org/#Acknowledgements>`.
+See the `Legacy Survey Acknowledgements <http://legacysurvey.org/#Acknowledgements>`_.
 
 License
 ^^^^^^^^^^^
 
 obiwan is free software licensed under a 3-clause BSD-style license. For details see
-our :doc:`LICENSE <LICENSE.rst>`.
+our 
+our `LICENSE <https://github.com/legacysurvey/obiwan/blob/master/LICENSE.rst>`_.
