@@ -36,6 +36,9 @@ dependencies:
   - sphinx_rtd_theme
   - sphinx_bootstrap_theme
   - git+https://github.com/JuliaLang/JuliaDoc.git
+  - https://storage.googleapis.com/tensorflow/linux/cpu/tensorflow-1.4.0-cp34-cp34m-linux_x86_64.whl
+
+  # mac: --upgrade https://storage.googleapis.com/tensorflow/mac/cpu/tensorflow-1.4.0-py3-none-any.whl
   #- -e git+https://github.com/dstndstn/astrometry.net.git@0.72#egg=astrometry
   #- -e git+https://github.com/dstndstn/tractor.git@dr5.2#egg=tractor
   #- -e git+https://github.com/legacysurvey/legacypipe.git@dr5.0#egg=legacypipe
