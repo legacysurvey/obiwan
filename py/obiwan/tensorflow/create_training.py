@@ -4,12 +4,11 @@ from glob import glob
 import h5py
 import pandas as pd
 
-from astrometry.util.fits import fits_table
-
 from obiwan.qa.visual import readImage,sliceImage
 from obiwan.common import dobash
 
 try: 
+    from astrometry.util.fits import fits_table
     from legacypipe.survey import LegacySurveyData, wcs_for_brick
     import galsim
 except ImportError:
