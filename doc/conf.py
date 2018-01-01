@@ -73,7 +73,7 @@ def get_rel_path(name):
     return dict(tests= '../tests/end_to_end',
            obiwan= '../py/obiwan',
            qa= '../py/obiwan/qa',
-           tensorflow= '../py/obiwan/tensorflow')[name]
+           dplearn= '../py/obiwan/dplearn')[name]
     
 def get_rm_modules(name):
     general= ['__init__']
@@ -82,12 +82,12 @@ def get_rm_modules(name):
                         'runs','time_per_brick'],
                 qa=['aaron_healpix','merge_and_match_ccds',
                     'plots','tally'],
-                tensorflow=[]
+                dplearn=[]
                 )[name] + general
 
 import pandas as pd
 def get_modules(name):
-    assert(name in ['obiwan','tests','qa','tensorflow'])
+    assert(name in ['obiwan','tests','qa','dplearn'])
     rel_path= get_rel_path(name)
     mods=glob(os.path.join(rel_path,"*.py"))
     mods= [(mod.replace('../py/','')
@@ -152,8 +152,8 @@ def create_api_rst():
         section=  "Deep Learning"
         section += "\n" + "-"*len(section) + "\n"
         ff.write(section+".. autosummary::\n\t:toctree: _autosummary\n\t:template: module.rst\n\n")
-        #modules= ['obiwan.tensorflow.cnn']
-        modules= get_modules('tensorflow')
+        #modules= ['obiwan.dplearn.cnn']
+        modules= get_modules('dplearn')
         for module in modules:
             ff.write("\t" + module + "\n")
         ff.write("\n")
