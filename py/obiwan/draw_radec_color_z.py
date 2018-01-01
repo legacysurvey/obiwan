@@ -11,13 +11,16 @@ from __future__ import division, print_function
 import os
 import argparse
 import numpy as np
-from astrometry.util.ttime import Time
 import datetime
 import sys
 from scipy import spatial
 import pandas as pd
 
-from astrometry.util.fits import fits_table, merge_tables
+try:
+    from astrometry.util.ttime import Time
+    from astrometry.util.fits import fits_table, merge_tables
+except ImportError:
+    pass
 
 
 class GaussianMixtureModel(object):

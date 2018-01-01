@@ -262,6 +262,15 @@ autodoc_mock_imports = ['astrometry','tractor','galsim',
                         'NanoMaggies', 'Catalog', 'RaDecPos',
                         ]
 
+# http://docs.readthedocs.io/en/latest/faq.html
+from unittest.mock import MagicMock
+class Mock(MagicMock):
+    @classmethod
+    def __getattr__(cls, name):
+            return MagicMock()
+MOCK_MODULES = autodoc_mock_imports
+sys.modules.update((mod_name, Mock()) for mod_name in MOCK_MODULES)
+
 # -- Options for HTML output ----------------------------------------------
 
 # The theme to use for HTML and HTML Help pages.  See the documentation for
