@@ -17,13 +17,24 @@ We created our End-to-End test cases using the `create_testcase.py <https://gith
 
   nb/TestCases.ipynb
 
-Modeling the color, shape, and redshift of real (ELG-like) galaxies
+Modeling the color, shape, and redshift of (ELG-like) galaxies
 --------------------------------------------------------------------
 
 .. toctree::
   :maxdepth: 3
 
   nb/eBOSS_DESI_Priors.ipynb
+
+Deep Learning 
+--------------
+Obiwan creates millions of images of fake galaxies. If they are representative fo real galaxies, a Neural Network should not be able to tell them apart. Read about the project :doc:`here <deeplearning>`. 
+
+Example code is below.
+
+.. toctree::
+  :maxdepth: 3
+
+  nb/CNN.ipynb
 
 
 Test Region: 10 deg2
