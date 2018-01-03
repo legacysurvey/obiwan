@@ -28,16 +28,16 @@ Build Status
 Documentation
 ^^^^^^^^^^^^^^
 
-Our documentation is hosed on `ReadTheDocs <http://obiwan.readthedocs.io/en/latest/?badge=latest>`_.
+Our documentation is hosted on `ReadTheDocs <http://obiwan.readthedocs.io/en/latest/?badge=latest>`_.
 
 How to run the code
 ^^^^^^^^^^^^^^^^^^^^
 
 Detailed instructions for running obiwan on the National Energy Research Scientific Computing Center (NERSC) supercomputers are below.
 
-* :doc:`How to Run at Data Release <doc/howto/PRODUCTION_RUN>`
-* :doc:`Description of the outputs <doc/howto/OUTPUTS>`
-* :doc:`How to Train a CNN <doc/deeplearning>`
+* `How to Run at Data Release <https://github.com/legacysurvey/obiwan/blob/master/doc/howto/PRODUCTION_RUN.rst>`_
+* `Description of the outputs <https://github.com/legacysurvey/obiwan/blob/master/doc/howto/OUTPUTS.rst>`_
+* `How to Train a CNN <https://github.com/legacysurvey/obiwan/blob/master/doc/deeplearning.rst>`_
 
 Contact Us
 ^^^^^^^^^^^
