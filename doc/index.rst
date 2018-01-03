@@ -20,9 +20,9 @@ How to run the code
 
 Detailed instructions for running obiwan on the National Energy Researc Scientific Computing Center (NERSC) supercomputers are below.
 
-* :doc:`Run at Data Release <howto/PRODUCTION_RUN>`
+* :doc:`How to Run at Data Release <howto/PRODUCTION_RUN>`
 * :doc:`Description of the outputs <howto/OUTPUTS>`
-* :doc:`Train a CNN <howto/deeplearn>`
+* :ref:`How to Train a CNN <deep-learn-instructions>`
 
 
 Why the name "obiwan"?
