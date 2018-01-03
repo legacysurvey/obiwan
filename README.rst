@@ -2,7 +2,10 @@
 obiwan
 ===========
 
-An extension of the legacypipe/Tractor pipeline for the `DECALS, MzLS, and BASS Legacy Surveys <http://legacysurvey.org/dr4/description>`_. This package injects artificial stars and galaxy-targets (ELGs, LRGs, and QSOs) into individual images for uncerstanding imaging systematic for `DESI <https://desi.lbl.gov>`_. It re-runs the legacypipe/Tractor pipeline on the modified images and the resulting *simulated* Tractor catalogues can be used as a Data Release.
+**Obiwan** is a Monte Carlo method for adding fake galaxies and stars to images from the Legacy Survey and re-processing the modified images with our `Legacysurvey/Tractor pipeline <https://github.com/legacysurvey/legacypipe>`_. The pipeline forward models galaxies and stars in the multi-color images by detecting sources with Signal to Noise (S/N) greater than 6 and minimizing the regularized L2 Loss function for various models for the shapes of stars and galaxies.
+
+Build Status
+^^^^^^^^^^^^^
 
 |docs| |build-status| |coverage|
 
@@ -25,26 +28,27 @@ An extension of the legacypipe/Tractor pipeline for the `DECALS, MzLS, and BASS 
 Documentation
 ^^^^^^^^^^^^^^
 
-See our `RTD page <http://obiwan.readthedocs.io/en/latest/?badge=latest>`_
+Our documentation is hosed on `ReadTheDocs <http://obiwan.readthedocs.io/en/latest/?badge=latest>`_.
 
-Run at `NERSC <http://www.nersc.gov/>`_
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+How to run the code
+^^^^^^^^^^^^^^^^^^^^
 
-See the `Run Instructions <https://github.com/legacysurvey/obiwan/blob/master/bin/run_atnersc/README.md>`_.
+Detailed instructions for running obiwan on the National Energy Research Scientific Computing Center (NERSC) supercomputers are below.
 
-Need Help?
-^^^^^^^^^^^^^
+* :doc:`How to Run at Data Release <doc/howto/PRODUCTION_RUN>`
+* :doc:`Description of the outputs <doc/howto/OUTPUTS>`
+* :doc:`How to Train a CNN <doc/deeplearning>`
 
-Email us: desi-image-sims 'at' googlegroups.com 
+Contact Us
+^^^^^^^^^^^
 
-Acknowledgements
-^^^^^^^^^^^^^^^^
+* Email: desi-image-sims 'at' googlegroups.com 
 
-See the `Legacy Survey Acknowledgements <http://legacysurvey.org/#Acknowledgements>`_.
+^^^^^^^^^^^^^^^^^^
+
+See the `offical acknowledgements <http://legacysurvey.org/#Acknowledgements>`_ for the Legacy Survey.
 
 License
 ^^^^^^^^^^^
 
-obiwan is free software licensed under a 3-clause BSD-style license. For details see
-our 
-our `LICENSE <https://github.com/legacysurvey/obiwan/blob/master/LICENSE.rst>`_.
+obiwan is free software licensed under a 3-clause BSD-style license. For details see the `LICENSE <https://github.com/legacysurvey/obiwan/blob/master/LICENSE.rst>`_.
