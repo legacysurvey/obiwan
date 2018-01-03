@@ -1,7 +1,7 @@
 # Licensed under a 3-clause BSD style license - see LICENSE.rst
 # -*- coding: utf-8 -*-
-"""This is obiwan.kenobi
-...it runs the legacypipe/Tractor pipeline on images containing artificial sources
+"""
+The Monte Carlo code that adds fake galaxiesto images from the Legacy Survey
 """
 
 from __future__ import division, print_function

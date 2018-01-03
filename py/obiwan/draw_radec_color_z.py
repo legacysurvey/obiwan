@@ -1,9 +1,7 @@
 # See LICENSE.rst for BSD 3-clause license info
 # -*- coding: utf-8 -*-
 """
-Uses mpi4py to draw millions of random ra,dec points and color, shape, 
-redshift information from Gaussian Mixture Models. Writes a fits tables
-for each mpi task.
+Draw random location and galaxy properties from Gaussian Mixtures
 """
 
 from __future__ import division, print_function

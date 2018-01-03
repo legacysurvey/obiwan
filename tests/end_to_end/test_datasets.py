@@ -1,4 +1,6 @@
-"""End to end Continuous integration tests for datasets DR3, DR5, DR3_eBOSS"""
+"""
+Continuous integration 'end-to-end' tests of the Obiwan pipeline
+"""
 
 from __future__ import print_function
 import os

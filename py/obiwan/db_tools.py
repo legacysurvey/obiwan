@@ -1,5 +1,5 @@
 '''
-function to query PSQL db for all sources in a Brick
+Query our PostgreSQL Databases at NERSC
 '''
 
 import psycopg2
