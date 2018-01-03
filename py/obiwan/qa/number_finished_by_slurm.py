@@ -1,3 +1,7 @@
+"""
+Reports the number of completed jobs (tractor.fits files) for a SLURM stdout file
+"""
+
 import pandas as pd
 import os
 import re

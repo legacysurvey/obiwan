@@ -1,3 +1,7 @@
+"""
+Computes the number of CPU hours burned using SLURM sacct
+"""
+
 import pandas as pd
 import os
 import numpy as np

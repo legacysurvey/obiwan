@@ -1,6 +1,7 @@
 """
-Credit: https://github.com/ageron/handson-ml
-Adapted from the Chp 13 ipynb
+Trains a CNN on fake and real galaxy images using TensorFlow. 
+
+Adapted from https://github.com/ageron/handson-ml
 """
 
 import numpy as np

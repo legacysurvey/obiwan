@@ -1,4 +1,4 @@
-"""Dowloads data from urls"""
+"""Download and unpack tarballs"""
 
 from six.moves import urllib
 import tarfile

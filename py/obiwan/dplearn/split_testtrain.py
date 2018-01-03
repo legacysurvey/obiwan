@@ -1,3 +1,7 @@
+"""
+Shuffles the fake and real galaxies in the HDF5, does train/test split, repackages as numpy binaries
+"""
+
 import numpy as np
 import os
 from glob import glob

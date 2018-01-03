@@ -15,6 +15,15 @@ Obiwan
 
 A Monte Carlo method for adding fake galaxies and stars to images from the Legacy Survey and re-processing the modified images with our pipeline. Our pipeline forward models galaxies and stars in the multi-color images by detecting sources with Signal to Noise (S/N) greater than 6 and minimizing the regularized L2 Loss function for various models for the shapes of stars and galaxies.
 
+How to run the code
+^^^^^^^^^^^^^^^^^^^^
+
+Detailed instructions for running obiwan on the National Energy Researc Scientific Computing Center (NERSC) supercomputers are below.
+
+* :doc:`Run at Data Release <howto/PRODUCTION_RUN>`
+* :doc:`Description of the outputs <howto/OUTPUTS>`
+* :doc:`Train a CNN <howto/deeplearn>`
+
 
 Why the name "obiwan"?
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -22,20 +31,12 @@ Just as Obi-Wan Kenobi was the "only hope" in Star Wars: Episode IV - A New Hope
 
 It's probably incorrect to describe our Monte Carlo additions of fake galaxies to the imaging data as the "only hope" of identifying imaging systematics, but it should be one of the most robust and self consistent methods for doing so.
 
-End-to-End test cases
-^^^^^^^^^^^^^^^^^^^^^^
+Test Cases 
+^^^^^^^^^^^
 
-We created various tests that add fake galaxies to small 200x200 pixel multi-color images, run our pipeline, and assert that the fake galaxies are detected and have shape and multi-color brightness very close to truth.
+Insetad of unit tests, we have various `end-to-end` tests of the entire piepline. We add fake galaxies to small 200x200 pixel multi-color images, run the pipeline, then assert that the measured properties of the injected  galaxies are very similar to the truth.
 
-The Turorials section shows what these End-to-End tests look like, which come from this :ref:`ipython notebook <nb/TestCases.ipynb>`. We carry out the tests with :mod:`tests.end_to_end.test_datasets` python module.
-
-Running the code at NERSC
-^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-Using Obiwan at the National Energy Researc Scientific Computing Center (NERSC)
-
-* :doc:`Production Runs <howto/PRODUCTION_RUN>`
-* :doc:`Data Model <howto/OUTPUTS>`
+The Turorials section shows what these `end-to-end` tests look like, which come from this :ref:`ipython notebook <nb/TestCases.ipynb>`. We carry out the tests with :mod:`tests.end_to_end.test_datasets` python module.
 
 Acknowledgements
 ^^^^^^^^^^^^^^^^^^

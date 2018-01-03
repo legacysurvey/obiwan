@@ -1,3 +1,7 @@
+"""
+saves 64x64 pixel cutouts of each source in a Data Release as HDF5 files
+"""
+
 import numpy as np
 import os
 from glob import glob

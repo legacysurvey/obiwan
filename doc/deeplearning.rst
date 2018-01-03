@@ -8,8 +8,8 @@ Can a CNN tell the difference between fake galaxies (that I inject into real ima
   :depth: 2
 
 
-Backstory
-^^^^^^^^^^
+Background
+^^^^^^^^^^^^
 
 I am getting my PhD in astrophysics from UC Berkeley. My research focuses on observational cosmology, which for me, means building an image analysis pipeline that identifies and measures properties of stars and galaxies in multi-wavelength images of the night sky. It is possible (believe it or not!) to answer questions like, “how has the expansion rate of the Universe changed over time?”, using a statistical survey of galaxies over a large enough volume of the Universe. The `Sloan Digital Sky Survey <http://www.sdss.org>`_ (SDSS) carried out such a survey by imaging about one-third of the night sky and detecting galaxies up to 6.7 billion light years away. My team is leading the `Legacy Survey <http://www.legacysurvey.org>`_. It is similar to SDSS but we use three telescopes instead of one and will detect about 30x more galaxies that can be up to 6x fainter and 3.2 billion light years further away than the SDSS galaxies. Our goal is a 2D map showing the positions of 30 million galaxies from about 100 TBs of imaging data. This is scientifically important because we can measure the distance to each galaxy from it’s spectrum (e.g. how bright it is at each wavelength of visible light). From our 3D map (distance is the third dimension), we can measure the expansion rate of the Universe at different points in time (`Eisenstein & Hu 1998 <https://arxiv.org/abs/astro-ph/9709112>`_; `Eisenstein et al. 2005 <https://arxiv.org/abs/astro-ph/0501171>`_; `Seo & Eisenstein 2007 <https://arxiv.org/abs/astro-ph/0701079>`_; `Butler et al. 2017  <https://arxiv.org/abs/1607.03150>`_).
 
@@ -105,6 +105,13 @@ As a starting point, I used TensorFlow to build a CNN similar to LeNet-5 with th
 
 The input image has 64 x 64 x 6 pixels. With three convolution/pooling layers, the CNN is much shallower than the ImageNet ILSVRC winners, so in addition to tuning the number of feature maps, kernel size, stride, etc., I plan to make it deeper.
 
+Source Code
+^^^^^^^^^^^^
+
+Follow these :doc:`instructions <howto/deeplearn>` for training the CNN.
+
+* :mod:`obiwan.dplearn.create_training` creates the training data. Source code: `create_training.py <https://github.com/legacysurvey/obiwan/blob/master/py/obiwan/dplearn/create_training.py>`_. 
+* :mod:`obiwan.dplearn.cnn` trains the CNN. Source code: `cnn.py <https://github.com/legacysurvey/obiwan/blob/master/py/obiwan/dplearn/cnn.py>`_.
 
 Training Data
 ^^^^^^^^^^^^^

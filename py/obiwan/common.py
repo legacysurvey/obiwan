@@ -1,5 +1,5 @@
 """
-Generally useful functions for other modules or repos
+Commonly used functions
 """
 import matplotlib
 import matplotlib.pyplot as plt
