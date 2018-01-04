@@ -13,12 +13,12 @@
 
 **Obiwan** is a Monte Carlo method for adding fake galaxies to `Legacy Survey <http://legacysurvey.org>`_ imaging data, running our `Legacypipe <https://github.com/legacysurvey/legacypipe>`_ pipeline, and repeating. The pipeline forward models sources in multi-wavelength images by detecting Signal to Noise (S/N) greater than 6 sources and minimizing the regularized L2 Loss function for various galaxy and star models.
 
-The `Legacy Survey <http://legacysurvey.org>`_ is one of the first *open source* cosmological surveys. Anyone can `download <http://archive.noao.edu/search/query>`_ the raw and calibrated images from all three telescopes within a few days of being observed. Every six months, we publicly release the results of our Legacypipe pipeline.
+The `Legacy Survey <http://legacysurvey.org>`_ is one of the *first* open source cosmological surveys. Anyone can `download <http://archive.noao.edu/search/query>`_ the raw and calibrated images from all three telescopes within a few days of being observed. Every six months, we publicly release the results of our Legacypipe pipeline.
 
-The following picture attempts to summarize the entire process.
+**A picture is worth a 1000 words**
 
-.. image:: _static/picture_1000_words.png
-   :width: 500 px
+.. image:: _static/obiwan_1000_words.png
+   :width: 800 px
    :align: center
 
 
