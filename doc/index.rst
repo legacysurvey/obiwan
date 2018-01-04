@@ -49,10 +49,10 @@ Our lead developer, `Dustin Lang <https://github.com/dstndstn>`_, made this amaz
 
 * `legacysurvey.org/viewer <http://legacysurvey.org/viewer>`_
 
-Contact Us
+Questions?
 ^^^^^^^^^^^
 
-* Email: desi-image-sims 'at' googlegroups.com 
+* desi-image-sims 'at' googlegroups.com 
 
 Acknowledgements
 ^^^^^^^^^^^^^^^^^^

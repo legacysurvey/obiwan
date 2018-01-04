@@ -126,20 +126,22 @@ As a starting point, I used TensorFlow to build a CNN similar to LeNet-5 with th
 
 The input image has 64 x 64 x 6 pixels. With three convolution/pooling layers, the CNN is much shallower than the ImageNet ILSVRC winners, so in addition to tuning the number of feature maps, kernel size, stride, etc., I plan to make it deeper.
 
-Xeon Phi (Knights Landing)
+Intel Xeon Phi
 -----------------------------------
 
-I created an initial data set of two million images with an equal number of “fake” and “real” examples. I randomly split that into 80% training and 20% test, storing every 512 examples (32 bit floating point) in a numpy binary file so this 50 MB file would fit in memory on most machines.
+I have used the Cray XC30 (`Edison <http://www.nersc.gov/users/computational-systems/edison/>`_) and Cray XC40 (`Cori <http://www.nersc.gov/users/computational-systems/cori/>`_) supercomputers at the National Energy Research Scientific Computing Center (NERSC) for the majority of my thesis work. With almost 10,000 Intel Xeon Phi processor nodes on Cori, NERSC Staff are particularly interested in helping users optimize their codes for Xeon Phi. 
 
-I am currently training my CNN with a batch size of 16 on Xeon Phi (Knights Landing, KNL) CPUs. This non-GPU choice was motivated by the recent addition of KNL nodes to the National Energy Research Scientific Computing Center’s (NERSC) Cray XC40 supercomputer “Cori”, and the opportunity for NERSC users to see how well their codes can scale on the new system. 
+I decided to train on Xeon Phi when NERSC/Intel released optimized installs of many of the popular machine learning libraries (Caffe, TensorFlow, Theano, Torch, see `full list <http://www.nersc.gov/users/data-analytics/data-analytics-2/deep-learning/using-tensorflow-at-nersc>`_). I created an initial training set of 2048 images with an equal number of fake and real galaxies. The images are float32 so I stored every 512 examples in a file, thinking that a 50 MB file would fit in memory of most machines.
 
-NERSC has installed many of the popular machine learning packages (Caffe, TensorFlow, Theano, Torch, see `full list <http://www.nersc.gov/users/data-analytics/data-analytics-2/deep-learning/using-tensorflow-at-nersc>`_) on Cori and optimized them for KNL. I can only train on 1 node (68 threads) because multi-node support is “coming soon,” but I’ve been told that I should be able to begin multi-node training soon because they can now scale ResNet-50 and DCGAN to 1024 KNL nodes. When that happens, I plan to assign a different batch to each MPI task, update a global set of weights after each back propagation step, and repeat.
+It takes about 3 minutes to train 4 epochs of 2048 images on a single Xeon Phi node (68 hardware cores). For hundreds of nodes, I plan on training on a different minibatch with each MPI task, updating a global set of weights once all MPI tasks finish, then repeating. Although NERSC Staff are scaling ResNet-50 and DCGAN to 1024 Xeon Phi nodes, multi-node support is not yet available to users.
+
+Fortunately, the NERSC Staff have volunteered my CNN for non-benchmark multi-node testing. I hope to begin multi-node training soon. 
 
 
 TensorBoard & Profiling
 ------------------------
 
-To show some initial results with TensorBoard, I trained the CNN on 2048 images for 4 epochs using a single KNL node. It took about 3 minutes. The accuracy, loss, and graph are below. The different colors correspond to me restarting the training twice to demonstrate that the checkpoints are working.
+The accuracy, loss, and graph for the 4 epochs of training on 2048 images is shown with TensorBoard, below. The different colors correspond to me restarting the training twice to demonstrate that the checkpoints are working.
 
 .. figure:: _static/tensorboard_scalars.png
    :width: 75 %
@@ -155,7 +157,7 @@ To show some initial results with TensorBoard, I trained the CNN on 2048 images 
 
    Graph with TensorBoard
 
-I also save profiling information (timings for each node of the graph) to a file "timing.json" using TensorFlow's `timeline <https://stackoverflow.com/questions/34293714/can-i-measure-the-execution-time-of-individual-operations-with-tensorflow>`_ object. Chrome provides a really nice way for looking at the output. Simply go to `chrome://tracing`, click `load`, and select the file. It looks like this for the 4 epochs of 2048 training images.
+I also profile my CNN using TensorFlow's `timeline <https://stackoverflow.com/questions/34293714/can-i-measure-the-execution-time-of-individual-operations-with-tensorflow>`_ object. This times each node of the graph and writes a json file. Google Chrome automatically displays the profiling info by going to `chrome://tracing`, clicking `load`, and selecting the file. It looks like this for the 4 training epochs:
 
 .. figure:: _static/prof_tensorflow.png
    :width: 90 %
