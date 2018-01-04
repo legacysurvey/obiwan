@@ -49,6 +49,11 @@ Our lead developer, `Dustin Lang <https://github.com/dstndstn>`_, made this amaz
 
 * `legacysurvey.org/viewer <http://legacysurvey.org/viewer>`_
 
+Open Source
+^^^^^^^^^^^^^
+
+The `Legacy Survey <http://legacysurvey.org>`_ is one of the first *open source* cosmological surveys. Anyone can `download <http://archive.noao.edu/search/query>`_ the raw and calibrated images from all three telescopes within a few days of being observed. Every six months, we publicly release the results of our `pipeline <https://github.com/legacysurvey/legacypipe>`_ that detects and models all of the galaxies and stars in the imaging data set.
+
 Questions?
 ^^^^^^^^^^^
 
