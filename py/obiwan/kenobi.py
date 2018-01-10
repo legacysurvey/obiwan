@@ -639,6 +639,8 @@ def get_parser():
                         help='fit models to all blobs, not just those containing sim sources')
     parser.add_argument('--checkpoint', action='store_true',default=False,
                         help='turn on checkpointing')
+    parser.add_argument('--overwrite_if_exists', action='store_true',default=False,
+                        help='run the code even if expected output already exists')
     parser.add_argument('-v', '--verbose', action='store_true', help='toggle on verbose output')
     return parser
  
@@ -975,7 +977,7 @@ def main(args=None):
     logging.basicConfig(level=lvl, stream=sys.stdout) #,format='%(message)s')
     log = logging.getLogger('decals_sim')
     # Sort through args 
-    log.info('decals_sim.py args={}'.format(args))
+    #log.info('decals_sim.py args={}'.format(args))
     #max_nobj=500
     #max_nchunk=1000
     #if args.ith_chunk is not None: assert(args.ith_chunk <= max_nchunk-1)
@@ -986,6 +988,21 @@ def main(args=None):
     if args.nobj is None:
         parser.print_help()
         sys.exit(1)
+ 
+    # Exit if expected output already exists
+    rsdir= get_outdir_runbrick(args.outdir,
+                        args.brick,args.rowstart,
+                        do_skipids=args.do_skipids,
+                        do_more=args.do_more)
+    rsdir= os.path.basename(rsdir)
+    tractor_fn= os.path.join(args.outdir,
+                    'tractor',args.brick[:3],args.brick,
+                    rsdir,
+                    'tractor-%s.fits' % args.brick)
+    if (os.path.exists(tractor_fn) & 
+        (not args.overwrite_if_exists)):
+       print('Exiting, already finished %s' % tractor_fn)
+       sys.exit(0)
 
     brickname = args.brick
     objtype = args.objtype
