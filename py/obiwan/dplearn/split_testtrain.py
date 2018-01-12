@@ -1,7 +1,3 @@
-"""
-Shuffles the fake and real galaxies in the HDF5, does train/test split, repackages as numpy binaries
-"""
-
 import numpy as np
 import os
 from glob import glob
@@ -108,7 +104,8 @@ if __name__ == '__main__':
     if args.bricks_fn:
         bricks= np.loadtxt(args.bricks_fn,dtype=str)
     else:
-        bricks=['1211p060']
+        #bricks=['1211p060']
+        bricks=['1211p077']
 
     if args.nproc > 1:
         from mpi4py.MPI import COMM_WORLD as comm

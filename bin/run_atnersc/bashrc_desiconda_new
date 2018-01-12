@@ -1,0 +1,39 @@
+#!/bin/bash
+
+# desiconda aug 2017 conda create env to my scratch
+module use /global/common/software/desi/${NERSC_HOST}/desiconda/20180103-1.2.3-img/modulefiles
+module load desiconda
+source activate /global/cscratch1/sd/kaylanb/desiconda_install_new/${NERSC_HOST}
+export PYTHONPATH=/global/cscratch1/sd/kaylanb/desiconda_install_new/${NERSC_HOST}/lib/python3.6/site-packages:$PYTHONPATH
+export PATH=/global/cscratch1/sd/kaylanb/desiconda_install_new/${NERSC_HOST}/bin:$PATH
+
+# We need 3 directories for Obiwan
+export obiwan_data=$CSCRATCH/obiwan_data
+export obiwan_code=$CSCRATCH/obiwan_code
+export obiwan_out=$CSCRATCH/obiwan_out
+
+# Env vars for imaging pipeline 
+module use $obiwan_code/obiwan/etc/modulefiles
+for name in unwise_coadds unwise_coadds_timeresolved; do
+    module load $name
+done  
+export LEGACY_SURVEY_DIR=$obiwan_data/legacysurveydir_dr5
+export DUST_DIR=$obiwan_data/dust
+
+# Obiwan and imaging pipeline repos
+export PYTHONPATH=$obiwan_code/theValidator:${PYTHONPATH}
+export PYTHONPATH=$obiwan_code/legacypipe/py:${PYTHONPATH}
+export PYTHONPATH=$obiwan_code/legacyzpts/py:${PYTHONPATH}
+export PYTHONPATH=$obiwan_code/obiwan/py:${PYTHONPATH}
+
+# QDO (for Obiwan production runs)
+export QDO_BATCH_PROFILE=$NERSC_HOST
+export QDO_BACKEND=postgres
+export QDO_DB_NAME=desirun
+#export QDO_DB_HOST=scidb2.nersc.gov
+export QDO_DB_HOST=nerscdb03.nersc.gov
+export QDO_DB_USER=desirun_admin
+# directory from "which qdo" but without the trailing /bin/qdo, eg which qdo should give
+export QDO_DIR=`which qdo|sed s#/bin/qdo##g`
+# get db pass
+export QDO_DB_PASS="$(cat $HOME/.qdo_db_pass)"
