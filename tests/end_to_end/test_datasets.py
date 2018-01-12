@@ -164,9 +164,8 @@ class AnalyzeTestcase(Testcase):
         brickinfo= get_brickinfo_hack(survey,self.brick)
         self.brickwcs = wcs_for_brick(brickinfo)
 
-        self.outdir= os.path.join(os.environ['HOME'],
-                           'myrepo/obiwan/tests/end_to_end',
-                            self.outname)
+        #self.outdir= os.path.join(os.path.dirname(__file__),
+        #                          self.outname)
         self.rsdir='rs0'
 
     def get_tolerances(self):
