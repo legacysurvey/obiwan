@@ -34,7 +34,7 @@ def dobash(cmd):
     print('UNIX cmd: %s' % cmd)
     if os.system(cmd): raise ValueError
 
-def stack_tables(self,fn_list,textfile=True,
+def stack_tables(fn_list,textfile=True,
                  shuffle=None):
     '''concatenates fits tables
     shuffle: set to an integer to randomly reads up to the first "shuffle" cats only
