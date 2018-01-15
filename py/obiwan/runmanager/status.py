@@ -140,11 +140,11 @@ class QdoList(object):
                     if to == 'pending':
                         # Stuck in pending b/c slurm job timed out
                         task_obj.set_state(qdo.Task.PENDING)
-                        print('id %s RUNNING --> PENDING' % task_id)
+                        #print('id %s --> PENDING' % task_id)
                     elif to == 'failed':
                         # Manually force to failed, keep whatever outputs have
                         task_obj.set_state(qdo.Task.FAILED)
-                        print('id %s RUNNING --> FAILED' % task_id)
+                        print('id %s --> FAILED' % task_id)
                     if rm_files:
                         for dr in del_dirs:
                             dobash('rm -r %s/*' % dr)
@@ -250,6 +250,7 @@ if __name__ == '__main__':
     parser.add_argument('--running_to_pending',action="store_true",default=False,help='set to reset all "running" jobs to "pending"')
     parser.add_argument('--running_to_failed',action="store_true",default=False,help='set to reset all "running" jobs to "failed"')
     parser.add_argument('--failed_message_to_pending',action='store',default=None,help='set to message of failed tak and reset all failed tasks with that message to pending')
+    parser.add_argument('--failed_to_pending',action="store_true",default=False,help='set to reset all "failed" jobs to "pending"')
     parser.add_argument('--modify',action='store_true',default=False,help='set to actually reset the qdo tasks state AND to delete IFF running_to_pending or failed_message_to_pending are set')
     parser.add_argument('--outdir',default='.',help='',required=False)
     args = parser.parse_args()
@@ -262,9 +263,32 @@ if __name__ == '__main__':
     print('Getting tasks,logs')
     tasks,ids,logs= Q.get_tasks_logs()
 
-    # Write log fns so can inspect
+    # Logfile lists grouped by succeeded,running,failed
     for res in logs.keys():
         writelist(logs[res],"%s_%s_logfns.txt" % (args.qdo_quename,res))
+
+    # Rerun tasks and delete those tasks' outputs
+    if len(ids['running']) > 0:
+        if args.running_to_pending:
+            Q.change_task_state(ids['running'], to='pending',modify=args.modify,
+                                rm_files=False)
+        elif args.running_to_failed:
+            Q.change_task_state(ids['running'], to='failed',modify=args.modify,
+                                rm_files=False)
+        elif args.failed_to_pending:
+            Q.change_task_state(ids['failed'], to='pending',modify=args.modify,
+                                rm_files=False)
+   
+    # Subset of failed to pending
+    if args.failed_message_to_pending:
+        hasMessage= np.where(tally['failed'] == args.failed_message_to_pending)[0]
+        if hasMessage.size > 0:
+            theIds= np.array(ids['failed'])[hasMessage]
+            Q.change_task_state(theIds, to='pending', modify=args.modify,
+                                rm_files=False)
+
+
+    # Failed logfile lists, group by error message
     R= RunStatus(tasks,logs)
     print('Counting number of failed,suceed,running tasks for ech failure mode')
     tally= R.get_tally()
@@ -285,20 +309,5 @@ if __name__ == '__main__':
         writelist(err_logs,"logs_%s_%s.txt" % (args.qdo_quename,err_string))
         writelist(err_tasks,"tasks_%s_%s.txt" % (args.qdo_quename,err_string))
 
-    # Rerun tasks and delete those tasks' outputs
-    if len(ids['running']) > 0:
-        if args.running_to_pending:
-            Q.change_task_state(ids['running'], to='pending',modify=args.modify,
-                                rm_files=False)
-        elif args.running_to_failed:
-            Q.change_task_state(ids['running'], to='failed',modify=args.modify,
-                                rm_files=False)
-    
-    if args.failed_message_to_pending:
-        hasMessage= np.where(tally['failed'] == args.failed_message_to_pending)[0]
-        if hasMessage.size > 0:
-            theIds= np.array(ids['failed'])[hasMessage]
-            Q.change_task_state(theIds, to='pending', modify=args.modify,
-                                rm_files=False)
 
     print('done')
