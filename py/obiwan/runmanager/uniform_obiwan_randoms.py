@@ -21,22 +21,42 @@ def derived_field_dir(brick,data_dir):
     return os.path.join(data_dir,'derived',
                         brick[:3],brick)
 
-def uniform_randoms(brick,data_dir):
+def uniform_obiwan_randoms(brick,data_dir):
     search= os.path.join(data_dir,'obiwan',
                          brick[:3],brick,
-                         'rs*','simcat-elg-%s.fits' % brick
-    simcat_fns= glob(search)
-    if len(simcat_fns) == 0:
-        raise ValueError('no files found: %s' % search)
-    idsadded_fns= [fn.replace('simcat-elg-%s' % brick,
-                              'sim_ids_added') 
-                   fn fn in simcat_fns]
-    raise ValueError
-    simcat= stack_tables(simcat_fns,textfile=False)
-    idsadded= stack_tables(idsadded_fns,textfile=False)
-    assert(len(idsadded) == len(set(idsadded.id)))
-    simcat.cut( pd.Series(simcat.id).isin(idsadded.id) )
-    return simcat
+                         'rs*')
+    rsdirs= glob(search)
+    if len(rsdirs) == 0:
+        raise ValueError('no rsdirs found: %s' % search)
+    uniform,obi= [],[]
+    for dr in rsdir:
+        simcat= fits_table(os.path.join(dr,'simcat-elg-%s.fits' % brick))
+        idsadded= fits_table(os.path.join(dr,'sim_ids_added.fits'))
+        tractor= fits_table((os.path.join(dr,'tractor-%s.fits' % brick)
+                             .replace('/obiwan/','/tractor/')))
+        # Uniform randoms
+        assert(len(idsadded) == len(set(idsadded.id)))
+        simcat.cut( pd.Series(simcat.id).isin(idsadded.id) )
+        uniform.append(simcat)
+        # Obiwan randoms
+        tractor.cut(tractor.brick_primary)
+        del_cols= (pd.Series(tractor.get_columns())
+                            .str.startswith('apflux_'))
+        for col in del_cols:
+            tractor.delete_column(col)
+        # nearest match in (ra2,dec2) for each point in (ra1,dec1)
+        I,J,d = match_radec(simcat.ra,simcat.dec,
+                            tractor.ra,tractor.dec, 1./3600,
+                            nearest=True)
+        assert(np.all(d <= 1./3600))
+        simcat.cut(I)
+        tractor.cut(J)
+        for simkey in ['id','ra','dec']:
+            tractor.set('simcat_%s' % simkey,
+                        simcat.get(simkey))
+        obi.append(tractor)
+    return merge_tables(uniform, columns='fillzero'),
+           merge_tables(obi, columns='fillzero')
 
 def mpi_main(nproc=1,data_dir='./',
              bricks=[]):
@@ -51,17 +71,26 @@ def mpi_main(nproc=1,data_dir='./',
         bricks= np.array_split(bricks, comm.size)[comm.rank]
     
     for brick in bricks:
-        fn= os.path.join(derived_field_dir(brick,data_dir),
-                         'uniform_randoms.fits')
+        dr= derived_field_dir(brick,data_dir)
+        try:
+            os.makedirs(dr)
+        except IOError:
+                pass
+        # Uniform randoms
+        fn= os.path.join(dr,'uniform_randoms.fits')
         if os.path.exists(fn):
             print('Skipping, already exists %s' % fn)
         else:
             uniform= uniform_randoms(brick,data_dir)
-            try:
-                os.makedirs(os.path.dirname(fn))
-            except IOError:
-                pass
             uniform.writeto(fn)
+            print('Wrote %s' % fn)
+        # Obiwan randoms
+        fn= os.path.join(dr,'obiwan_randoms.fits')
+        if os.path.exists(fn):
+            print('Skipping, already exists %s' % fn)
+        else:
+            obi= obiwan_randoms(brick,data_dir)
+            obi.writeto(fn)
             print('Wrote %s' % fn)
 
 
@@ -78,7 +107,7 @@ if __name__ == '__main__':
     
     # Bricks to run
     if args.bricks_fn is None:
-        bricks= ['1211p060'] #['1126p220']
+        bricks= ['1266p292']
     else:
         bricks= np.loadtxt(args.bricks_fn,dtype=str)
 
