@@ -44,6 +44,7 @@ try:
     from legacypipe.runbrick import run_brick
     from legacypipe.decam import DecamImage
     from legacypipe.survey import LegacySurveyData, wcs_for_brick
+    from legacypipe.runcosmos import DecamImagePlusNoise, CosmosSurvey 
 
     from astrometry.util.fits import fits_table, merge_tables
     from astrometry.util.ttime import Time
@@ -56,6 +57,8 @@ try:
     import galsim
 except ImportError:
     pass
+
+DATASETS=['dr5','dr3','cosmos']
 
 def write_dict(fn,d):
     '''d -- dictionary'''
@@ -151,9 +154,15 @@ try:
         
         def __init__(self, dataset=None, survey_dir=None, metacat=None, simcat=None, 
                      output_dir=None,add_sim_noise=False, seed=0,
-                     image_eq_model=False):
-            super(SimDecals, self).__init__(survey_dir=survey_dir, output_dir=output_dir)
+                     image_eq_model=False,subset=None):
             self.dataset= dataset
+            
+            kw= dict(survey_dir=survey_dir, 
+                     output_dir=output_dir)
+            if self.dataset == 'cosmos':
+                kw.update(subset=subset)
+            super(SimDecals, self).__init__(**kw)
+
             self.metacat = metacat
             self.simcat = simcat
             # Additional options from command line
@@ -163,24 +172,17 @@ try:
             print('SimDecals: self.image_eq_model=',self.image_eq_model)
             
         def get_image_object(self, t):
-            return SimImage(self, t)
+            if self.dataset == 'cosmos':
+                return SimImageCosmos(self, t)
+            else:
+                return SimImage(self, t)
         
         def filter_ccds_files(self, fns):
             """see legacypipe/runs.py"""
-            if self.dataset == 'DR3':
-                return [fn for fn in fns if
-                        ('survey-ccds-decals.fits.gz' in fn  or
-                         'survey-ccds-nondecals.fits.gz' in fn or
-                         'survey-ccds-extra.fits.gz' in fn)]
-            #elif self.dataset == 'DR4':
-                #   return [fn for fn in fns if
-                #           ('survey-ccds-dr4-90prime.fits.gz' in fn or
-                #           'survey-ccds-dr4-mzlsv2.fits.gz' in fn)]
-            elif self.dataset == 'DR5':
-                return fns
+            return fns
         
         def ccds_for_fitting(self, brick, ccds):
-            if self.dataset in ['DR3','DR5']:
+            if self.dataset in ['dr3','dr5']:
                 return np.flatnonzero(ccds.camera == 'decam')
             #elif self.dataset == 'DR4':
                 #   return np.flatnonzero(np.logical_or(ccds.camera == 'mosaic',
@@ -228,6 +230,22 @@ except NameError:
     pass
 
 try: 
+    class SimDecalsCosmos(SimDecals,CosmosSurvey):
+        """Filters the CCDs to just those in the cosmos realizations
+
+        Call just like SimDecals except with additional Argument 'subset'        
+        
+        Args:
+            **kwargs: SimDecals args + 'subset'
+        """
+        
+        def __init__(self, survey_dir, output_dir, subset):
+            super(SimDecalsCosmos, self).__init__(survey_dir=survey_dir, output_dir=output_dir,
+                                                  subset=subset)
+except NameError:
+    pass
+
+try: 
     class SimImage(DecamImage):
         """Adds simulated sources to a single exposure
 
@@ -249,11 +267,10 @@ try:
         def __init__(self, survey, t):
             super(SimImage, self).__init__(survey, t)
             self.t = t
-            if self.survey.dataset in ['DR3','DR3_eBOSS']:
+            if self.survey.dataset in ['dr3']:
                 assert('arawgain' in self.t.get_columns())
-                assert(not 'gain' in self.t.get_columns())
                 self.t.rename('arawgain', 'gain')
-            elif self.survey.dataset in ['DR5']:
+            elif self.survey.dataset in ['dr5']:
                 assert 'gain' in self.t.get_columns()
                         
 
@@ -349,6 +366,21 @@ try:
                 tim.data = tim_image.array
                 tim.inverr = np.sqrt(tim_invvar.array)
             return tim
+except NameError:
+    pass
+
+try: 
+    class SimImageCosmos(SimImage,DecamImagePlusNoise):
+        """Filters the CCDs to just those in the cosmos realizations
+
+        Call just like SimDecals except with additional Argument 'subset'        
+        
+        Args:
+            **kwargs: SimDecals args + 'subset'
+        """
+        
+        def __init__(self, survey, t):
+            super(SimImageCosmos, self).__init__(survey, t)
 except NameError:
     pass
 
@@ -601,7 +633,7 @@ def get_parser():
     parser = argparse.ArgumentParser(formatter_class=argparse.
                                      ArgumentDefaultsHelpFormatter,
                                      description='DECaLS simulations.')
-    parser.add_argument('--dataset', type=str, choices=['DR5','DR3', 'DR3_eBOSS'], required=True, help='see definitions in obiwan/test/README.md') 
+    parser.add_argument('--dataset', type=str, choices=['dr5','dr3', 'cosmos'], required=True, help='see definitions in obiwan/test/README.md') 
     parser.add_argument('-o', '--objtype', type=str, choices=['star','elg', 'lrg', 'qso'], default='star', required=True) 
     parser.add_argument('-b', '--brick', type=str, default='2428p117', required=True)
     parser.add_argument('--outdir', default='./', required=False)
@@ -638,6 +670,8 @@ def get_parser():
                         help='if using mpi4py')
     parser.add_argument('--all_blobs', action='store_true',default=False,
                         help='fit models to all blobs, not just those containing sim sources')
+    parser.add_argument('--subset', type=int, default=0,
+                        help='COSMOS subset number [0 to 4, 10 to 12], only used if dataset = cosmos')
     parser.add_argument('--checkpoint', action='store_true',default=False,
                         help='turn on checkpointing')
     parser.add_argument('--overwrite_if_exists', action='store_true',default=False,
@@ -769,7 +803,7 @@ def get_runbrick_setup(**kwargs):
             run_brick(brickname, survey, `**dict`)      
     """
     dataset= kwargs['dataset']
-    assert(dataset in ['DR5','DR3','DR3_eBOSS'])
+    assert(dataset in DATASETS)
     from legacypipe.runbrick import get_runbrick_kwargs
     from legacypipe.runbrick import get_parser as get_runbrick_parser
     zm= kwargs['zoom']
@@ -786,10 +820,10 @@ def get_runbrick_setup(**kwargs):
         cmd_line += ['--early-coadds', '--stage', 'image_coadds']
     #if kwargs['stage']:
     #    cmd_line += ['--stage', '%s' % kwargs['stage']]
-    if dataset == 'DR3':
-        #cmd_line += ['--run', 'dr3', '--hybrid-psf','--nsigma', '6']
-        cmd_line += ['--run', 'dr3','--nsigma', '6']
-    elif dataset == 'DR5':
+    if dataset == 'dr3':
+        #cmd_line += ['--hybrid-psf']
+        cmd_line += ['--run', 'dr3','--nsigma', '6','--simp']
+    elif dataset == 'dr5':
         # defaults: rex (use --simp), nsigma 6 ,hybrid-psf (--no-hybrid-psf otherwise)
         # depth cut already done (use --depth-cut to do depth cut anyway)
         cmd_line += ['--run', 'dr5'] 
@@ -819,10 +853,16 @@ def do_one_chunk(d=None):
         Nothing, but this func end ups writing out all the obiwan results 
     """
     assert(d is not None)
-    simdecals = SimDecals(dataset=d['args'].dataset,\
-              metacat=d['metacat'], simcat=d['simcat'], output_dir=d['simcat_dir'], \
-              add_sim_noise=d['args'].add_sim_noise, seed=d['seed'],\
-              image_eq_model=d['args'].image_eq_model)
+    kw= dict(dataset=d['args'].dataset,\
+             metacat=d['metacat'], simcat=d['simcat'], \
+             output_dir=d['simcat_dir'], \
+             add_sim_noise=d['args'].add_sim_noise, seed=d['seed'],\
+             image_eq_model=d['args'].image_eq_model)
+    if d['args'].dataset == 'cosmos':
+        kw.update(subset=d['args'].subset)
+        simdecals= SimDecalsCosmos(**kw)
+    else:
+        simdecals = SimDecals(**kw)
     # Use Tractor to just process the blobs containing the simulated sources.
     if d['args'].all_blobs:
         blobxy = None
