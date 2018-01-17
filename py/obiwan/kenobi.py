@@ -168,18 +168,7 @@ try:
         
         def filter_ccds_files(self, fns):
             """see legacypipe/runs.py"""
-            if self.dataset == 'dr3':
-                return [fn for fn in fns if
-                        ('survey-ccds-decals.fits.gz' in fn  or
-                         'survey-ccds-nondecals.fits.gz' in fn or
-                         'survey-ccds-extra.fits.gz' in fn or 
-                         'survey-ccds-dr3plus.fits.gz' in fn)]
-            #elif self.dataset == 'dr4':
-                #   return [fn for fn in fns if
-                #           ('survey-ccds-dr4-90prime.fits.gz' in fn or
-                #           'survey-ccds-dr4-mzlsv2.fits.gz' in fn)]
-            elif self.dataset == 'dr5':
-                return fns
+            return fns
         
         def ccds_for_fitting(self, brick, ccds):
             if self.dataset in ['dr3','dr5']:
@@ -253,9 +242,8 @@ try:
             self.t = t
             if self.survey.dataset in ['dr3']:
                 assert('arawgain' in self.t.get_columns())
-                assert(not 'gain' in self.t.get_columns())
                 self.t.rename('arawgain', 'gain')
-            elif self.survey.dataset in ['DR5']:
+            elif self.survey.dataset in ['dr5']:
                 assert 'gain' in self.t.get_columns()
                         
 
