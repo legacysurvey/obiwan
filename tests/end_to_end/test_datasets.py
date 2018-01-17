@@ -39,16 +39,15 @@ class Testcase(object):
         onedge: to add randoms at edge of region, not well within the boundaries
     """
 
-    def __init__(self, bands='grz',
-                 dataset='dr5',
+    def __init__(self, dataset='dr5', bands='grz',
                  obj='elg',rowstart=0,
                  add_noise=False,all_blobs=False,
                  onedge=False, early_coadds=False,
                  checkpoint=False,
                  no_cleanup=False,stage=None):
         assert(dataset in DATASETS)
-        self.bands= bands
         self.dataset= dataset
+        self.bands= bands
         self.obj= obj
         self.rowstart= rowstart
         self.all_blobs= all_blobs
@@ -365,6 +364,11 @@ class AnalyzeTestcase(Testcase):
 
     def qualitative_tests(self):
         """T: TestcaseOutputs() object """
+        if self.dataset == 'dr3':
+            assert('SIMP' in self.obitractor.type)
+        elif self.dataset == 'dr5':
+            assert('REX ' in self.obitractor.type)
+
         if self.checkpoint:
             # log file is assumed to exist and it must have
             # skipped the correct number of blobs
@@ -467,6 +471,9 @@ def test_main():
              all_blobs=False,onedge=False,
              early_coadds=False,
              checkpoint=False)
+    test_case(**d)
+
+    d.update(grz=True)
     test_case(**d)
 
 
