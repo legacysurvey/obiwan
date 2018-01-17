@@ -481,7 +481,7 @@ if __name__ == "__main__":
     #test_dataset_DR3()
     #test_dataset_DR5()
     # Various tests can do 
-    d=dict(dataset='dr5',
+    d=dict(dataset='dr3',
            z=True,grz=False,
            obj='elg',
            all_blobs=False,onedge=False,
