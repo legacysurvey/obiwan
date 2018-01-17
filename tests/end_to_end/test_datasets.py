@@ -23,7 +23,7 @@ try:
 except ImportError:
     pass
 
-DATASETS= ['DR3','DR5','DR3_eBOSS']
+DATASETS= ['dr5','dr3','cosmos']
 
 
 
@@ -39,14 +39,15 @@ class Testcase(object):
         onedge: to add randoms at edge of region, not well within the boundaries
     """
 
-    def __init__(self, name='testcase_DR5_z',dataset='DR5',
+    def __init__(self, bands='grz',
+                 dataset='dr5',
                  obj='elg',rowstart=0,
                  add_noise=False,all_blobs=False,
                  onedge=False, early_coadds=False,
                  checkpoint=False,
                  no_cleanup=False,stage=None):
         assert(dataset in DATASETS)
-        self.name= name
+        self.bands= bands
         self.dataset= dataset
         self.obj= obj
         self.rowstart= rowstart
@@ -57,7 +58,11 @@ class Testcase(object):
         self.checkpoint= checkpoint
         self.no_cleanup=no_cleanup
         self.stage=stage
-        self.outname= 'out_%s_%s' % (self.name,self.obj)
+
+        self.testcase_dir= os.path.join(os.path.dirname(__file__), 
+                                        'testcase_%s' % bands)
+        self.outname= 'out_testcase_%s_%s_%s' % (bands,
+                                self.dataset,self.obj)
         if self.all_blobs:
             self.outname += '_allblobs'
         if self.add_noise:
@@ -70,17 +75,16 @@ class Testcase(object):
                                   self.outname)
         self.logfn=os.path.join(self.outdir,'log.txt')
         
-        if '_grz' in self.name:
+        if self.bands == 'grz':
             self.brick='0285m165' 
-            self.bands= ['g','r','z']
             self.zoom= [3077, 3277, 2576, 2776]
-        else:
+        elif self.bands == 'z':
             self.brick='1741p242'
-            self.bands= ['z']
             self.zoom= [90, 290, 2773, 2973]
+        else:
+            raise ValueError('bands= %s no allowed' % bands)
 
-        os.environ["LEGACY_SURVEY_DIR"]= os.path.join(os.path.dirname(__file__), 
-                                                      self.name)
+        os.environ["LEGACY_SURVEY_DIR"]= self.testcase_dir
          
     def run(self):
         """run it
@@ -88,7 +92,7 @@ class Testcase(object):
         Args:
             no_cleanup: don't run cleanup step
         """
-        print('Running testcase: %s' % self.name)
+        print('Running testcase: %s' % self.outname)
         extra_cmd_line = []
         if self.add_noise:
             extra_cmd_line += ['--add_sim_noise']
@@ -170,7 +174,7 @@ class AnalyzeTestcase(Testcase):
         self.rsdir='rs0'
 
     def get_tolerances(self):
-        if '_grz' in self.name:
+        if self.bands == 'grz':
             mw_trans= 2.e-5 # Not 0 b/c ra,dec of model can vary
             # also amazing agreement
             return {'rhalf':0.65, 
@@ -178,7 +182,7 @@ class AnalyzeTestcase(Testcase):
                     'skyflux':2.,
                     'modelflux':4.5,
                     'mw_trans':mw_trans}
-        else:
+        elif self.bands == 'z':
             mw_trans= 5.e-6 # Not 0 b/c ra,dec of model can vary
             if self.add_noise:
                 # TODO: tune
@@ -313,9 +317,9 @@ class AnalyzeTestcase(Testcase):
         if self.all_blobs:
             assert(len(ireal) ==1) # found the real galaxy
         else:
-            if '_grz' in self.name:
+            if self.bands == 'grz':
                 assert(len(ireal) == 1) # central galaxy in blob on a sim
-            else:
+            elif self.bands == 'z':
                 assert(len(ireal) == 0)
 
         if not self.obj == 'star':
@@ -373,14 +377,15 @@ class AnalyzeTestcase(Testcase):
         print('passed: Qualitative Tests')
 
 
-def test_case(z=True,grz=False,
+def test_case(dataset='dr5',
+               z=True,grz=False,
                obj='elg',
                add_noise=False,all_blobs=False,
                onedge=False, early_coadds=False,
-               checkpoint=False,
-               dataset='DR5'):
+               checkpoint=False):
     """
     Args:
+        dataset: dr5, dr3, cosmos
         z, grz: to run the z and/or grz testcases
         all_blobs: to fit models to all blobs, not just the blobs containing sims
         add_noise: to add Poisson noise to simulated galaxy profiles
@@ -391,11 +396,12 @@ def test_case(z=True,grz=False,
     d= dict(obj=obj,dataset=dataset,
             add_noise=add_noise,all_blobs=all_blobs,
             onedge=onedge,early_coadds=early_coadds,
-            checkpoint=checkpoint)    
+            checkpoint=checkpoint)   
     if z:
-        d.update(name='testcase_DR5_z')
+        bands= 'z'
     elif grz:
-        d.update(name='testcase_DR5_grz')
+        bands= 'grz'
+    d.update(bands=bands) 
 
     if checkpoint:
         # create checkpoint file
@@ -424,12 +430,14 @@ def test_case(z=True,grz=False,
 
 def test_main():
     """travis CI"""
-    d=dict(z=True,grz=False,
+    d=dict(dataset='dr5',
+           z=True,grz=False,
            obj='elg',
            all_blobs=False,onedge=False,
            early_coadds=False,
            checkpoint=False)
 
+    # dr5
     d.update(early_coadds=True)
     test_case(**d)
     
@@ -452,12 +460,22 @@ def test_main():
              checkpoint=True)
     test_case(**d)
 
+    # dr3
+    d.update(dataset='dr3',
+             z=True,grz=False,
+             obj='elg',
+             all_blobs=False,onedge=False,
+             early_coadds=False,
+             checkpoint=False)
+    test_case(**d)
+
 
 if __name__ == "__main__":
     #test_dataset_DR3()
     #test_dataset_DR5()
     # Various tests can do 
-    d=dict(z=True,grz=False,
+    d=dict(dataset='dr5',
+           z=True,grz=False,
            obj='elg',
            all_blobs=False,onedge=False,
            early_coadds=False,
@@ -468,8 +486,5 @@ if __name__ == "__main__":
     #d.update(early_coadds=True)
     #test_case(**d)
 
-    d.update(z=True,grz=False,
-             all_blobs=False,
-             checkpoint=False)
     test_case(**d)
     

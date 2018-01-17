@@ -56,6 +56,8 @@ try:
 except ImportError:
     pass
 
+DATASETS=['dr5','dr3','cosmos']
+
 def write_dict(fn,d):
     '''d -- dictionary'''
     w = csv.writer(open(fn, "w"))
@@ -166,20 +168,21 @@ try:
         
         def filter_ccds_files(self, fns):
             """see legacypipe/runs.py"""
-            if self.dataset == 'DR3':
+            if self.dataset == 'dr3':
                 return [fn for fn in fns if
                         ('survey-ccds-decals.fits.gz' in fn  or
                          'survey-ccds-nondecals.fits.gz' in fn or
-                         'survey-ccds-extra.fits.gz' in fn)]
-            #elif self.dataset == 'DR4':
+                         'survey-ccds-extra.fits.gz' in fn or 
+                         'survey-ccds-dr3plus.fits.gz' in fn)]
+            #elif self.dataset == 'dr4':
                 #   return [fn for fn in fns if
                 #           ('survey-ccds-dr4-90prime.fits.gz' in fn or
                 #           'survey-ccds-dr4-mzlsv2.fits.gz' in fn)]
-            elif self.dataset == 'DR5':
+            elif self.dataset == 'dr5':
                 return fns
         
         def ccds_for_fitting(self, brick, ccds):
-            if self.dataset in ['DR3','DR5']:
+            if self.dataset in ['dr3','dr5']:
                 return np.flatnonzero(ccds.camera == 'decam')
             #elif self.dataset == 'DR4':
                 #   return np.flatnonzero(np.logical_or(ccds.camera == 'mosaic',
@@ -248,7 +251,7 @@ try:
         def __init__(self, survey, t):
             super(SimImage, self).__init__(survey, t)
             self.t = t
-            if self.survey.dataset in ['DR3','DR3_eBOSS']:
+            if self.survey.dataset in ['dr3']:
                 assert('arawgain' in self.t.get_columns())
                 assert(not 'gain' in self.t.get_columns())
                 self.t.rename('arawgain', 'gain')
@@ -600,7 +603,7 @@ def get_parser():
     parser = argparse.ArgumentParser(formatter_class=argparse.
                                      ArgumentDefaultsHelpFormatter,
                                      description='DECaLS simulations.')
-    parser.add_argument('--dataset', type=str, choices=['DR5','DR3', 'DR3_eBOSS'], required=True, help='see definitions in obiwan/test/README.md') 
+    parser.add_argument('--dataset', type=str, choices=['dr5','dr3', 'cosmos'], required=True, help='see definitions in obiwan/test/README.md') 
     parser.add_argument('-o', '--objtype', type=str, choices=['star','elg', 'lrg', 'qso'], default='star', required=True) 
     parser.add_argument('-b', '--brick', type=str, default='2428p117', required=True)
     parser.add_argument('--outdir', default='./', required=False)
@@ -768,7 +771,7 @@ def get_runbrick_setup(**kwargs):
             run_brick(brickname, survey, `**dict`)      
     """
     dataset= kwargs['dataset']
-    assert(dataset in ['DR5','DR3','DR3_eBOSS'])
+    assert(dataset in DATASETS)
     from legacypipe.runbrick import get_runbrick_kwargs
     from legacypipe.runbrick import get_parser as get_runbrick_parser
     zm= kwargs['zoom']
@@ -785,10 +788,10 @@ def get_runbrick_setup(**kwargs):
         cmd_line += ['--early-coadds', '--stage', 'image_coadds']
     #if kwargs['stage']:
     #    cmd_line += ['--stage', '%s' % kwargs['stage']]
-    if dataset == 'DR3':
-        #cmd_line += ['--run', 'dr3', '--hybrid-psf','--nsigma', '6']
-        cmd_line += ['--run', 'dr3','--nsigma', '6']
-    elif dataset == 'DR5':
+    if dataset == 'dr3':
+        #cmd_line += ['--hybrid-psf']
+        cmd_line += ['--run', 'dr3','--nsigma', '6','--simp']
+    elif dataset == 'dr5':
         # defaults: rex (use --simp), nsigma 6 ,hybrid-psf (--no-hybrid-psf otherwise)
         # depth cut already done (use --depth-cut to do depth cut anyway)
         cmd_line += ['--run', 'dr5'] 
