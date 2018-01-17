@@ -21,18 +21,21 @@ def derived_field_dir(brick,data_dir):
 
 def uniform_obiwan_randoms(brick,data_dir):
     """Returns a uniform randoms and obiwan randoms table per brick"""
-    search= os.path.join(data_dir,'obiwan',
+    search= os.path.join(data_dir,'tractor',
                          brick[:3],brick,
-                         'rs*')
+                         'rs*','tractor-%s.fits' % brick)
     rsdirs= glob(search)
+    rsdirs= [os.path.dirname(dr)
+             for dr in rsdirs]
     if len(rsdirs) == 0:
         raise ValueError('no rsdirs found: %s' % search)
     uniform,obi= [],[]
     for dr in rsdirs:
-        simcat= fits_table(os.path.join(dr,'simcat-elg-%s.fits' % brick))
-        idsadded= fits_table(os.path.join(dr,'sim_ids_added.fits'))
-        tractor= fits_table((os.path.join(dr,'tractor-%s.fits' % brick)
-                             .replace('/obiwan/','/tractor/')))
+        simcat= fits_table((os.path.join(dr,'simcat-elg-%s.fits' % brick)
+                            .replace('/tractor/','/obiwan/')))
+        idsadded= fits_table((os.path.join(dr,'sim_ids_added.fits')
+                            .replace('/tractor/','/obiwan/')))
+        tractor= fits_table(os.path.join(dr,'tractor-%s.fits' % brick))
         # Uniform randoms
         assert(len(idsadded) == len(set(idsadded.id)))
         simcat.cut( pd.Series(simcat.id).isin(idsadded.id) )
