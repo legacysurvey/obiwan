@@ -153,13 +153,13 @@ try:
         
         def __init__(self, dataset=None, survey_dir=None, metacat=None, simcat=None, 
                      output_dir=None,add_sim_noise=False, seed=0,
-                     image_eq_model=False,subset=None):
+                     image_eq_model=False,**kwargs):
             self.dataset= dataset
             
             kw= dict(survey_dir=survey_dir, 
                      output_dir=output_dir)
             if self.dataset == 'cosmos':
-                kw.update(subset=subset)
+                kw.update(subset=kwargs['subset'])
             super(SimDecals, self).__init__(**kw)
 
             self.metacat = metacat
@@ -183,6 +183,8 @@ try:
         def ccds_for_fitting(self, brick, ccds):
             if self.dataset in ['dr3','dr5']:
                 return np.flatnonzero(ccds.camera == 'decam')
+            elif self.dataset in ['cosmos']:
+                return np.flatnonzero(ccds.camera == 'decam+noise')
             #elif self.dataset == 'DR4':
                 #   return np.flatnonzero(np.logical_or(ccds.camera == 'mosaic',
             #                         ccds.camera == '90prime'))
@@ -238,9 +240,8 @@ try:
             **kwargs: SimDecals args + 'subset'
         """
         
-        def __init__(self, survey_dir, output_dir, subset):
-            super(SimDecalsCosmos, self).__init__(survey_dir=survey_dir, output_dir=output_dir,
-                                                  subset=subset)
+        def __init__(self, **kwargs):
+            super(SimDecalsCosmos, self).__init__(**kwargs)
 except NameError:
     pass
 
