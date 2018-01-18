@@ -26,7 +26,6 @@ except ImportError:
 DATASETS= ['dr5','dr3','cosmos']
 
 
-
 class Testcase(object):
     """Initialize and run a testcase
 
@@ -399,7 +398,7 @@ def test_case(dataset='dr5',
     d= dict(obj=obj,dataset=dataset,
             add_noise=add_noise,all_blobs=all_blobs,
             onedge=onedge,early_coadds=early_coadds,
-            checkpoint=checkpoint)   
+            checkpoint=checkpoint,subset=0)   
     if z:
         bands= 'z'
     elif grz:
@@ -418,9 +417,16 @@ def test_case(dataset='dr5',
         d.update(no_cleanup=False,stage=None)
         T= Testcase(**d)
         T.run()
+
+    if dataset == 'cosmos':
+        # Run the other 3 subsets
+        for i in [1,2,3]:
+            d.update(subset=i)
+            T= Testcase(**d)
+            T.run()
      
 
-    if not early_coadds:
+    if (not early_coadds) and (dataset != 'cosmos'):
         A= AnalyzeTestcase(**d)
         #if not checkpoint:
         # checkpoint doesn't run cleanup
@@ -476,6 +482,33 @@ def test_main():
     test_case(**d)
 
 
+class TestcaseCosmos(object):
+    def __init__(self, subset=60):
+        self.subset=subset             
+        self.outdir= os.path.join(os.path.dirname(__file__), 
+                                  'out_testcasecosmos_subset%d' % self.subset)
+        os.environ["LEGACY_SURVEY_DIR"]= os.path.join(os.path.dirname(__file__),
+                                                'testcase_cosmos')
+
+        # Defaults
+        self.dataset='cosmos'
+        self.brick='1501p020'
+        self.rowstart=0
+        self.obj='elg'
+
+    def run(self):
+        randoms_fn= os.path.join(os.environ["LEGACY_SURVEY_DIR"], 
+                                 'randoms_%s.fits' % self.obj)
+        cmd_line=['--subset', str(self.subset), 
+                  '--dataset', self.dataset, '-b', self.brick, 
+                  '-rs',str(self.rowstart), '-n', '4', 
+                  '-o', self.obj, '--outdir', self.outdir,
+                  '--randoms_from_fits', randoms_fn]
+        parser= get_parser()
+        args = parser.parse_args(args=cmd_line)
+
+        main(args=args)
+
 if __name__ == "__main__":
     #test_dataset_DR3()
     #test_dataset_DR5()
@@ -492,5 +525,10 @@ if __name__ == "__main__":
     #d.update(early_coadds=True)
     #test_case(**d)
 
-    test_case(**d)
+    #test_case(**d)
+
+    t= TestcaseCosmos(subset=60)
+    t.run()
+
+
     
