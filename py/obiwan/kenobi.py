@@ -674,6 +674,8 @@ def get_parser():
                         help='COSMOS subset number [0 to 4, 10 to 12], only used if dataset = cosmos')
     parser.add_argument('--checkpoint', action='store_true',default=False,
                         help='turn on checkpointing')
+    parser.add_argument('--skip_ccd_cuts', action='store_true',default=False,
+                        help='no ccd cuts')
     parser.add_argument('--overwrite_if_exists', action='store_true',default=False,
                         help='run the code even if expected output already exists')
     parser.add_argument('-v', '--verbose', action='store_true', help='toggle on verbose output')
@@ -818,6 +820,8 @@ def get_runbrick_setup(**kwargs):
         cmd_line += ['--stage', kwargs['stage']]
     if kwargs['early_coadds']:
         cmd_line += ['--early-coadds', '--stage', 'image_coadds']
+    if kwargs['skip_ccd_cuts']:
+        cmd_line += ['--skip_ccd_cuts']
     #if kwargs['stage']:
     #    cmd_line += ['--stage', '%s' % kwargs['stage']]
     if dataset == 'dr3':
