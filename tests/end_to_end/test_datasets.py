@@ -367,10 +367,11 @@ class AnalyzeTestcase(Testcase):
 
     def qualitative_tests(self):
         """T: TestcaseOutputs() object """
-        if self.dataset == 'dr3':
-            assert('SIMP' in self.obitractor.type)
-        elif self.dataset == 'dr5':
-            assert('REX ' in self.obitractor.type)
+        if self.obj == 'elg':
+            if self.dataset == 'dr3':
+                assert('SIMP' in self.obitractor.type)
+            elif self.dataset == 'dr5':
+                assert('REX ' in self.obitractor.type)
 
         if self.checkpoint:
             # log file is assumed to exist and it must have
@@ -512,7 +513,7 @@ if __name__ == "__main__":
     #test_dataset_DR3()
     #test_dataset_DR5()
     # Various tests can do 
-    d=dict(dataset='dr3',
+    d=dict(dataset='dr5',
            z=True,grz=False,
            obj='elg',
            all_blobs=False,onedge=False,
@@ -520,9 +521,9 @@ if __name__ == "__main__":
            checkpoint=False,
            skip_ccd_cuts=False)
 
-    #test_main(**d)
-    d.update(skip_ccd_cuts=True)
-    test_case(**d)
+    test_main()
+    #d.update(skip_ccd_cuts=False)
+    #test_case(**d)
 
     #t= TestcaseCosmos(subset=60)
     #t.run()
