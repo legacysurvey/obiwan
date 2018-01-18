@@ -43,7 +43,8 @@ class Testcase(object):
                  add_noise=False,all_blobs=False,
                  onedge=False, early_coadds=False,
                  checkpoint=False,
-                 no_cleanup=False,stage=None):
+                 no_cleanup=False,stage=None,
+                 skip_ccd_cuts=False):
         assert(dataset in DATASETS)
         self.dataset= dataset
         self.bands= bands
@@ -56,6 +57,7 @@ class Testcase(object):
         self.checkpoint= checkpoint
         self.no_cleanup=no_cleanup
         self.stage=stage
+        self.skip_ccd_cuts= skip_ccd_cuts
 
         self.testcase_dir= os.path.join(os.path.dirname(__file__), 
                                         'testcase_%s' % bands)
@@ -104,6 +106,8 @@ class Testcase(object):
             extra_cmd_line += ['--stage',self.stage]
         if self.no_cleanup:
             extra_cmd_line += ['--no_cleanup']
+        if self.skip_ccd_cuts:
+            extra_cmd_line += ['--skip_ccd_cuts']
 
         randoms_fn= os.path.join(os.environ["LEGACY_SURVEY_DIR"], 
                                  'randoms_%s.fits' % self.obj)
@@ -385,7 +389,7 @@ def test_case(dataset='dr5',
                obj='elg',
                add_noise=False,all_blobs=False,
                onedge=False, early_coadds=False,
-               checkpoint=False):
+               checkpoint=False, skip_ccd_cuts=False):
     """
     Args:
         dataset: dr5, dr3, cosmos
@@ -399,7 +403,8 @@ def test_case(dataset='dr5',
     d= dict(obj=obj,dataset=dataset,
             add_noise=add_noise,all_blobs=all_blobs,
             onedge=onedge,early_coadds=early_coadds,
-            checkpoint=checkpoint,subset=0)   
+            checkpoint=checkpoint,
+            skip_ccd_cuts=skip_ccd_cuts)   
     if z:
         bands= 'z'
     elif grz:
@@ -418,16 +423,9 @@ def test_case(dataset='dr5',
         d.update(no_cleanup=False,stage=None)
         T= Testcase(**d)
         T.run()
-
-    if dataset == 'cosmos':
-        # Run the other 3 subsets
-        for i in [1,2,3]:
-            d.update(subset=i)
-            T= Testcase(**d)
-            T.run()
      
 
-    if (not early_coadds) and (dataset != 'cosmos'):
+    if not early_coadds:
         A= AnalyzeTestcase(**d)
         #if not checkpoint:
         # checkpoint doesn't run cleanup
@@ -519,17 +517,15 @@ if __name__ == "__main__":
            obj='elg',
            all_blobs=False,onedge=False,
            early_coadds=False,
-           checkpoint=False)
+           checkpoint=False,
+           skip_ccd_cuts=False)
 
-    #test_main()
-    
-    #d.update(early_coadds=True)
-    #test_case(**d)
+    #test_main(**d)
+    d.update(skip_ccd_cuts=True)
+    test_case(**d)
 
-    #test_case(**d)
-
-    t= TestcaseCosmos(subset=60)
-    t.run()
+    #t= TestcaseCosmos(subset=60)
+    #t.run()
 
 
     
