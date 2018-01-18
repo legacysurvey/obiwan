@@ -115,10 +115,13 @@ if __name__ == '__main__':
                         help='path to obiwan/, tractor/ dirs') 
     parser.add_argument('--outdir', type=str, required=True, 
                         help='path to write output file') 
+    parser.add_argument('--which', type=str, choices=['per_bri','final'],required=True) 
     parser.add_argument('--nproc', type=int, default=1, help='set to > 1 to run mpi4py')  
     args = parser.parse_args()
 
-    #mpi_expids_per_bri(nproc=args.nproc,
-    #                  data_dir=args.data_dir,outdir=args.outdir)
-    final_expids(args.outdir)
+    if args.which == 'per_bri':
+        mpi_expids_per_bri(nproc=args.nproc,
+                          data_dir=args.data_dir,outdir=args.outdir)
+    elif args.which == 'final':
+        final_expids(args.outdir)
 
