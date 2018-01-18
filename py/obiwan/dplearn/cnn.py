@@ -11,6 +11,10 @@ from glob import glob
 
 import tensorflow as tf
 
+import ml_comm as mc
+import math
+
+
 def get_indir(nersc=False):
     '''Returns path to dr5_testtrain directory'''
     if nersc: 
@@ -129,7 +133,19 @@ with tf.name_scope("train"):
     xentropy = tf.nn.sparse_softmax_cross_entropy_with_logits(logits=logits, labels=y)
     loss = tf.reduce_mean(xentropy)
     optimizer = tf.train.AdamOptimizer()
-    training_op = optimizer.minimize(loss)
+    #create train step handle
+    # CRAY ADDED
+    # we need to split out the minimize call below so we can modify gradients
+    grads_and_vars = optimizer.compute_gradients(loss)
+
+    grads     = mc.gradients([gv[0] for gv in grads_and_vars], 0)
+    gs_and_vs = [(g,v) for (_,v), g in zip(grads_and_vars, grads)]
+
+    global_step= tf.train.get_or_create_global_step()
+    training_op = opt.apply_gradients(gs_and_vs, global_step=global_step) # return this global_step
+    # END CRAY ADDED 
+    #training_op = optimizer.minimize(loss)
+
 
 with tf.name_scope("eval"):
     correct = tf.nn.in_top_k(logits, y, 1)
@@ -151,6 +167,10 @@ if __name__ == '__main__':
     parser= ArgumentParser()
     parser.add_argument('--outdir', type=str, default=None, help='optional output directory for the checkpoint and log files')
     args= parser.parse_args()
+
+    # help mc
+    # threads per task,tasks,membory in bytes for all model weights
+    mc.init(1,1,5*1024**2, "tensorflow")
 
     knl=False
     config=None
@@ -187,7 +207,18 @@ if __name__ == '__main__':
         ckpt_fn= None
     last_ibrick= np.where(bricks == last_brick)[0][0] #+ 1 creates bug where last break skips all epochs
     #bricks= ['1211p060']
-       
+    # 100 = 10% of total steps epoch * traiing, 200? cray said to
+    # number teams is the first arg
+    mc.config_team(0,0,100,number_steps,0,200)
+    # >> mc.get_rank()
+    # checkpoint dir None unless rank=0
+    #mc.config_team(1,0,100,number_steps,0,200) # would tell a second team to go 
+
+    # make tf monitored session for distrib tensorflow
+    # session(config=config, checkpointfn=checkpointfn)
+    # hooks for summary, log, etc
+    # hooks= [above hooks]
+    # tf.monitoredTrainingSession(**kwargs, hooks=hooks)
     with tf.Session(config=config) as sess:
         if ckpt_fn is None: 
             sess.run(init)
@@ -224,4 +255,6 @@ if __name__ == '__main__':
                 print('Updated %s' % bookmark_fn(outdir))
                 # Reset last_ibrick so use all bricks in next epoch
                 last_ibrick= 0
+        
+        mc.finalize()
 
