@@ -33,10 +33,14 @@ def parse_mem(lines,nstages):
     assert(len(d['stage']) == nstages)
     return d
 
+class Timing(object):
+    def __init__(self):
+        pass
+
 def parse_time(lines,nstages):
-	d={}
+	d= Timing()
 	for key in ['stage','serial','parallel','total','util']:
-		d[key]=[]
+		setattr(d,key,[])
 	for line in lines:
 		if 'Resources for stage' in line: 
 			d['stage']+= [line.split()[3]]
@@ -63,9 +67,9 @@ def parse_tractor_profile(fn):
     lines=np.char.strip(lines)
     # one more item the funcs need
     nstages= int( bash_result("grep 'Resources for stage' %s | wc -l" % fn) )
-    if '_mem' in fn:
+    if 'mem_' in fn:
         return parse_mem(lines,nstages)
-    elif '_time' in fn:
+    elif 'time_' in fn:
         return parse_time(lines,nstages)
     else: raise ValueError
 
@@ -77,7 +81,7 @@ def tractor_profile_plots(mem,tm,nthreads=1):
 	name='time_v_stage_threads%d.png' % nthreads
 	fig,ax=plt.subplots()
 	xvals= np.arange(tm['stage'].size)+1
-	print tm['parallel']
+	print(tm['parallel'])
 	add_scatter(ax,xvals, tm['serial']/60., c='b',m='o',lab='serial',drawln=True)
 	add_scatter(ax,xvals, tm['parallel']/60., c='g',m='o',lab='parallel',drawln=True)
 	plt.legend(loc='lower right',scatterpoints=1)
@@ -101,9 +105,9 @@ def plot_wall_node(d):
     plt.legend(loc='lower right',scatterpoints=1)
     #add_scatter(ax,xvals, tm['total']/60., c='b',m='o',lab='total')
     ax.set_xticks(xvals)
-        fobj=open(fn)
-        tm[key]=pickle.load(fobj)
-        fobj.close()
+    fobj=open(fn)
+    tm[key]=pickle.load(fobj)
+    fobj.close()
     # Plot
     fig,ax=plt.subplots()
     for key,col in zip(tm.keys(),['b','g']):
@@ -147,39 +151,39 @@ def plot_wall_node(d):
 if __name__ == '__main__':
     # Tractor stdout file, parse profiling info
     parser = ArgumentParser(description="test")
-    parser.add_argument("--which",choices=['wall_vs_stage','wall_vs_cores','wall_vs_nodes'],action="store",required=True)
-    parser.add_argument("--data_fn",action="store",help='wall_vs_stage: stdout file, wall_vs_cores: text file output of ipm_scaling.py, wall_vs_nodes: text file output of ipm_scaling.py',required=True)
-    parser.add_argument("--lstr",action="store_true",help='set to interpret file as from LUSTRE, otherwise assumed from BurstBuffer',required=False)
+    parser.add_argument("--logfile",action="store",required=True)
+    parser.add_argument("--rsdir",action="store",type=str,default=0,required=True)
     parser.add_argument("--outdir",action="store",help='where to write outputs',default='.',required=False)
     args = parser.parse_args()
 
-    if args.which == 'wall_vs_stage':
-        # parse stdout and read data into numpy arrays
-        fmem= os.path.join(os.path.dirname(args.data_fn),\
-                           os.path.basename(args.data_fn)+'_mem.txt')
-        ftime= os.path.join(os.path.dirname(args.data_fn),\
-                            os.path.basename(args.data_fn)+'_time.txt')
-        # multi node
-        # grep "runbrick.py starting at" bb_multi.o2907746
-        # grep "Stage writecat finished:" bb_multi.o2907746
-        for fn in [fmem,ftime]:
-            if os.path.exists(fn):
-                print 'using existing file: %s' % fn
-            else:
-                bash_result("grep 'Resources for' %s -A 2|grep -e 'Wall:' -e 'Resources' > %s_mem.txt" % (args.data_fn,args.data_fn))
-                bash_result("grep -e 'Resources for stage' -e 'Total serial Wall' -e 'Total parallel Wall' -e 'Grand total Wall' -e 'Grand total CPU utilization' %s > %s_time.txt" % (args.data_fn,args.data_fn))
-        mem=parse_tractor_profile(fmem)
-        tm=parse_tractor_profile(ftime)
-        # plots
-        ncores= str(bash_result("grep 'Command-line args:' %s|cut -d ',' -f 11|tail -n 1" % args.data_fn) )
-        ncores= int( ncores.replace('"','').replace("'",'') )
-        # write timing info to text file and create a pickle file
-        fout=open('stage_timings.txt','a')
-        fout.write('#nodes cores times[sec]:tims fitblobs total\n')
-        fout.write('1 %d %.2f %.2f %.2f\n' % (ncores,tm['total'][0],tm['total'][4],tm['total'].sum()))
-        fout.close()
-#!/bin/bash
-fn="$1"
-grep -e "Resources for" ${fn} -A 2|grep -e "Wall:" -e "Resources" > ${fn}_mem.txt
-grep -e "Resources for stage" -e "Total serial Wall" -e "Total parallel Wall" -e "Grand total Wall" -e "Grand total CPU utilization" ${fn} > ${fn}_time.txt
-echo 'done!'
+    # parse stdout and read data into numpy arrays
+    brick= args.logfile.split('.')[-1]
+    print('brick=',brick)
+    fmem= os.path.join(args.outdir,'mem_%s_rs%s.txt' % (brick,args.rsdir))
+    ftime= os.path.join(args.outdir,'time_%s_rs%s.txt' % (brick,args.rsdir))
+    # multi node
+    # grep "runbrick.py starting at" bb_multi.o2907746
+    # grep "Stage writecat finished:" bb_multi.o2907746
+    if os.path.exists(fmem) and os.path.exists(ftime):
+        print('using existing files:\n%s\n%s' % (fmem,ftime))
+    else:
+        bash_result("grep 'Resources for' %s -A 2|grep -e 'Wall:' -e 'Resources' > %s" % \
+                    (args.logfile,fmem))
+        bash_result("grep -e 'Resources for stage' -e 'Total serial Wall' -e 'Total parallel Wall' -e 'Grand total Wall' -e 'Grand total CPU utilization' %s > %s" % \
+                    (args.logfile,ftime))
+    mem=parse_tractor_profile(fmem)
+    tm=parse_tractor_profile(ftime)
+    raise ValueError
+    # plots
+    ncores= str(bash_result("grep 'Command-line args:' %s|cut -d ',' -f 11|tail -n 1" % args.logfile) )
+    ncores= int( ncores.replace('"','').replace("'",'') )
+    # write timing info to text file and create a pickle file
+    fout=open('result_%s_rs%s.txt' % (brick,args.rsdir),'a')
+    fout.write('#nodes cores times[sec]:tims fitblobs total\n')
+    fout.write('1 %d %.2f %.2f %.2f\n' % (ncores,tm['total'][0],tm['total'][4],tm['total'].sum()))
+    fout.close()
+
+##fn="$1"
+#grep -e "Resources for" ${fn} -A 2|grep -e "Wall:" -e "Resources" > ${fn}_mem.txt
+#grep -e "Resources for stage" -e "Total serial Wall" -e "Total parallel Wall" -e "Grand total Wall" -e "Grand total CPU utilization" ${fn} > ${fn}_time.txt
+#echo 'done!'
