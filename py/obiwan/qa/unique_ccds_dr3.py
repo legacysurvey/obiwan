@@ -15,51 +15,6 @@ try:
 except ImportError:
     pass
 
-def derived_field_dir(brick,data_dir):
-    return os.path.join(data_dir,'derived',
-                        brick[:3],brick)
-
-def uniform_obiwan_randoms(brick,data_dir):
-    """Returns a uniform randoms and obiwan randoms table per brick"""
-    search= os.path.join(data_dir,'tractor',
-                         brick[:3],brick,
-                         'rs*','tractor-%s.fits' % brick)
-    rsdirs= glob(search)
-    rsdirs= [os.path.dirname(dr)
-             for dr in rsdirs]
-    if len(rsdirs) == 0:
-        raise ValueError('no rsdirs found: %s' % search)
-    uniform,obi= [],[]
-    for dr in rsdirs:
-        simcat= fits_table((os.path.join(dr,'simcat-elg-%s.fits' % brick)
-                            .replace('/tractor/','/obiwan/')))
-        idsadded= fits_table((os.path.join(dr,'sim_ids_added.fits')
-                            .replace('/tractor/','/obiwan/')))
-        tractor= fits_table(os.path.join(dr,'tractor-%s.fits' % brick))
-        # Uniform randoms
-        assert(len(idsadded) == len(set(idsadded.id)))
-        simcat.cut( pd.Series(simcat.id).isin(idsadded.id) )
-        uniform.append(simcat)
-        # Obiwan randoms
-        tractor.cut(tractor.brick_primary)
-        cols= np.array(tractor.get_columns())
-        del_cols= cols[(pd.Series(cols)
-                          .str.startswith('apflux_'))]
-        for col in del_cols:
-            tractor.delete_column(col)
-        # nearest match in (ra2,dec2) for each point in (ra1,dec1)
-        I,J,d = match_radec(simcat.ra,simcat.dec,
-                            tractor.ra,tractor.dec, 1./3600,
-                            nearest=True)
-        assert(np.all(d <= 1./3600))
-        tractor.cut(J)
-        for simkey in ['id','ra','dec']:
-            tractor.set('simcat_%s' % simkey,
-                        simcat.get(simkey)[I])
-        obi.append(tractor)
-    return (merge_tables(uniform, columns='fillzero'),
-            merge_tables(obi, columns='fillzero'))
-
 def mpi_expids_per_bri(nproc=1,data_dir='./',outdir='./'):
     """
 
@@ -84,11 +39,16 @@ def mpi_expids_per_bri(nproc=1,data_dir='./',outdir='./'):
         else:
             expids=np.array([])
             ccd_fns= glob(os.path.join(dr,'*/legacysurvey-*-ccds.fits'))
-            print('ccd_fns=',ccd_fns)
+            #print('ccd_fns=',ccd_fns)
             for fn in ccd_fns:
-                tmp=fits_table(fn)
-                print('number=%d' % len(expids))
-                expids=  np.hstack([expids,tmp.expid])
+                try:
+                    tmp=fits_table(fn)
+                    #print('number=%d' % len(expids))
+                    expids=  np.hstack([expids,tmp.expid])
+                except OSError:
+                    print('brick ccd corrupted: %s' % fn)
+                    with open('ccds_used_corrupted.txt','a') as foo:
+                        foo.write('brick ccd corrupted: %s\n' % fn)
             expids= np.array(list(set(expids)))
             np.save(save_fn,expids)
             print('Wrote %s' % save_fn)
@@ -99,9 +59,13 @@ def final_expids(outdir):
     if os.path.exists(save_fn):
         print('Skipping, already exists %s' % save_fn)
     else:
-        bri_fns= glob(os.path.join(outdir,'derived',
-                                    'ccds','ccds_*.npy'))
+        search= os.path.join(outdir,'derived',
+                             'ccds','ccds_*.npy')
+        bri_fns= glob(search)
         expids=np.array([])
+        if len(bri_fns) == 0:
+            raise ValueError('search returned nothing %s' % search)
+        print('found %d bri_fns' % len(bri_fns))
         for fn in bri_fns:
             expids= np.hstack([expids,np.load(fn)])
         expids= np.array(list(set(expids)))
