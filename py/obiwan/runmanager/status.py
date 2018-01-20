@@ -78,13 +78,13 @@ class QdoList(object):
     """
     def __init__(self,outdir,que_name='obiwan',
                  skip_succeed=False,
-                 rand_1e3=False,
+                 rand_200=False,
                  firstN=None):
         print('que_name= ',que_name.upper())
         self.outdir= outdir
         self.que_name= que_name
         self.skip_succeed= skip_succeed
-        self.rand_1e3= rand_1e3
+        self.rand_200= rand_200
         self.firstN= firstN
 
     def get_tasks_logs(self):
@@ -100,7 +100,7 @@ class QdoList(object):
                 continue
             # List of "brick rs" for each QDO_RESULT 
             qdo_tasks= np.array(q.tasks(state= getattr(qdo.Task, res.upper())))
-            if self.rand_1e3:
+            if self.rand_200:
                 qdo_tasks= qdo_tasks[np.random.randint(0,len(qdo_tasks),size=1000)]
             elif not self.firstN is None:
                 qdo_tasks= qdo_tasks[:self.firstN]
@@ -245,7 +245,7 @@ if __name__ == '__main__':
     parser = ArgumentParser()
     parser.add_argument('--qdo_quename',default='obiwan_9deg',help='',required=False)
     parser.add_argument('--skip_succeed',action='store_true',default=False,help='speed up, number succeeded tasks can be very large for production runs and slows down status code',required=False)
-    parser.add_argument('--rand_1e3',action='store_true',default=False,help='speed up, look at up to 1000 random succeed,failed,running tasks to get sense of failure modes occuring',required=False)
+    parser.add_argument('--rand_200',action='store_true',default=False,help='speed up, look at up to 1000 random succeed,failed,running tasks to get sense of failure modes occuring',required=False)
     parser.add_argument('--firstN',type=int,default=None,help='speed up, instead of random 1000 do the first N (user specified) qdo tasks',required=False)
     parser.add_argument('--running_to_pending',action="store_true",default=False,help='set to reset all "running" jobs to "pending"')
     parser.add_argument('--running_to_failed',action="store_true",default=False,help='set to reset all "running" jobs to "failed"')
@@ -258,7 +258,7 @@ if __name__ == '__main__':
 
     Q= QdoList(args.outdir,que_name=args.qdo_quename,
                skip_succeed=args.skip_succeed,
-               rand_1e3=args.rand_1e3,
+               rand_200=args.rand_200,
                firstN=args.firstN)
     print('Getting tasks,logs')
     tasks,ids,logs= Q.get_tasks_logs()
