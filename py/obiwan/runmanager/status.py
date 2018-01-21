@@ -275,7 +275,8 @@ if __name__ == '__main__':
         elif args.running_to_failed:
             Q.change_task_state(ids['running'], to='failed',modify=args.modify,
                                 rm_files=False)
-        elif args.failed_to_pending:
+    if len(ids['failed']) > 0:
+        if args.failed_to_pending:
             Q.change_task_state(ids['failed'], to='pending',modify=args.modify,
                                 rm_files=False)
    
