@@ -113,7 +113,7 @@ def time_per_stage(logfile):
 
 def write_header(savenm):
     with open(savenm,'w') as foo:
-        text= 'nobj brick rsdir'
+        text= 'nobj brick rsdir frac_injected'
         for stage in STAGES:
             text += ' %s' % stage
         foo.write(text+'\n')
