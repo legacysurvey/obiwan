@@ -101,6 +101,7 @@ def time_per_stage(logfile):
     for stage in STAGES: 
         a=re.search(r'Resources for stage %s(.*\n)*?Grand total Wall:.*\n' % stage,
                     bigstring)
+        print('stage=%s, a=' % stage,a)
         lines= bigstring[slice(a.regs[0][0],a.regs[0][1])].split('\n')
         print('lines=',lines)
         lines= pd.Series(lines) 
@@ -147,7 +148,7 @@ if __name__ == '__main__':
                 **number_injected(fn,nobj=int(d['nobj']))
                 }
             write_measurements(d, args.savenm)
-
+    
     # Plots
     df= pd.read_csv(args.savenm,sep=' ')
 
