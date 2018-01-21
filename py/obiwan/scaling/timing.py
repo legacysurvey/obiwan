@@ -9,6 +9,9 @@ import json
 import re
 import pandas as pd
 
+STAGES=['tims', 'mask_junk', 'srcs', 
+        'fitblobs', 'coadds', 'writecat']
+
 
 def add_scatter(ax,x,y,c='b',m='o',lab='hello',s=80,drawln=False):
 	ax.scatter(x,y, s=s, lw=2.,facecolors='none',edgecolors=c, marker=m,label=lab)
@@ -71,8 +74,15 @@ def params_of_run(logfile):
     d['brick']= get_param(r"brick='[0-9]{4}[mp][0-9]{3}',",bigstring).replace("'",'')
     return d
 
-STAGES=['tims', 'mask_junk', 'srcs', 
-        'fitblobs', 'coadds', 'writecat']
+def number_injected(logfile,nobj=None):
+    with open(logfile,'r') as f:
+        bigstring= f.read()
+    d={}
+    a= re.search(r'INFO:decals_sim:sources.*?flagged as nearby [0-9]+?',bigstring)
+    n_skip= (bigstring[slice(a.regs[0][0],a.regs[0][1])]
+             .split(' ')[-1])
+    d['frac_injected']= (nobj-int(n_skip))/float(nobj)
+    return d
 
 def time_per_stage(logfile):
     """Returns dict of seconds spend in each stage"""
@@ -110,7 +120,7 @@ def write_header(savenm):
 
 def write_measurements(d,savenm='test.txt'):
     with open(savenm,'a') as foo:
-        text= '%s %s %s' % (d['nobj'],d['brick'],d['rsdir'])
+        text= '%s %s %s %.3f' % (d['nobj'],d['brick'],d['rsdir'],d['frac_injected'])
         for stage in STAGES:
             text += ' %s' % d[stage]
         foo.write(text+'\n')
@@ -126,14 +136,17 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     # Extract
-    write_header(args.savenm)
-
-    fns= np.loadtxt(args.logfiles,dtype=str)
-    for fn in fns:
-        p= params_of_run(fn)
-        t= time_per_stage(fn)
-        d= {**p,**t}
-        write_measurements(d, args.savenm)
+    if not os.path.exists(args.savenm):
+        write_header(args.savenm)
+        fns= np.loadtxt(args.logfiles,dtype=str)
+        for fn in fns:
+            d= {**params_of_run(fn),
+                **time_per_stage(fn)
+               }
+            d= {**d,
+                **number_injected(fn,nobj=int(d['nobj']))
+                }
+            write_measurements(d, args.savenm)
 
     # Plots
     df= pd.read_csv(args.savenm,sep=' ')
