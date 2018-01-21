@@ -91,6 +91,7 @@ def time_per_stage(logfile):
     for stage in STAGES: 
         a=re.search(r'Resources for stage %s(.*\n)*?Grand total Wall:.*\n' % stage,
                     bigstring)
+        print('stage=%s, a=' % stage,a)
         lines= bigstring[slice(a.regs[0][0],a.regs[0][1])].split('\n')
         print('lines=',lines)
         lines= pd.Series(lines) 
@@ -130,6 +131,7 @@ if __name__ == '__main__':
 
     fns= np.loadtxt(args.logfiles,dtype=str)
     for fn in fns:
+        print('logfile=%s' % fn)
         p= params_of_run(fn)
         t= time_per_stage(fn)
         d= {**p,**t}
