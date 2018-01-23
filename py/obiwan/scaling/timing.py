@@ -59,10 +59,7 @@ class Plots(object):
         plt.savefig(name, bbox_extra_artists=[xlab,ylab], bbox_inches='tight',dpi=150)
         plt.close()
 
-def params_of_run(logfile):
-    with open(logfile,'r') as f:
-        bigstring= f.read()
-    
+def params_of_run(bigstring):
     def get_param(expr,bigstring):
         a=re.search(expr,bigstring)
         return (bigstring[slice(a.regs[0][0],a.regs[0][1])]
@@ -72,11 +69,10 @@ def params_of_run(logfile):
     d['rsdir']= get_param(r'rowstart=[0-9]+,',bigstring)
     d['nobj']= get_param(r'nobj=[0-9]+,',bigstring)
     d['brick']= get_param(r"brick='[0-9]{4}[mp][0-9]{3}',",bigstring).replace("'",'')
+    d['cores']= get_param(r'threads=[0-9]+,',bigstring)
     return d
 
-def number_injected(logfile,nobj=None):
-    with open(logfile,'r') as f:
-        bigstring= f.read()
+def number_injected(bigstring,nobj=None):
     d={}
     a= re.search(r'INFO:decals_sim:sources.*?flagged as nearby [0-9]+?',bigstring)
     n_skip= (bigstring[slice(a.regs[0][0],a.regs[0][1])]
@@ -84,10 +80,20 @@ def number_injected(logfile,nobj=None):
     d['frac_injected']= (nobj-int(n_skip))/float(nobj)
     return d
 
-def time_per_stage(logfile):
+def time_total(bigstring):
+    """Returns dict of seconds spent in total"""
+    # rsdir
+    ts={}
+    for text in ['started','finshed']:
+        a=re.search(r'obiwan %s at.*?\n' % text,bigstring)
+        ymd,t = tuple(bigstring[slice(a.regs[0][0],a.regs[0][1])]
+                      .strip()
+                      .split(' ')[-2:])
+        ts[text]= pd.Timestamp('%s %s' % (ymd,t))
+    return dict(total_sec=(ts['finshed'] - ts['started']).total_seconds())
+
+def time_per_stage(bigstring):
     """Returns dict of seconds spend in each stage"""
-    with open(logfile,'r') as f:
-        bigstring= f.read()
     # rsdir
     a=re.search(r'rowstart=[0-9]+,',bigstring)
     rsdir= (bigstring[slice(a.regs[0][0],a.regs[0][1])]
@@ -113,17 +119,19 @@ def time_per_stage(logfile):
 
 def write_header(savenm):
     with open(savenm,'w') as foo:
-        text= 'nobj brick rsdir frac_injected'
+        text= 'nobj brick rsdir frac_injected cores'
         for stage in STAGES:
             text += ' %s' % stage
+        text += ' total_sec'
         foo.write(text+'\n')
     print('Wrote header %s' % savenm)
 
 def write_measurements(d,savenm='test.txt'):
     with open(savenm,'a') as foo:
-        text= '%s %s %s %.3f' % (d['nobj'],d['brick'],d['rsdir'],d['frac_injected'])
+        text= '%s %s %s %.3f %s' % (d['nobj'],d['brick'],d['rsdir'],d['frac_injected'],d['cores'])
         for stage in STAGES:
             text += ' %s' % d[stage]
+        text += ' %s' % d['total_sec']
         foo.write(text+'\n')
     print('Appended measurements %s' % savenm)
         
@@ -140,12 +148,15 @@ if __name__ == '__main__':
     if not os.path.exists(args.savenm):
         write_header(args.savenm)
         fns= np.loadtxt(args.logfiles,dtype=str)
-        for fn in fns:
-            d= {**params_of_run(fn),
-                **time_per_stage(fn)
+        for logfile in fns:
+            with open(logfile,'r') as foo:
+                bigstring= foo.read()
+            d= {**params_of_run(bigstring),
+                **time_per_stage(bigstring),
+                **time_total(bigstring),
                }
             d= {**d,
-                **number_injected(fn,nobj=int(d['nobj']))
+                **number_injected(bigstring,nobj=int(d['nobj']))
                 }
             write_measurements(d, args.savenm)
     
