@@ -75,7 +75,8 @@ class TaskList(object):
 
     def get_tasklist(self,bricks=None,objtype='elg',
                      do_more='no',minid=1,
-                     estim_nperbrick=2e3):
+                     estim_nperbrick=2e3,
+                     cosmos=False):
         """It is too slow to find the example number of randoms in each brick, so find all bricks
             with at least one source and put in the expected number of randoms + 2 StdErros worth
 
@@ -90,8 +91,8 @@ class TaskList(object):
         else:
             bricks= np.sort(bricks)
         tasks= [self.task(brick,rs,do_skipids,do_more) 
-                for brick in bricks
-                for rs in np.arange(0,estim_nperbrick,self.nobj_per_run)]
+                for rs in np.arange(0,estim_nperbrick,self.nobj_per_run)
+                for brick in bricks]
         return tasks
 
     def writetasks(self,tasks,
@@ -121,6 +122,8 @@ if __name__ == '__main__':
                         default='no')
     parser.add_argument('--minid', type=int, default=None)
     parser.add_argument('--use_bricklist_given', action='store_true', default=False)
+    parser.add_argument('--cosmos', action='store_true', default=False,
+                        help='set to add the cosmos subset number to the tasks')
     args = parser.parse_args()
 
     assert(len(args.radec) == 4)
@@ -156,6 +159,10 @@ if __name__ == '__main__':
     else:
         T.tasklist_skipids(T.bricks,
                            do_more=do_more,minid=minid)
+    if args.cosmos:
+        tasks= ["%s %d" % (task,subset)
+                for task in tasks
+                for subset in [60,64,69]]
     T.writetasks(tasks,
                  do_more=args.do_more,minid=args.minid,
                  do_skipids=args.do_skipids)
