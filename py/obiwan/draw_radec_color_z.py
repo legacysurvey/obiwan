@@ -573,14 +573,12 @@ def draw_points_cosmos(radec,unique_ids,obj='star',seed=1,
         T.set(key, T.get(key).astype(np.int32))
     T.set('ra',ra)
     T.set('dec',dec)
-    for col in ['g', 'r','z','rhalf']: 
-        T.set(col,boot[col].values)
     # fixed priors
     ind= np.arange(ndraws)
     np.random.shuffle(ind)
     # Half sersic, de Vac
     n= np.ones(ndraws)
-    n[ind[:ndraws/2]]= 4.
+    n[ind[:ndraws//2]]= 4.
     T.set('n',n)
     limit= dict(g=24.0,
                 r=23.4,
