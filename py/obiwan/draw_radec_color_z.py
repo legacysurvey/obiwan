@@ -589,6 +589,7 @@ def draw_points_cosmos(radec,unique_ids,obj='star',seed=1,
             T.set(b,np.random.uniform(limit[b]-2,limit[b]+0.5,size=ndraws))
         T.set('ba', np.random.uniform(0.2,1.,size=ndraws))
         T.set('pa', np.random.uniform(0.,180.,size=ndraws))
+    T.set('redshift',np.zeros(ndraws)) # placeholder
     # Save
     fn= os.path.join(get_sample_dir(outdir,obj),
                      get_sample_fn(seed,startid) )
