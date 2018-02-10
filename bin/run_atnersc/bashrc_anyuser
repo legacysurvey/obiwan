@@ -1,0 +1,10 @@
+#!/bin/bash
+
+# desiconda aug 2017 conda create env to my scratch
+module use /global/common/${NERSC_HOST}/contrib/desi/desiconda/20170818-1.1.12-img/modulefiles
+module load desiconda/20170818-1.1.12-img
+source activate /global/cscratch1/sd/kaylanb/desiconda_install_imaging_${NERSC_HOST}
+
+# Env vars for imaging pipeline 
+export DUST_DIR=/global/cscratch1/sd/kaylanb/obiwan_data/dust
+
