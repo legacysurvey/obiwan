@@ -57,9 +57,10 @@ class SimStamps(object):
             brick:
             coadd_dir: path/to/rs0, rs300, rs300_skipid, etc
         """
-        print('Loading from %s' % coadd_dir)
+        print('Loading ra,dec from %s' % (os.path.dirname))
         self.cat= fits_table(cat_fn)
 
+        print('Loading from %s' % coadd_dir)
         self.img_fits,self.ivar_fits= {},{}
         for b in self.bands: 
             self.img_fits[b]= readImage(os.path.join(coadd_dir,
@@ -132,11 +133,12 @@ class SimStamps(object):
                                                         chunks=True, \
                     data= np.array([d.array for d in ivar]).T)
 
-    def run(self,brick,zoom=None):
+    def run(self,brick,stampSize=64,applyCuts=True,zoom=None):
         """Write the hdf5 image files for all rs/* in this brick
 
         Args:
             brick: brickname
+            stampSize: height and width in pixes of training image
             zoom: if legacypipe was run with zoom option
         """
         self.get_brickwcs(brick)
@@ -184,9 +186,10 @@ class SimStamps(object):
                 continue
             self.load_data(brick,cat_fn,coadd_dir)
             self.set_xyid(zoom=zoom)
-            self.apply_cuts()
-            self.write_mag_sorted_ids()
-            self.extract()
+            if applyCuts:
+                self.apply_cuts()
+                self.write_mag_sorted_ids()
+            self.extract(hw=int(stampSize/2))
         self.hdf5_obj.close()
         self.hdf5_obj_onedge.close()
         self.hdf5_jpeg.close()
@@ -437,6 +440,29 @@ class TractorStamps(SimStamps):
                (df['z'] >= min_mag['z']))
         return keep
 
+class UserDefinedStamps(SimStamps):
+    def __init__(self,ls_dir=None,outdir=None,
+                 savedir=None, jpeg=False):
+        """Same as SimStamps but for tractor catalogues
+
+        Args:
+            savedir: required for tractor not sims b/c cannot write to dr5 dir
+        """
+        super().__init__(ls_dir=ls_dir,
+                         outdir=outdir,
+                         savedir=savedir,
+                         jpeg=jpeg)
+    
+    def set_paths_to_data(self,brick):
+        """lists of catalogues filenames and coadd dirs"""
+        self.cat_fns= [os.path.join(self.savedir,'%s.fits' % brick)]
+        self.coadd_dirs= [os.path.join(self.outdir,'coadd',
+                                       brick[:3],brick)]
+        if ((not os.path.exists(self.cat_fns[0])) |
+            (not os.path.exists(self.coadd_dirs[0]))):
+            raise OSError('does not exist: %s OR %s' % \
+                    (self.cat_fns[0],self.coadd_dirs[0]))
+
 
 def testcase_main(): 
     name= 'testcase_DR5_grz'
@@ -469,24 +495,29 @@ def mpi_main(nproc=1,which=None,
 
     Args:
         nproc: > 1 for mpi4py
-        which: one of ['tractor','sim']
+        which: one of ['tractor','sim','userDefined']
         outdir: path to coadd,tractor dirs
         ls_dir: not needed if legacy_survey_dir env var already set
         savedir: where to write the hdf5 files, outdir if None
         jpeg: extract .jpg instead of .fits
         bricks: list bricks to make hdf5 cutouts from
     """
-    assert(which in ['tractor','sim'])
+    assert(which in ['tractor','sim','userDefined'])
     if nproc > 1:
         from mpi4py.MPI import COMM_WORLD as comm
         bricks= np.array_split(bricks, comm.size)[comm.rank]
 
     d= dict(outdir=outdir,ls_dir=ls_dir,
             savedir=savedir, jpeg=jpeg)
+    kwargs={}
     if which == 'sim':
         Obj= SimStamps(**d)
-    else:
+    elif which == 'tractor'
         Obj= TractorStamps(**d)
+    elif which == 'userDefined'
+        Obj= UserDefinedStamps(**d)
+        kwargs.update(stampSize=64,
+                      applyCuts=False)
     
     for brick in bricks:
         Obj.run(brick)
@@ -496,7 +527,7 @@ if __name__ == '__main__':
     #testcase_main()
     from argparse import ArgumentParser
     parser = ArgumentParser()
-    parser.add_argument('--which', type=str, choices=['tractor','sim'], required=True, help='whether to make training hdf5 cutouts of real (DR5) or simulated (elg_dr5_coadds) outputs') 
+    parser.add_argument('--which', type=str, choices=['tractor','sim','userDefined'], required=True, help='whether to make training hdf5 cutouts of real (DR5) or simulated (elg_dr5_coadds) outputs') 
     parser.add_argument('--nproc', type=int, default=1, help='set to > 1 to run mpi4py') 
     parser.add_argument('--bricks_fn', type=str, default=None, help='specify a fn listing bricks to run, or a single default brick will be ran') 
     parser.add_argument('--savedir', type=str, default=None, help='specify a fn listing bricks to run, or a single default brick will be ran') 
@@ -526,12 +557,17 @@ if __name__ == '__main__':
                                  'obiwan_out/elg_dr5_coadds'))
         elif args.which == 'tractor':
             d.update(outdir='/global/project/projectdirs/cosmo/data/legacysurvey/dr5')
-            if args.savedir is None:
+            if not args.savedir:
                 d.update(savedir=os.path.join(os.environ['CSCRATCH'],
                                               'obiwan_out/dr5_hdf5'))
-    
+        elif args.which == 'userDefined':
+            d.update(outdir='/global/project/projectdirs/cosmo/data/legacysurvey/dr5')
+            if not args.savedir:
+                d.update(savedir=os.path.join(os.environ['CSCRATCH'],
+                                              'obiwan_out/dr5_hdf5'))
+     
     # Bricks to run
-    if args.bricks_fn is None:
+    if not args.bricks_fn:
         bricks= ['1211p060'] #['1126p220']
     else:
         bricks= np.loadtxt(args.bricks_fn,dtype=str)
