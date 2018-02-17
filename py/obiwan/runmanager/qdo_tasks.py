@@ -41,6 +41,9 @@ class TaskList(object):
         self.bricks= b.overlapBox(ra=[self.ra1,self.ra2], dec=[self.dec1,self.dec2])
         #writelist(np.sort(self.bricks.brickname), 'bricks_inregion.txt')
 
+    def bricks_from_file(self,fn):
+        self.bricks= np.loadtxt(fn,dtype=str)
+
     def estim_nperbrick(self):
         p= 1./len(self.bricks)
         Ex= self.nobj_total * p
@@ -72,7 +75,8 @@ class TaskList(object):
 
     def get_tasklist(self,bricks=None,objtype='elg',
                      do_more='no',minid=1,
-                     estim_nperbrick=2e3):
+                     estim_nperbrick=2e3,
+                     cosmos=False):
         """It is too slow to find the example number of randoms in each brick, so find all bricks
             with at least one source and put in the expected number of randoms + 2 StdErros worth
 
@@ -87,8 +91,8 @@ class TaskList(object):
         else:
             bricks= np.sort(bricks)
         tasks= [self.task(brick,rs,do_skipids,do_more) 
-                for brick in bricks
-                for rs in np.arange(0,estim_nperbrick,self.nobj_per_run)]
+                for rs in np.arange(0,estim_nperbrick,self.nobj_per_run)
+                for brick in bricks]
         return tasks
 
     def writetasks(self,tasks,
@@ -117,6 +121,9 @@ if __name__ == '__main__':
     parser.add_argument('--do_more', type=str, choices=['yes','no'],
                         default='no')
     parser.add_argument('--minid', type=int, default=None)
+    parser.add_argument('--use_bricklist_given', action='store_true', default=False)
+    parser.add_argument('--cosmos', action='store_true', default=False,
+                        help='set to add the cosmos subset number to the tasks')
     args = parser.parse_args()
 
     assert(len(args.radec) == 4)
@@ -132,26 +139,30 @@ if __name__ == '__main__':
     #                        'legacysurveydir/survey-bricks.fits.gz')
     
     ###
-    d= dict(ra1=args.radec[0],ra2=args.radec[1],
-            dec1=args.radec[2],dec2=args.radec[3],
-            nobj_total=args.nobj_total,
-            nobj_per_run=args.nobj_per_run)
+    d=dict(nobj_total=args.nobj_total,
+           nobj_per_run=args.nobj_per_run)
+    if not args.use_bricklist_given:
+        d.update(ra1=args.radec[0],ra2=args.radec[1],
+                 dec1=args.radec[2],dec2=args.radec[3])
     # Initialize
     T= TaskList(**d)
-    T.bricks_in_region(survey_bricks_fn=args.survey_bricks_fn)
+    if args.use_bricklist_given:
+        T.bricks_from_file(args.bricks_fn)
+    else:
+        T.bricks_in_region(survey_bricks_fn=args.survey_bricks_fn)
     num= T.estim_nperbrick()
     # Write tasks
-    bricks=None
-    if args.bricks_fn:
-        bricks=np.loadtxt(args.bricks_fn,dtype=str)
-    
     if args.do_skipids == 'no':
-        tasks= T.get_tasklist(bricks,args.obj,
+        tasks= T.get_tasklist(T.bricks,args.obj,
                               args.do_more,args.minid,
                               estim_nperbrick=num)
     else:
-        T.tasklist_skipids(bricks,
+        T.tasklist_skipids(T.bricks,
                            do_more=do_more,minid=minid)
+    if args.cosmos:
+        tasks= ["%s %d" % (task,subset)
+                for task in tasks
+                for subset in [60,64,69]]
     T.writetasks(tasks,
                  do_more=args.do_more,minid=args.minid,
                  do_skipids=args.do_skipids)

@@ -20,6 +20,8 @@ try:
 except ImportError:
     pass
 
+SURVEYS=['desi','eboss','cosmos']
+
 
 class GaussianMixtureModel(object):
     """
@@ -222,13 +224,16 @@ def get_py_version():
 
 def draw_points(radec,unique_ids,obj='star',seed=1,
                 outdir='./',survey=None,startid=1):
-    assert(survey in ['desi','eboss'])
+    assert(survey in SURVEYS)
     if survey == 'desi':
         return draw_points_desi(radec,unique_ids,obj=obj,seed=seed,
                                 outdir=outdir,startid=startid)
-    else:
+    elif survey == 'eboss':
         return draw_points_eboss(radec,unique_ids,obj=obj,seed=seed,
                                  outdir=outdir,startid=startid)
+    elif survey == 'cosmos':
+        return draw_points_cosmos(radec,unique_ids,obj=obj,seed=seed,
+                                  outdir=outdir,startid=startid)
 
 def draw_points_desi(radec,unique_ids,obj='star',seed=1,
                      outdir='./',startid=1):
@@ -540,11 +545,64 @@ def draw_points_eboss(radec,unique_ids,obj='star',seed=1,
         ax[1,1].legend()
         plt.savefig('hists.png')
  
+def draw_points_cosmos(radec,unique_ids,obj='star',seed=1,
+                       outdir='./',startid=1):
+    """
+	Args:
+		radec: dict with keys ra1,ra2,dec1,dec2
+			the ra,dec limits for the sample
+		unique_ids: list of unique integers for each draw
+		obj: star,elg,lrg,qso
+		seed: to initialize random number generator
+		outdir: dir to write randoms to
+
+	Returns:
+		Nothing, but write a fits_table containing the unique id, ra, dec
+			and color + redshift + morphology info for each source
+	"""
+    from obiwan.common import fits2pandas
+    print('entered draw_points')
+    ndraws= len(unique_ids)
+    random_state= np.random.RandomState(seed)
+    ra,dec= get_radec(radec,ndraws=ndraws,random_state=random_state)
+    
+    T=fits_table()
+    T.set('id',unique_ids)
+    # PSQL "integer" is 4 bytes
+    for key in ['id']:
+        T.set(key, T.get(key).astype(np.int32))
+    T.set('ra',ra)
+    T.set('dec',dec)
+    # fixed priors
+    ind= np.arange(ndraws)
+    np.random.shuffle(ind)
+    # Half sersic, de Vac
+    n= np.ones(ndraws)
+    n[ind[:ndraws//2]]= 4.
+    T.set('n',n)
+    limit= dict(g=24.0,
+                r=23.4,
+                z=22.5)
+    if obj in ['elg','lrg']:
+        T.set('rhalf',np.zeros(ndraws)+0.5)
+        for b in 'grz':
+            T.set(b,np.random.uniform(limit[b]-2,limit[b]+0.5,size=ndraws))
+        T.set('ba', np.random.uniform(0.2,1.,size=ndraws))
+        T.set('pa', np.random.uniform(0.,180.,size=ndraws))
+    T.set('redshift',np.zeros(ndraws)) # placeholder
+    # Save
+    fn= os.path.join(get_sample_dir(outdir,obj),
+                     get_sample_fn(seed,startid) )
+    if os.path.exists(fn):
+        raise IOError('fn already exists, something is wrong!, %s' % fn)
+    T.writeto(fn)
+    print('Wrote %s' % fn)
+
 
         
 def get_parser():
     parser = argparse.ArgumentParser(description='Generate a legacypipe-compatible CCDs file from a set of reduced imaging.')
-    parser.add_argument('--survey', type=str, choices=['desi','eboss'], default=None, required=True) 
+    parser.add_argument('--survey', type=str, choices=['desi','eboss','cosmos'], default=None, required=True) 
     parser.add_argument('--obj', type=str, choices=['star','elg', 'lrg', 'qso'], default=None, required=True) 
     parser.add_argument('--ra1',type=float,action='store',help='bigbox',required=True)
     parser.add_argument('--ra2',type=float,action='store',help='bigbox',required=True)
