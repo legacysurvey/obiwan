@@ -1012,7 +1012,6 @@ def main(args=None):
         # args is already a argparse.Namespace obj
         pass 
     # Print calling sequence
-    print('Beginning run at %s' % time_builtin.strftime("%Y-%m-%d %H:%M:%S"))   
     print('Args:', args)   
     if args.do_more == 'yes':
       assert(not args.minid is None)
@@ -1153,4 +1152,6 @@ def main(args=None):
     return 0
      
 if __name__ == '__main__':
+    print('obiwan started at %s' % time_builtin.strftime("%Y-%m-%d %H:%M:%S"))   
     main()
+    print('obiwan finshed at %s' % time_builtin.strftime("%Y-%m-%d %H:%M:%S"))   

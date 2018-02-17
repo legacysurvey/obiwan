@@ -87,6 +87,9 @@ class QdoList(object):
         self.rand_num= rand_num
         self.firstN= firstN
 
+    def isCosmos(self):
+        return "cosmos" in self.que_name
+
     def get_tasks_logs(self):
         """get tasks and logs for the three types of qdo status"""
         # Logs for all Failed tasks
@@ -112,8 +115,13 @@ class QdoList(object):
             # Corresponding log, slurm files  
             for task in tasks[res]:
                 # Logs
-                brick,rs,do_skipids,do_more = task.split(' ')
-                logfn= get_logfile(self.outdir,brick,rs, 
+                if self.isCosmos():
+                    brick,rs,do_skipids,do_more,subset = task.split(' ')
+                    outdir= os.path.join(self.outdir,'subset%s' % subset)
+                else:
+                    brick,rs,do_skipids,do_more = task.split(' ')
+                    outdir= self.outdir
+                logfn= get_logfile(outdir,brick,rs, 
                                    do_skipids=do_skipids,do_more=do_more)
                 logs[res].append( logfn )
         return tasks,ids,logs
@@ -131,11 +139,16 @@ class QdoList(object):
         for task_id in task_ids:
             try:
                 task_obj= q.tasks(id= int(task_id))
-                brick,rs,do_skipids,do_more= task_obj.task.split(' ')
-                del_dirs= get_deldirs(self.outdir,brick,rs, 
+                if self.isCosmos():
+                    brick,rs,do_skipids,do_more,subset = task_obj.task.split(' ')
+                    outdir= os.path.join(self.outdir,'subset%s' % subset)
+                else:
+                    brick,rs,do_skipids,do_more = task_obj.task.split(' ')
+                    outdir= self.outdir
+                del_dirs= get_deldirs(outdir,brick,rs, 
                                        do_skipids=do_skipids,
                                        do_more=do_more)
-                del_fns= [get_checkpoint_fn(self.outdir,brick,rs)]
+                del_fns= [get_checkpoint_fn(outdir,brick,rs)]
                 if modify:
                     if to == 'pending':
                         # Stuck in pending b/c slurm job timed out
@@ -183,6 +196,9 @@ class RunStatus(object):
             r'astropy\.extern\.configobj\.configobj\.ParseError',
             r'RuntimeError:\ Command\ failed:\ sex\ -c',
             r'multiprocessing\/pool\.py\",\sline\s567',
+            r"ModuleNotFoundError:\sNo\smodule\snamed\s'fitsio'",
+            r"ImportError:\scannot\simport\sname\s'_fitsio_wrap'",
+            r"OSError:\sFile\s not\sfound:",
             r'SystemError:\ \<built-in\ method\ flush']
         self.regex_errs_extra= ['Other','log does not exist']
 
@@ -280,6 +296,13 @@ if __name__ == '__main__':
             Q.change_task_state(ids['failed'], to='pending',modify=args.modify,
                                 rm_files=False)
    
+
+    # Failed logfile lists, group by error message
+    R= RunStatus(tasks,logs)
+    print('Counting number of failed,suceed,running tasks for ech failure mode')
+    tally= R.get_tally()
+    R.print_tally(tally)
+
     # Subset of failed to pending
     if args.failed_message_to_pending:
         hasMessage= np.where(tally['failed'] == args.failed_message_to_pending)[0]
@@ -287,13 +310,6 @@ if __name__ == '__main__':
             theIds= np.array(ids['failed'])[hasMessage]
             Q.change_task_state(theIds, to='pending', modify=args.modify,
                                 rm_files=False)
-
-
-    # Failed logfile lists, group by error message
-    R= RunStatus(tasks,logs)
-    print('Counting number of failed,suceed,running tasks for ech failure mode')
-    tally= R.get_tally()
-    R.print_tally(tally)
 
     # logs,tasks for each type of failure
     print('Writing logs,tasks for each failure mode for failed tasks')
