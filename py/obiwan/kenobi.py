@@ -246,6 +246,20 @@ try:
 except NameError:
     pass
 
+def bashOutput(cmd):
+    '''execute a bash command and return stdout
+    
+    Args:
+        cmd: what would type on the command line, e.g. find . -name "hello.txt"
+    '''
+    proc = subprocess.Popen(cmd, shell=True,
+                            stdin=subprocess.PIPE,
+                            stdout=subprocess.PIPE,
+                            stderr=subprocess.PIPE)
+    stdout, stderr= proc.communicate()
+    return stdout,stderr
+ 
+
 try: 
     class SimImage(DecamImage):
         """Adds simulated sources to a single exposure
@@ -273,7 +287,20 @@ try:
                 self.t.rename('arawgain', 'gain')
             elif self.survey.dataset in ['dr5']:
                 assert 'gain' in self.t.get_columns()
-                        
+            # Find image on proj or proja if doesn't exist
+            dirs=dict(proj='/project/projectdirs/cosmo/staging',
+                      proja='/global/projecta/projectdirs/cosmo/staging')
+            if not os.path.exists(self.imgfn):
+                print('doesnt exist: %s, finding new location for file')
+                base=os.path.basename(self.imgfn)
+                found,err= bashOutput('find %s -name "%s"' % (dirs['proj'],base))
+                if len(found) == 0:
+                    found,err= bashOutput('find %s -name "%s"' % (dirs['proja'],base))
+                if len(found) == 0:
+                    raise OSError('cannot find image on project or projecta: %s' % base)
+                else:
+                    self.imgfn= found.decode().strip()
+                print('found new location, overwrite self.imgfn with %s' % self.imgfn)
 
         def get_tractor_image(self, **kwargs):
             tim = super(SimImage, self).get_tractor_image(**kwargs)
