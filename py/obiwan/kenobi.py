@@ -290,6 +290,9 @@ try:
                 else:
                     self.imgfn= found[0]
                 print('found new location, overwrite self.imgfn with %s' % self.imgfn)
+                self.wtfn= (self.imgfn.replace('_oki_','_oow_')
+                                      .replace('_ooi_','_oow_'))
+                self.dqfn= self.wtfn.replace('_oow_','_ood_')
 
         def get_tractor_image(self, **kwargs):
             tim = super(SimImage, self).get_tractor_image(**kwargs)
