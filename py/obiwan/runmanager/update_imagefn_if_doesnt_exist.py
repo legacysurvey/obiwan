@@ -41,11 +41,11 @@ def mpi_main(nproc=1,imageFns=[],suffix=''):
     dirs=dict(proj='/project/projectdirs/cosmo/staging/decam',
               proja='/global/projecta/projectdirs/cosmo/staging/decam')
     for cnt,imageFn in enumerate(imageFns):
-        if cnt % 100 == 0:
+        if cnt % 10 == 0:
             text= 'rank %d: %d/%d' % (comm.rank,cnt,len(imageFns))
             print(text)
         if not os.path.exists(imageFn):
-            print('Doesnt exist: %s' % imageFn)
+            #print('Doesnt exist: %s' % imageFn)
             found,err= bashOutput('find %s -name "%s"' % (dirs['proj'],os.path.basename(imageFn)))
             if len(found) == 0:
                 found,err= bashOutput('find %s -name "%s"' % (dirs['proja'],os.path.basename(imageFn)))
@@ -53,32 +53,31 @@ def mpi_main(nproc=1,imageFns=[],suffix=''):
                 print("Doesnt exist anywhere: %s" % imageFn)
                 notExist.append(imageFn)
             else:
-                print("new location: %s" % found.decode().strip())
+                #print("new location: %s" % found.decode().strip())
                 old2new.append((imageFn,found.decode().strip()))
-        else:
-            print('Exists: %s' % imageFn)
+        #else:
+        #    print('Exists: %s' % imageFn)
     # Gather
-    if nproc > 1:
-        old2new = comm.gather(old2new, root=0)
-        notExist = comm.gather(notExist, root=0)
+    #if nproc > 1:
+    #    old2new = comm.gather(old2new, root=0)
+    #    notExist = comm.gather(notExist, root=0)
     #if comm.rank == 0:
     #if nproc > 1:
     #    fn= fn.replace('.txt','_rank%d.txt' % comm.rank)
-    if comm.rank == 0: 
-        fn='old2new%s.txt' % suffix
-        with open(fn,'w') as foo:
-            for i in range(len(old2new)):
-                print(old2new[i][0],old2new[i][1])
-                foo.write('%s --> %s\n' % (old2new[i][0],old2new[i][1]))
-        print('Wrote %s' % fn)
-        
-        fn='notExist%s.txt' % suffix
-        #if nproc > 1:
-        #    fn= fn.replace('.txt','_rank%d.txt' % comm.rank)
-        with open(fn,'w') as foo:
-            for i in range(len(notExist)):
-                foo.write('%s\n' % notExist[i])
-        print('Wrote %s' % fn)
+    fn='old2new%s_rank%d.txt' % (suffix,comm.rank)
+    with open(fn,'w') as foo:
+        for i in range(len(old2new)):
+            print(old2new[i][0],old2new[i][1])
+            foo.write('%s --> %s\n' % (old2new[i][0],old2new[i][1]))
+    print('Wrote %s' % fn)
+    
+    fn='notExist%s_rank%d.txt' % (suffix,comm.rank)
+    #if nproc > 1:
+    #    fn= fn.replace('.txt','_rank%d.txt' % comm.rank)
+    with open(fn,'w') as foo:
+        for i in range(len(notExist)):
+            foo.write('%s\n' % notExist[i])
+    print('Wrote %s' % fn)
         
 
 def imagefns_from_ccds_table(table_fn):
