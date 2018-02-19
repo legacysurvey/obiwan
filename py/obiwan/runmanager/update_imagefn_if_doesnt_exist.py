@@ -19,16 +19,22 @@ def bashOutput(cmd):
     stdout, stderr= proc.communicate()
     return stdout,stderr
    
-def mpi_main(nproc=1,imageFns=[]):
+def mpi_main(nproc=1,imageFns=[],suffix=''):
     """
 
     Args:
         nproc: > 1 for mpi4py
         bricks: list of bricks
+        suffix: identifying name to append to output fns
     """
     if nproc > 1:
         from mpi4py.MPI import COMM_WORLD as comm
         imageFns= np.array_split(imageFns, comm.size)[comm.rank]
+    else:
+        class MyComm(object):
+            def __init__(self):
+                self.rank=0
+        comm= MyComm()
     old2new=[]
     notExist=[]
    
@@ -36,36 +42,43 @@ def mpi_main(nproc=1,imageFns=[]):
               proja='/global/projecta/projectdirs/cosmo/staging/decam')
     for cnt,imageFn in enumerate(imageFns):
         if cnt % 100 == 0:
-            text= '%d/%d' % (cnt,len(imageFns))
-            if nproc > 1:
-                text= 'rank %d: ' % comm.rank + text
+            text= 'rank %d: %d/%d' % (comm.rank,cnt,len(imageFns))
             print(text)
         if not os.path.exists(imageFn):
+            print('Doesnt exist: %s' % imageFn)
             found,err= bashOutput('find %s -name "%s"' % (dirs['proj'],os.path.basename(imageFn)))
             if len(found) == 0:
                 found,err= bashOutput('find %s -name "%s"' % (dirs['proja'],os.path.basename(imageFn)))
             if len(found) == 0:
-                #print("Does not exist anywhere: %s" % imageFn)
+                print("Doesnt exist anywhere: %s" % imageFn)
                 notExist.append(imageFn)
             else:
-                #print("--%s-- exists here --%s--" % (imageFn,found.decode().strip()))
+                print("new location: %s" % found.decode().strip())
                 old2new.append((imageFn,found.decode().strip()))
+        else:
+            print('Exists: %s' % imageFn)
     # Gather
     if nproc > 1:
         old2new = comm.gather(old2new, root=0)
         notExist = comm.gather(notExist, root=0)
     #if comm.rank == 0:
-    fn='old2new.txt'
-    with open(fn,'w') as foo:
-        for i in range(len(old2new)):
-            print(old2new[i][0],old2new[i][1])
-            foo.write('%s --> %s\n' % (old2new[i][0],old2new[i][1]))
-    print('Wrote %s' % fn)
-    fn='notExist.txt'
-    with open(fn,'w') as foo:
-        for i in range(len(notExist)):
-            foo.write('%s\n' % notExist[i])
-    print('Wrote %s' % fn)
+    #if nproc > 1:
+    #    fn= fn.replace('.txt','_rank%d.txt' % comm.rank)
+    if comm.rank == 0: 
+        fn='old2new%s.txt' % suffix
+        with open(fn,'w') as foo:
+            for i in range(len(old2new)):
+                print(old2new[i][0],old2new[i][1])
+                foo.write('%s --> %s\n' % (old2new[i][0],old2new[i][1]))
+        print('Wrote %s' % fn)
+        
+        fn='notExist%s.txt' % suffix
+        #if nproc > 1:
+        #    fn= fn.replace('.txt','_rank%d.txt' % comm.rank)
+        with open(fn,'w') as foo:
+            for i in range(len(notExist)):
+                foo.write('%s\n' % notExist[i])
+        print('Wrote %s' % fn)
         
 
 def imagefns_from_ccds_table(table_fn):
@@ -87,8 +100,10 @@ if __name__ == '__main__':
     
     if args.image_list:
         imageFns= np.loadtxt(args.image_list,dtype=str)
+        suffix= os.path.basename(args.image_list).replace('.txt','')
     elif args.ccds_table:
         imageFns= imagefns_from_ccds_table(args.ccds_table)
+        suffix= os.path.basename(args.ccds_table).replace('.fits.gz','').replace('.fits','')
 
-    mpi_main(nproc=args.nproc,imageFns=imageFns)
+    mpi_main(nproc=args.nproc,imageFns=imageFns,suffix='_'+suffix)
 
