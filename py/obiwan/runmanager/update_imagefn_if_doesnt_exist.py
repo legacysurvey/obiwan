@@ -19,7 +19,7 @@ def bashOutput(cmd):
     stdout, stderr= proc.communicate()
     return stdout,stderr
    
-def mpi_main(nproc=1,imageFns=[],suffix=''):
+def mpi_fns_that_exist(nproc=1,imageFns=[],suffix=''):
     """
 
     Args:
@@ -38,14 +38,20 @@ def mpi_main(nproc=1,imageFns=[],suffix=''):
     old2new=[]
     notExist=[]
    
-    dirs=dict(proj='/project/projectdirs/cosmo/staging/decam',
-              proja='/global/projecta/projectdirs/cosmo/staging/decam')
+    dirs=dict(proj='/project/projectdirs/cosmo/staging',
+              proja='/global/projecta/projectdirs/cosmo/staging')
     for cnt,imageFn in enumerate(imageFns):
         if cnt % 100 == 0:
             text= 'rank %d: %d/%d' % (comm.rank,cnt,len(imageFns))
             print(text)
-        if not os.path.exists(imageFn):
-            print('Doesnt exist: %s' % imageFn)
+        onProj= os.path.join(dirs['proj'],imageFn)
+        onProja= os.path.join(dirs['proja'],imageFn)
+        if os.path.exists(onProj):
+            pass
+        elif os.path.exists(onProja): 
+            pass
+        else:
+            print('Doesnt exist on proj or proja under orig name: %s' % imageFn)
             found,err= bashOutput('find %s -name "%s"' % (dirs['proj'],os.path.basename(imageFn)))
             if len(found) == 0:
                 found,err= bashOutput('find %s -name "%s"' % (dirs['proja'],os.path.basename(imageFn)))
@@ -53,8 +59,10 @@ def mpi_main(nproc=1,imageFns=[],suffix=''):
                 print("Doesnt exist anywhere: %s" % imageFn)
                 notExist.append(imageFn)
             else:
-                print("new location: %s" % found.decode().strip())
-                old2new.append((imageFn,found.decode().strip()))
+                newfn= (found.decode().strip()
+                             .replace(dirs['proj'],'')
+                             .replace(dirs['proja'],''))
+                old2new.append((imageFn,newfn))
         else:
             print('Exists: %s' % imageFn)
     # Gather
@@ -87,23 +95,46 @@ def imagefns_from_ccds_table(table_fn):
     return np.array(list(set(fns)))
 
 
+def update_surveyccds(ccds_fn,old2new_fn):
+    ccds=fits_table(ccds_fn)
+    saveName= (ccds_fn.replace('.fits.gz','-newfns.fits.gz')
+                      .replace('.fits','-newfns.fits'))
+    with open(old2new_fn,'r') as f:
+        data= f.readlines()
+    old=[row.split(" ")[0] for row in data]
+    new=[row.split(" ")[-1].strip() for row in data]
+    
+    fns= np.char.strip(ccds.image_filename)
+    for o,n in zip(old,new):
+        fns[fns == o]= n
+    ccds.set('image_filename',fns)
+    ccds.writeto(saveName)
+    print('Wrote %s' % saveName)
+
+
+
+
 if __name__ == '__main__':
     #testcase_main()
     from argparse import ArgumentParser
     parser = ArgumentParser()
+    parser.add_argument('--runWhat', type=str, choices=['fns_that_exist','update_ccds'],required=True) 
     parser.add_argument('--nproc', type=int, default=1, help='set to > 1 to run mpi4py') 
     parser.add_argument('--image_list', type=str, default=None, 
                         help='specify a fn listing the image filenames') 
     parser.add_argument('--ccds_table', type=str, default=None, 
                         help='use a ccd table insteady, grabbing the imagefilename column') 
+    parser.add_argument('--old2new_fn', type=str, default=None, 
+                        help='output by mpi_fns_that_exist') 
     args = parser.parse_args()
     
-    if args.image_list:
-        imageFns= np.loadtxt(args.image_list,dtype=str)
-        suffix= os.path.basename(args.image_list).replace('.txt','')
-    elif args.ccds_table:
-        imageFns= imagefns_from_ccds_table(args.ccds_table)
-        suffix= os.path.basename(args.ccds_table).replace('.fits.gz','').replace('.fits','')
-
-    mpi_main(nproc=args.nproc,imageFns=imageFns,suffix='_'+suffix)
-
+    if args.runWhat == 'fns_that_exist':
+        if args.image_list:
+            imageFns= np.loadtxt(args.image_list,dtype=str)
+            suffix= os.path.basename(args.image_list).replace('.txt','')
+        elif args.ccds_table:
+            imageFns= imagefns_from_ccds_table(args.ccds_table)
+            suffix= os.path.basename(args.ccds_table).replace('.fits.gz','').replace('.fits','')
+        mpi_fns_that_exist(nproc=args.nproc,imageFns=imageFns,suffix='_'+suffix)
+    elif args.runWhat == 'update_ccds':
+        update_surveyccds(args.ccds_table,args.old2new_fn)
