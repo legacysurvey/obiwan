@@ -6,9 +6,12 @@
 #SBATCH --account=desi
 #SBATCH -J randoms
 #SBATCH -L SCRATCH,project
-#SBATCH -C haswell
+###SBATCH -C haswell
 
-export outdir=elg_dr5_500per
+export dataset=dr3
+export outdir=eboss_elg
+#export dataset=dr5
+#export outdir=elg_${dataset}_1000per
 let tasks=32*${SLURM_JOB_NUM_NODES}
 export bricks_fn=${CSCRATCH}/obiwan_out/${outdir}/bricks.txt
 
@@ -23,4 +26,5 @@ export OMP_NUM_THREADS=1
 
 srun -n ${tasks} -c 1 \
     python $CSCRATCH/obiwan_code/obiwan/py/obiwan/runmanager/uniform_obiwan_randoms.py \
-    --data_dir $CSCRATCH/obiwan_out/${outdir} --bricks_fn ${bricks_fn} --nproc ${tasks}
+    --data_dir $CSCRATCH/obiwan_out/${outdir} --bricks_fn ${bricks_fn} --nproc ${tasks} \
+    --dataset $dataset --date "02-19-2018"

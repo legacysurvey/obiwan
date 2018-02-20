@@ -27,19 +27,18 @@ def datarelease_dir(dataset):
     return os.path.join(proj,dataset)
         
 
-def obiwan_randoms_b(brick,data_dir,dataset):
+def obiwan_randoms_b(fn_obiwan_a,brick,dataset):
     """Computes one randoms table
 
     Args:
-        obiwan_a_fn: obiwan_a randoms table fn for a given brick
+        fn_obiwan_a: obiwan_a randoms table fn for a given brick
         dataset: dr3,dr5 for the tractor cat of real sources
     
     Returns: 
         obiwan_b: obiwan_a but removing real sources, 
             e.g. sources with 1'' match in datarelease tractor cat
     """
-    obiwan_a= fits_table(os.path.join(derived_field_dir(brick,data_dir),
-                                      'obiwan_randoms_a.fits'))
+    obiwan_a= fits_table(fn_obiwan_a)
     real= fits_table(os.path.join(datarelease_dir(dataset),
                                   'tractor',brick[:3],
                                   'tractor-%s.fits' % brick))
@@ -123,8 +122,8 @@ def mpi_main(nproc=1,data_dir='./',dataset=None,date='mm-dd-yyyy',
         fns= dict(uniform= os.path.join(dr,'uniform_randoms.fits'),
                   obiwan_a= os.path.join(dr,'obiwan_randoms_a.fits'),
                   obiwan_b= os.path.join(dr,'obiwan_randoms_b.fits'))
-        if all((os.path.exists(fns[key])
-                for key in fns.keys()))
+        if all((os.path.exists(fns[key]) 
+                for key in fns.keys())):
             print('Skipping, already exist: ',fns)
         else:
             uniform,obiwan_a= uniform_obiwan_randoms(brick,data_dir)
@@ -132,7 +131,7 @@ def mpi_main(nproc=1,data_dir='./',dataset=None,date='mm-dd-yyyy',
             print('Wrote %s' % fns['uniform'])
             obiwan_a.writeto(fns['obiwan_a'])
             print('Wrote %s' % fns['obiwan_a'])
-            obiwan_b= obiwan_randoms_b(brick,data_dir,dataset)
+            obiwan_b= obiwan_randoms_b(fns['obiwan_a'],brick,dataset)
             obiwan_b.writeto(fns['obiwan_b'])
             print('Wrote %s' % fns['obiwan_b'])
 
