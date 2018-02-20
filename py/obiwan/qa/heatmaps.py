@@ -1,6 +1,7 @@
 """Adapted from Dustin's legacyanalysis/brick-summary.py"""
 from __future__ import print_function
 import os
+import sys
 import fitsio
 import numpy as np
 from glob import glob
@@ -8,15 +9,15 @@ from collections import Counter
 
 import matplotlib
 matplotlib.use('Agg')
-matplotlib.rc('text', usetex=True)
+matplotlib.rc('text') #, usetex=True)
 matplotlib.rc('font', family='serif')
 import pylab as plt
 
-from astrometry.util.fits import fits_table
+from astrometry.util.fits import fits_table,merge_tables
 from astrometry.util.util import Tan
-from legacypipe.utils import find_unique_pixels
+#from legacypipe.utils import find_unique_pixels
 
-from legacyanalysis.coverage import cmap_discretize
+#from legacyanalysis.coverage import cmap_discretize
 
 '''
 This script produces a FITS table that summarizes per-brick
@@ -46,6 +47,9 @@ for ((b=0; b<36; b++)); do B=$(printf %02i $b); echo "python -u legacyanalysis/b
 
 python legacyanalysis/brick-summary.py --merge -o survey-brick-dr5.fits dr5-brick-summary-*.fits
 
+
+##########
+python /global/cscratch1/sd/kaylanb/obiwan_code/obiwan/py/obiwan/qa/heatmaps.py -o dr3-brick-summary-1220p29.fits /global/project/projectdirs/cosmo/data/legacysurvey/dr3/coadd/122/1220p29*/*-nexp-*.fits.gz
 '''
 
 
@@ -61,6 +65,33 @@ def colorbar_axes(parent, frac=0.12, pad=0.03, aspect=20):
 	parent.get_figure().sca(parent)
 	return cax
 
+# From http://scipy-cookbook.readthedocs.io/items/Matplotlib_ColormapTransformations.html
+def cmap_discretize(cmap, N):
+    from matplotlib.cm import get_cmap
+    from numpy import concatenate, linspace
+    """Return a discrete colormap from the continuous colormap cmap.
+
+        cmap: colormap instance, eg. cm.jet.
+        N: number of colors.
+
+    Example
+        x = resize(arange(100), (5,100))
+        djet = cmap_discretize(cm.jet, 5)
+        imshow(x, cmap=djet)
+    """
+    if type(cmap) == str:
+        cmap = get_cmap(cmap)
+    colors_i = concatenate((linspace(0, 1., N), (0.,0.,0.,0.)))
+    colors_rgba = cmap(colors_i)
+    indices = linspace(0, 1., N+1)
+    cdict = {}
+    for ki,key in enumerate(('red','green','blue')):
+        cdict[key] = [ (indices[i], colors_rgba[i-1,ki], colors_rgba[i,ki]) for i in range(N+1) ]
+    # Return colormap object.
+    return matplotlib.colors.LinearSegmentedColormap(cmap.name + "_%d"%N, cdict, 1024)
+
+
+
 def plots(opt):
     from astrometry.util.plotutils import antigray
     import tractor.sfd
@@ -70,7 +101,8 @@ def plots(opt):
     import pylab as plt
     import matplotlib
 
-    B = fits_table('survey-bricks.fits.gz')
+    B = fits_table(os.path.join(os.environ['LEGACY_SURVEY_DIR'],
+                                'survey-bricks.fits.gz'))
     print('Looking up brick bounds')
     ibrick = dict([(n,i) for i,n in enumerate(B.brickname)])
     bi = np.array([ibrick[n] for n in T.brickname])
@@ -162,9 +194,11 @@ def plots(opt):
     
     # Map of the tile centers we want to observe...
     if decam:
-        O = fits_table('obstatus/decam-tiles_obstatus.fits')
+        O = fits_table(os.path.join(os.environ['obiwan_code'],
+                                    'svn_decam/obstatus/decam-tiles_obstatus.fits'))
     else:
-        O = fits_table('mosaic-tiles_obstatus.fits')
+        O = fits_table(os.path.join(os.environ['obiwan_code'],
+                                    'svn_mosaic/obstatus/mosaic-tiles_obstatus.fits'))
     O.cut(O.in_desi == 1)
     rr,dd = np.meshgrid(np.linspace(ax[1],ax[0], 700),
                         np.linspace(ax[2],ax[3], 200))
@@ -219,7 +253,7 @@ def plots(opt):
     cax = colorbar_axes(plt.gca(), frac=0.12)        
     cbar = plt.colorbar(cax=cax)
     cbar.set_label('Extinction E(B-V)')
-    plt.savefig('ext-bw.pdf')
+    plt.savefig('ext-bw.png')
     plt.clf()
     dmap = sfd.ebv(rr.ravel(), dd.ravel()).reshape(rr.shape)
     plt.imshow(dmap, extent=[ax[0],ax[1],ax[2],ax[3]],
@@ -230,10 +264,10 @@ def plots(opt):
     cax = colorbar_axes(plt.gca(), frac=0.12)        
     cbar = plt.colorbar(cax=cax)
     cbar.set_label('Extinction E(B-V)')
-    plt.savefig('ext-bw-2.pdf')
+    plt.savefig('ext-bw-2.png')
     plt.figure(1)
 
-    sys.exit(0)
+    #sys.exit(0)
     
     plt.clf()
     depthlo,depthhi = 21.5, 25.5
@@ -362,7 +396,7 @@ def plots(opt):
         cax = colorbar_axes(plt.gca(), frac=0.12)        
         cbar = plt.colorbar(cax=cax, ticks=np.arange(20, 26, 0.5)) #ticks=np.arange(np.floor(mn/5.)*5., 0.1+np.ceil(mx/5.)*5, 0.2))
         cbar.set_label('Depth (5-sigma, galaxy profile, AB mag)')
-        plt.savefig('galdepth-bw-%s.pdf' % band)
+        plt.savefig('galdepth-bw-%s.png' % band)
         plt.figure(1)
         
         plt.clf()
@@ -441,7 +475,7 @@ def plots(opt):
         cbar = plt.colorbar(cax=cax,
                             format=matplotlib.ticker.FuncFormatter(lambda x, p: format(int(x), ',')))
         cbar.set_label('Objects per square degree')
-        plt.savefig('nobjs-bw-%s.pdf' % col[1:])
+        plt.savefig('nobjs-bw-%s.png' % col[1:])
         #plt.savefig('nobjs-bw-%s.png' % col[1:])
         plt.figure(1)
         
@@ -492,47 +526,87 @@ def plots(opt):
         cbar = plt.colorbar(cax=cax,
                             format=matplotlib.ticker.FuncFormatter(lambda x, p: '%.2g' % x))
         cbar.set_label('Percentage of objects of type %s' % col[1:].upper())
-        plt.savefig('fobjs-bw-%s.pdf' % col[1:])
+        plt.savefig('fobjs-bw-%s.png' % col[1:])
         #plt.savefig('fobjs-bw-%s.png' % col[1:])
         plt.figure(1)
         
     return 0
-        
-def main():
-    import argparse
-    parser = argparse.ArgumentParser()
-    parser.add_argument('-o', '--out', dest='outfn', help='Output filename',
-                      default='TMP/nexp.fits')
-    parser.add_argument('--merge', action='store_true', help='Merge sub-tables')
-    parser.add_argument('--plot', action='store_true', help='Plot results')
-    parser.add_argument('--dr5', action='store_true', help='DR5 format?')
-    parser.add_argument('files', metavar='nexp-file.fits.gz', nargs='+',
-                        help='List of nexp files to process')
-    
-    opt = parser.parse_args()
-    fns = opt.files
+       
+def _ring_unique(wcs, W, H, i, unique, ra1,ra2,dec1,dec2):
+    lo, hix, hiy = i, W-i-1, H-i-1
+    # one slice per side; we double-count the last pix of each side.
+    sidex = slice(lo,hix+1)
+    sidey = slice(lo,hiy+1)
+    top = (lo, sidex)
+    bot = (hiy, sidex)
+    left  = (sidey, lo)
+    right = (sidey, hix)
+    xx = np.arange(W)
+    yy = np.arange(H)
+    nu,ntot = 0,0
+    for slc in [top, bot, left, right]:
+        #print('xx,yy', xx[slc], yy[slc])
+        (yslc,xslc) = slc
+        rr,dd = wcs.pixelxy2radec(xx[xslc]+1, yy[yslc]+1)
+        U = (rr >= ra1 ) * (rr < ra2 ) * (dd >= dec1) * (dd < dec2)
+        #print('Pixel', i, ':', np.sum(U), 'of', len(U), 'pixels are unique')
+        unique[slc] = U
+        nu += np.sum(U)
+        ntot += len(U)
+    #if allin:
+    #    print('Scanned to pixel', i)
+    #    break
+    return nu,ntot
 
-    if opt.merge:
-        from astrometry.util.fits import merge_tables
-        TT = []
-        for fn in fns:
-            T = fits_table(fn)
-            print(fn, '->', len(T))
-            TT.append(T)
-        T = merge_tables(TT)
-        T.writeto(opt.outfn)
-        print('Wrote', opt.outfn)
-        return
+def find_unique_pixels(wcs, W, H, unique, ra1,ra2,dec1,dec2):
+    if unique is None:
+        unique = np.ones((H,W), bool)
+    # scan the outer annulus of pixels, and shrink in until all pixels
+    # are unique.
+    step = 10
+    for i in range(0, W//2, step):
+        nu,ntot = _ring_unique(wcs, W, H, i, unique, ra1,ra2,dec1,dec2)
+        #print('Pixel', i, ': nu/ntot', nu, ntot)
+        if nu > 0:
+            i -= step
+            break
+        unique[:i,:] = False
+        unique[H-1-i:,:] = False
+        unique[:,:i] = False
+        unique[:,W-1-i:] = False
 
-    if opt.plot:
-        plots(opt)
-        return
+    for j in range(max(i+1, 0), W//2):
+        nu,ntot = _ring_unique(wcs, W, H, j, unique, ra1,ra2,dec1,dec2)
+        #print('Pixel', j, ': nu/ntot', nu, ntot)
+        if nu == ntot:
+            break
+    return unique
 
-    fns.sort()
-    print(len(fns), 'nexp files')
-    
+
+
+def merge_tables_divide(bricklist,nproc,outfn)
+    bricks = fits_table(os.path.join(os.environ['LEGACY_SURVEY_DIR'],
+                                     'survey-bricks.fits.gz'))
+    if nproc > 1:
+        from mpi4py.MPI import COMM_WORLD as comm
+        bricklist= np.array_split(bricklist, comm.size)[comm.rank]
+    else:
+        class MyComm(object):
+            def __init__(self):
+                self.rank=0
+        comm= MyComm()
+
+    one_row_per_brick= []
+    one_row_per_brick.append( mpi_merge_conquer(bricklist) )
+    one_row_per_brick = comm.gather(one_row_per_brick, root=0)
+    if comm.rank == 0:
+        allRows = merge_tables(one_row_per_brick)
+        allRows.writeto(outfn)
+        print('Wrote', outfn)
+
+
+def mpi_merge_conquer(bricklist)
     brickset = set()
-    bricklist = []
     gn = []
     rn = []
     zn = []
@@ -575,7 +649,6 @@ def main():
     rtrans = []
     ztrans = []
     
-    bricks = fits_table('survey-bricks.fits.gz')
     
     #sfd = SFDMap()
     
@@ -585,130 +658,126 @@ def main():
     unique = np.ones((H,W), bool)
     tlast = 0
     
-    for ifn,fn in enumerate(fns):
-        print('File', (ifn+1), 'of', len(fns), ':', fn)
-        words = fn.split('/')
-        dirprefix = '/'.join(words[:-4])
+    for ibrick,brick in enumerate(bricklist):
+        if ibrick % 10 == 0: 
+            print('rank ',comm.rank,': File', (ibrick+1), 'of', len(bricklist), ':', brick)
+        #words = fn.split('/')
+        #dirprefix = '/'.join(words[:-4])
         #print('Directory prefix:', dirprefix)
-        words = words[-4:]
-        brick = words[2]
+        #words = words[-4:]
+        #brick = words[2]
         #print('Brick', brick)
-        if not brick in brickset:
-            try:
-                tfn = os.path.join(dirprefix, 'tractor', brick[:3], 'tractor-%s.fits'%brick)
-                print('Tractor filename', tfn)
-                if opt.dr5:
-                    T = fits_table(tfn, columns=['brick_primary', 'type',
-                                                 'psfsize_g', 'psfsize_r', 'psfsize_z',
-                                                 'psfdepth_g', 'psfdepth_r', 'psfdepth_z',
-                                                 'galdepth_g', 'galdepth_r', 'galdepth_z',
-                                                 'ebv',
-                                                 'mw_transmission_g', 'mw_transmission_r', 'mw_transmission_z',
-                                                 'nobs_w1', 'nobs_w2', 'nobs_w3', 'nobs_w4',
-                                                 'mw_transmission_w1', 'mw_transmission_w2', 'mw_transmission_w3', 'mw_transmission_w4'])
-                else:
-                    T = fits_table(tfn, columns=['brick_primary', 'type', 'decam_psfsize',
-                                             'decam_depth', 'decam_galdepth',
-                                             'ebv', 'decam_mw_transmission',
-                                             'wise_nobs', 'wise_mw_transmission'])
-            except:
-                print('Failed to read FITS table', tfn)
-                import traceback
-                traceback.print_exc()
-                print('Carrying on.')
-                continue
-
-            brickset.add(brick)
-            bricklist.append(brick)
-            gn.append(0)
-            rn.append(0)
-            zn.append(0)
-    
-            gnhist.append([0 for i in range(nnhist)])
-            rnhist.append([0 for i in range(nnhist)])
-            znhist.append([0 for i in range(nnhist)])
-    
-            index = -1
-            ibrick = np.nonzero(bricks.brickname == brick)[0][0]
-            ibricks.append(ibrick)
-
-            T.cut(T.brick_primary)
-            nsrcs.append(len(T))
-            types = Counter([t.strip() for t in T.type])
-            npsf.append(types['PSF'])
-            nsimp.append(types['SIMP'])
-            nrex.append(types['REX'])
-            nexp.append(types['EXP'])
-            ndev.append(types['DEV'])
-            ncomp.append(types['COMP'])
-            print('N sources', nsrcs[-1])
-
+        try:
+            tfn = os.path.join(dirprefix, 'tractor', brick[:3], 'tractor-%s.fits'%brick)
+            print('Tractor filename', tfn)
             if opt.dr5:
-                gpsfsize.append(np.median(T.psfsize_g))
-                rpsfsize.append(np.median(T.psfsize_r))
-                zpsfsize.append(np.median(T.psfsize_z))
-
-                gpsfdepth.append(np.median(T.psfdepth_g))
-                rpsfdepth.append(np.median(T.psfdepth_r))
-                zpsfdepth.append(np.median(T.psfdepth_z))
-
-                ggaldepth.append(np.median(T.galdepth_g))
-                rgaldepth.append(np.median(T.galdepth_r))
-                zgaldepth.append(np.median(T.galdepth_z))
-
-                wise_nobs.append(np.median(
-                    np.vstack((T.nobs_w1, T.nobs_w2, T.nobs_w3, T.nobs_w4)).T,
-                    axis=0))
-                wise_trans.append(np.median(
-                    np.vstack((T.mw_transmission_w1,
-                               T.mw_transmission_w2,
-                               T.mw_transmission_w3,
-                               T.mw_transmission_w4)).T,
-                               axis=0))
-
-                gtrans.append(np.median(T.mw_transmission_g))
-                rtrans.append(np.median(T.mw_transmission_r))
-                ztrans.append(np.median(T.mw_transmission_z))
-                
+                T = fits_table(tfn, columns=['brick_primary', 'type',
+                                             'psfsize_g', 'psfsize_r', 'psfsize_z',
+                                             'psfdepth_g', 'psfdepth_r', 'psfdepth_z',
+                                             'galdepth_g', 'galdepth_r', 'galdepth_z',
+                                             'ebv',
+                                             'mw_transmission_g', 'mw_transmission_r', 'mw_transmission_z',
+                                             'nobs_w1', 'nobs_w2', 'nobs_w3', 'nobs_w4',
+                                             'mw_transmission_w1', 'mw_transmission_w2', 'mw_transmission_w3', 'mw_transmission_w4'])
             else:
-                gpsfsize.append(np.median(T.decam_psfsize[:,1]))
-                rpsfsize.append(np.median(T.decam_psfsize[:,2]))
-                zpsfsize.append(np.median(T.decam_psfsize[:,4]))
+                T = fits_table(tfn, columns=['brick_primary', 'type', 'decam_psfsize',
+                                         'decam_depth', 'decam_galdepth',
+                                         'ebv', 'decam_mw_transmission',
+                                         'wise_nobs', 'wise_mw_transmission'])
+        except:
+            print('Failed to read FITS table', tfn)
+            import traceback
+            traceback.print_exc()
+            print('Carrying on.')
+            continue
 
-                gpsfdepth.append(np.median(T.decam_depth[:,1]))
-                rpsfdepth.append(np.median(T.decam_depth[:,2]))
-                zpsfdepth.append(np.median(T.decam_depth[:,4]))
+        brickset.add(brick)
+        bricklist.append(brick)
+        gn.append(0)
+        rn.append(0)
+        zn.append(0)
 
-                ggaldepth.append(np.median(T.decam_galdepth[:,1]))
-                rgaldepth.append(np.median(T.decam_galdepth[:,2]))
-                zgaldepth.append(np.median(T.decam_galdepth[:,4]))
-    
-                wise_nobs.append(np.median(T.wise_nobs, axis=0))
-                wise_trans.append(np.median(T.wise_mw_transmission, axis=0))
+        gnhist.append([0 for i in range(nnhist)])
+        rnhist.append([0 for i in range(nnhist)])
+        znhist.append([0 for i in range(nnhist)])
 
-                gtrans.append(np.median(T.decam_mw_transmission[:,1]))
-                rtrans.append(np.median(T.decam_mw_transmission[:,2]))
-                ztrans.append(np.median(T.decam_mw_transmission[:,4]))
-                
-            ebv.append(np.median(T.ebv))
-    
-            br = bricks[ibrick]
+        index = -1
+        ibrick = np.nonzero(bricks.brickname == brick)[0][0]
+        ibricks.append(ibrick)
 
-            #print('Computing unique brick pixels...')
-            pixscale = 0.262/3600.
-            wcs = Tan(br.ra, br.dec, W/2.+0.5, H/2.+0.5,
-                      -pixscale, 0., 0., pixscale,
-                      float(W), float(H))
-            unique[:,:] = True
-            find_unique_pixels(wcs, W, H, unique,
-                               br.ra1, br.ra2, br.dec1, br.dec2)
-            U = np.flatnonzero(unique)
-            #print(len(U), 'of', W*H, 'pixels are unique to this brick')
-    
+        T.cut(T.brick_primary)
+        nsrcs.append(len(T))
+        types = Counter([t.strip() for t in T.type])
+        npsf.append(types['PSF'])
+        nsimp.append(types['SIMP'])
+        nrex.append(types['REX'])
+        nexp.append(types['EXP'])
+        ndev.append(types['DEV'])
+        ncomp.append(types['COMP'])
+        print('N sources', nsrcs[-1])
+
+        if opt.dr5:
+            gpsfsize.append(np.median(T.psfsize_g))
+            rpsfsize.append(np.median(T.psfsize_r))
+            zpsfsize.append(np.median(T.psfsize_z))
+
+            gpsfdepth.append(np.median(T.psfdepth_g))
+            rpsfdepth.append(np.median(T.psfdepth_r))
+            zpsfdepth.append(np.median(T.psfdepth_z))
+
+            ggaldepth.append(np.median(T.galdepth_g))
+            rgaldepth.append(np.median(T.galdepth_r))
+            zgaldepth.append(np.median(T.galdepth_z))
+
+            wise_nobs.append(np.median(
+                np.vstack((T.nobs_w1, T.nobs_w2, T.nobs_w3, T.nobs_w4)).T,
+                axis=0))
+            wise_trans.append(np.median(
+                np.vstack((T.mw_transmission_w1,
+                           T.mw_transmission_w2,
+                           T.mw_transmission_w3,
+                           T.mw_transmission_w4)).T,
+                           axis=0))
+
+            gtrans.append(np.median(T.mw_transmission_g))
+            rtrans.append(np.median(T.mw_transmission_r))
+            ztrans.append(np.median(T.mw_transmission_z))
+            
         else:
-            index = bricklist.index(brick)
-            assert(index == len(bricklist)-1)
-    
+            gpsfsize.append(np.median(T.decam_psfsize[:,1]))
+            rpsfsize.append(np.median(T.decam_psfsize[:,2]))
+            zpsfsize.append(np.median(T.decam_psfsize[:,4]))
+
+            gpsfdepth.append(np.median(T.decam_depth[:,1]))
+            rpsfdepth.append(np.median(T.decam_depth[:,2]))
+            zpsfdepth.append(np.median(T.decam_depth[:,4]))
+
+            ggaldepth.append(np.median(T.decam_galdepth[:,1]))
+            rgaldepth.append(np.median(T.decam_galdepth[:,2]))
+            zgaldepth.append(np.median(T.decam_galdepth[:,4]))
+
+            wise_nobs.append(np.median(T.wise_nobs, axis=0))
+            wise_trans.append(np.median(T.wise_mw_transmission, axis=0))
+
+            gtrans.append(np.median(T.decam_mw_transmission[:,1]))
+            rtrans.append(np.median(T.decam_mw_transmission[:,2]))
+            ztrans.append(np.median(T.decam_mw_transmission[:,4]))
+            
+        ebv.append(np.median(T.ebv))
+
+        br = bricks[ibrick]
+
+        #print('Computing unique brick pixels...')
+        pixscale = 0.262/3600.
+        wcs = Tan(br.ra, br.dec, W/2.+0.5, H/2.+0.5,
+                  -pixscale, 0., 0., pixscale,
+                  float(W), float(H))
+        unique[:,:] = True
+        find_unique_pixels(wcs, W, H, unique,
+                           br.ra1, br.ra2, br.dec1, br.dec2)
+        U = np.flatnonzero(unique)
+        #print(len(U), 'of', W*H, 'pixels are unique to this brick')
+         
         index = bricklist.index(brick)
         assert(index == len(bricklist)-1)
     
@@ -783,7 +852,33 @@ def main():
     T.ext_w3 = -2.5 * np.log10(T.trans_wise[:,2])
     T.ext_w4 = -2.5 * np.log10(T.trans_wise[:,3])
 
-    T.writeto(opt.outfn)
+    return T 
+
+
+
+def main():
+    import argparse
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-o', '--out', dest='outfn', help='Output filename',
+                      default='TMP/nexp.fits')
+    parser.add_argument('--merge', action='store_true', help='Merge sub-tables')
+    parser.add_argument('--plot', action='store_true', help='Plot results')
+    parser.add_argument('--dr5', action='store_true', help='DR5 format?')
+    #parser.add_argument('files', metavar='nexp-file.fits.gz', nargs='+',
+    #                    help='List of nexp files to process')
+    parser.add_argument('--bricks_fn', default=None, help='file listing bricks to process') 
+    parser.add_argument('--nproc', type=int, default=1, help='set to > 1 to run mpi4py') 
+    
+    opt = parser.parse_args()
+
+    if opt.merge:
+        #fns = opt.files
+        bricklist= np.loadtxt(opt.bricks_fn,dtype=str)
+        mpi_merge_tables(bricklist,opt.nproc,opt.outfn) 
+    
+    if opt.plot:
+        plots(opt)
+        return
 
 if __name__ == '__main__':
     main()
