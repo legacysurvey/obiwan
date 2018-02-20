@@ -199,6 +199,7 @@ class RunStatus(object):
             r"ModuleNotFoundError:\sNo\smodule\snamed\s'fitsio'",
             r"ImportError:\scannot\simport\sname\s'_fitsio_wrap'",
             r"OSError:\sFile\s not\sfound:",
+            r"NothingToDoError:\sNo\sCCDs\stouching\sbrick",
             r'SystemError:\ \<built-in\ method\ flush']
         self.regex_errs_extra= ['Other','log does not exist']
 
