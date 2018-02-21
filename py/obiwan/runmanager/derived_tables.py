@@ -8,9 +8,11 @@ import numpy as np
 import os
 from glob import glob
 import pandas as pd
+from collections import Counter
 
 try: 
     from astrometry.util.fits import fits_table, merge_tables
+    from astrometry.util.util import Tan
     from astrometry.libkd.spherematch import match_radec
 except ImportError:
     pass
@@ -26,7 +28,7 @@ def datarelease_dir(dataset):
     proj='/global/project/projectdirs/cosmo/data/legacysurvey'
     return os.path.join(proj,dataset)
         
-class RandomsTables(object):
+class RandomsTable(object):
     """Creates the uniform,obiwan_a,obiwan_b randoms tables for a single brick"""
     def __init__(self, data_dir,dataset,date='mm-dd-yyyy'):
         assert(dataset in DATASETS)
@@ -34,8 +36,11 @@ class RandomsTables(object):
         self.dataset= dataset
         self.date= date
 
+    def run(self,brick):
+        self.uniform_obiwana_obiwanb(brick)
+
     def uniform_obiwana_obiwanb(self,brick):
-        derived_dir= derived_field_dir(brick,self.data_dir,self.date):
+        derived_dir= derived_field_dir(brick,self.data_dir,self.date)
         fns= dict(uniform= os.path.join(derived_dir,'uniform_randoms.fits'),
                   obiwan_a= os.path.join(derived_dir,'obiwan_randoms_a.fits'),
                   obiwan_b= os.path.join(derived_dir,'obiwan_randoms_b.fits'))
@@ -131,16 +136,22 @@ class HeatmapTable(object):
         self.data_dir= data_dir
         self.dataset= dataset
         self.date= date
+        self.surveyBricks = fits_table(os.path.join(os.environ['LEGACY_SURVEY_DIR'],
+                                                    'survey-bricks.fits.gz'))
+
+    def run(self,brick):
+        self.write_table_for_datarelease(brick)
 
     def write_table_for_datarelease(self,brick):
-        derived_dir= derived_field_dir(brick,self.data_dir,self.date):
+        derived_dir= derived_field_dir(brick,self.data_dir,self.date)
         fn= os.path.join(derived_dir,'heatmap_datarelease.fits')
         if os.path.exists(fn): 
             print('Skipping, already exist: ',fn)
         else:
-            T= self.get_table_for_datarelease([brick],self.dataset)
-            T.writeto(fn)
-            print('Wrote %s' % fn)
+            tab= self.get_table_for_datarelease([brick],self.dataset)
+            if tab:
+                tab.writeto(fn)
+                print('Wrote %s' % fn)
     
     def get_table_for_datarelease(self,bricklist,dataset):
         """
@@ -207,32 +218,43 @@ class HeatmapTable(object):
             #words = words[-4:]
             #brick = words[2]
             #print('Brick', brick)
+            tfn = os.path.join(dirprefix, 'tractor', brick[:3], 'tractor-%s.fits'%brick)
+            if dataset == 'dr5':
+                columns=['brick_primary', 'type',
+                         'psfsize_g', 'psfsize_r', 'psfsize_z',
+                         'psfdepth_g', 'psfdepth_r', 'psfdepth_z',
+                         'galdepth_g', 'galdepth_r', 'galdepth_z',
+                         'ebv',
+                         'mw_transmission_g', 'mw_transmission_r', 'mw_transmission_z',
+                         'nobs_w1', 'nobs_w2', 'nobs_w3', 'nobs_w4',
+                         'nobs_g', 'nobs_r', 'nobs_z',
+                         'mw_transmission_w1', 'mw_transmission_w2', 'mw_transmission_w3', 'mw_transmission_w4']
+            else:
+                columns=['brick_primary', 'type', 'decam_psfsize',
+                         'decam_depth', 'decam_galdepth',
+                         'ebv', 'decam_mw_transmission',
+                         'decam_nobs',
+                         'wise_nobs', 'wise_mw_transmission']
             try:
-                tfn = os.path.join(dirprefix, 'tractor', brick[:3], 'tractor-%s.fits'%brick)
-                print('Tractor filename', tfn)
-                if dataset == 'dr5':
-                    T = fits_table(tfn, columns=['brick_primary', 'type',
-                                                 'psfsize_g', 'psfsize_r', 'psfsize_z',
-                                                 'psfdepth_g', 'psfdepth_r', 'psfdepth_z',
-                                                 'galdepth_g', 'galdepth_r', 'galdepth_z',
-                                                 'ebv',
-                                                 'mw_transmission_g', 'mw_transmission_r', 'mw_transmission_z',
-                                                 'nobs_w1', 'nobs_w2', 'nobs_w3', 'nobs_w4',
-                                                 'mw_transmission_w1', 'mw_transmission_w2', 'mw_transmission_w3', 'mw_transmission_w4'])
-                else:
-                    T = fits_table(tfn, columns=['brick_primary', 'type', 'decam_psfsize',
-                                             'decam_depth', 'decam_galdepth',
-                                             'ebv', 'decam_mw_transmission',
-                                             'wise_nobs', 'wise_mw_transmission'])
+                T = fits_table(tfn, columns=columns)
+                #print('Read %s' % tfn)
             except:
-                print('Failed to read FITS table', tfn)
-                import traceback
-                traceback.print_exc()
-                print('Carrying on.')
-                continue
+                print('Failed to read %s' % tfn)
+                return None
+                #print('Failed to read FITS table', tfn)
+                #import traceback
+                #traceback.print_exc()
+                #print('Carrying on.')
+                #continue
 
+
+            if dataset == 'dr5':
+                hasBands= [band for band in 'grz' if any(T.get('nobs_'+band) > 0)]
+            else:
+                hasBands= [band 
+                           for band,iband in [('g',1),('r',2),('z',4)]
+                           if any(T.decam_nobs[:,iband] > 0)]
             brickset.add(brick)
-            bricklist.append(brick)
             gn.append(0)
             rn.append(0)
             zn.append(0)
@@ -242,7 +264,7 @@ class HeatmapTable(object):
             znhist.append([0 for i in range(nnhist)])
 
             index = -1
-            ibrick = np.nonzero(bricks.brickname == brick)[0][0]
+            ibrick = np.nonzero(self.surveyBricks.brickname == brick)[0][0]
             ibricks.append(ibrick)
 
             T.cut(T.brick_primary)
@@ -305,7 +327,7 @@ class HeatmapTable(object):
                 
             ebv.append(np.median(T.ebv))
 
-            br = bricks[ibrick]
+            br = self.surveyBricks[ibrick]
 
             #print('Computing unique brick pixels...')
             pixscale = 0.262/3600.
@@ -321,28 +343,33 @@ class HeatmapTable(object):
             index = bricklist.index(brick)
             assert(index == len(bricklist)-1)
         
-            filepart = words[-1]
-            filepart = filepart.replace('.fits.gz', '')
-            filepart = filepart.replace('.fits.fz', '')
-            print('File:', filepart)
-            band = filepart[-1]
-            assert(band in 'grz')
-        
-            nlist,nhist = dict(g=(gn,gnhist), r=(rn,rnhist), z=(zn,znhist))[band]
-        
-            upix = fitsio.read(fn).flat[U]
-            med = np.median(upix)
-            print('Band', band, ': Median', med)
-            nlist[index] = med
-        
-            hist = nhist[index]
-            for i in range(nnhist):
-                if i < nnhist-1:
-                    hist[i] = np.sum(upix == i)
-                else:
-                    hist[i] = np.sum(upix >= i)
-            assert(sum(hist) == len(upix))
-            print('Number of exposures histogram:', hist)
+      
+            # Does a check on the legacysurvey-{brick}-nexp*.fits files
+            if False: 
+                #filepart = words[-1]
+                #filepart = filepart.replace('.fits.gz', '')
+                #filepart = filepart.replace('.fits.fz', '')
+                #print('File:', filepart)
+                #band = filepart[-1]
+                #assert(band in 'grz')
+                nlist,nhist = dict(g=(gn,gnhist), r=(rn,rnhist), z=(zn,znhist))[band]
+                for band in hasBands:
+                    fn= os.path.join(dirprefix, 'coadd', 
+                                     brick[:3],brick,
+                                     'legacysurvey-%s-nexp-%s.fits.gz' % (brick,band))
+                    upix = fitsio.read(fn).flat[U]
+                    med = np.median(upix)
+                    print('Band', band, ': Median', med)
+                    nlist[index] = med
+                
+                    hist = nhist[index]
+                    for i in range(nnhist):
+                        if i < nnhist-1:
+                            hist[i] = np.sum(upix == i)
+                        else:
+                            hist[i] = np.sum(upix >= i)
+                    assert(sum(hist) == len(upix))
+                    print('Number of exposures histogram:', hist)
         
         ibricks = np.array(ibricks)
         
@@ -350,8 +377,8 @@ class HeatmapTable(object):
         
         T = fits_table()
         T.brickname = np.array(bricklist)
-        T.ra  = bricks.ra [ibricks]
-        T.dec = bricks.dec[ibricks]
+        T.ra  = self.surveyBricks.ra [ibricks]
+        T.dec = self.surveyBricks.dec[ibricks]
         T.nexp_g = np.array(gn).astype(np.int16)
         T.nexp_r = np.array(rn).astype(np.int16)
         T.nexp_z = np.array(zn).astype(np.int16)
@@ -443,10 +470,9 @@ class HeatmapTable(object):
         #    break
         return nu,ntot
 
-def main(doWhat=None,nproc=1,data_dir='./',dataset=None,date='mm-dd-yyyy',
-         bricks=[]):
+def main_mpi(bricks=[],doWhat=None,dataset=None,
+             nproc=1,data_dir='./',date='mm-dd-yyyy'):
     """
-
     Args:
         nproc: > 1 for mpi4py
         bricks: list of bricks
@@ -455,7 +481,17 @@ def main(doWhat=None,nproc=1,data_dir='./',dataset=None,date='mm-dd-yyyy',
     if nproc > 1:
         from mpi4py.MPI import COMM_WORLD as comm
         bricks= np.array_split(bricks, comm.size)[comm.rank]
+    else:
+        class MyComm(object):
+            def __init__(self):
+                self.rank=0
+        comm= MyComm()
 
+    if doWhat == 'randoms_table':
+        tabMaker= RandomsTable(data_dir,dataset,date=date)
+    elif doWhat == 'heatmap_table':
+        tabMaker= HeatmapTable(data_dir,dataset,date=date)
+    
     for cnt,brick in enumerate(bricks):
         if (cnt+1) % 10 == 0: 
             print('rank %d: %d/%d' % (comm.rank,cnt+1,len(bricks)))
@@ -464,18 +500,13 @@ def main(doWhat=None,nproc=1,data_dir='./',dataset=None,date='mm-dd-yyyy',
             os.makedirs(dr)
         except OSError:
             pass
-        if doWhat == 'randoms_table':
-            R= RandomsTables(data_dir,dataset,date=date)
-            R.uniform_obiwana_obiwanb(brick)
-        elif doWhat == 'heatmap_table':
-            H= HeatmapTable(data_dir,dataset,date=date)
-            H.write_table_for_datarelease(brick)
+        tabMaker.run(brick)
             
 
 if __name__ == '__main__':
-    #testcase_main()
     from argparse import ArgumentParser
     parser = ArgumentParser()
+    parser.add_argument('--doWhat', type=str, choices=['randoms_table','heatmap_table'],required=True)
     parser.add_argument('--data_dir', type=str, required=True, 
                         help='path to obiwan/, tractor/ dirs') 
     parser.add_argument('--nproc', type=int, default=1, help='set to > 1 to run mpi4py') 
@@ -492,10 +523,10 @@ if __name__ == '__main__':
     else:
         bricks= np.loadtxt(args.bricks_fn,dtype=str)
 
-    kwargs= dict(nproc=args.nproc,
-                 bricks=bricks,
-                 data_dir=args.data_dir,
-                 dataset=args.dataset,
-                 date=args.date)
-    mpi_main(**kwargs)
+    kwargs= vars(args)
+    for dropCol in ['bricks_fn']:
+        del kwargs[dropCol]
+    kwargs.update(bricks=bricks)
+
+    main_mpi(**kwargs)
 
