@@ -1,4 +1,8 @@
-"""Adapted from Dustin's legacyanalysis/brick-summary.py"""
+"""Adapted from Dustin's legacyanalysis/brick-summary.py
+
+Makes just the plots
+"""
+
 from __future__ import print_function
 import os
 import sys
@@ -11,47 +15,18 @@ import matplotlib
 matplotlib.use('Agg')
 matplotlib.rc('text') #, usetex=True)
 matplotlib.rc('font', family='serif')
+from matplotlib.cm import get_cmap
 import pylab as plt
 
+from scipy.ndimage.filters import gaussian_filter
+from scipy.ndimage.morphology import binary_dilation
+
 from astrometry.util.fits import fits_table,merge_tables
-from astrometry.util.util import Tan
-#from legacypipe.utils import find_unique_pixels
+from astrometry.util.plotutils import antigray
+from astrometry.util.starutil_numpy import lbtoradec
+from astrometry.libkd.spherematch import match_radec
 
-#from legacyanalysis.coverage import cmap_discretize
-
-'''
-This script produces a FITS table that summarizes per-brick
-information about a data release.  It takes on the command-line the
-list of "*-nexp-BAND.fits.gz" files, pulls the brick names out, and
-reads the corresponding tractor files.  This is kind of an odd way to
-do it, but I'm sure it made sense to me at the time.
-
-This takes long enough to run on a full data release that you might
-want to run multiple threads by hand, eg,
-
-(for B in 30; do python -u legacyanalysis/brick-summary.py -o dr4-brick-summary-$B.fits /global/projecta/projectdirs/cosmo/work/dr4b/coadd/$B*/*/*-nexp-*.fits.gz > bs-$B.log 2>&1; done) &
-
-for a set of B, and then
-
-python legacyanalysis/brick-summary.py --merge -o brick-summary-dr4.fits dr4-brick-summary-*.fits
-
-to merge them into one file, and
-
-python legacyanalysis/brick-summary.py --plot brick-summary-dr4.fits
-
-to make a couple of plots.
-
-Or, run this to generate a list of command-lines that you can copy-n-paste:
-
-for ((b=0; b<36; b++)); do B=$(printf %02i $b); echo "python -u legacyanalysis/brick-summary.py --dr5 -o dr5-brick-summary-$B.fits /project/projectdirs/cosmo/work/legacysurvey/dr5/DR5_out/coadd/$B*/*/*-nexp-*.fits.fz > bs-$B.log 2>&1 &"; done
-
-python legacyanalysis/brick-summary.py --merge -o survey-brick-dr5.fits dr5-brick-summary-*.fits
-
-
-##########
-python /global/cscratch1/sd/kaylanb/obiwan_code/obiwan/py/obiwan/qa/heatmaps.py -o dr3-brick-summary-1220p29.fits /global/project/projectdirs/cosmo/data/legacysurvey/dr3/coadd/122/1220p29*/*-nexp-*.fits.gz
-'''
-
+from tractor.sfd import SFDMap
 
 def colorbar_axes(parent, frac=0.12, pad=0.03, aspect=20):
 	pb = parent.get_position(original=True).frozen()
@@ -67,8 +42,6 @@ def colorbar_axes(parent, frac=0.12, pad=0.03, aspect=20):
 
 # From http://scipy-cookbook.readthedocs.io/items/Matplotlib_ColormapTransformations.html
 def cmap_discretize(cmap, N):
-    from matplotlib.cm import get_cmap
-    from numpy import concatenate, linspace
     """Return a discrete colormap from the continuous colormap cmap.
 
         cmap: colormap instance, eg. cm.jet.
@@ -81,9 +54,9 @@ def cmap_discretize(cmap, N):
     """
     if type(cmap) == str:
         cmap = get_cmap(cmap)
-    colors_i = concatenate((linspace(0, 1., N), (0.,0.,0.,0.)))
+    colors_i = np.concatenate((np.linspace(0, 1., N), (0.,0.,0.,0.)))
     colors_rgba = cmap(colors_i)
-    indices = linspace(0, 1., N+1)
+    indices = np.linspace(0, 1., N+1)
     cdict = {}
     for ki,key in enumerate(('red','green','blue')):
         cdict[key] = [ (indices[i], colors_rgba[i-1,ki], colors_rgba[i,ki]) for i in range(N+1) ]
@@ -92,14 +65,8 @@ def cmap_discretize(cmap, N):
 
 
 
-def plots(opt):
-    from astrometry.util.plotutils import antigray
-    import tractor.sfd
-
-    T = fits_table(opt.files[0])
-    print('Read', len(T), 'bricks summarized in', opt.files[0])
-    import pylab as plt
-    import matplotlib
+def plots(heatmap_table_fn, outdir='./'):
+    T = fits_table(heatmap_table_fn)
 
     B = fits_table(os.path.join(os.environ['LEGACY_SURVEY_DIR'],
                                 'survey-bricks.fits.gz'))
@@ -176,7 +143,6 @@ def plots(opt):
         # Galactic plane lines
         gl = np.arange(361)
         gb = np.zeros_like(gl)
-        from astrometry.util.starutil_numpy import lbtoradec
         rr,dd = lbtoradec(gl, gb)
         plot_broken(map_ra(rr), dd, 'k-', alpha=0.5, lw=1)
         rr,dd = lbtoradec(gl, gb+10)
@@ -202,14 +168,11 @@ def plots(opt):
     O.cut(O.in_desi == 1)
     rr,dd = np.meshgrid(np.linspace(ax[1],ax[0], 700),
                         np.linspace(ax[2],ax[3], 200))
-    from astrometry.libkd.spherematch import match_radec
     I,J,d = match_radec(O.ra, O.dec, rr.ravel(), dd.ravel(), 1.)
     desimap = np.zeros(rr.shape, bool)
     desimap.flat[J] = True
 
     # Smoothed DESI boundary contours
-    from scipy.ndimage.filters import gaussian_filter
-    from scipy.ndimage.morphology import binary_dilation
     C = plt.contour(gaussian_filter(
         binary_dilation(desimap).astype(np.float32), 2),
         [0.5], extent=[ax[1],ax[0],ax[2],ax[3]])
@@ -242,7 +205,7 @@ def plots(opt):
                         O.ra, O.dec, 1.0, nearest=True)
     iy,ix = np.unravel_index(I, rr.shape)
     #dmap[iy,ix] = O.ebv_med[J]
-    sfd = tractor.sfd.SFDMap()
+    sfd = SFDMap()
     ebv = sfd.ebv(rr[iy,ix], dd[iy,ix])
     dmap[iy,ix] = ebv
     mx = np.percentile(dmap[dmap > 0], 98)
@@ -253,7 +216,7 @@ def plots(opt):
     cax = colorbar_axes(plt.gca(), frac=0.12)        
     cbar = plt.colorbar(cax=cax)
     cbar.set_label('Extinction E(B-V)')
-    plt.savefig('ext-bw.png')
+    plt.savefig(os.path.join(outdir,'ext-bw.png'))
     plt.clf()
     dmap = sfd.ebv(rr.ravel(), dd.ravel()).reshape(rr.shape)
     plt.imshow(dmap, extent=[ax[0],ax[1],ax[2],ax[3]],
@@ -264,7 +227,7 @@ def plots(opt):
     cax = colorbar_axes(plt.gca(), frac=0.12)        
     cbar = plt.colorbar(cax=cax)
     cbar.set_label('Extinction E(B-V)')
-    plt.savefig('ext-bw-2.png')
+    plt.savefig(os.path.join(outdir,'ext-bw-2.png'))
     plt.figure(1)
 
     #sys.exit(0)
@@ -281,7 +244,7 @@ def plots(opt):
     plt.xlabel('Galaxy depth (median per brick) (mag)')
     plt.ylabel('Number of Bricks')
     plt.title(release)
-    plt.savefig('galdepths.png')
+    plt.savefig(os.path.join(outdir,'galdepths.png'))
 
     for band in 'grz':
         depth = T.get('galdepth_%s' % band)
@@ -314,7 +277,7 @@ def plots(opt):
         plt.xlim(lo, hi)
         plt.xticks(np.arange(depthlo, depthhi+0.01, 0.2))
         plt.legend(loc='upper right')
-        plt.savefig('depth-hist-%s.png' % band)
+        plt.savefig(os.path.join(outdir,'depth-hist-%s.png' % band))
 
     for band in 'grz':
         plt.clf()
@@ -333,7 +296,7 @@ def plots(opt):
         cax = colorbar_axes(plt.gca(), frac=0.08)
         plt.colorbar(cax=cax, ticks=range(mx+1))
         plt.title('%s: Number of exposures in %s' % (release, band))
-        plt.savefig('nexp-%s.png' % band)
+        plt.savefig(os.path.join(outdir,'nexp-%s.png' % band))
 
         #cmap = cmap_discretize(base_cmap, 15)
         cmap = cmap_discretize(base_cmap, 10)
@@ -348,7 +311,7 @@ def plots(opt):
         radec_plot()
         plt.colorbar()
         plt.title('%s: PSF size, band %s' % (release, band))
-        plt.savefig('psfsize-%s.png' % band)
+        plt.savefig(os.path.join(outdir,'psfsize-%s.png' % band))
 
         plt.clf()
         desi_map()
@@ -364,7 +327,7 @@ def plots(opt):
         radec_plot()
         plt.colorbar()
         plt.title('%s: galaxy depth, band %s, median per brick, extinction-corrected' % (release, band))
-        plt.savefig('galdepth-%s.png' % band)
+        plt.savefig(os.path.join(outdir,'galdepth-%s.png' % band))
 
         # B&W version
         plt.figure(2)
@@ -396,7 +359,7 @@ def plots(opt):
         cax = colorbar_axes(plt.gca(), frac=0.12)        
         cbar = plt.colorbar(cax=cax, ticks=np.arange(20, 26, 0.5)) #ticks=np.arange(np.floor(mn/5.)*5., 0.1+np.ceil(mx/5.)*5, 0.2))
         cbar.set_label('Depth (5-sigma, galaxy profile, AB mag)')
-        plt.savefig('galdepth-bw-%s.png' % band)
+        plt.savefig(os.path.join(outdir,'galdepth-bw-%s.png' % band))
         plt.figure(1)
         
         plt.clf()
@@ -412,7 +375,7 @@ def plots(opt):
         radec_plot()
         plt.colorbar()
         plt.title('%s: extinction, band %s' % (release, band))
-        plt.savefig('ext-%s.png' % band)
+        plt.savefig(os.path.join(outdir,'ext-%s.png' % band))
 
 
     T.ngal = T.nsimp + T.nrex + T.nexp + T.ndev + T.ncomp
@@ -433,7 +396,7 @@ def plots(opt):
         if col == 'nobjs':
             tt = 'total'
         plt.title('%s: Number of objects %s' % (release, tt))
-        plt.savefig('nobjs-%s.png' % col[1:])
+        plt.savefig(os.path.join(outdir,'nobjs-%s.png' % col[1:]))
 
         # B&W version
         plt.figure(2)
@@ -475,8 +438,8 @@ def plots(opt):
         cbar = plt.colorbar(cax=cax,
                             format=matplotlib.ticker.FuncFormatter(lambda x, p: format(int(x), ',')))
         cbar.set_label('Objects per square degree')
-        plt.savefig('nobjs-bw-%s.png' % col[1:])
-        #plt.savefig('nobjs-bw-%s.png' % col[1:])
+        plt.savefig(os.path.join(outdir,'nobjs-bw-%s.png' % col[1:]))
+        #plt.savefig(os.path.join(outdir,'nobjs-bw-%s.png' % col[1:]))
         plt.figure(1)
         
     Ntot = T.nobjs
@@ -495,7 +458,7 @@ def plots(opt):
         radec_plot()
         plt.colorbar()
         plt.title('%s: Fraction of objects of type %s' % (release, col[1:]))
-        plt.savefig('fobjs-%s.png' % col[1:])
+        plt.savefig(os.path.join(outdir,'fobjs-%s.png' % col[1:]))
 
         # B&W version
         plt.figure(2)
@@ -526,8 +489,8 @@ def plots(opt):
         cbar = plt.colorbar(cax=cax,
                             format=matplotlib.ticker.FuncFormatter(lambda x, p: '%.2g' % x))
         cbar.set_label('Percentage of objects of type %s' % col[1:].upper())
-        plt.savefig('fobjs-bw-%s.png' % col[1:])
-        #plt.savefig('fobjs-bw-%s.png' % col[1:])
+        plt.savefig(os.path.join(outdir,'fobjs-bw-%s.png' % col[1:]))
+        #plt.savefig(os.path.join(outdir,'fobjs-bw-%s.png' % col[1:]))
         plt.figure(1)
         
     return 0
@@ -537,26 +500,12 @@ def plots(opt):
 def main():
     import argparse
     parser = argparse.ArgumentParser()
-    parser.add_argument('-o', '--out', dest='outfn', help='Output filename',
-                      default='TMP/nexp.fits')
-    parser.add_argument('--merge', action='store_true', help='Merge sub-tables')
-    parser.add_argument('--plot', action='store_true', help='Plot results')
-    parser.add_argument('--dr5', action='store_true', help='DR5 format?')
-    #parser.add_argument('files', metavar='nexp-file.fits.gz', nargs='+',
-    #                    help='List of nexp files to process')
-    parser.add_argument('--bricks_fn', default=None, help='file listing bricks to process') 
-    parser.add_argument('--nproc', type=int, default=1, help='set to > 1 to run mpi4py') 
-    
+    parser.add_argument('--heatmap_table', type=str)
+    parser.add_argument('--outdir', default='./', type=str)
     opt = parser.parse_args()
 
-    if opt.merge:
-        #fns = opt.files
-        bricklist= np.loadtxt(opt.bricks_fn,dtype=str)
-        mpi_merge_tables(bricklist,opt.nproc,opt.outfn) 
-    
-    if opt.plot:
-        plots(opt)
-        return
+    plots(heatmap_table_fn= opt.heatmap_table, 
+          outdir=opt.outdir)
 
 if __name__ == '__main__':
     main()

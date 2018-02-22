@@ -37,25 +37,33 @@ class RandomsTable(object):
         self.date= date
 
     def run(self,brick):
-        self.uniform_obiwana_obiwanb(brick)
+        self.write_tables(brick)
 
-    def uniform_obiwana_obiwanb(self,brick):
+    def write_tables(self,brick):
+        """randoms tables: uniform,obiwan_a,obiwan_b,obiwan_real"""
         derived_dir= derived_field_dir(brick,self.data_dir,self.date)
-        fns= dict(uniform= os.path.join(derived_dir,'uniform_randoms.fits'),
-                  obiwan_a= os.path.join(derived_dir,'obiwan_randoms_a.fits'),
-                  obiwan_b= os.path.join(derived_dir,'obiwan_randoms_b.fits'))
-        if all((os.path.exists(fns[key]) 
-                for key in fns.keys())):
-            print('Skipping, already exist: ',fns)
-        else:
-            uniform,obiwan_a= self.uniform_obiwan_randoms(brick,self.data_dir)
-            uniform.writeto(fns['uniform'])
-            print('Wrote %s' % fns['uniform'])
-            obiwan_a.writeto(fns['obiwan_a'])
-            print('Wrote %s' % fns['obiwan_a'])
-            obiwan_b= self.obiwan_randoms_b(fns['obiwan_a'],brick,self.dataset)
-            obiwan_b.writeto(fns['obiwan_b'])
-            print('Wrote %s' % fns['obiwan_b'])
+        fns= dict(uniform= os.path.join(derived_dir,'randoms_uniform.fits'),
+                  obiwan_a= os.path.join(derived_dir,'randoms_obiwan_a.fits'),
+                  obiwan_b= os.path.join(derived_dir,'randoms_obiwan_b.fits'),
+                  obiwan_real= os.path.join(derived_dir,'randoms_obiwan_real.fits'))
+        needWrite= {key: not os.path.exists(fns[key]) 
+                    for key in fns.keys()}
+        if needWrite['uniform'] or needWrite['obiwan_a']: 
+            uniform,obiwan_a= self.uniform_obiwana(brick,self.data_dir)
+            if needWrite['uniform']: 
+                uniform.writeto(fns['uniform'])
+                print('Wrote %s' % fns['uniform'])
+            if needWrite['obiwan_a']: 
+                obiwan_a.writeto(fns['obiwan_a'])
+                print('Wrote %s' % fns['obiwan_a'])
+        if needWrite['obiwan_b'] or needWrite['obiwan_real']: 
+            obiwan_b,obiwan_real= self.obiwanb_obiwanreal(fns['obiwan_a'],brick,self.dataset)
+            if needWrite['obiwan_b']: 
+                obiwan_b.writeto(fns['obiwan_b'])
+                print('Wrote %s' % fns['obiwan_b'])
+            if needWrite['obiwan_real']: 
+                obiwan_real.writeto(fns['obiwan_real'])
+                print('Wrote %s' % fns['obiwan_real'])
 
     def uniform_obiwana(self,brick,data_dir):
         """Computes two randoms tables
@@ -103,7 +111,7 @@ class RandomsTable(object):
         return (merge_tables(uniform, columns='fillzero'),
                 merge_tables(obi, columns='fillzero'))
 
-    def obiwanb(self,fn_obiwan_a,brick,dataset):
+    def obiwanb_obiwanreal(self,fn_obiwan_a,brick,dataset):
         """Computes one randoms table
 
         Args:
@@ -112,6 +120,8 @@ class RandomsTable(object):
         
         Returns: 
             obiwan_b: obiwan_a but removing real sources, 
+                e.g. sources with 1'' match in datarelease tractor cat
+            obiwan_real: obiwan_a but keeping only the real sources, 
                 e.g. sources with 1'' match in datarelease tractor cat
         """
         obiwan_a= fits_table(fn_obiwan_a)
@@ -125,8 +135,10 @@ class RandomsTable(object):
         assert(np.all(d <= 1./3600))
         noMatch= np.ones(len(obiwan_a),dtype=bool)
         noMatch[I]= False
+        obiwan_real= obiwan_a.copy()
         obiwan_a.cut(noMatch)
-        return obiwan_a
+        obiwan_real.cut(~noMatch)
+        return obiwan_a, obiwan_real
 
 
 class HeatmapTable(object):
@@ -140,9 +152,10 @@ class HeatmapTable(object):
                                                     'survey-bricks.fits.gz'))
 
     def run(self,brick):
-        self.write_table_for_datarelease(brick)
+        self.write_table_using_datarelease(brick)
+        self.write_table_using_obiwan(brick)
 
-    def write_table_for_datarelease(self,brick):
+    def write_table_using_datarelease(self,brick):
         derived_dir= derived_field_dir(brick,self.data_dir,self.date)
         fn= os.path.join(derived_dir,'heatmap_datarelease.fits')
         if os.path.exists(fn): 
@@ -152,7 +165,19 @@ class HeatmapTable(object):
             if tab:
                 tab.writeto(fn)
                 print('Wrote %s' % fn)
-    
+
+    def write_table_using_obiwan(self,brick):
+        derived_dir= derived_field_dir(brick,self.data_dir,self.date)
+        fn= os.path.join(derived_dir,'heatmap_datarelease.fits')
+        if os.path.exists(fn): 
+            print('Skipping, already exist: ',fn)
+        else:
+            tab= self.get_table_for_datarelease([brick],self.dataset)
+            if tab:
+                tab.writeto(fn)
+                print('Wrote %s' % fn)
+ 
+
     def get_table_for_datarelease(self,bricklist,dataset):
         """
         Args:
@@ -487,9 +512,9 @@ def main_mpi(bricks=[],doWhat=None,dataset=None,
                 self.rank=0
         comm= MyComm()
 
-    if doWhat == 'randoms_table':
+    if doWhat == 'randoms':
         tabMaker= RandomsTable(data_dir,dataset,date=date)
-    elif doWhat == 'heatmap_table':
+    elif doWhat == 'heatmap':
         tabMaker= HeatmapTable(data_dir,dataset,date=date)
     
     for cnt,brick in enumerate(bricks):
@@ -506,7 +531,7 @@ def main_mpi(bricks=[],doWhat=None,dataset=None,
 if __name__ == '__main__':
     from argparse import ArgumentParser
     parser = ArgumentParser()
-    parser.add_argument('--doWhat', type=str, choices=['randoms_table','heatmap_table'],required=True)
+    parser.add_argument('--doWhat', type=str, choices=['randoms','heatmap'],required=True)
     parser.add_argument('--data_dir', type=str, required=True, 
                         help='path to obiwan/, tractor/ dirs') 
     parser.add_argument('--nproc', type=int, default=1, help='set to > 1 to run mpi4py') 
