@@ -8,14 +8,14 @@
 #SBATCH -L SCRATCH,project
 ###SBATCH -C haswell
 
-export doWhat=heatmap_table
-#export doWhat=randoms_table
+#export doWhat=heatmap
+export doWhat=randoms
 export dataset=dr3
 #export dataset=dr5
 export outdir=eboss_elg
-#export outdir=elg_${dataset}_1000per
-export thedate="02-19-2018"
-let tasks=32*${SLURM_JOB_NUM_NODES}
+#export outdir=elg_dr5_1000per
+#export outdir=elg_dr5_500per
+export thedate="02-22-2018"
 export bricks_fn=${CSCRATCH}/obiwan_out/${outdir}/bricks.txt
 
 # Load production env
@@ -26,6 +26,14 @@ export KMP_AFFINITY=disabled
 export MPICH_GNI_FORK_MODE=FULLCOPY
 export MKL_NUM_THREADS=1
 export OMP_NUM_THREADS=1
+
+
+if [ "${NERSC_HOST}" = "edison" ]; then
+    export num_cores=24
+else
+    export num_cores=32
+fi
+let tasks=${num_cores}*${SLURM_JOB_NUM_NODES}
 
 srun -n ${tasks} -c 1 \
     python $CSCRATCH/obiwan_code/obiwan/py/obiwan/runmanager/derived_tables.py \

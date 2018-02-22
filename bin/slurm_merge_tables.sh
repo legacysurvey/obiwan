@@ -8,10 +8,11 @@
 #SBATCH -L SCRATCH,project
 ###SBATCH -C haswell
 
-export doWhat=heatmap_table
-#export doWhat=randoms_table
-export outdir=eboss_elg
+export doWhat=heatmap
+#export doWhat=randoms
+#export outdir=eboss_elg
 #export outdir=elg_dr5_1000per
+export outdir=elg_dr5_500per
 export derived_dir="${CSCRATCH}/obiwan_out/${outdir}/derived_02-19-2018"
 export bricks_fn=${CSCRATCH}/obiwan_out/${outdir}/bricks.txt
 #export bricks_fn=${CSCRATCH}/obiwan_out/bricks100.txt
@@ -25,7 +26,13 @@ export MPICH_GNI_FORK_MODE=FULLCOPY
 export MKL_NUM_THREADS=1
 export OMP_NUM_THREADS=1
 
-let tasks=32*${SLURM_JOB_NUM_NODES}
+if [ "${NERSC_HOST}" = "edison" ]; then
+    export num_cores=24
+else
+    export num_cores=32
+fi
+
+let tasks=${num_cores}*${SLURM_JOB_NUM_NODES}
 srun -n ${tasks} -c 1 \
     python $CSCRATCH/obiwan_code/obiwan/py/obiwan/runmanager/merge_tables.py \
     --doWhat ${doWhat} --derived_dir ${derived_dir} \
