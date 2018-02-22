@@ -23,167 +23,52 @@ def dir_for_mpi(derived_dir):
 def dir_for_serial(derived_dir):
     return os.path.join(derived_dir,'merged')
 
-class TargetSelection(object):
-    def __init__(self,eboss_or_desi,dataset):
-        assert(eboss_or_desi in ['eboss','desi'])
-        assert(dataset in DATASETS)
-        self.eboss_or_desi= eboss_or_desi
-        self.dataset= dataset
-
-    def keep(self,tractor):
-        if self.eboss_or_desi == 'eboss':
-            return self.ebossIsElg(tractor)
-        elif self.eboss_or_desi == 'desi':
-            return self.desiIsElg(tractor)
-
-    def desiIsElg(self,tractor):
-        kw= dict(primary=tractor.brick_primary)
-        for band,iband in [('g',1),('r',2),('z',4)]:
-            if self.dataset == 'dr5':
-                kw[band+'flux']= tractor.get('flux_'+band) / tractor.get('mw_transmission_'+band)
-            elif self.dataset == 'dr3':
-                kw[band+'flux']= tractor.decam_flux[:,iband] / tractor.decam_mw_transmission[:,iband]
-        return self._desiIsElg(**kw)
-    
-    def _desiIsElg(self,gflux=None, rflux=None, zflux=None, 
-                   primary=None):
-        """VERBATIM from 
-        https://github.com/desihub/desitarget/blob/master/py/desitarget/cuts.py
-        
-        Args:
-            gflux, rflux, zflux, w1flux, w2flux: array_like
-                The flux in nano-maggies of g, r, z, w1, and w2 bands.
-            primary: array_like or None
-                If given, the BRICK_PRIMARY column of the catalogue.
-        Returns:
-            mask : array_like. True if and only the object is an ELG
-                target.
-        """
-        #----- Emission Line Galaxies
-        if primary is None:
-            primary = np.ones_like(gflux, dtype='?')
-        elg = primary.copy()
-        elg &= rflux > 10**((22.5-23.4)/2.5)                       # r<23.4
-        elg &= zflux > rflux * 10**(0.3/2.5)                       # (r-z)>0.3
-        elg &= zflux < rflux * 10**(1.6/2.5)                       # (r-z)<1.6
-
-        # Clip to avoid warnings from negative numbers raised to fractional powers.
-        rflux = rflux.clip(0)
-        zflux = zflux.clip(0)
-        elg &= rflux**2.15 < gflux * zflux**1.15 * 10**(-0.15/2.5) # (g-r)<1.15(r-z)-0.15
-        elg &= zflux**1.2 < gflux * rflux**0.2 * 10**(1.6/2.5)     # (g-r)<1.6-1.2(r-z)
-
-        return elg 
-    
-    def ebossIsElg(self,tractor,region=None):
-        assert(region in ['ngc','sgc'])
-        inRegion=dict(ngc= ((tractor.ra > 126.) &
-                            (tractor.ra < 168.) &
-                            (tractor.dec > 14.) &
-                            (tractor.ra < 34.)),
-                      sgc_a= ((tractor.ra > 317.) &
-                              (tractor.ra < 360.) &
-                              (tractor.dec > -2.) &
-                              (tractor.ra < 2.)),
-                      sgc_b= ((tractor.ra > 0.) &
-                              (tractor.ra < 45.) &
-                              (tractor.dec > -5.) &
-                              (tractor.ra < 5.)))
-        inRegion.update(sgc= ((inRegion['sgc_a']) | 
-                              (inRegion['sgc_b'])))
-        # tycho2inblob == False
-        # SDSS bright object mask & 0 < V < 11.5 mag Tycho2 stars mask
-        # anymask[grz] == 0
-        # custom mask for eboss23
-        self.add_grz_mag(tractor)
-        gr= tractor.gmag - tractor.rmag
-        rz= tractor.rmag - tractor.zmag
-        colorCut= dict(sgc= ((tractor.gmag > 21.825) &
-                             (tractor.gmag < 22.825) &
-                             (−0.068 * rz + 0.457 < gr) &
-                             (gr < 0.112 * rz + 0.773) &
-                             (0.218 * gr + 0.571 < rz) &
-                             (rz < −0.555 * gr + 1.901)),
-                       ngc= ((tractor.gmag > 21.825) &
-                             (tractor.gmag < 22.9) &
-                             (−0.068 * rz + 0.457 < gr) &
-                             (gr < 0.112 * rz + 0.773) &
-                             (0.637 * gr + 0.399 < rz) &
-                             (rz < −0.555 * gr + 1.901)))
-        return (inRegion[region]) & (colorCut[region])
-
-    def add_grz_mag(self,tractor):
-        for band,iband in [('g',1),('r',2),('z',4)]:
-            if self.dataset == 'dr5':
-                flux_ext= tractor.get('flux_'+band) / tractor.get('mw_transmission_'+band)
-            elif self.dataset == 'dr3':
-                flux_ext= tractor.decam_flux[:,iband] / tractor.decam_mw_transmission[:,iband]
-            tractor.set(band+'mag',self.flux2mag(flux_ext))
-
-    def flux2mag(self,nmgy):
-        return -2.5 * (np.log10(nmgy) - 9)
-
-class RandomsTable(object):
-    def __init__(self,derived_dir):
-        self.derived_dir= derived_dir
-    
-    def run(self,bricks_to_merge,dataset,fitsfn):
-        for eboss_or_desi in ['eboss']:
-            for randoms_tab in ['uniform','obiwan_a','obiwan_b','obiwan_real']:
-                merged= self.select_targets_and_merge(bricks_to_merge,
-                                                      randoms_table=randoms_tab,
-                                                      eboss_or_desi=eboss_or_desi,
-                                                      dataset=dataset)
-                fn=fitsfn.replace('.fits','_%s_%s.fits' % (randoms_tab,eboss_or_desi))
-                merged.writeto(fn)
-                print('Wrote %s' % fn)
-
-    def select_targets_and_merge(bricks_to_merge,randoms_table='',
-                                 eboss_or_desi=None,dataset=None):
-        TS= TargetSelection(eboss_or_desi,dataset)
-        Tlist=[]
-        for brick in bricks_to_merge:
-            fn= os.path.join(self.derived_dir,brick[:3],brick,
-                             'randoms_%s.fits' % randoms_table)
-            tractor= self.read_tractor(fn)
-            tractor.cut(TS.keep(tractor))
-            Tlist.append(tractor)
-        return merge_tables(Tlist,columns='fillzero')
-
-    def read_tractor(self,tractor_fn,dataset):
-        columns=['brick_primary', 'type','ra','dec',
-                 'brickname']
-        if dataset == 'dr5':
-            for band 'grz':
-                for prefix in ['flux_','mw_transmission_',
-                               'allmask_','anymask_']:
-                    columns.append(prefix+band)
-        elif dataset == 'dr3':
-            for suffix in ['_flux','_mw_transmission',
-                           '_allmask','_anymask']:
-                    columns.append('decam'+suffix)
-        return fits_table(tractor_fn,columns=columns)
-
-class HeatmapTable(object):
-    def __init__(self,derived_dir):
+class MergeTable(object):
+    def __init__(self,derived_dir,**kwargs):
         self.derived_dir= derived_dir
 
     def run(self,bricks_to_merge,savefn):
-        return self.datarelease(bricks_to_merge,savefn)
-    
-    def datarelease(self,bricks_to_merge,fitsfn):
         Tlist=[]
         for brick in bricks_to_merge:
-            fn= os.path.join(self.derived_dir,brick[:3],brick,
-                             'heatmap_datarelease.fits')
-            #print('Reading %s' % fn)
-            Tlist.append( fits_table(fn))
+            tab= fits_table(self.table_fn())
+            Tlist.append(tab)
         T= merge_tables(Tlist,columns='fillzero')
         T.writeto(fitsfn)
         print('Wrote %s' % fitsfn)
 
-def main_mpi(bricks=[],doWhat=None,
-             nproc=1,derived_dir=None):
+    def table_fn(self):
+        return os.path.join(self.derived_dir,brick[:3],brick,
+                            'name.fits')
+        
+
+class TargetsTable(MergeTable):
+    def __init__(self,derived_dir,
+                 randoms_table,eboss_or_desi):
+        super().__init__(derived_dir)
+        assert(randoms_table in RANDOMS_TABLES)
+        assert(eboss_or_desi in ['eboss','desi'])
+        self.randoms_table= randoms_table
+        self.eboss_or_desi= eboss_or_desi
+
+    def table_fn(self):
+        return os.path.join(self.derived_dir,brick[:3],brick,
+                            'randoms_%s_%s.fits' % \
+                            (self.randoms_table,self.eboss_or_desi))
+
+class HeatmapTable(MergeTable):
+    def __init__(self,derived_dir,dr_or_obiwan):
+        super().__init__(derived_dir)
+        assert(dr_or_obiwan in ['datarelease','obiwan'])
+        self.dr_or_obiwan= dr_or_obiwan
+
+    def table_fn(self):
+        return os.path.join(self.derived_dir,brick[:3],brick,
+                            'heatmap_%s.fits' % self.dr_or_obiwan)
+
+def main_mpi(doWhat=None,bricks=[],nproc=1,
+             derived_dir=None,
+             randoms_table=None,eboss_or_desi=None,
+             dr_or_obiwan=None)
     """
     Args:
         nproc: > 1 for mpi4py
@@ -206,9 +91,11 @@ def main_mpi(bricks=[],doWhat=None,
         comm= MyComm()
 
     if doWhat == 'randoms':
-        tabMerger= RandomsTable(derived_dir)
+        tabMerger= TargetsTable(derived_dir,
+                                randoms_table,eboss_or_desi)
     elif doWhat == 'heatmap':
-        tabMerger= HeatmapTable(derived_dir)
+        tabMerger= HeatmapTable(derived_dir,
+                                dr_or_obiwan)
     
     tmpDir= dir_for_mpi(derived_dir) 
     try:
@@ -252,6 +139,13 @@ if __name__ == '__main__':
     parser = ArgumentParser()
     parser.add_argument('--doWhat', type=str, choices=['randoms','heatmap'],required=True)
     parser.add_argument('--derived_dir', type=str, required=True) 
+    parser.add_argument('--randoms_table', type=str, default=None, choices=['uniform','obiwan_a',
+                                            'obiwan_b','obiwan_real'],required=False)
+    parser.add_argument('--eboss_or_desi', type=str, default=None, choices=['eboss','desi'],
+                        required=False)
+    parser.add_argument('--dr_or_obiwan', type=str, default=None, choices=['datarelease','obiwan'],
+                        required=False)
+    #parser.add_argument('--dataset', type=str, choices=['dr3','dr5'],required=True)
     parser.add_argument('--nproc', type=int, default=1, help='set to > 1 to run mpi4py') 
     parser.add_argument('--bricks_fn', type=str, default=None,
                         help='specify a fn listing bricks to run, or a single default brick will be ran') 
@@ -273,5 +167,5 @@ if __name__ == '__main__':
     for dropCol in ['bricks_fn','merge_rank_tables']:
         del kwargs[dropCol]
     kwargs.update(bricks=bricks)
-
+    
     main_mpi(**kwargs)

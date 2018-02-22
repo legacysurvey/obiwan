@@ -141,6 +141,157 @@ class RandomsTable(object):
         return obiwan_a, obiwan_real
 
 
+class TargetSelection(object):
+    def __init__(self,eboss_or_desi): #,dataset):
+        assert(eboss_or_desi in ['eboss','desi'])
+        #assert(dataset in DATASETS)
+        self.eboss_or_desi= eboss_or_desi
+        #self.dataset= dataset
+
+    def keep(self,tractor):
+        if self.eboss_or_desi == 'eboss':
+            return self.ebossIsElg(tractor)
+        elif self.eboss_or_desi == 'desi':
+            return self.desiIsElg(tractor)
+
+    def desiIsElg(self,tractor):
+        kw={}
+        if 'brick_primary' in tractor.get_columns():
+            kw.update(primary=tractor.brick_primary)
+        for band,iband in [('g',1),('r',2),('z',4)]:
+            #if self.dataset == 'dr5':
+            kw[band+'flux']= tractor.get('flux_'+band) / tractor.get('mw_transmission_'+band)
+            #elif self.dataset == 'dr3':
+            #    kw[band+'flux']= tractor.decam_flux[:,iband] / tractor.decam_mw_transmission[:,iband]
+        return self._desiIsElg(**kw)
+    
+    def _desiIsElg(self,gflux=None, rflux=None, zflux=None, 
+                   primary=None):
+        """VERBATIM from 
+        https://github.com/desihub/desitarget/blob/master/py/desitarget/cuts.py
+        
+        Args:
+            gflux, rflux, zflux, w1flux, w2flux: array_like
+                The flux in nano-maggies of g, r, z, w1, and w2 bands.
+            primary: array_like or None
+                If given, the BRICK_PRIMARY column of the catalogue.
+        Returns:
+            mask : array_like. True if and only the object is an ELG
+                target.
+        """
+        #----- Emission Line Galaxies
+        if primary is None:
+            primary = np.ones_like(gflux, dtype='?')
+        elg = primary.copy()
+        elg &= rflux > 10**((22.5-23.4)/2.5)                       # r<23.4
+        elg &= zflux > rflux * 10**(0.3/2.5)                       # (r-z)>0.3
+        elg &= zflux < rflux * 10**(1.6/2.5)                       # (r-z)<1.6
+
+        # Clip to avoid warnings from negative numbers raised to fractional powers.
+        rflux = rflux.clip(0)
+        zflux = zflux.clip(0)
+        elg &= rflux**2.15 < gflux * zflux**1.15 * 10**(-0.15/2.5) # (g-r)<1.15(r-z)-0.15
+        elg &= zflux**1.2 < gflux * rflux**0.2 * 10**(1.6/2.5)     # (g-r)<1.6-1.2(r-z)
+
+        return elg 
+    
+    def ebossIsElg(self,tractor):
+        inRegion=dict(ngc= ((tractor.ra > 126.) &
+                            (tractor.ra < 168.) &
+                            (tractor.dec > 14.) &
+                            (tractor.ra < 34.)),
+                      sgc_a= ((tractor.ra > 317.) &
+                              (tractor.ra < 360.) &
+                              (tractor.dec > -2.) &
+                              (tractor.ra < 2.)),
+                      sgc_b= ((tractor.ra > 0.) &
+                              (tractor.ra < 45.) &
+                              (tractor.dec > -5.) &
+                              (tractor.ra < 5.)))
+        inRegion.update(sgc= ((inRegion['sgc_a']) | 
+                              (inRegion['sgc_b'])))
+        # tycho2inblob == False
+        # SDSS bright object mask & 0 < V < 11.5 mag Tycho2 stars mask
+        # anymask[grz] == 0
+        # custom mask for eboss23
+        self.add_grz_mag(tractor)
+        gr= tractor.gmag - tractor.rmag
+        rz= tractor.rmag - tractor.zmag
+        colorCut= dict(sgc= ((tractor.gmag > 21.825) &
+                             (tractor.gmag < 22.825) &
+                             (-0.068 * rz + 0.457 < gr) &
+                             (gr < 0.112 * rz + 0.773) &
+                             (0.218 * gr + 0.571 < rz) &
+                             (rz < -0.555 * gr + 1.901)),
+                       ngc= ((tractor.gmag > 21.825) &
+                             (tractor.gmag < 22.9) &
+                             (-0.068 * rz + 0.457 < gr) &
+                             (gr < 0.112 * rz + 0.773) &
+                             (0.637 * gr + 0.399 < rz) &
+                             (rz < -0.555 * gr + 1.901)))
+        return ((inRegion['ngc'] & colorCut['ngc']) |
+                (inRegion['sgc'] & colorCut['sgc']))
+
+    def add_grz_mag(self,tractor):
+        for band,iband in [('g',1),('r',2),('z',4)]:
+            #if self.dataset == 'dr5':
+            flux_ext= tractor.get('flux_'+band) / tractor.get('mw_transmission_'+band)
+            #elif self.dataset == 'dr3':
+            #    flux_ext= tractor.decam_flux[:,iband] / tractor.decam_mw_transmission[:,iband]
+            tractor.set(band+'mag',self.flux2mag(flux_ext))
+
+    def flux2mag(self,nmgy):
+        return -2.5 * (np.log10(nmgy) - 9)
+
+
+class TargetsTable(object):
+    """Apply target selection to the RandomsTables and write it out per-brick"""
+    def __init__(self,data_dir,date):
+        self.data_dir= data_dir
+        self.date= date
+    
+    def run(self,brick):
+        derived_dir= derived_field_dir(brick,self.data_dir,self.date)
+        for randoms_tab in ['uniform','obiwan_a','obiwan_b','obiwan_real']:
+            for eboss_or_desi in ['eboss']:
+                self.write_targets(derived_dir,
+                                   randoms_table=randoms_tab,
+                                   eboss_or_desi=eboss_or_desi)
+
+    def write_targets(self,derived_dir,
+                      randoms_table=None,
+                      eboss_or_desi=None):
+        TS= TargetSelection(eboss_or_desi) #,self.dataset)
+        fn= os.path.join(derived_dir,'randoms_%s.fits' % randoms_table)
+        if randoms_table in ['uniform']:
+            tractor= fits_table(fn)
+            if 'gflux' in tractor.get_columns():
+                for band in 'grz':
+                    tractor.rename(band+'flux','flux_'+band)
+        else:
+            tractor= self.read_tractor(fn)
+        tractor.cut(TS.keep(tractor))
+        savefn= fn.replace('.fits','_%s.fits' % eboss_or_desi)
+        tractor.writeto(fn)
+        print('Wrote %s' % savefn)
+
+    def read_tractor(self,tractor_fn):
+        columns=['brick_primary', 'type','ra','dec',
+                 'brickname']
+        #if self.dataset == 'dr5':
+        for band in 'grz':
+            for prefix in ['flux_','mw_transmission_',
+                           'allmask_','anymask_']:
+                columns.append(prefix+band)
+        #elif self.dataset == 'dr3':
+        #    for suffix in ['_flux','_mw_transmission',
+        #                   '_allmask','_anymask']:
+        #            columns.append('decam'+suffix)
+        return fits_table(tractor_fn,columns=columns)
+
+
+
+
 class HeatmapTable(object):
     """Create a fits table with the heatmap values, one per brick"""
     def __init__(self, data_dir,dataset,date='mm-dd-yyyy'):
@@ -514,6 +665,8 @@ def main_mpi(bricks=[],doWhat=None,dataset=None,
 
     if doWhat == 'randoms':
         tabMaker= RandomsTable(data_dir,dataset,date=date)
+    elif doWhat == 'targets':
+        tabMaker= TargetsTable(data_dir,date)
     elif doWhat == 'heatmap':
         tabMaker= HeatmapTable(data_dir,dataset,date=date)
     
