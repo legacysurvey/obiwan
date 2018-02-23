@@ -17,23 +17,23 @@ try:
 except ImportError:
     pass
 
-DATASETS=['dr3','dr5']
-
 def derived_field_dir(brick,data_dir,date):
     return os.path.join(data_dir,'derived_%s' % date,
                         brick[:3],brick)
 
-def datarelease_dir(dataset):
-    assert(dataset in DATASETS)
+def datarelease_dir(eboss_or_desi):
     proj='/global/project/projectdirs/cosmo/data/legacysurvey'
-    return os.path.join(proj,dataset)
+    if eboss_or_desi == 'eboss':
+        dr= 'dr3'
+    elif eboss_or_desi == 'desi':
+        dr='dr5'
+    return os.path.join(proj,dr)
         
 class RandomsTable(object):
     """Creates the uniform,obiwan_a,obiwan_b randoms tables for a single brick"""
-    def __init__(self, data_dir,dataset,date='mm-dd-yyyy'):
-        assert(dataset in DATASETS)
+    def __init__(self, data_dir,eboss_or_desi,date='mm-dd-yyyy'):
         self.data_dir= data_dir
-        self.dataset= dataset
+        self.eboss_or_desi= eboss_or_desi
         self.date= date
 
     def run(self,brick):
@@ -57,7 +57,7 @@ class RandomsTable(object):
                 obiwan_a.writeto(fns['obiwan_a'])
                 print('Wrote %s' % fns['obiwan_a'])
         if needWrite['obiwan_b'] or needWrite['obiwan_real']: 
-            obiwan_b,obiwan_real= self.obiwanb_obiwanreal(fns['obiwan_a'],brick,self.dataset)
+            obiwan_b,obiwan_real= self.obiwanb_obiwanreal(fns['obiwan_a'],brick)
             if needWrite['obiwan_b']: 
                 obiwan_b.writeto(fns['obiwan_b'])
                 print('Wrote %s' % fns['obiwan_b'])
@@ -111,12 +111,11 @@ class RandomsTable(object):
         return (merge_tables(uniform, columns='fillzero'),
                 merge_tables(obi, columns='fillzero'))
 
-    def obiwanb_obiwanreal(self,fn_obiwan_a,brick,dataset):
+    def obiwanb_obiwanreal(self,fn_obiwan_a,brick):
         """Computes one randoms table
 
         Args:
             fn_obiwan_a: obiwan_a randoms table fn for a given brick
-            dataset: dr3,dr5 for the tractor cat of real sources
         
         Returns: 
             obiwan_b: obiwan_a but removing real sources, 
@@ -125,7 +124,7 @@ class RandomsTable(object):
                 e.g. sources with 1'' match in datarelease tractor cat
         """
         obiwan_a= fits_table(fn_obiwan_a)
-        real= fits_table(os.path.join(datarelease_dir(dataset),
+        real= fits_table(os.path.join(datarelease_dir(self.eboss_or_desi),
                                       'tractor',brick[:3],
                                       'tractor-%s.fits' % brick))
         # nearest match in (ra2,dec2) for each point in (ra1,dec1)
@@ -142,11 +141,9 @@ class RandomsTable(object):
 
 
 class TargetSelection(object):
-    def __init__(self,eboss_or_desi): #,dataset):
+    def __init__(self,eboss_or_desi): 
         assert(eboss_or_desi in ['eboss','desi'])
-        #assert(dataset in DATASETS)
         self.eboss_or_desi= eboss_or_desi
-        #self.dataset= dataset
 
     def keep(self,tractor):
         if self.eboss_or_desi == 'eboss':
@@ -159,10 +156,7 @@ class TargetSelection(object):
         if 'brick_primary' in tractor.get_columns():
             kw.update(primary=tractor.brick_primary)
         for band,iband in [('g',1),('r',2),('z',4)]:
-            #if self.dataset == 'dr5':
             kw[band+'flux']= tractor.get('flux_'+band) / tractor.get('mw_transmission_'+band)
-            #elif self.dataset == 'dr3':
-            #    kw[band+'flux']= tractor.decam_flux[:,iband] / tractor.decam_mw_transmission[:,iband]
         return self._desiIsElg(**kw)
     
     def _desiIsElg(self,gflux=None, rflux=None, zflux=None, 
@@ -234,10 +228,7 @@ class TargetSelection(object):
 
     def add_grz_mag(self,tractor):
         for band,iband in [('g',1),('r',2),('z',4)]:
-            #if self.dataset == 'dr5':
             flux_ext= tractor.get('flux_'+band) / tractor.get('mw_transmission_'+band)
-            #elif self.dataset == 'dr3':
-            #    flux_ext= tractor.decam_flux[:,iband] / tractor.decam_mw_transmission[:,iband]
             tractor.set(band+'mag',self.flux2mag(flux_ext))
 
     def flux2mag(self,nmgy):
@@ -246,22 +237,20 @@ class TargetSelection(object):
 
 class TargetsTable(object):
     """Apply target selection to the RandomsTables and write it out per-brick"""
-    def __init__(self,data_dir,date):
+    def __init__(self,data_dir,eboss_or_desi,date='mm-dd-yyyy'):
         self.data_dir= data_dir
+        self.eboss_or_desi= eboss_or_desi
         self.date= date
     
     def run(self,brick):
         derived_dir= derived_field_dir(brick,self.data_dir,self.date)
         for randoms_tab in ['uniform','obiwan_a','obiwan_b','obiwan_real']:
-            for eboss_or_desi in ['eboss']:
-                self.write_targets(derived_dir,
-                                   randoms_table=randoms_tab,
-                                   eboss_or_desi=eboss_or_desi)
+            self.write_targets(derived_dir,
+                               randoms_table=randoms_tab)
 
     def write_targets(self,derived_dir,
-                      randoms_table=None,
-                      eboss_or_desi=None):
-        TS= TargetSelection(eboss_or_desi) #,self.dataset)
+                      randoms_table=None):
+        TS= TargetSelection(self.eboss_or_desi) 
         fn= os.path.join(derived_dir,'randoms_%s.fits' % randoms_table)
         if randoms_table in ['uniform']:
             tractor= fits_table(fn)
@@ -271,22 +260,17 @@ class TargetsTable(object):
         else:
             tractor= self.read_tractor(fn)
         tractor.cut(TS.keep(tractor))
-        savefn= fn.replace('.fits','_%s.fits' % eboss_or_desi)
-        tractor.writeto(fn)
+        savefn= fn.replace('.fits','_%s.fits' % self.eboss_or_desi)
+        tractor.writeto(savefn)
         print('Wrote %s' % savefn)
 
     def read_tractor(self,tractor_fn):
         columns=['brick_primary', 'type','ra','dec',
                  'brickname']
-        #if self.dataset == 'dr5':
         for band in 'grz':
             for prefix in ['flux_','mw_transmission_',
                            'allmask_','anymask_']:
                 columns.append(prefix+band)
-        #elif self.dataset == 'dr3':
-        #    for suffix in ['_flux','_mw_transmission',
-        #                   '_allmask','_anymask']:
-        #            columns.append('decam'+suffix)
         return fits_table(tractor_fn,columns=columns)
 
 
@@ -294,10 +278,9 @@ class TargetsTable(object):
 
 class HeatmapTable(object):
     """Create a fits table with the heatmap values, one per brick"""
-    def __init__(self, data_dir,dataset,date='mm-dd-yyyy'):
-        assert(dataset in DATASETS)
+    def __init__(self, data_dir,eboss_or_desi,date='mm-dd-yyyy'):
         self.data_dir= data_dir
-        self.dataset= dataset
+        self.eboss_or_desi= eboss_or_desi
         self.date= date
         self.surveyBricks = fits_table(os.path.join(os.environ['LEGACY_SURVEY_DIR'],
                                                     'survey-bricks.fits.gz'))
@@ -312,7 +295,7 @@ class HeatmapTable(object):
         if os.path.exists(fn): 
             print('Skipping, already exist: ',fn)
         else:
-            tab= self.get_table_for_datarelease([brick],self.dataset)
+            tab= self.get_table_for_datarelease([brick])
             if tab:
                 tab.writeto(fn)
                 print('Wrote %s' % fn)
@@ -323,13 +306,13 @@ class HeatmapTable(object):
         if os.path.exists(fn): 
             print('Skipping, already exist: ',fn)
         else:
-            tab= self.get_table_for_datarelease([brick],self.dataset)
+            tab= self.get_table_for_datarelease([brick])
             if tab:
                 tab.writeto(fn)
                 print('Wrote %s' % fn)
  
 
-    def get_table_for_datarelease(self,bricklist,dataset):
+    def get_table_for_datarelease(self,bricklist):
         """
         Args:
             bricklist: Give a single brick as a list of length 1, e.g. [brick]
@@ -386,7 +369,7 @@ class HeatmapTable(object):
         unique = np.ones((H,W), bool)
         tlast = 0
        
-        dirprefix= datarelease_dir(dataset)
+        dirprefix= datarelease_dir(self.eboss_or_desi)
         for ibrick,brick in enumerate(bricklist):
             #words = fn.split('/')
             #dirprefix = '/'.join(words[:-4])
@@ -395,7 +378,7 @@ class HeatmapTable(object):
             #brick = words[2]
             #print('Brick', brick)
             tfn = os.path.join(dirprefix, 'tractor', brick[:3], 'tractor-%s.fits'%brick)
-            if dataset == 'dr5':
+            if self.eboss_or_desi == 'desi': # DR5 version of tractor cats
                 columns=['brick_primary', 'type',
                          'psfsize_g', 'psfsize_r', 'psfsize_z',
                          'psfdepth_g', 'psfdepth_r', 'psfdepth_z',
@@ -405,7 +388,7 @@ class HeatmapTable(object):
                          'nobs_w1', 'nobs_w2', 'nobs_w3', 'nobs_w4',
                          'nobs_g', 'nobs_r', 'nobs_z',
                          'mw_transmission_w1', 'mw_transmission_w2', 'mw_transmission_w3', 'mw_transmission_w4']
-            else:
+            elif self.eboss_or_desi == 'eboss': # DR3 version of tractor cats
                 columns=['brick_primary', 'type', 'decam_psfsize',
                          'decam_depth', 'decam_galdepth',
                          'ebv', 'decam_mw_transmission',
@@ -424,9 +407,9 @@ class HeatmapTable(object):
                 #continue
 
 
-            if dataset == 'dr5':
+            if self.eboss_or_desi == 'desi':
                 hasBands= [band for band in 'grz' if any(T.get('nobs_'+band) > 0)]
-            else:
+            elif self.eboss_or_desi == 'eboss':
                 hasBands= [band 
                            for band,iband in [('g',1),('r',2),('z',4)]
                            if any(T.decam_nobs[:,iband] > 0)]
@@ -454,7 +437,7 @@ class HeatmapTable(object):
             ncomp.append(types['COMP'])
             print('N sources', nsrcs[-1])
 
-            if dataset == 'dr5':
+            if self.eboss_or_desi == 'desi':
                 gpsfsize.append(np.median(T.psfsize_g))
                 rpsfsize.append(np.median(T.psfsize_r))
                 zpsfsize.append(np.median(T.psfsize_z))
@@ -481,7 +464,7 @@ class HeatmapTable(object):
                 rtrans.append(np.median(T.mw_transmission_r))
                 ztrans.append(np.median(T.mw_transmission_z))
                 
-            else:
+            elif self.eboss_or_desi == 'eboss':
                 gpsfsize.append(np.median(T.decam_psfsize[:,1]))
                 rpsfsize.append(np.median(T.decam_psfsize[:,2]))
                 zpsfsize.append(np.median(T.decam_psfsize[:,4]))
@@ -646,14 +629,13 @@ class HeatmapTable(object):
         #    break
         return nu,ntot
 
-def main_mpi(bricks=[],doWhat=None,dataset=None,
+def main_mpi(bricks=[],doWhat=None,eboss_or_desi=None,
              nproc=1,data_dir='./',date='mm-dd-yyyy'):
     """
     Args:
         nproc: > 1 for mpi4py
         bricks: list of bricks
     """
-    assert(dataset in DATASETS)
     if nproc > 1:
         from mpi4py.MPI import COMM_WORLD as comm
         bricks= np.array_split(bricks, comm.size)[comm.rank]
@@ -664,11 +646,11 @@ def main_mpi(bricks=[],doWhat=None,dataset=None,
         comm= MyComm()
 
     if doWhat == 'randoms':
-        tabMaker= RandomsTable(data_dir,dataset,date=date)
+        tabMaker= RandomsTable(data_dir,eboss_or_desi,date=date)
     elif doWhat == 'targets':
-        tabMaker= TargetsTable(data_dir,date)
+        tabMaker= TargetsTable(data_dir,eboss_or_desi,date=date)
     elif doWhat == 'heatmap':
-        tabMaker= HeatmapTable(data_dir,dataset,date=date)
+        tabMaker= HeatmapTable(data_dir,eboss_or_desi,date=date)
     
     for cnt,brick in enumerate(bricks):
         if (cnt+1) % 10 == 0: 
@@ -684,13 +666,13 @@ def main_mpi(bricks=[],doWhat=None,dataset=None,
 if __name__ == '__main__':
     from argparse import ArgumentParser
     parser = ArgumentParser()
-    parser.add_argument('--doWhat', type=str, choices=['randoms','heatmap'],required=True)
+    parser.add_argument('--doWhat', type=str, choices=['randoms','targets','heatmap'],required=True)
     parser.add_argument('--data_dir', type=str, required=True, 
                         help='path to obiwan/, tractor/ dirs') 
     parser.add_argument('--nproc', type=int, default=1, help='set to > 1 to run mpi4py') 
     parser.add_argument('--bricks_fn', type=str, default=None,
                         help='specify a fn listing bricks to run, or a single default brick will be ran') 
-    parser.add_argument('--dataset', type=str, choices=['dr3','dr5'], 
+    parser.add_argument('--eboss_or_desi', type=str, choices=['eboss','desi'], 
                         help='for obiwan_randoms_b',required=True) 
     parser.add_argument('--date', type=str,help='mm-dd-yyyy, to label derived directory by',required=True) 
     args = parser.parse_args()

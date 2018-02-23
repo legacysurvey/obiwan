@@ -16,6 +16,7 @@ except ImportError:
     pass
 
 DATASETS=['dr3','dr5']
+RANDOMS_TABLES=['uniform','obiwan_a','obiwan_b','obiwan_real']
 
 def dir_for_mpi(derived_dir):
     return os.path.join(derived_dir,'merged_tmp')
@@ -24,62 +25,58 @@ def dir_for_serial(derived_dir):
     return os.path.join(derived_dir,'merged')
 
 class MergeTable(object):
-    def __init__(self,derived_dir,**kwargs):
+    def __init__(self,derived_dir,savefn,**kwargs):
         self.derived_dir= derived_dir
+        self.savefn=savefn
 
-    def run(self,bricks_to_merge,savefn):
+    def run(self,bricks_to_merge):
         Tlist=[]
         for brick in bricks_to_merge:
-            tab= fits_table(self.table_fn())
+            tab= fits_table(self.table_fn(brick))
             Tlist.append(tab)
         T= merge_tables(Tlist,columns='fillzero')
-        T.writeto(fitsfn)
-        print('Wrote %s' % fitsfn)
+        T.writeto(self.savefn)
+        print('Wrote %s' % self.savefn)
 
-    def table_fn(self):
+    def table_fn(self,brick):
         return os.path.join(self.derived_dir,brick[:3],brick,
                             'name.fits')
         
 
 class TargetsTable(MergeTable):
-    def __init__(self,derived_dir,
+    def __init__(self,derived_dir,savefn,
                  randoms_table,eboss_or_desi):
-        super().__init__(derived_dir)
+        super().__init__(derived_dir,savefn)
         assert(randoms_table in RANDOMS_TABLES)
         assert(eboss_or_desi in ['eboss','desi'])
         self.randoms_table= randoms_table
         self.eboss_or_desi= eboss_or_desi
 
-    def table_fn(self):
+    def table_fn(self,brick):
         return os.path.join(self.derived_dir,brick[:3],brick,
                             'randoms_%s_%s.fits' % \
                             (self.randoms_table,self.eboss_or_desi))
 
 class HeatmapTable(MergeTable):
-    def __init__(self,derived_dir,dr_or_obiwan):
-        super().__init__(derived_dir)
+    def __init__(self,derived_dir,savefn,
+                 dr_or_obiwan):
+        super().__init__(derived_dir,savefn)
         assert(dr_or_obiwan in ['datarelease','obiwan'])
         self.dr_or_obiwan= dr_or_obiwan
 
-    def table_fn(self):
+    def table_fn(self,brick):
         return os.path.join(self.derived_dir,brick[:3],brick,
                             'heatmap_%s.fits' % self.dr_or_obiwan)
 
 def main_mpi(doWhat=None,bricks=[],nproc=1,
              derived_dir=None,
              randoms_table=None,eboss_or_desi=None,
-             dr_or_obiwan=None)
+             dr_or_obiwan=None):
     """
     Args:
         nproc: > 1 for mpi4py
         bricks: list of bricks
     """
-    outfn= os.path.join(derived_dir,
-                        'merged_%s.fits' % doWhat)
-    if os.path.exists(outfn):
-        print('Merged table already exists %s' % outfn)
-        return
-
     if nproc > 1:
         from mpi4py.MPI import COMM_WORLD as comm
         bricks= np.array_split(bricks, comm.size)[comm.rank]
@@ -90,36 +87,49 @@ def main_mpi(doWhat=None,bricks=[],nproc=1,
                 self.size=1
         comm= MyComm()
 
-    if doWhat == 'randoms':
-        tabMerger= TargetsTable(derived_dir,
-                                randoms_table,eboss_or_desi)
-    elif doWhat == 'heatmap':
-        tabMerger= HeatmapTable(derived_dir,
-                                dr_or_obiwan)
-    
     tmpDir= dir_for_mpi(derived_dir) 
     try:
         os.makedirs(tmpDir)
     except OSError:
         pass
-    outfn= os.path.join(tmpDir,'%s_rank%d.fits' % (doWhat,comm.rank))
-    tab= tabMerger.run(bricks,outfn)
+ 
+    if doWhat == 'targets':
+        savefn= os.path.join(tmpDir,'randoms_%s_%s_rank%d.fits' % \
+                                (randoms_table,eboss_or_desi,comm.rank))
+        tabMerger= TargetsTable(derived_dir,savefn,
+                                randoms_table,eboss_or_desi)
+    elif doWhat == 'heatmap':
+        savefn= os.path.join(tmpDir,'heatmap_%s_rank%d.fits' % \
+                                (dr_or_obiwan,comm.rank))
+        tabMerger= HeatmapTable(derived_dir,savefn,
+                                dr_or_obiwan)
+    tab= tabMerger.run(bricks)
 
 
-def main_serial(doWhat=None,derived_dir=None):
+def main_serial(doWhat=None,derived_dir=None,
+                randoms_table=None,eboss_or_desi=None,
+                dr_or_obiwan=None):
     """merges the rank tables that are stored in merge_tmp/"""
     saveDir= dir_for_serial(derived_dir) 
     try:
         os.makedirs(saveDir)
     except OSError:
         pass
-    outfn= os.path.join(saveDir,'%s.fits' % doWhat)
+
+    if doWhat == 'targets':
+        wild= "randoms_%s_%s_rank*.fits" % (randoms_table,eboss_or_desi)
+        outfn= os.path.join(saveDir,'randoms_%s_%s.fits' % \
+                (randoms_table,eboss_or_desi))
+    elif doWhat == 'heatmap':
+        wild= "heatmap_%s_rank*.fits" % dr_or_obiwan
+        outfn= os.path.join(saveDir,"heatmap_%s.fits" % dr_or_obiwan)
+    
     if os.path.exists(outfn):
         print('Merged table already exists %s' % outfn)
         return
 
     search=os.path.join(dir_for_mpi(derived_dir),
-                        '%s_rank*.fits' % doWhat)
+                        wild)
     tab_fns= glob(search)
     if len(tab_fns) == 0:
         raise ValueError('found nothing with search: %s' % search)
@@ -137,7 +147,7 @@ def main_serial(doWhat=None,derived_dir=None):
 if __name__ == '__main__':
     from argparse import ArgumentParser
     parser = ArgumentParser()
-    parser.add_argument('--doWhat', type=str, choices=['randoms','heatmap'],required=True)
+    parser.add_argument('--doWhat', type=str, choices=['targets','heatmap'],required=True)
     parser.add_argument('--derived_dir', type=str, required=True) 
     parser.add_argument('--randoms_table', type=str, default=None, choices=['uniform','obiwan_a',
                                             'obiwan_b','obiwan_real'],required=False)
@@ -153,10 +163,12 @@ if __name__ == '__main__':
     args = parser.parse_args()
    
     if args.merge_rank_tables:
-        main_serial(doWhat=args.doWhat,
-                    derived_dir=args.derived_dir)
+        kwargs= vars(args)
+        for key in ['merge_rank_tables','nproc','bricks_fn']:
+            del kwargs[key]
+        main_serial(**kwargs)
         sys.exit(0)
-
+    
     # Bricks to run
     if args.bricks_fn is None:
         bricks= ['1266p292']
