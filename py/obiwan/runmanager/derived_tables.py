@@ -28,51 +28,52 @@ def datarelease_dir(eboss_or_desi):
     elif eboss_or_desi == 'desi':
         dr='dr5'
     return os.path.join(proj,dr)
-        
+       
+def is_numeric(obj):                                        
+    try: 
+        tmp=obj+5
+    except TypeError:
+        return False
+    return True
+ 
 class RandomsTable(object):
-    """Creates the uniform,obiwan_a,obiwan_b randoms tables for a single brick"""
-    def __init__(self, data_dir,eboss_or_desi,date='mm-dd-yyyy'):
+    """Creates the uniform,obiwan_a,obiwan_b randoms tables for a single brick
+
+    Final table has same number rows as uniform table, and the obiwan
+        rows are filled in wherever there is a matching unique_id
+        between uniform and obiwan. A bitmask column 'obiwan_mask' which says
+        whether the random was recovered by Tractor or not, and whether
+        the random is near a previously existing real source in a DR 
+        catalogue, like DR3 or DR5
+    """
+    def __init__(self, data_dir,eboss_or_desi,date='mm-dd-yyyy',
+                 db_randoms_table):
         self.data_dir= data_dir
         self.eboss_or_desi= eboss_or_desi
         self.date= date
+        self.db_randoms_table= db_randoms_table
 
     def run(self,brick):
-        self.write_tables(brick)
-
-    def write_tables(self,brick):
-        """randoms tables: uniform,obiwan_a,obiwan_b,obiwan_real"""
+        tab= self.merge_randoms_tables(brick)
+        self.add_flag_for_realsources(tab,brick)
+        # Write
         derived_dir= derived_field_dir(brick,self.data_dir,self.date)
-        fns= dict(uniform= os.path.join(derived_dir,'randoms_uniform.fits'),
-                  obiwan_a= os.path.join(derived_dir,'randoms_obiwan_a.fits'),
-                  obiwan_b= os.path.join(derived_dir,'randoms_obiwan_b.fits'),
-                  obiwan_real= os.path.join(derived_dir,'randoms_obiwan_real.fits'))
-        needWrite= {key: not os.path.exists(fns[key]) 
-                    for key in fns.keys()}
-        if needWrite['uniform'] or needWrite['obiwan_a']: 
-            uniform,obiwan_a= self.uniform_obiwana(brick,self.data_dir)
-            if needWrite['uniform']: 
-                uniform.writeto(fns['uniform'])
-                print('Wrote %s' % fns['uniform'])
-            if needWrite['obiwan_a']: 
-                obiwan_a.writeto(fns['obiwan_a'])
-                print('Wrote %s' % fns['obiwan_a'])
-        if needWrite['obiwan_b'] or needWrite['obiwan_real']: 
-            obiwan_b,obiwan_real= self.obiwanb_obiwanreal(fns['obiwan_a'],brick)
-            if needWrite['obiwan_b']: 
-                obiwan_b.writeto(fns['obiwan_b'])
-                print('Wrote %s' % fns['obiwan_b'])
-            if needWrite['obiwan_real']: 
-                obiwan_real.writeto(fns['obiwan_real'])
-                print('Wrote %s' % fns['obiwan_real'])
+        fn= os.path.join(derived_dir,'randoms.fits')
+        self.write_table(tab,fn)
+     
+    def merge_randoms_tables(self,brick):
+        """Computes final joined randoms tables
 
-    def uniform_obiwana(self,brick,data_dir):
-        """Computes two randoms tables
+        Includes uniform randoms, info from psql db, which of these were recovered
+            by Tractor, and the associated tractor info for those 
+
+        Args:
+            brick: brickname
         
         Returns: 
-            uniform: random ra,dec cut to touching ccds
-            obiwan_a: uniform that are recovered, e.g. having 1'' match in tractor cat 
+            joined randoms table
         """
-        search= os.path.join(data_dir,'tractor',
+        search= os.path.join(self.data_dir,'tractor',
                              brick[:3],brick,
                              'rs*','tractor-%s.fits' % brick)
         rsdirs= glob(search)
@@ -80,18 +81,19 @@ class RandomsTable(object):
                  for dr in rsdirs]
         if len(rsdirs) == 0:
             raise ValueError('no rsdirs found: %s' % search)
-        uniform,obi= [],[]
+        uniform=[]
         for dr in rsdirs:
             simcat= fits_table((os.path.join(dr,'simcat-elg-%s.fits' % brick)
                                 .replace('/tractor/','/obiwan/')))
             idsadded= fits_table((os.path.join(dr,'sim_ids_added.fits')
                                 .replace('/tractor/','/obiwan/')))
-            tractor= fits_table(os.path.join(dr,'tractor-%s.fits' % brick))
-            # Uniform randoms
+            # Uniform randoms (injected at touching at least 1 ccd)
             assert(len(idsadded) == len(set(idsadded.id)))
             simcat.cut( pd.Series(simcat.id).isin(idsadded.id) )
-            uniform.append(simcat)
-            # Obiwan randoms
+            simcat.set('unique_id',self.unique_id(simcat.id,brick,dr))
+            self.add_psql_to_uniform_table(simcat,self.db_randoms_table)
+            # Recovered by Tractor
+            tractor= fits_table(os.path.join(dr,'tractor-%s.fits' % brick))
             tractor.cut(tractor.brick_primary)
             cols= np.array(tractor.get_columns())
             del_cols= cols[(pd.Series(cols)
@@ -104,41 +106,73 @@ class RandomsTable(object):
                                 nearest=True)
             assert(np.all(d <= 1./3600))
             tractor.cut(J)
-            for simkey in ['id','ra','dec']:
-                tractor.set('simcat_%s' % simkey,
-                            simcat.get(simkey)[I])
-            obi.append(tractor)
-        return (merge_tables(uniform, columns='fillzero'),
-                merge_tables(obi, columns='fillzero'))
+            add_vals={}
+            for trac_key in tractor.get_columns():
+                key= 'tractor_'+trac_key
+                if is_numeric(tractor.get(trac_key)):
+                    add_vals[key]= np.zeros(len(simcat))+np.nan
+                else:
+                    add_vals[key]= np.array(['']*len(simcat))
+                add_vals[key][I]= tractor.get(trac_key)
+                simcat.set(key,add_vals[key])
+            # Mask
+            mask= np.zeros(len(simcat),dtype=np.int8)
+            mask[I]= 1
+            simcat.set('obiwan_mask',mask)
+            # add to list uniform tables
+            uniform.append(simcat)
+        return merge_tables(uniform, columns='fillzero')
 
-    def obiwanb_obiwanreal(self,fn_obiwan_a,brick):
-        """Computes one randoms table
+    def unique_id(self,simcat_id,brick,rs_dir):
+        """For a given random injected into a brick during a given iteration
 
         Args:
-            fn_obiwan_a: obiwan_a randoms table fn for a given brick
-        
-        Returns: 
-            obiwan_b: obiwan_a but removing real sources, 
-                e.g. sources with 1'' match in datarelease tractor cat
-            obiwan_real: obiwan_a but keeping only the real sources, 
-                e.g. sources with 1'' match in datarelease tractor cat
+            simcat_id: randoms id 
+            brick: brick
+            rs_dir: like rs0 or rs300
         """
-        obiwan_a= fits_table(fn_obiwan_a)
+        return "%d_%s_%s" % (simcat_id,brick,rs_dir)
+
+    def add_psql_to_uniform_table(self,uniform,db_randoms_table):
+        """Add randoms db columns from psql to the uniform randoms table
+
+        Args:
+            uniform: fits table
+            db_randoms_table: name of the psql db table
+        """
+        assert(db_randoms_table in DB_RANDOMS_TABLES)
+        db_dict= select_all_for_ids(uniform.id, db_randoms_table=db_randoms_table)
+        assert(all(db_dict['id'] - uniform.id == 0))
+        for key,val in db_dict.items():
+            if key in ['id']:
+                pass
+            uniform.set('psql_%s' % key,val)
+
+    def add_flag_for_realsources(self,tab,brick):
+        """Flag sources also in DR3, DR5
+
+        Args:
+            tab: table returned by merged_randoms_table()
+        """
         real= fits_table(os.path.join(datarelease_dir(self.eboss_or_desi),
                                       'tractor',brick[:3],
                                       'tractor-%s.fits' % brick))
         # nearest match in (ra2,dec2) for each point in (ra1,dec1)
-        I,J,d = match_radec(obiwan_a.ra,obiwan_a.dec,
+        i_recovered= tab.obiwan_mask == 1
+        I,J,d = match_radec(tab.ra[i_recovered],tab.dec[i_recovered],
                             real.ra,real.dec, 1./3600,
                             nearest=True)
         assert(np.all(d <= 1./3600))
-        noMatch= np.ones(len(obiwan_a),dtype=bool)
-        noMatch[I]= False
-        obiwan_real= obiwan_a.copy()
-        obiwan_a.cut(noMatch)
-        obiwan_real.cut(~noMatch)
-        return obiwan_a, obiwan_real
+        mask= tab.obiwan_mask
+        mask[i_recovered][I]= 2
+        tab.set('obiwan_mask',mask)
 
+    def write_table(self,tab,fn):
+        """Write the merged randoms table is doesn't already exist"""
+        if not os.path.exists(fn): 
+            tab.writeto(fn)
+            print('Wrote %s' % fn)
+    
 
 class TargetSelection(object):
     def __init__(self,eboss_or_desi): 
