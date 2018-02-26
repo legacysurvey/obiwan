@@ -75,7 +75,7 @@ def getSrcsInBrick(brickname,objtype, db_table='obiwan_elg',
     db.close()
     return T,brickid
 
-def select_all_for_ids(ids, db_randoms_table='obiwan_elg_ra175',
+def all_psqlcols_for_ids(ids, db_randoms_table='obiwan_elg_ra175',
                        try_with_join=False):
     """Returns all db columns in the db having the ids provided
 
@@ -95,18 +95,18 @@ def select_all_for_ids(ids, db_randoms_table='obiwan_elg_ra175',
 
     if not try_with_join: 
         # Simplest, faster
-        cmd+= " FROM %s WHERE id in (" % db_table
+        cmd+= " FROM %s WHERE id in (" % db_randoms_table
         for i in ids[:-1]:
             cmd+= "%d," % i
         cmd+= "%d)" % ids[-1]
-    else try_with_join:
+    else:
         # Slower
         vals=""
         for i in ids[:-1]:
             vals+= "(%d)," % i
         vals+= "(%d)" % ids[-1]
         cmd= (cmd + " FROM %s as db RIGHT JOIN (values %s) " 
-              % (db_table,vals) 
+              % (db_randoms_table,vals) 
               + 
               "as v(id) on (db.id=v.id)")
     print('cmd= %s' % cmd)
@@ -115,15 +115,16 @@ def select_all_for_ids(ids, db_randoms_table='obiwan_elg_ra175',
     a= db.cur.fetchall() 
     # Tuple of lists (ids,reshifts,...)
     tup= zip(*a)
-    return dict(key=np.array(tup[ith_col])
-                for ith_col,key in enumerate(columns))
+    #tup[ith_col])
+    return {col: np.array(vals) 
+            for col,vals in zip(columns,tup)}
     #return np.array(sql_ids),np.array(sql_redshift)
 
 if __name__ == '__main__':
     T= getSrcsInBrick('1765p247','elg', db_table='obiwan_elg_ra175')
 
     simcat= fits_table("/global/cscratch1/sd/kaylanb/obiwan_out/elg_9deg2_ra175/elg/176/1765p247/rs0/obiwan/simcat-elg-1765p247.fits")
-    ids,redshifts= redshifts_for_ids(simcat.id, db_table='obiwan_elg_ra175')
-    for id,z in zip(ids[:10],redshifts[:10]):
-        print(id,z)
+    data_dict= all_psqlcols_for_ids(simcat.id, db_randoms_table='obiwan_elg_ra175')
+    for i in range(10):
+        print(data_dict['id'][i],data_dict['redshift'][i])
     
