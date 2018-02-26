@@ -10,6 +10,7 @@ from glob import glob
 import pandas as pd
 from collections import Counter
 
+from obiwan.db_tools import all_psqlcols_for_ids
 try: 
     from astrometry.util.fits import fits_table, merge_tables
     from astrometry.util.util import Tan
@@ -35,7 +36,16 @@ def is_numeric(obj):
     except TypeError:
         return False
     return True
- 
+
+class Bit(object):
+    def set(self,value, bit):
+        """change bit to 1, bit is 0-indexed"""
+        return value | (1<<bit)
+
+    def clear(self,value, bit):
+        """change bit to 0, bit is 0-indexed"""
+        return value & ~(1<<bit)
+
 class RandomsTable(object):
     """Creates the uniform,obiwan_a,obiwan_b randoms tables for a single brick
 
@@ -46,12 +56,12 @@ class RandomsTable(object):
         the random is near a previously existing real source in a DR 
         catalogue, like DR3 or DR5
     """
-    def __init__(self, data_dir,eboss_or_desi,date='mm-dd-yyyy',
-                 db_randoms_table):
+    def __init__(self, data_dir,eboss_or_desi,db_randoms_table,
+                 date='mm-dd-yyyy'):
         self.data_dir= data_dir
         self.eboss_or_desi= eboss_or_desi
-        self.date= date
         self.db_randoms_table= db_randoms_table
+        self.date= date
 
     def run(self,brick):
         tab= self.merge_randoms_tables(brick)
@@ -90,7 +100,8 @@ class RandomsTable(object):
             # Uniform randoms (injected at touching at least 1 ccd)
             assert(len(idsadded) == len(set(idsadded.id)))
             simcat.cut( pd.Series(simcat.id).isin(idsadded.id) )
-            simcat.set('unique_id',self.unique_id(simcat.id,brick,dr))
+            simcat.set('unique_id',self.unique_id(simcat.id.astype(str),
+                                                  brick,os.path.basename(dr)))
             self.add_psql_to_uniform_table(simcat,self.db_randoms_table)
             # Recovered by Tractor
             tractor= fits_table(os.path.join(dr,'tractor-%s.fits' % brick))
@@ -110,28 +121,31 @@ class RandomsTable(object):
             for trac_key in tractor.get_columns():
                 key= 'tractor_'+trac_key
                 if is_numeric(tractor.get(trac_key)):
-                    add_vals[key]= np.zeros(len(simcat))+np.nan
+                    shp= (len(simcat),) + tractor.get(trac_key).shape[1:]
+                    add_vals[key]= np.zeros(shp) +np.nan
                 else:
                     add_vals[key]= np.array(['']*len(simcat))
                 add_vals[key][I]= tractor.get(trac_key)
                 simcat.set(key,add_vals[key])
             # Mask
             mask= np.zeros(len(simcat),dtype=np.int8)
-            mask[I]= 1
+            mask[I]= Bit().set(mask[I],0)
             simcat.set('obiwan_mask',mask)
             # add to list uniform tables
             uniform.append(simcat)
         return merge_tables(uniform, columns='fillzero')
 
-    def unique_id(self,simcat_id,brick,rs_dir):
+    def unique_id(self,id_array,brick,rs_dir):
         """For a given random injected into a brick during a given iteration
 
         Args:
-            simcat_id: randoms id 
+            id_array: randoms ids 
             brick: brick
             rs_dir: like rs0 or rs300
         """
-        return "%d_%s_%s" % (simcat_id,brick,rs_dir)
+        ids= np.array(id_array,dtype=object) + "_%s_%s" % (brick,rs_dir)
+        # FITS can't handle numpy type 'object'
+        return ids.astype(str)
 
     def add_psql_to_uniform_table(self,uniform,db_randoms_table):
         """Add randoms db columns from psql to the uniform randoms table
@@ -140,8 +154,7 @@ class RandomsTable(object):
             uniform: fits table
             db_randoms_table: name of the psql db table
         """
-        assert(db_randoms_table in DB_RANDOMS_TABLES)
-        db_dict= select_all_for_ids(uniform.id, db_randoms_table=db_randoms_table)
+        db_dict= all_psqlcols_for_ids(uniform.id, db_randoms_table=db_randoms_table)
         assert(all(db_dict['id'] - uniform.id == 0))
         for key,val in db_dict.items():
             if key in ['id']:
@@ -158,14 +171,18 @@ class RandomsTable(object):
                                       'tractor',brick[:3],
                                       'tractor-%s.fits' % brick))
         # nearest match in (ra2,dec2) for each point in (ra1,dec1)
-        i_recovered= tab.obiwan_mask == 1
-        I,J,d = match_radec(tab.ra[i_recovered],tab.dec[i_recovered],
+        I,J,d = match_radec(tab.ra,tab.dec,
                             real.ra,real.dec, 1./3600,
                             nearest=True)
         assert(np.all(d <= 1./3600))
-        mask= tab.obiwan_mask
-        mask[i_recovered][I]= 2
-        tab.set('obiwan_mask',mask)
+        bool_matched= np.zeros(len(tab),bool)
+        bool_matched[I]= True
+        recovered_and_matched= ((tab.obiwan_mask == 1) & 
+                                (bool_matched))
+        if len(tab[recovered_and_matched]) > 0:
+            mask= tab.obiwan_mask
+            mask[recovered_and_matched]= Bit().set(mask[recovered_and_matched],1)
+            tab.set('obiwan_mask',mask)
 
     def write_table(self,tab,fn):
         """Write the merged randoms table is doesn't already exist"""
@@ -664,6 +681,7 @@ class HeatmapTable(object):
         return nu,ntot
 
 def main_mpi(bricks=[],doWhat=None,eboss_or_desi=None,
+             db_randoms_table=None,
              nproc=1,data_dir='./',date='mm-dd-yyyy'):
     """
     Args:
@@ -680,7 +698,8 @@ def main_mpi(bricks=[],doWhat=None,eboss_or_desi=None,
         comm= MyComm()
 
     if doWhat == 'randoms':
-        tabMaker= RandomsTable(data_dir,eboss_or_desi,date=date)
+        tabMaker= RandomsTable(data_dir,eboss_or_desi,db_randoms_table,
+                               date=date)
     elif doWhat == 'targets':
         tabMaker= TargetsTable(data_dir,eboss_or_desi,date=date)
     elif doWhat == 'heatmap':
@@ -703,6 +722,8 @@ if __name__ == '__main__':
     parser.add_argument('--doWhat', type=str, choices=['randoms','targets','heatmap'],required=True)
     parser.add_argument('--data_dir', type=str, required=True, 
                         help='path to obiwan/, tractor/ dirs') 
+    parser.add_argument('--db_randoms_table', type=str, choices=['obiwan_eboss_elg',
+                                    'obiwan_elg_dr5','obiwan_cosmos'],required=True)
     parser.add_argument('--nproc', type=int, default=1, help='set to > 1 to run mpi4py') 
     parser.add_argument('--bricks_fn', type=str, default=None,
                         help='specify a fn listing bricks to run, or a single default brick will be ran') 
