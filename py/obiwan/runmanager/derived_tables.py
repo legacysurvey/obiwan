@@ -29,7 +29,10 @@ def datarelease_dir(eboss_or_desi):
     elif eboss_or_desi == 'desi':
         dr='dr5'
     return os.path.join(proj,dr)
-  
+
+def is_bool(obj):                                        
+    return obj.dtype == bool
+
 def is_numeric(obj):                                        
     try: 
         tmp=obj+5
@@ -66,7 +69,7 @@ class TargetSelection(object):
     def desiIsElg(self,tractor):
         kw={}
         if self.prefix+'brick_primary' in tractor.get_columns():
-            kw.update(primary=tractor.brick_primary)
+            kw.update(primary=tractor.get(self.prefix+'brick_primary'))
         for band,iband in [('g',1),('r',2),('z',4)]:
             kw[band+'flux']= tractor.get(self.prefix+'flux_'+band) / \
                               tractor.get(self.prefix+'mw_transmission_'+band)
@@ -116,8 +119,7 @@ class TargetSelection(object):
                     gmag=None,rmag=None,zmag=None):
         if primary is None:
             primary = np.ones(len(ra), bool)
-        print('dec.dtype',dec.dtype,'dec[0].dtype',dec[0].dtype)
-        print('dec.min',dec.min(),'dec.max',dec.max())
+        #print('dec.min',dec.min(),'dec.max',dec.max())
         inRegion=dict(ngc= ((primary) &
                             (ra > 126.) &
                             (ra < 168.) &
@@ -244,11 +246,13 @@ class RandomsTable(object):
             add_vals={}
             for trac_key in tractor.get_columns():
                 key= 'tractor_'+trac_key
-                if is_numeric(tractor.get(trac_key)):
+                if is_bool(tractor.get(trac_key)):
+                    add_vals[key]= np.zeros(len(simcat),bool)
+                elif is_numeric(tractor.get(trac_key)):
                     shp= (len(simcat),) + tractor.get(trac_key).shape[1:]
                     add_vals[key]= np.zeros(shp) +np.nan
                 else:
-                    add_vals[key]= np.array(['']*len(simcat))
+                    add_vals[key]= np.array([4*' ']*len(simcat))
                 add_vals[key][I]= tractor.get(trac_key)
                 simcat.set(key,add_vals[key])
             # Mask
