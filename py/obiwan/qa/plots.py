@@ -29,26 +29,59 @@ import logging
 from glob import glob
 import numpy as np
 
-from astropy.io import fits
-from astropy.table import vstack, Table
-from astropy import units
-#from astropy.coordinates import SkyCoord
-from astrometry.libkd.spherematch import match_radec
-from astrometry.util.fits import fits_table, merge_tables
-
 # import seaborn as sns
 from PIL import Image, ImageDraw
-import photutils
 
-from obiwan.kenobi import get_savedir
-from obiwan.common import stack_tables
+def flux2mag(nmgy):
+    return -2.5 * (np.log10(nmgy) - 9)
 
-class EmptyClass(object):
-    pass
+def bin_up(data_bin_by,data_for_percentile, bin_minmax=(18.,26.),nbins=20):
+    '''bins "data_for_percentile" into "nbins" using "data_bin_by" to decide how indices are assigned to bins
+    returns bin center,N,q25,50,75 for each bin
+    '''
+    bin_edges= np.linspace(bin_minmax[0],bin_minmax[1],num= nbins+1)
+    vals={}
+    for key in ['q50','q25','q75','n']: vals[key]=np.zeros(nbins)+np.nan
+    vals['binc']= (bin_edges[1:]+bin_edges[:-1])/2.
+    for i,low,hi in zip(range(nbins), bin_edges[:-1],bin_edges[1:]):
+        keep= np.all((low < data_bin_by,data_bin_by <= hi),axis=0)
+        if np.where(keep)[0].size > 0:
+            vals['n'][i]= np.where(keep)[0].size
+            vals['q25'][i]= np.percentile(data_for_percentile[keep],q=25)
+            vals['q50'][i]= np.percentile(data_for_percentile[keep],q=50)
+            vals['q75'][i]= np.percentile(data_for_percentile[keep],q=75)
+        else:
+            vals['n'][i]=0 
+    return vals
 
-def flux2mag(nanoflux):
-    '''converts flux in tractor nanomaggie units to AB mag'''
-    return 22.5-2.5*np.log10(nanoflux)
+
+def plot_flux_residual(dat,fn='flux_residual.png'):
+    col = ['b', 'k', 'c', 'm', 'y', 0.8]
+    fig, axes = plt.subplots(3,1, figsize=(6,8))
+    plt.subplots_adjust(left=0.18,hspace=0.1)
+
+    recovered= dat.obiwan_mask == 1
+    for ax,band in zip(axes,'grz'):
+        x= flux2mag(dat.get(band+'flux')[i]/\
+                     dat.get('mw_transmission_'+band)[i])
+        y= (dat.get('tractor_flux_'+band)[i] - dat.get(band+'flux')[i])*\
+           np.sqrt(dat.get('tractor_flux_ivar_'+band)[i])
+        ax.scatter(x,y,label=band,
+                   s=10,edgecolor='b',c='none',lw=1.,alpha=0.5)
+        ax.axhline(y=0.0,lw=1,ls='dashed',color='k')
+        ax.legend(loc='upper right')
+        ylab=ax.set_ylabel(r'$(\Delta Flux)/\sigma$ (Tractor - Truth)')
+        xlab=ax.set_xlabel('%s mag (truth)' % band)
+
+        binned= bin_up(x,y, bin_minmax=(0,x.max()),nbins=20)
+        for perc in ['q25','q50','q75']:
+            ax.plot(binned['binc'],binned[perc],c='r') 
+    
+    for ax in axes:
+        ax.set_ylim(-10,10)
+    plt.savefig(fn,bbox_extra_artists=[xlab,ylab], bbox_inches='tight')
+    plt.close()
+ 
 
 def basic_cut(tractor):
     '''return boolean indices for which to keep and throw out'''
@@ -161,25 +194,6 @@ def plot_annotated_coadds(simcat, jpeg_fn='simscoadd.jpg',
     im.save(qafile)
 
 
-def bin_up(data_bin_by,data_for_percentile, bin_minmax=(18.,26.),nbins=20):
-    '''bins "data_for_percentile" into "nbins" using "data_bin_by" to decide how indices are assigned to bins
-    returns bin center,N,q25,50,75 for each bin
-    '''
-    bin_edges= np.linspace(bin_minmax[0],bin_minmax[1],num= nbins+1)
-    vals={}
-    for key in ['q50','q25','q75','n']: vals[key]=np.zeros(nbins)+np.nan
-    vals['binc']= (bin_edges[1:]+bin_edges[:-1])/2.
-    for i,low,hi in zip(range(nbins), bin_edges[:-1],bin_edges[1:]):
-        keep= np.all((low < data_bin_by,data_bin_by <= hi),axis=0)
-        if np.where(keep)[0].size > 0:
-            vals['n'][i]= np.where(keep)[0].size
-            vals['q25'][i]= np.percentile(data_for_percentile[keep],q=25)
-            vals['q50'][i]= np.percentile(data_for_percentile[keep],q=50)
-            vals['q75'][i]= np.percentile(data_for_percentile[keep],q=75)
-        else:
-            vals['n'][i]=0 
-    return vals
-
 def plot_injected_mags(allsimcat, log,qafile='test.png'):
     gr_sim = -2.5*np.log10(allsimcat.gflux/allsimcat.rflux)
     rz_sim = -2.5*np.log10(allsimcat.rflux/allsimcat.zflux)
@@ -262,40 +276,7 @@ def plot_tractor_minus_answer(bigsimcat,bigtractor, rminmax, log,qafile='test.pn
     plt.savefig(qafile,bbox_extra_artists=[xlab,ylab], bbox_inches='tight')
     plt.close()
 
-def plot_chi(bigsimcat,bigtractor, rminmax, log,qafile='test.png'):
-    b_good,junk= basic_cut(bigtractor)
-    
-    col = ['b', 'k', 'c', 'm', 'y', 0.8]
-    fig, ax = plt.subplots(3, sharex=True, figsize=(6,8))
 
-    rmag = flux2mag(bigsimcat.rflux)
-    for thisax, thiscolor, band in zip(ax, col, ('g', 'r', 'z')):
-        simflux = bigsimcat.get(band+'flux')
-        tractorflux = bigtractor.get('flux_%s' % band)
-        tractorivar = bigtractor.get('flux_ivar_%s' % band)
-        #thisax.scatter(rmag[bcut], -2.5*np.log10(tractorflux[bcut]/simflux[bcut]),
-        #               s=10,edgecolor=newcol,c='none',lw=1.,label=label)
-        thisax.scatter(rmag[b_good], (tractorflux[b_good] - simflux[b_good])*np.sqrt(tractorivar[b_good]),
-                       s=10,edgecolor=thiscolor,c='none',lw=1.)
-        #thisax.set_ylim(-0.7,0.7)
-        thisax.set_ylim(-4,4)
-        thisax.set_xlim(rminmax + [-0.1, 0.0])
-        thisax.axhline(y=0.0,lw=2,ls='solid',color='gray')
-        #thisax.text(0.05,0.05, band.lower(), horizontalalignment='left',
-                    #verticalalignment='bottom',transform=thisax.transAxes,
-                    #fontsize=16)
-    for i,b in enumerate(['g','r','z']):   
-        ylab=ax[i].set_ylabel(r'%s: $(F_{tractor} - F)/\sigma_{tractor}$' %  b) 
-    #ax[0].set_ylabel('$\Delta$g')
-    #ax[1].set_ylabel('$\Delta$r (Tractor minus Input)')
-    #ax[2].set_ylabel('$\Delta$z')
-    xlab=ax[2].set_xlabel('Input r magnitude (AB mag)')
-
-    fig.subplots_adjust(left=0.18,hspace=0.1)
-    log.info('Writing {}'.format(qafile))
-    plt.savefig(qafile,bbox_extra_artists=[xlab,ylab], bbox_inches='tight')
-    plt.close()
- 
 def plot_color_tractor_minus_answer(bigsimcat, bigtractor,rminmax, brickname,lobjtype, log,qafile='test.png'):
     gr_tra = -2.5*np.log10(bigtractor.flux_g/bigtractor.flux_r)
     rz_tra = -2.5*np.log10(bigtractor.flux_r/bigtractor.flux_z)
