@@ -9,14 +9,16 @@
 ###SBATCH -C haswell
 
 #export doWhat=heatmap
-#export doWhat=randoms
-export doWhat=targets
-#export eboss_or_desi=eboss
-export eboss_or_desi=desi
-#export outdir=eboss_elg
+export doWhat=randoms
+#export doWhat=targets
+export eboss_or_desi=eboss
+#export eboss_or_desi=desi
+export db_randoms_table=obiwan_eboss_elg
+#export db_randoms_table=obiwan_elg_dr5
+export outdir=eboss_elg
 #export outdir=elg_dr5_1000per
-export outdir=elg_dr5_500per
-export thedate="02-22-2018"
+#export outdir=elg_dr5_500per
+export thedate="02-27-2018"
 export bricks_fn=${CSCRATCH}/obiwan_out/${outdir}/bricks.txt
 
 # Load production env
@@ -37,8 +39,9 @@ fi
 let tasks=${num_cores}*${SLURM_JOB_NUM_NODES}
 
 srun -n ${tasks} -c 1 \
-    python $CSCRATCH/obiwan_code/obiwan/py/obiwan/runmanager/derived_tables.py \
+    python -u $CSCRATCH/obiwan_code/obiwan/py/obiwan/runmanager/derived_tables.py \
     --doWhat ${doWhat} --eboss_or_desi ${eboss_or_desi} --data_dir $CSCRATCH/obiwan_out/${outdir} \
+    --db_randoms_table ${db_randoms_table} \
     --date ${thedate} \
     --bricks_fn ${bricks_fn} --nproc ${tasks} 
 
