@@ -16,7 +16,6 @@ except ImportError:
     pass
 
 DATASETS=['dr3','dr5']
-RANDOMS_TABLES=['uniform','obiwan_a','obiwan_b','obiwan_real']
 
 def dir_for_mpi(derived_dir):
     return os.path.join(derived_dir,'merged_tmp')
