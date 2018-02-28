@@ -8,7 +8,7 @@ import numpy as np
 import os
 from glob import glob
 import pandas as pd
-from collections import Counter
+from collections import Counter,defaultdict
 
 from obiwan.db_tools import all_psqlcols_for_ids
 try: 
@@ -327,11 +327,55 @@ class RandomsTable(object):
         if not os.path.exists(fn): 
             tab.writeto(fn)
             print('Wrote %s' % fn)
-    
 
+def fraction_recovered(randoms):
+    return len(randoms[randoms.obiwan_mask == 1]) / float(len(randoms))
+
+def bin_by_mag(randoms, func_to_apply, band=None,bin_minmax=(18.,26.),nbins=20):
+    '''bins data and result of func_to_apply(randoms) into the bucket
+
+    Args:
+        randoms: randoms.fits table
+        func_to_apply: operates on a randoms table, return val to store in bucket
+        band: bin by mag in this band
+    '''
+    assert(band in 'grz')
+    mag= flux2mag(randoms.get(band+'flux') / randoms.get('mw_transmission_'+band))
+
+    bin_edges= np.linspace(bin_minmax[0],bin_minmax[1],num= nbins+1)
+    vals={}
+    vals['binc']= (bin_edges[1:]+bin_edges[:-1])/2.
+    for i,low,hi in zip(range(nbins), bin_edges[:-1],bin_edges[1:]):
+        keep= ((mag > low) &
+               (mag <= hi))
+        if np.where(keep)[0].size > 0:
+            vals['val'][i]= func_to_apply(randoms[keep])
+        else:
+            vals['val'][i]=np.nan 
+    return vals
+
+
+
+def depth_at_half_recovered(randoms,band):
+    """bin by mag in given mag, return bin center where frac recovered first drops below 50%"""
+    binc_and_vals= bin_by_mag(randoms, func_to_apply= fraction_recovered
+                              band=band,bin_minmax=(18.,26.),nbins=20)
+    for i,val in enumerate(binc_and_vals['vals']):
+        if not np.isfinite(val):
+            continue
+        elif val <= 0.5:
+            break
+    assert(val <= 0.5)
+    return binc_and_vals['binc'][i]
 
 class HeatmapTable(object):
-    """Create a fits table with the heatmap values, one per brick"""
+    """Writes one table per brick, with brick averaged quantities
+    
+    derived table "randoms.fits" must exist. Joins the brick summary 
+    quantities from a data release with a similar set from the 
+    randoms.fits table. Each brick's table has one 
+    row and all tables get merged to make the eatmap plots
+    """
     def __init__(self, data_dir,eboss_or_desi,date='mm-dd-yyyy'):
         self.data_dir= data_dir
         self.eboss_or_desi= eboss_or_desi
@@ -340,37 +384,132 @@ class HeatmapTable(object):
                                                     'survey-bricks.fits.gz'))
 
     def run(self,brick):
-        self.write_table_using_datarelease(brick)
-        self.write_table_using_obiwan(brick)
-
-    def write_table_using_datarelease(self,brick):
+        summary_DR= self.brick_summary([brick])
+        summary_obi= self.brick_summary_obiwan([brick],prefix='tractor_')
+        self.add_obiwan_to_DR_table(summary_DR,summary_obi)
+        # Write
         derived_dir= derived_field_dir(brick,self.data_dir,self.date)
-        fn= os.path.join(derived_dir,'heatmap_datarelease.fits')
-        if os.path.exists(fn): 
-            print('Skipping, already exist: ',fn)
-        else:
-            tab= self.get_table_for_datarelease([brick])
-            if tab:
-                tab.writeto(fn)
-                print('Wrote %s' % fn)
+        fn= os.path.join(derived_dir,'summary.fits')
+        self.write_table(summary_DR,fn)
 
-    def write_table_using_obiwan(self,brick):
-        derived_dir= derived_field_dir(brick,self.data_dir,self.date)
-        fn= os.path.join(derived_dir,'heatmap_datarelease.fits')
-        if os.path.exists(fn): 
-            print('Skipping, already exist: ',fn)
-        else:
-            tab= self.get_table_for_datarelease([brick])
-            if tab:
-                tab.writeto(fn)
-                print('Wrote %s' % fn)
- 
 
-    def get_table_for_datarelease(self,bricklist):
+    def add_obiwan_to_DR_table(self,summary_DR,summary_obi):
+        """adds the summary_obi columsn to the summary_DR table
+        
+        Args:
+            summary_DR: brick summary for the data release bricks
+            summary_obiwan: brick summary for the obiwan bricks
+        """
+        prefix='obiwan_'
+        for col in summary_obi.get_columns():
+            summary_DR.set(prefix+obiwan, summary_obi.get(col))
+        del summary_obi
+
+    def brick_summary_obiwan(self,brick,prefix=''):
+        """brick summary for obiwan 
+        
+        Args:
+            prefix: prefix for obiwan tractor columns, e.g. tractor_
+        """
+        randoms_fn= os.path.join(derived_field_dir(brick,
+                                        self.data_dir,self.date),
+                                 'randoms.fits')
+        T = fits_table(randoms_fn, columns=columns)
+        
+        brickset = set()
+        summary= defaultdict(list)
+    
+        # Obiwan stuff
+        was_recovered= T.obiwan_mask == 1
+        summary['frac_recovered']= len(T[was_recovered])/ float(len(T))
+        for b in ['grz']:
+            summary['depth_at_half_recovered_'+b]= self.depth_at_half_recovered(T,band=b)
+
+        W = H = 3600
+        # H=3600
+        # xx,yy = np.meshgrid(np.arange(W), np.arange(H))
+        unique = np.ones((H,W), bool)
+        tlast = 0
+        
+        brickset.add(brick)
+        for key in ['gn','rn','zn']:
+            summary[key].append(0)
+
+        for key in ['gnhist','rnhist','znhist']:
+            summary[key].append([0 for i in range(nnhist)])
+
+        ibrick = np.nonzero(self.surveyBricks.brickname == brick)[0][0]
+        summary['ibricks'].append(ibrick)
+
+        #T.cut(T.brick_primary)
+        summary['nsrcs'].append(len(T))
+        types = Counter([t.strip() for t in T.get(prefix+'type')])
+        for typ in 'psf simp rex exp dev comp'.split(' '):
+            summary['n'+typ].append(types[typ.upper()])
+        print('N sources', summary['nsrcs'][-1])
+
+        for b in 'grz':
+            summary[b+'psfsize'].append(np.median(T.get(prefix+'psfsize_'+b)))
+            summary[b+'psfdepth'].append(np.median(T.get(prefix+'psfdepth_'+b)))
+            summary[b+'galdepth'].append(np.median(T.get(prefix+'galdepth_'+b)))
+            summary[b+'trans'].append(np.median(T.get(prefix+'mw_transmission_'+b)))
+            
+        summary['ebv'].append(np.median(T.get(prefix+'ebv')))
+
+        br = self.surveyBricks[ibrick]
+
+        #print('Computing unique brick pixels...')
+        pixscale = 0.262/3600.
+        wcs = Tan(br.ra, br.dec, W/2.+0.5, H/2.+0.5,
+                  -pixscale, 0., 0., pixscale,
+                  float(W), float(H))
+        unique[:,:] = True
+        self.find_unique_pixels(wcs, W, H, unique,
+                                br.ra1, br.ra2, br.dec1, br.dec2)
+        U = np.flatnonzero(unique)
+        #print(len(U), 'of', W*H, 'pixels are unique to this brick')
+         
+        ibricks = np.array(summary['ibricks'])
+        
+        #print('Maximum number of sources:', max(nsrcs))
+        
+        T = fits_table()
+        #T.brickname = np.array([brick])
+        #T.ra  = self.surveyBricks.ra [ibricks]
+        #T.dec = self.surveyBricks.dec[ibricks]
+        for b in 'grz':
+            T.set('nexp_'+b, np.array(summary[b+'n']).astype(np.int16))
+            T.set('nexphist_'+b, np.array(summary[b+'nhist']).astype(np.int32))
+            T.set('nobjs', np.array(summary['nsrcs']).astype(np.int16))
+            T.set('psfsize_'+b, np.array(summary[b+'psfsize']).astype(np.float32))
+            T.set('trans_'+b, np.array(summary[b+'trans']).astype(np.float32))
+            T.set('ext_'+b, -2.5 * np.log10(T.get('trans_'+b)))
+        
+        for typ in 'psf simp rex exp dev comp'.split(' '):
+            T.set('n'+typ, np.array(summary['n'+typ]).astype(np.int16))
+        
+        with np.errstate(divide='ignore'):
+            for b in 'grz':
+                T.set('psfdepth_'+b, (-2.5*(-9.+np.log10(5.*np.sqrt(1. / np.array(summary[b+'psfdepth']))))).astype(np.float32))
+                T.set('galdepth_'+b, (-2.5*(-9.+np.log10(5.*np.sqrt(1. / np.array(summary[b+'galdepth']))))).astype(np.float32))
+        
+        for k in ['psfdepth_g', 'psfdepth_r', 'psfdepth_z', 
+                  'galdepth_g', 'galdepth_r', 'galdepth_z']:
+            v = T.get(k)
+            v[np.logical_not(np.isfinite(v))] = 0.
+        
+        T.ebv = np.array(summary['ebv']).astype(np.float32)
+        return T 
+
+
+
+
+    def brick_summary(self,bricklist=[]):
         """
         Args:
             bricklist: Give a single brick as a list of length 1, e.g. [brick]
         """
+        assert(len(bricklist) == 1)
         brickset = set()
         gn = []
         rn = []

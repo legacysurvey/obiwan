@@ -32,6 +32,11 @@ import numpy as np
 # import seaborn as sns
 from PIL import Image, ImageDraw
 
+def print_wrote_fn(func,fn):
+    """decorator"""
+    func(fn)
+    print('Wrote %s' % fn)
+
 def flux2mag(nmgy):
     return -2.5 * (np.log10(nmgy) - 9)
 
@@ -54,7 +59,7 @@ def bin_up(data_bin_by,data_for_percentile, bin_minmax=(18.,26.),nbins=20):
             vals['n'][i]=0 
     return vals
 
-
+@print_wrote_fn
 def plot_flux_residual(dat,fn='flux_residual.png'):
     col = ['b', 'k', 'c', 'm', 'y', 0.8]
     fig, axes = plt.subplots(3,1, figsize=(6,8))
