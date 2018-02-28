@@ -50,31 +50,16 @@ class RandomsTable(MergeTable):
                             'randoms.fits')
 
 
-class TargetsTable(MergeTable):
-    def __init__(self,derived_dir,savefn,
-                 eboss_or_desi):
+class SummaryTable(MergeTable):
+    def __init__(self,derived_dir,savefn):
         super().__init__(derived_dir,savefn)
-        assert(eboss_or_desi in ['eboss','desi'])
-        self.eboss_or_desi= eboss_or_desi
 
     def table_fn(self,brick):
         return os.path.join(self.derived_dir,brick[:3],brick,
-                            'randoms_%s.fits' % self.eboss_or_desi)
-
-class HeatmapTable(MergeTable):
-    def __init__(self,derived_dir,savefn,
-                 dr_or_obiwan):
-        super().__init__(derived_dir,savefn)
-        assert(dr_or_obiwan in ['datarelease','obiwan'])
-        self.dr_or_obiwan= dr_or_obiwan
-
-    def table_fn(self,brick):
-        return os.path.join(self.derived_dir,brick[:3],brick,
-                            'heatmap_%s.fits' % self.dr_or_obiwan)
+                            'summary.fits')
 
 def main_mpi(doWhat=None,bricks=[],nproc=1,
-             derived_dir=None,eboss_or_desi=None,
-             dr_or_obiwan=None):
+             derived_dir=None):
     """
     Args:
         nproc: > 1 for mpi4py
@@ -99,22 +84,13 @@ def main_mpi(doWhat=None,bricks=[],nproc=1,
     if doWhat == 'randoms':
         savefn= os.path.join(tmpDir,'randoms_rank%d.fits' % comm.rank)
         tabMerger= RandomsTable(derived_dir,savefn)
-    elif doWhat == 'targets':
-        savefn= os.path.join(tmpDir,'targets_%s_rank%d.fits' % \
-                                (eboss_or_desi,comm.rank))
-        tabMerger= TargetsTable(derived_dir,savefn,
-                                eboss_or_desi)
-    elif doWhat == 'heatmap':
-        savefn= os.path.join(tmpDir,'heatmap_%s_rank%d.fits' % \
-                                (dr_or_obiwan,comm.rank))
-        tabMerger= HeatmapTable(derived_dir,savefn,
-                                dr_or_obiwan)
+    elif doWhat == 'summary':
+        savefn= os.path.join(tmpDir,'summary_rank%d.fits' % comm.rank)
+        tabMerger= SummaryTable(derived_dir,savefn)
     tab= tabMerger.run(bricks)
 
 
-def main_serial(doWhat=None,derived_dir=None,
-                eboss_or_desi=None,
-                dr_or_obiwan=None):
+def main_serial(doWhat=None,derived_dir=None):
     """merges the rank tables that are stored in merge_tmp/"""
     saveDir= dir_for_serial(derived_dir) 
     try:
@@ -125,12 +101,9 @@ def main_serial(doWhat=None,derived_dir=None,
     if doWhat == 'randoms':
         wild= "randoms_rank*.fits"
         outfn= os.path.join(saveDir,'randoms.fits')
-    elif doWhat == 'targets':
-        wild= "targets_%s_rank*.fits" % eboss_or_desi
-        outfn= os.path.join(saveDir,'randoms_%s.fits' % eboss_or_desi)
-    elif doWhat == 'heatmap':
-        wild= "heatmap_%s_rank*.fits" % dr_or_obiwan
-        outfn= os.path.join(saveDir,"heatmap_%s.fits" % dr_or_obiwan)
+    elif doWhat == 'summary':
+        wild= "summary_rank*.fits"
+        outfn= os.path.join(saveDir,"summary.fits")
     
     if os.path.exists(outfn):
         print('Merged table already exists %s' % outfn)
@@ -150,22 +123,25 @@ def main_serial(doWhat=None,derived_dir=None,
     print('Wrote %s' % outfn)
     print('has %d rows' % len(tab))
 
-
+def randoms_subsets(randoms_fn,derived_dir):
+    columns= ['ra','dec','obiwan_mask','targets_mask']
+    savefn= os.path.join(dir_for_serial(derived_dir),
+                         'randoms_subset_of_columns.fits')
+    if not os.path.exists(savefn):
+        T = fits_table(randoms_fn, columns=columns)
+        T.writeto(savefn)
+        print('Wrote %s' % savefn)
 
 if __name__ == '__main__':
     from argparse import ArgumentParser
     parser = ArgumentParser()
-    parser.add_argument('--doWhat', type=str, choices=['randoms','targets','heatmap'],required=True)
+    parser.add_argument('--doWhat', type=str, choices=['randoms','summary'],required=True)
     parser.add_argument('--derived_dir', type=str, required=True) 
-    parser.add_argument('--eboss_or_desi', type=str, default=None, choices=['eboss','desi'],
-                        required=False)
-    parser.add_argument('--dr_or_obiwan', type=str, default=None, choices=['datarelease','obiwan'],
-                        required=False)
-    #parser.add_argument('--dataset', type=str, choices=['dr3','dr5'],required=True)
     parser.add_argument('--nproc', type=int, default=1, help='set to > 1 to run mpi4py') 
     parser.add_argument('--bricks_fn', type=str, default=None,
                         help='specify a fn listing bricks to run, or a single default brick will be ran') 
     parser.add_argument('--merge_rank_tables', action="store_true", default=False,help="set to merge the rank tables in the merge_tmp/ dir")
+    parser.add_argument('--randoms_subset_table', action="store_true", default=False,help="cut randoms table to just those columns needed for angular corr func")
     args = parser.parse_args()
    
     if args.merge_rank_tables:
@@ -173,6 +149,12 @@ if __name__ == '__main__':
         for key in ['merge_rank_tables','nproc','bricks_fn']:
             del kwargs[key]
         main_serial(**kwargs)
+        sys.exit(0)
+   
+    if args.randoms_subset_table:
+        randoms_fn= os.path.join(dir_for_serial(args.derived_dir),
+                                 'randoms.fits')
+        randoms_subsets(randoms_fn,args.derived_dir)
         sys.exit(0)
     
     # Bricks to run
