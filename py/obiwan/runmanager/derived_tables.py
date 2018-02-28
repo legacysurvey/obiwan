@@ -10,6 +10,7 @@ from glob import glob
 import pandas as pd
 from collections import Counter
 
+from obiwan.db_tools import all_psqlcols_for_ids
 try: 
     from astrometry.util.fits import fits_table, merge_tables
     from astrometry.util.util import Tan
@@ -28,14 +29,148 @@ def datarelease_dir(eboss_or_desi):
     elif eboss_or_desi == 'desi':
         dr='dr5'
     return os.path.join(proj,dr)
-       
+
+def is_bool(obj):                                        
+    return obj.dtype == bool
+
 def is_numeric(obj):                                        
     try: 
         tmp=obj+5
     except TypeError:
         return False
     return True
+
+class Bit(object):
+    def set(self,value, bit):
+        """change bit to 1, bit is 0-indexed"""
+        return value | (1<<bit)
+
+    def clear(self,value, bit):
+        """change bit to 0, bit is 0-indexed"""
+        return value & ~(1<<bit)
+
+
+class TargetSelection(object):
+    def __init__(self,prefix=''): 
+        """Returns bool array of either eboss or desi ELGs
+        
+        Args:
+            prefix: 'tractor_' for randoms table, '' for tractor table
+        """
+        self.prefix=prefix
+
+    def run(self,tractor,eboss_or_desi):
+        assert(eboss_or_desi in ['eboss','desi'])
+        if eboss_or_desi == 'eboss':
+            return self.ebossIsElg(tractor)
+        elif eboss_or_desi == 'desi':
+            return self.desiIsElg(tractor)
+
+    def desiIsElg(self,tractor):
+        kw={}
+        if self.prefix+'brick_primary' in tractor.get_columns():
+            kw.update(primary=tractor.get(self.prefix+'brick_primary'))
+        for band,iband in [('g',1),('r',2),('z',4)]:
+            kw[band+'flux']= tractor.get(self.prefix+'flux_'+band) / \
+                              tractor.get(self.prefix+'mw_transmission_'+band)
+        return self._desiIsElg(**kw)
+
+    def ebossIsElg(self,tractor):
+        kw={}
+        if self.prefix+'brick_primary' in tractor.get_columns():
+            kw.update(primary=tractor.get(self.prefix+'brick_primary'))
+        for key in ['ra','dec']:
+            kw[key]= tractor.get(key) #self.prefix+key)
+        kw.update( self.get_grz_mag_dict(tractor) )
+        return self._ebossIsElg(**kw)
  
+
+    def _desiIsElg(self,gflux=None, rflux=None, zflux=None, 
+                   primary=None):
+        """VERBATIM from 
+        https://github.com/desihub/desitarget/blob/master/py/desitarget/cuts.py
+        
+        Args:
+            gflux, rflux, zflux, w1flux, w2flux: array_like
+                The flux in nano-maggies of g, r, z, w1, and w2 bands.
+            primary: array_like or None
+                If given, the BRICK_PRIMARY column of the catalogue.
+        Returns:
+            mask : array_like. True if and only the object is an ELG
+                target.
+        """
+        #----- Emission Line Galaxies
+        if primary is None:
+            primary = np.ones_like(gflux, dtype='?')
+        elg = primary.copy()
+        elg &= rflux > 10**((22.5-23.4)/2.5)                       # r<23.4
+        elg &= zflux > rflux * 10**(0.3/2.5)                       # (r-z)>0.3
+        elg &= zflux < rflux * 10**(1.6/2.5)                       # (r-z)<1.6
+
+        # Clip to avoid warnings from negative numbers raised to fractional powers.
+        rflux = rflux.clip(0)
+        zflux = zflux.clip(0)
+        elg &= rflux**2.15 < gflux * zflux**1.15 * 10**(-0.15/2.5) # (g-r)<1.15(r-z)-0.15
+        elg &= zflux**1.2 < gflux * rflux**0.2 * 10**(1.6/2.5)     # (g-r)<1.6-1.2(r-z)
+
+        return elg 
+    
+    def _ebossIsElg(self,primary=None,ra=None,dec=None,
+                    gmag=None,rmag=None,zmag=None):
+        if primary is None:
+            primary = np.ones(len(ra), bool)
+        #print('dec.min',dec.min(),'dec.max',dec.max())
+        inRegion=dict(ngc= ((primary) &
+                            (ra > 126.) &
+                            (ra < 168.) &
+                            (dec > 14.) &
+                            (ra < 34.)),
+                      sgc_a= ((primary) &
+                              (ra > 317.) &
+                              (ra < 360.) &
+                              (dec > -2.) &
+                              (ra < 2.)),
+                      sgc_b= ((primary) &
+                              (ra > 0.) &
+                              (ra < 45.) &
+                              (dec > -5.) &
+                              (ra < 5.)))
+        inRegion.update(sgc= ((inRegion['sgc_a']) | 
+                              (inRegion['sgc_b'])))
+        # tycho2inblob == False
+        # SDSS bright object mask & 0 < V < 11.5 mag Tycho2 stars mask
+        # anymask[grz] == 0
+        # custom mask for eboss23
+        gr= gmag - rmag
+        rz= rmag - zmag
+        colorCut= dict(sgc= ((gmag > 21.825) &
+                             (gmag < 22.825) &
+                             (-0.068 * rz + 0.457 < gr) &
+                             (gr < 0.112 * rz + 0.773) &
+                             (0.218 * gr + 0.571 < rz) &
+                             (rz < -0.555 * gr + 1.901)),
+                       ngc= ((gmag > 21.825) &
+                             (gmag < 22.9) &
+                             (-0.068 * rz + 0.457 < gr) &
+                             (gr < 0.112 * rz + 0.773) &
+                             (0.637 * gr + 0.399 < rz) &
+                             (rz < -0.555 * gr + 1.901)))
+        return ((inRegion['ngc'] & colorCut['ngc']) |
+                (inRegion['sgc'] & colorCut['sgc']))
+
+    def get_grz_mag_dict(self,tractor):
+        d={}
+        for band,iband in [('g',1),('r',2),('z',4)]:
+            flux_ext= tractor.get(self.prefix+'flux_'+band) / \
+                       tractor.get(self.prefix+'mw_transmission_'+band)
+            d[band+'mag']= self.flux2mag(flux_ext)
+        return d
+
+    def flux2mag(self,nmgy):
+        return -2.5 * (np.log10(nmgy) - 9) 
+
+
+
 class RandomsTable(object):
     """Creates the uniform,obiwan_a,obiwan_b randoms tables for a single brick
 
@@ -46,16 +181,17 @@ class RandomsTable(object):
         the random is near a previously existing real source in a DR 
         catalogue, like DR3 or DR5
     """
-    def __init__(self, data_dir,eboss_or_desi,date='mm-dd-yyyy',
-                 db_randoms_table):
+    def __init__(self, data_dir,eboss_or_desi,db_randoms_table,
+                 date='mm-dd-yyyy'):
         self.data_dir= data_dir
         self.eboss_or_desi= eboss_or_desi
-        self.date= date
         self.db_randoms_table= db_randoms_table
+        self.date= date
 
     def run(self,brick):
         tab= self.merge_randoms_tables(brick)
         self.add_flag_for_realsources(tab,brick)
+        self.add_targets_mask(tab)
         # Write
         derived_dir= derived_field_dir(brick,self.data_dir,self.date)
         fn= os.path.join(derived_dir,'randoms.fits')
@@ -90,7 +226,8 @@ class RandomsTable(object):
             # Uniform randoms (injected at touching at least 1 ccd)
             assert(len(idsadded) == len(set(idsadded.id)))
             simcat.cut( pd.Series(simcat.id).isin(idsadded.id) )
-            simcat.set('unique_id',self.unique_id(simcat.id,brick,dr))
+            simcat.set('unique_id',self.unique_id(simcat.id.astype(str),
+                                                  brick,os.path.basename(dr)))
             self.add_psql_to_uniform_table(simcat,self.db_randoms_table)
             # Recovered by Tractor
             tractor= fits_table(os.path.join(dr,'tractor-%s.fits' % brick))
@@ -109,29 +246,34 @@ class RandomsTable(object):
             add_vals={}
             for trac_key in tractor.get_columns():
                 key= 'tractor_'+trac_key
-                if is_numeric(tractor.get(trac_key)):
-                    add_vals[key]= np.zeros(len(simcat))+np.nan
+                if is_bool(tractor.get(trac_key)):
+                    add_vals[key]= np.zeros(len(simcat),bool)
+                elif is_numeric(tractor.get(trac_key)):
+                    shp= (len(simcat),) + tractor.get(trac_key).shape[1:]
+                    add_vals[key]= np.zeros(shp) +np.nan
                 else:
-                    add_vals[key]= np.array(['']*len(simcat))
+                    add_vals[key]= np.array([4*' ']*len(simcat))
                 add_vals[key][I]= tractor.get(trac_key)
                 simcat.set(key,add_vals[key])
             # Mask
             mask= np.zeros(len(simcat),dtype=np.int8)
-            mask[I]= 1
+            mask[I]= Bit().set(mask[I],0)
             simcat.set('obiwan_mask',mask)
             # add to list uniform tables
             uniform.append(simcat)
         return merge_tables(uniform, columns='fillzero')
 
-    def unique_id(self,simcat_id,brick,rs_dir):
+    def unique_id(self,id_array,brick,rs_dir):
         """For a given random injected into a brick during a given iteration
 
         Args:
-            simcat_id: randoms id 
+            id_array: randoms ids 
             brick: brick
             rs_dir: like rs0 or rs300
         """
-        return "%d_%s_%s" % (simcat_id,brick,rs_dir)
+        ids= np.array(id_array,dtype=object) + "_%s_%s" % (brick,rs_dir)
+        # FITS can't handle numpy type 'object'
+        return ids.astype(str)
 
     def add_psql_to_uniform_table(self,uniform,db_randoms_table):
         """Add randoms db columns from psql to the uniform randoms table
@@ -140,8 +282,7 @@ class RandomsTable(object):
             uniform: fits table
             db_randoms_table: name of the psql db table
         """
-        assert(db_randoms_table in DB_RANDOMS_TABLES)
-        db_dict= select_all_for_ids(uniform.id, db_randoms_table=db_randoms_table)
+        db_dict= all_psqlcols_for_ids(uniform.id, db_randoms_table=db_randoms_table)
         assert(all(db_dict['id'] - uniform.id == 0))
         for key,val in db_dict.items():
             if key in ['id']:
@@ -158,14 +299,28 @@ class RandomsTable(object):
                                       'tractor',brick[:3],
                                       'tractor-%s.fits' % brick))
         # nearest match in (ra2,dec2) for each point in (ra1,dec1)
-        i_recovered= tab.obiwan_mask == 1
-        I,J,d = match_radec(tab.ra[i_recovered],tab.dec[i_recovered],
+        I,J,d = match_radec(tab.ra,tab.dec,
                             real.ra,real.dec, 1./3600,
                             nearest=True)
         assert(np.all(d <= 1./3600))
-        mask= tab.obiwan_mask
-        mask[i_recovered][I]= 2
-        tab.set('obiwan_mask',mask)
+        bool_matched= np.zeros(len(tab),bool)
+        bool_matched[I]= True
+        recovered_and_matched= ((tab.obiwan_mask == 1) & 
+                                (bool_matched))
+        if len(tab[recovered_and_matched]) > 0:
+            mask= tab.obiwan_mask
+            mask[recovered_and_matched]= Bit().set(mask[recovered_and_matched],1)
+            tab.set('obiwan_mask',mask)
+
+    def add_targets_mask(self,table):
+        TS= TargetSelection(prefix='tractor_') 
+        mask= np.zeros(len(table),dtype=np.int8)
+        for eboss_or_desi,bit in [('eboss',0),
+                                  ('desi',1)]:
+            keep= TS.run(table,eboss_or_desi)
+            if len(table[keep]) > 0:
+                mask[keep]= Bit().set(mask[keep],bit)
+        table.set('targets_mask',mask)
 
     def write_table(self,tab,fn):
         """Write the merged randoms table is doesn't already exist"""
@@ -173,141 +328,6 @@ class RandomsTable(object):
             tab.writeto(fn)
             print('Wrote %s' % fn)
     
-
-class TargetSelection(object):
-    def __init__(self,eboss_or_desi): 
-        assert(eboss_or_desi in ['eboss','desi'])
-        self.eboss_or_desi= eboss_or_desi
-
-    def keep(self,tractor):
-        if self.eboss_or_desi == 'eboss':
-            return self.ebossIsElg(tractor)
-        elif self.eboss_or_desi == 'desi':
-            return self.desiIsElg(tractor)
-
-    def desiIsElg(self,tractor):
-        kw={}
-        if 'brick_primary' in tractor.get_columns():
-            kw.update(primary=tractor.brick_primary)
-        for band,iband in [('g',1),('r',2),('z',4)]:
-            kw[band+'flux']= tractor.get('flux_'+band) / tractor.get('mw_transmission_'+band)
-        return self._desiIsElg(**kw)
-    
-    def _desiIsElg(self,gflux=None, rflux=None, zflux=None, 
-                   primary=None):
-        """VERBATIM from 
-        https://github.com/desihub/desitarget/blob/master/py/desitarget/cuts.py
-        
-        Args:
-            gflux, rflux, zflux, w1flux, w2flux: array_like
-                The flux in nano-maggies of g, r, z, w1, and w2 bands.
-            primary: array_like or None
-                If given, the BRICK_PRIMARY column of the catalogue.
-        Returns:
-            mask : array_like. True if and only the object is an ELG
-                target.
-        """
-        #----- Emission Line Galaxies
-        if primary is None:
-            primary = np.ones_like(gflux, dtype='?')
-        elg = primary.copy()
-        elg &= rflux > 10**((22.5-23.4)/2.5)                       # r<23.4
-        elg &= zflux > rflux * 10**(0.3/2.5)                       # (r-z)>0.3
-        elg &= zflux < rflux * 10**(1.6/2.5)                       # (r-z)<1.6
-
-        # Clip to avoid warnings from negative numbers raised to fractional powers.
-        rflux = rflux.clip(0)
-        zflux = zflux.clip(0)
-        elg &= rflux**2.15 < gflux * zflux**1.15 * 10**(-0.15/2.5) # (g-r)<1.15(r-z)-0.15
-        elg &= zflux**1.2 < gflux * rflux**0.2 * 10**(1.6/2.5)     # (g-r)<1.6-1.2(r-z)
-
-        return elg 
-    
-    def ebossIsElg(self,tractor):
-        inRegion=dict(ngc= ((tractor.ra > 126.) &
-                            (tractor.ra < 168.) &
-                            (tractor.dec > 14.) &
-                            (tractor.ra < 34.)),
-                      sgc_a= ((tractor.ra > 317.) &
-                              (tractor.ra < 360.) &
-                              (tractor.dec > -2.) &
-                              (tractor.ra < 2.)),
-                      sgc_b= ((tractor.ra > 0.) &
-                              (tractor.ra < 45.) &
-                              (tractor.dec > -5.) &
-                              (tractor.ra < 5.)))
-        inRegion.update(sgc= ((inRegion['sgc_a']) | 
-                              (inRegion['sgc_b'])))
-        # tycho2inblob == False
-        # SDSS bright object mask & 0 < V < 11.5 mag Tycho2 stars mask
-        # anymask[grz] == 0
-        # custom mask for eboss23
-        self.add_grz_mag(tractor)
-        gr= tractor.gmag - tractor.rmag
-        rz= tractor.rmag - tractor.zmag
-        colorCut= dict(sgc= ((tractor.gmag > 21.825) &
-                             (tractor.gmag < 22.825) &
-                             (-0.068 * rz + 0.457 < gr) &
-                             (gr < 0.112 * rz + 0.773) &
-                             (0.218 * gr + 0.571 < rz) &
-                             (rz < -0.555 * gr + 1.901)),
-                       ngc= ((tractor.gmag > 21.825) &
-                             (tractor.gmag < 22.9) &
-                             (-0.068 * rz + 0.457 < gr) &
-                             (gr < 0.112 * rz + 0.773) &
-                             (0.637 * gr + 0.399 < rz) &
-                             (rz < -0.555 * gr + 1.901)))
-        return ((inRegion['ngc'] & colorCut['ngc']) |
-                (inRegion['sgc'] & colorCut['sgc']))
-
-    def add_grz_mag(self,tractor):
-        for band,iband in [('g',1),('r',2),('z',4)]:
-            flux_ext= tractor.get('flux_'+band) / tractor.get('mw_transmission_'+band)
-            tractor.set(band+'mag',self.flux2mag(flux_ext))
-
-    def flux2mag(self,nmgy):
-        return -2.5 * (np.log10(nmgy) - 9)
-
-
-class TargetsTable(object):
-    """Apply target selection to the RandomsTables and write it out per-brick"""
-    def __init__(self,data_dir,eboss_or_desi,date='mm-dd-yyyy'):
-        self.data_dir= data_dir
-        self.eboss_or_desi= eboss_or_desi
-        self.date= date
-    
-    def run(self,brick):
-        derived_dir= derived_field_dir(brick,self.data_dir,self.date)
-        for randoms_tab in ['uniform','obiwan_a','obiwan_b','obiwan_real']:
-            self.write_targets(derived_dir,
-                               randoms_table=randoms_tab)
-
-    def write_targets(self,derived_dir,
-                      randoms_table=None):
-        TS= TargetSelection(self.eboss_or_desi) 
-        fn= os.path.join(derived_dir,'randoms_%s.fits' % randoms_table)
-        if randoms_table in ['uniform']:
-            tractor= fits_table(fn)
-            if 'gflux' in tractor.get_columns():
-                for band in 'grz':
-                    tractor.rename(band+'flux','flux_'+band)
-        else:
-            tractor= self.read_tractor(fn)
-        tractor.cut(TS.keep(tractor))
-        savefn= fn.replace('.fits','_%s.fits' % self.eboss_or_desi)
-        tractor.writeto(savefn)
-        print('Wrote %s' % savefn)
-
-    def read_tractor(self,tractor_fn):
-        columns=['brick_primary', 'type','ra','dec',
-                 'brickname']
-        for band in 'grz':
-            for prefix in ['flux_','mw_transmission_',
-                           'allmask_','anymask_']:
-                columns.append(prefix+band)
-        return fits_table(tractor_fn,columns=columns)
-
-
 
 
 class HeatmapTable(object):
@@ -664,6 +684,7 @@ class HeatmapTable(object):
         return nu,ntot
 
 def main_mpi(bricks=[],doWhat=None,eboss_or_desi=None,
+             db_randoms_table=None,
              nproc=1,data_dir='./',date='mm-dd-yyyy'):
     """
     Args:
@@ -680,7 +701,8 @@ def main_mpi(bricks=[],doWhat=None,eboss_or_desi=None,
         comm= MyComm()
 
     if doWhat == 'randoms':
-        tabMaker= RandomsTable(data_dir,eboss_or_desi,date=date)
+        tabMaker= RandomsTable(data_dir,eboss_or_desi,db_randoms_table,
+                               date=date)
     elif doWhat == 'targets':
         tabMaker= TargetsTable(data_dir,eboss_or_desi,date=date)
     elif doWhat == 'heatmap':
@@ -703,6 +725,8 @@ if __name__ == '__main__':
     parser.add_argument('--doWhat', type=str, choices=['randoms','targets','heatmap'],required=True)
     parser.add_argument('--data_dir', type=str, required=True, 
                         help='path to obiwan/, tractor/ dirs') 
+    parser.add_argument('--db_randoms_table', type=str, choices=['obiwan_eboss_elg',
+                                    'obiwan_elg_dr5','obiwan_cosmos'],required=True)
     parser.add_argument('--nproc', type=int, default=1, help='set to > 1 to run mpi4py') 
     parser.add_argument('--bricks_fn', type=str, default=None,
                         help='specify a fn listing bricks to run, or a single default brick will be ran') 

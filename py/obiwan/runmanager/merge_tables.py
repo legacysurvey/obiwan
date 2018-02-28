@@ -41,21 +41,26 @@ class MergeTable(object):
     def table_fn(self,brick):
         return os.path.join(self.derived_dir,brick[:3],brick,
                             'name.fits')
-        
+
+class RandomsTable(MergeTable):
+    def __init__(self,derived_dir,savefn):
+        super().__init__(derived_dir,savefn)
+
+    def table_fn(self,brick):
+        return os.path.join(self.derived_dir,brick[:3],brick,
+                            'randoms.fits')
+
 
 class TargetsTable(MergeTable):
     def __init__(self,derived_dir,savefn,
-                 randoms_table,eboss_or_desi):
+                 eboss_or_desi):
         super().__init__(derived_dir,savefn)
-        assert(randoms_table in RANDOMS_TABLES)
         assert(eboss_or_desi in ['eboss','desi'])
-        self.randoms_table= randoms_table
         self.eboss_or_desi= eboss_or_desi
 
     def table_fn(self,brick):
         return os.path.join(self.derived_dir,brick[:3],brick,
-                            'randoms_%s_%s.fits' % \
-                            (self.randoms_table,self.eboss_or_desi))
+                            'randoms_%s.fits' % self.eboss_or_desi)
 
 class HeatmapTable(MergeTable):
     def __init__(self,derived_dir,savefn,
@@ -69,8 +74,7 @@ class HeatmapTable(MergeTable):
                             'heatmap_%s.fits' % self.dr_or_obiwan)
 
 def main_mpi(doWhat=None,bricks=[],nproc=1,
-             derived_dir=None,
-             randoms_table=None,eboss_or_desi=None,
+             derived_dir=None,eboss_or_desi=None,
              dr_or_obiwan=None):
     """
     Args:
@@ -93,11 +97,14 @@ def main_mpi(doWhat=None,bricks=[],nproc=1,
     except OSError:
         pass
  
-    if doWhat == 'targets':
-        savefn= os.path.join(tmpDir,'randoms_%s_%s_rank%d.fits' % \
-                                (randoms_table,eboss_or_desi,comm.rank))
+    if doWhat == 'randoms':
+        savefn= os.path.join(tmpDir,'randoms_rank%d.fits' % comm.rank)
+        tabMerger= RandomsTable(derived_dir,savefn)
+    elif doWhat == 'targets':
+        savefn= os.path.join(tmpDir,'targets_%s_rank%d.fits' % \
+                                (eboss_or_desi,comm.rank))
         tabMerger= TargetsTable(derived_dir,savefn,
-                                randoms_table,eboss_or_desi)
+                                eboss_or_desi)
     elif doWhat == 'heatmap':
         savefn= os.path.join(tmpDir,'heatmap_%s_rank%d.fits' % \
                                 (dr_or_obiwan,comm.rank))
@@ -107,7 +114,7 @@ def main_mpi(doWhat=None,bricks=[],nproc=1,
 
 
 def main_serial(doWhat=None,derived_dir=None,
-                randoms_table=None,eboss_or_desi=None,
+                eboss_or_desi=None,
                 dr_or_obiwan=None):
     """merges the rank tables that are stored in merge_tmp/"""
     saveDir= dir_for_serial(derived_dir) 
@@ -116,10 +123,12 @@ def main_serial(doWhat=None,derived_dir=None,
     except OSError:
         pass
 
-    if doWhat == 'targets':
-        wild= "randoms_%s_%s_rank*.fits" % (randoms_table,eboss_or_desi)
-        outfn= os.path.join(saveDir,'randoms_%s_%s.fits' % \
-                (randoms_table,eboss_or_desi))
+    if doWhat == 'randoms':
+        wild= "randoms_rank*.fits"
+        outfn= os.path.join(saveDir,'randoms.fits')
+    elif doWhat == 'targets':
+        wild= "targets_%s_rank*.fits" % eboss_or_desi
+        outfn= os.path.join(saveDir,'randoms_%s.fits' % eboss_or_desi)
     elif doWhat == 'heatmap':
         wild= "heatmap_%s_rank*.fits" % dr_or_obiwan
         outfn= os.path.join(saveDir,"heatmap_%s.fits" % dr_or_obiwan)
@@ -147,10 +156,8 @@ def main_serial(doWhat=None,derived_dir=None,
 if __name__ == '__main__':
     from argparse import ArgumentParser
     parser = ArgumentParser()
-    parser.add_argument('--doWhat', type=str, choices=['targets','heatmap'],required=True)
+    parser.add_argument('--doWhat', type=str, choices=['randoms','targets','heatmap'],required=True)
     parser.add_argument('--derived_dir', type=str, required=True) 
-    parser.add_argument('--randoms_table', type=str, default=None, choices=['uniform','obiwan_a',
-                                            'obiwan_b','obiwan_real'],required=False)
     parser.add_argument('--eboss_or_desi', type=str, default=None, choices=['eboss','desi'],
                         required=False)
     parser.add_argument('--dr_or_obiwan', type=str, default=None, choices=['datarelease','obiwan'],
