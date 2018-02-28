@@ -8,9 +8,8 @@
 #SBATCH -L SCRATCH,project
 ###SBATCH -C haswell
 
-#export doWhat=heatmap
-export doWhat=randoms
-#export doWhat=targets
+#export doWhat=randoms
+export doWhat=heatmap
 export eboss_or_desi=eboss
 #export eboss_or_desi=desi
 export db_randoms_table=obiwan_eboss_elg
