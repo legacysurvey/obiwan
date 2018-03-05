@@ -40,6 +40,10 @@ def is_numeric(obj):
         return False
     return True
 
+
+def flux2mag(nmgy):
+    return -2.5 * (np.log10(nmgy) - 9) 
+
 class Bit(object):
     def set(self,value, bit):
         """change bit to 1, bit is 0-indexed"""
@@ -163,11 +167,9 @@ class TargetSelection(object):
         for band,iband in [('g',1),('r',2),('z',4)]:
             flux_ext= tractor.get(self.prefix+'flux_'+band) / \
                        tractor.get(self.prefix+'mw_transmission_'+band)
-            d[band+'mag']= self.flux2mag(flux_ext)
+            d[band+'mag']= flux2mag(flux_ext)
         return d
 
-    def flux2mag(self,nmgy):
-        return -2.5 * (np.log10(nmgy) - 9) 
 
 
 
@@ -345,6 +347,7 @@ def bin_by_mag(randoms, func_to_apply, band=None,bin_minmax=(18.,26.),nbins=20):
     bin_edges= np.linspace(bin_minmax[0],bin_minmax[1],num= nbins+1)
     vals={}
     vals['binc']= (bin_edges[1:]+bin_edges[:-1])/2.
+    vals['val']=np.zeros(nbins)+np.nan
     for i,low,hi in zip(range(nbins), bin_edges[:-1],bin_edges[1:]):
         keep= ((mag > low) &
                (mag <= hi))
@@ -358,15 +361,19 @@ def bin_by_mag(randoms, func_to_apply, band=None,bin_minmax=(18.,26.),nbins=20):
 
 def depth_at_half_recovered(randoms,band):
     """bin by mag in given mag, return bin center where frac recovered first drops below 50%"""
-    binc_and_vals= bin_by_mag(randoms, func_to_apply= fraction_recovered
+    binc_and_vals= bin_by_mag(randoms, func_to_apply= fraction_recovered,
                               band=band,bin_minmax=(18.,26.),nbins=20)
-    for i,val in enumerate(binc_and_vals['vals']):
+    for i,val in enumerate(binc_and_vals['val']):
         if not np.isfinite(val):
             continue
         elif val <= 0.5:
             break
-    assert(val <= 0.5)
-    return binc_and_vals['binc'][i]
+    #if i == len(binc_and_vals['val'])-1 and val > 0.5:
+    if val > 0.5:
+        raise ValueError('val=',val)
+        return np.nan
+    else:
+        return binc_and_vals['binc'][i]
 
 class HeatmapTable(object):
     """Writes one table per brick, with brick averaged quantities
@@ -385,13 +392,17 @@ class HeatmapTable(object):
 
     def run(self,brick):
         summary_DR= self.brick_summary([brick])
-        summary_obi= self.brick_summary_obiwan([brick],prefix='tractor_')
+        summary_obi= self.brick_summary_obiwan(brick,prefix='tractor_')
         self.add_obiwan_to_DR_table(summary_DR,summary_obi)
         # Write
         derived_dir= derived_field_dir(brick,self.data_dir,self.date)
         fn= os.path.join(derived_dir,'summary.fits')
         self.write_table(summary_DR,fn)
 
+    def write_table(self,tab,fn):
+        if not os.path.exists(fn): 
+            tab.writeto(fn)
+            print('Wrote %s' % fn)
 
     def add_obiwan_to_DR_table(self,summary_DR,summary_obi):
         """adds the summary_obi columsn to the summary_DR table
@@ -402,7 +413,7 @@ class HeatmapTable(object):
         """
         prefix='obiwan_'
         for col in summary_obi.get_columns():
-            summary_DR.set(prefix+obiwan, summary_obi.get(col))
+            summary_DR.set(prefix+col, summary_obi.get(col))
         del summary_obi
 
     def brick_summary_obiwan(self,brick,prefix=''):
@@ -414,16 +425,17 @@ class HeatmapTable(object):
         randoms_fn= os.path.join(derived_field_dir(brick,
                                         self.data_dir,self.date),
                                  'randoms.fits')
-        T = fits_table(randoms_fn, columns=columns)
+        T = fits_table(randoms_fn)
         
         brickset = set()
         summary= defaultdict(list)
+        nnhist = 6
     
         # Obiwan stuff
         was_recovered= T.obiwan_mask == 1
-        summary['frac_recovered']= len(T[was_recovered])/ float(len(T))
-        for b in ['grz']:
-            summary['depth_at_half_recovered_'+b]= self.depth_at_half_recovered(T,band=b)
+        summary['frac_recovered'].append( len(T[was_recovered])/ float(len(T)))
+        for b in 'grz':
+            summary['depth_at_half_recovered_'+b].append( depth_at_half_recovered(T,band=b))
 
         W = H = 3600
         # H=3600
@@ -477,7 +489,9 @@ class HeatmapTable(object):
         #T.brickname = np.array([brick])
         #T.ra  = self.surveyBricks.ra [ibricks]
         #T.dec = self.surveyBricks.dec[ibricks]
+        T.set('frac_recovered', np.array(summary['frac_recovered']).astype(np.float32))
         for b in 'grz':
+            T.set('depth_at_half_recovered_'+b, np.array(summary['depth_at_half_recovered_'+b]).astype(np.float32))
             T.set('nexp_'+b, np.array(summary[b+'n']).astype(np.int16))
             T.set('nexphist_'+b, np.array(summary[b+'nhist']).astype(np.int32))
             T.set('nobjs', np.array(summary['nsrcs']).astype(np.int16))
@@ -865,7 +879,7 @@ if __name__ == '__main__':
     parser.add_argument('--data_dir', type=str, required=True, 
                         help='path to obiwan/, tractor/ dirs') 
     parser.add_argument('--db_randoms_table', type=str, choices=['obiwan_eboss_elg',
-                                    'obiwan_elg_dr5','obiwan_cosmos'],required=True)
+                                    'obiwan_elg_dr5','obiwan_cosmos'],required=False)
     parser.add_argument('--nproc', type=int, default=1, help='set to > 1 to run mpi4py') 
     parser.add_argument('--bricks_fn', type=str, default=None,
                         help='specify a fn listing bricks to run, or a single default brick will be ran') 
