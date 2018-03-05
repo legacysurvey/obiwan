@@ -32,6 +32,85 @@ import numpy as np
 # import seaborn as sns
 from PIL import Image, ImageDraw
 
+def myhist2D(ax,x,y,xlim=(),ylim=(),nbins=()):
+    #http://www.astroml.org/book_figures/chapter1/fig_S82_hess.html
+    H, xbins, ybins = np.histogram2d(x,y,
+                                     bins=(np.linspace(xlim[0],xlim[1],nbins[0]),
+                                           np.linspace(ylim[0],ylim[1],nbins[1])))
+    # Create a black and white color map where bad data (NaNs) are white
+    cmap = plt.cm.binary
+    cmap.set_bad('w', 1.)
+    
+    H[H == 0] = 1  # prevent warnings in log10
+    ax.imshow(np.log10(H).T, origin='lower',
+              extent=[xbins[0], xbins[-1], ybins[0], ybins[-1]],
+              cmap=cmap, interpolation='nearest',
+              aspect='auto')
+    ax.set_xlim(xlim)
+    ax.set_ylim(ylim)
+
+def myhist(ax,data,bins=20,color='b',normed=False,ls='-',label=None):
+    if label:
+        _=ax.hist(data,bins=bins,facecolor=color,normed=normed,
+                  histtype='stepfilled',edgecolor='none', alpha=0.75,label=label)
+    else:
+        _=ax.hist(data,bins=bins,facecolor=color,normed=normed,
+                  histtype='stepfilled',edgecolor='none', alpha=0.75)
+
+def myhist_step(ax,data,bins=20,color='b',normed=False,lw=2,ls='solid',label=None,
+                return_vals=False):
+    if label:
+        h,bins,_=ax.hist(data,bins=bins,color=color,normed=normed,
+                  histtype='step',lw=lw,ls=ls,label=label)
+    else:
+        h,bins,_=ax.hist(data,bins=bins,color=color,normed=normed,
+                  histtype='step',lw=lw,ls=ls)
+    if return_vals:
+        return h,bins
+
+def myscatter(ax,x,y, color='b',m='o',s=10.,alpha=0.75,label=None):
+    if label is None or label == 'None':
+        ax.scatter(x,y, c=color,edgecolors='none',marker=m,s=s,rasterized=True,alpha=alpha)
+    else:
+        ax.scatter(x,y, c=color,edgecolors='none',marker=m,s=s,rasterized=True,alpha=alpha,label=label)
+
+def myscatter_open(ax,x,y, color='b',m='o',s=10.,alpha=0.75,label=None):
+    if label is None or label == 'None':
+        ax.scatter(x,y, facecolors='none',edgecolors=color,marker=m,s=s,rasterized=True,alpha=alpha)
+    else:
+        ax.scatter(x,y, facecolors='none',edgecolors=color,marker=m,s=s,rasterized=True,alpha=alpha,label=label)
+
+def myannot(ax,xarr,yarr,sarr, ha='left',va='bottom',fontsize=20):
+    '''x,y,s are iterable'''
+    for x,y,s in zip(xarr,yarr,sarr):
+        ax.annotate(s,xy=(x,y),xytext=(x,y),
+                    horizontalalignment=ha,verticalalignment=va,fontsize=fontsize)
+
+def mytext(ax,x,y,text, ha='left',va='center',fontsize=20,rotation=0,
+           color='k',dataCoords=False):
+    '''adds text in x,y units of fraction axis'''
+    if dataCoords:
+        ax.text(x,y,text, horizontalalignment=ha,verticalalignment=va,
+                fontsize=fontsize,rotation=rotation,color=color)
+    else:
+        ax.text(x,y,text, horizontalalignment=ha,verticalalignment=va,
+                fontsize=fontsize,rotation=rotation,color=color,
+                transform=ax.transAxes)
+
+
+def myerrorbar(ax,x,y, yerr=None,xerr=None,color='b',ls='none',m='o',s=10.,mew=1,alpha=0.75,label=None):
+    if label is None or label == 'None':
+        ax.errorbar(x,y, xerr=xerr,yerr=yerr,ls=ls,alpha=alpha,
+                    marker=m,ms=s,mfc=color,mec=color,ecolor=color,mew=mew)
+    else:
+        ax.errorbar(x,y, xerr=xerr,yerr=yerr,ls=ls,alpha=alpha,label=label,
+                    marker=m,ms=s,mfc=color,mec=color,ecolor=color,mew=mew)
+        #ax.errorbar(x,y, xerr=xerr,yerr=yerr, c=color,ecolor=color,marker=m,s=s,rasterized=True,alpha=alpha,label=label)
+
+#######
+
+
+
 def print_wrote_fn(func,fn):
     """decorator"""
     func(fn)
