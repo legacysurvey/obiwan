@@ -65,7 +65,9 @@ def cmap_discretize(cmap, N):
 
 
 
-def plots(heatmap_table_fn, outdir='./'):
+def plots(heatmap_table_fn, outdir='./',
+          ramin=None,ramax=None,decmin=None,decmax=None,
+          raticks=[]):
     T = fits_table(heatmap_table_fn)
 
     B = fits_table(os.path.join(os.environ['LEGACY_SURVEY_DIR'],
@@ -99,13 +101,18 @@ def plots(heatmap_table_fn, outdir='./'):
         # DECam
         #ax = [360, 0, -21, 36]
         ax = [300, -60, -21, 36]
+        if ramin:
+            ax[1]= ramin
+        if ramax:
+            ax[0]= ramax
+        if decmin:
+            ax[2]= decmin
+        if decmax:
+            ax[3]= decmax
 
         def map_ra(r):
                 return r + (-360 * (r > 300))
 
-    else:
-        # MzLS+BASS
-        ax = [310, 90, 30, 80]
 
         def map_ra(r):
                 return r
@@ -122,7 +129,11 @@ def plots(heatmap_table_fn, outdir='./'):
             # plt.xticks(np.arange(0, 361, 45))
             #tt = np.arange(0, 361, 60)
             #plt.xticks(tt, map_ra(tt))
-            plt.xticks([-60,0,60,120,180,240,300], [300,0,60,120,180,240,300])
+            if len(raticks) > 0:
+                plt.xticks(raticks)
+            else:
+                raise ValueError
+                plt.xticks([-60,0,60,120,180,240,300], [300,0,60,120,180,240,300])
         else:
             plt.xticks(np.arange(90, 311, 30))
 
@@ -327,6 +338,7 @@ def plots(heatmap_table_fn, outdir='./'):
         radec_plot()
         plt.colorbar()
         plt.title('%s: galaxy depth, band %s, median per brick, extinction-corrected' % (release, band))
+        radec_plot()
         plt.savefig(os.path.join(outdir,'galdepth-%s.png' % band))
 
         # B&W version
@@ -505,7 +517,9 @@ def main():
     opt = parser.parse_args()
 
     plots(heatmap_table_fn= opt.heatmap_table, 
-          outdir=opt.outdir)
+          outdir=opt.outdir,
+          ramin=10,ramax=300,decmin=-10,decmax=28,
+          raticks=[10,120,240,300])
 
 if __name__ == '__main__':
     main()
