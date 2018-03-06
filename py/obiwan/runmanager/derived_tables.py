@@ -238,6 +238,8 @@ class RandomsTable(object):
             del_cols= cols[(pd.Series(cols)
                               .str.startswith('apflux_'))]
             for col in del_cols:
+                if col in ['apflux_resid_g','apflux_resid_r','apflux_resid_z']:
+                    continue
                 tractor.delete_column(col)
             # nearest match in (ra2,dec2) for each point in (ra1,dec1)
             I,J,d = match_radec(simcat.ra,simcat.dec,
