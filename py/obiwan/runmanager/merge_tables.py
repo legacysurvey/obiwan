@@ -164,7 +164,8 @@ if __name__ == '__main__':
         bricks= np.loadtxt(args.bricks_fn,dtype=str)
 
     kwargs= vars(args)
-    for dropCol in ['bricks_fn','merge_rank_tables']:
+    for dropCol in ['bricks_fn','merge_rank_tables',
+                    'randoms_subset_table']:
         del kwargs[dropCol]
     kwargs.update(bricks=bricks)
     
