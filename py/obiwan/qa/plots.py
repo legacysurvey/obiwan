@@ -58,13 +58,12 @@ def myhist(ax,data,bins=20,color='b',normed=False,ls='-',label=None):
                   histtype='stepfilled',edgecolor='none', alpha=0.75)
 
 def myhist_step(ax,data,bins=20,color='b',normed=False,lw=2,ls='solid',label=None,
-                return_vals=False):
+                return_vals=False,domain=None):
+    kw= dict(bins=bins,color=color,normed=normed,
+             histtype='step',range=domain,lw=lw,ls=ls)
     if label:
-        h,bins,_=ax.hist(data,bins=bins,color=color,normed=normed,
-                  histtype='step',lw=lw,ls=ls,label=label)
-    else:
-        h,bins,_=ax.hist(data,bins=bins,color=color,normed=normed,
-                  histtype='step',lw=lw,ls=ls)
+        kw.update(label=label)
+    h,bins,_=ax.hist(data,**kw)
     if return_vals:
         return h,bins
 
@@ -111,13 +110,18 @@ def myerrorbar(ax,x,y, yerr=None,xerr=None,color='b',ls='none',m='o',s=10.,mew=1
 
 
 
-def print_wrote_fn(func,fn):
+def print_wrote_fn(func,fn='test'):
     """decorator"""
     func(fn)
     print('Wrote %s' % fn)
 
 def flux2mag(nmgy):
+    """return ABmag"""
     return -2.5 * (np.log10(nmgy) - 9)
+
+def mag2flux(ABmag):
+    """return nmgy"""
+    return 10**(-ABmag/2.5 + 9)
 
 def bin_up(data_bin_by,data_for_percentile, bin_minmax=(18.,26.),nbins=20):
     '''bins "data_for_percentile" into "nbins" using "data_bin_by" to decide how indices are assigned to bins
