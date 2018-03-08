@@ -89,8 +89,12 @@ def main_mpi(doWhat=None,bricks=[],nproc=1,
         tabMerger= SummaryTable(derived_dir,savefn)
     tab= tabMerger.run(bricks)
 
+def fits_table_cols(randoms_fn):
+    columns= ['ra','dec','obiwan_mask','targets_mask']
+    return fits_table(randoms_fn, columns=columns)
 
-def main_serial(doWhat=None,derived_dir=None):
+def main_serial(doWhat=None,derived_dir=None,
+                randoms_subset=False):
     """merges the rank tables that are stored in merge_tmp/"""
     saveDir= dir_for_serial(derived_dir) 
     try:
@@ -100,7 +104,10 @@ def main_serial(doWhat=None,derived_dir=None):
 
     if doWhat == 'randoms':
         wild= "randoms_rank*.fits"
-        outfn= os.path.join(saveDir,'randoms.fits')
+        if randoms_subset:
+            outfn= os.path.join(saveDir,'randoms_subset.fits')
+        else:
+            outfn= os.path.join(saveDir,'randoms.fits')
     elif doWhat == 'summary':
         wild= "summary_rank*.fits"
         outfn= os.path.join(saveDir,"summary.fits")
@@ -116,21 +123,16 @@ def main_serial(doWhat=None,derived_dir=None):
         raise ValueError('found nothing with search: %s' % search)
     tabs=[]
     for fn in tab_fns:
-        tabs.append( fits_table(fn))
+        if randoms_subset:
+            T= fits_table_cols(fn)
+        else:
+            T= fits_table(fn)
+        tabs.append(T)
     print('Merging %d tables' % len(tabs))
     tab= merge_tables(tabs,columns='fillzero')
     tab.writeto(outfn)
     print('Wrote %s' % outfn)
     print('has %d rows' % len(tab))
-
-def randoms_subsets(randoms_fn,derived_dir):
-    columns= ['ra','dec','obiwan_mask','targets_mask']
-    savefn= os.path.join(dir_for_serial(derived_dir),
-                         'randoms_subset_of_columns.fits')
-    if not os.path.exists(savefn):
-        T = fits_table(randoms_fn, columns=columns)
-        T.writeto(savefn)
-        print('Wrote %s' % savefn)
 
 if __name__ == '__main__':
     from argparse import ArgumentParser
@@ -141,7 +143,7 @@ if __name__ == '__main__':
     parser.add_argument('--bricks_fn', type=str, default=None,
                         help='specify a fn listing bricks to run, or a single default brick will be ran') 
     parser.add_argument('--merge_rank_tables', action="store_true", default=False,help="set to merge the rank tables in the merge_tmp/ dir")
-    parser.add_argument('--randoms_subset_table', action="store_true", default=False,help="cut randoms table to just those columns needed for angular corr func")
+    parser.add_argument('--randoms_subset', action="store_true", default=False,help="make a merged table that is a subset of the randoms columns")
     args = parser.parse_args()
    
     if args.merge_rank_tables:
@@ -165,7 +167,7 @@ if __name__ == '__main__':
 
     kwargs= vars(args)
     for dropCol in ['bricks_fn','merge_rank_tables',
-                    'randoms_subset_table']:
+                    'randoms_subset']:
         del kwargs[dropCol]
     kwargs.update(bricks=bricks)
     
