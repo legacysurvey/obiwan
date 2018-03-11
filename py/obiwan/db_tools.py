@@ -29,7 +29,7 @@ def getSrcsInBrick(brickname,objtype, db_table='obiwan_elg',
     """
     db= PsqlWorker()
     cmd= "select brickname,brickid,ra1,ra2,dec1,dec2 from obiwan_bricks where brickname = '%s'" % brickname
-    print('cmd= %s' % cmd)
+    #print('cmd= %s' % cmd)
     db.cur.execute(cmd)
     a= db.cur.fetchall()
     assert(len(a) == 1)
@@ -48,7 +48,7 @@ def getSrcsInBrick(brickname,objtype, db_table='obiwan_elg',
       for skip_id in skipped_ids[:-1]:
         cmd+= "%s," % skip_id
       cmd+= "%s)" % skipped_ids[-1]
-    print('cmd= %s' % cmd)
+    #print('cmd= %s' % cmd)
     db.cur.execute(cmd)
     a= db.cur.fetchall()
     if len(a) == 0:
@@ -109,7 +109,7 @@ def all_psqlcols_for_ids(ids, db_randoms_table='obiwan_elg_ra175',
               % (db_randoms_table,vals) 
               + 
               "as v(id) on (db.id=v.id)")
-    print('cmd= %s' % cmd)
+    #print('cmd= %s' % cmd)
     db.cur.execute(cmd)
     # List of tuples [(id,reshift,...),(id,reshift,...)]
     a= db.cur.fetchall() 
