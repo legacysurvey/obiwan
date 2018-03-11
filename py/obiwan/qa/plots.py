@@ -108,7 +108,26 @@ def myerrorbar(ax,x,y, yerr=None,xerr=None,color='b',ls='none',m='o',s=10.,mew=1
 
 #######
 
+class getDepth(object):
+    def __init__(self):
+        self.desi= dict(g=24.0,
+                        r=23.4,
+                        z=22.5)
+        self.eboss_ngc= dict(g=22.9,
+                             r=self.desi['r'],
+                             z=self.desi['z'])
+        self.eboss_sgc= dict(g=22.825,
+                             r=self.desi['r'],
+                             z=self.desi['z'])
 
+    def get_single_pass_depth(self,band,which,camera):
+        assert(which in ['gal','psf'])
+        assert(camera in ['decam','mosaic'])
+        # After 1 pass
+        if camera == 'decam':
+            return self.desi[which][band] - 2.5*np.log10(np.sqrt(2))
+        elif camera == 'mosaic':
+            return self.desi[which][band] - 2.5*np.log10(np.sqrt(3))
 
 def print_wrote_fn(func,fn='test'):
     """decorator"""
