@@ -8,14 +8,15 @@
 #SBATCH -L SCRATCH,project
 ###SBATCH -C haswell
 
-#export doWhat=randoms
-export doWhat=summary
-export outdir=eboss_elg
-#export outdir=elg_dr5_1000per
+export doWhat=randoms
+#export doWhat=summary
+#export outdir=eboss_elg
+export outdir=elg_dr5_1000per
 #export outdir=elg_dr5_500per
-export thedate="02-27-2018"
+#export thedate="02-27-2018"
+export thedate="03-05-2018"
 export derived_dir="${CSCRATCH}/obiwan_out/${outdir}/derived_${thedate}"
-export bricks_fn=${CSCRATCH}/obiwan_out/${outdir}/bricks.txt
+export bricks_fn=${derived_dir}/bricks.txt
 #export bricks_fn=${CSCRATCH}/obiwan_out/bricks100.txt
 
 # Load production env

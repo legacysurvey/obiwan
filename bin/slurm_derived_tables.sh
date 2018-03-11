@@ -8,16 +8,17 @@
 #SBATCH -L SCRATCH,project
 ###SBATCH -C haswell
 
-#export doWhat=randoms
-export doWhat=heatmap
-export eboss_or_desi=eboss
-#export eboss_or_desi=desi
-export db_randoms_table=obiwan_eboss_elg
-#export db_randoms_table=obiwan_elg_dr5
-export outdir=eboss_elg
-#export outdir=elg_dr5_1000per
+export doWhat=randoms
+#export doWhat=heatmap
+#export eboss_or_desi=eboss
+export eboss_or_desi=desi
+#export db_randoms_table=obiwan_eboss_elg
+export db_randoms_table=obiwan_elg_dr5
+#export outdir=eboss_elg
+export outdir=elg_dr5_1000per
 #export outdir=elg_dr5_500per
-export thedate="02-27-2018"
+#export thedate="02-27-2018"
+export thedate="03-05-2018"
 export bricks_fn=${CSCRATCH}/obiwan_out/${outdir}/bricks.txt
 
 # Load production env
