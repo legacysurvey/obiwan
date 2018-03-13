@@ -108,6 +108,69 @@ def myerrorbar(ax,x,y, yerr=None,xerr=None,color='b',ls='none',m='o',s=10.,mew=1
 
 #######
 
+class Footprint(object):
+    def __init__(self,eboss_or_dr5):
+        self.eboss_or_dr5= eboss_or_dr5
+
+    def plot(self,ccds,psql_radec,bricks_to_run,
+             uniform_randoms):
+        if self.eboss_or_dr5 == 'eboss':
+            for region in ['ngc','sgc']:
+                savefn='footprint_%s_%s.png' % (self.eboss_or_dr5,region)
+                i=dict(ccds= self.in_region(region,ccds),
+                       psql_radec= self.in_region(region,psql_radec),
+                       bricks_to_run= self.in_region(region,bricks_to_run),
+                       uniform_randoms= self.in_region(region,uniform_randoms))
+                self._plot(ccds[i['ccds']],psql_radec[i['psql_radec']],
+                           bricks_to_run[i['bricks_to_run']],
+                           uniform_randoms[i['uniform_randoms']],
+                           savefn=savefn)
+
+    def _plot(self,ccds,psql_radec,bricks_to_run,
+              uniform_randoms,savefn='test.png'):
+        fig,ax= plot.subplots(3,1,figsize(5,15))
+        plt.subplots_adjust(hspace=0.4)
+        # CCDs background
+        ax[0].plot(ccds.ra,ccds.dec,'k,',lw=5,label='CCDs')
+        # Bricks background
+        ax[1].plot(bricks.ra,bricks.dec,'ko',markersize=1,label='Bricks')
+        # Uniform randoms background
+        ax[2].plot(uniform_randoms.ra,uniform_randoms.dec,'k,',lw=5,
+                   label='Uniform randoms')
+        # Bounding box of psql randoms I'm injecting
+        ramin,ramax= psql_radec.ra.min(), psql_radec.ra.max()
+        decmin,decmax= psql_radec.dec.min(), psql_radec.dec.max()
+        x=[ramin,ramax,ramax,ramin,ramax]
+        y=[decmin,decmin,decmax,decmax,ramin]
+        for i in range(3):
+            ax[i].plot(x,y,'b--',lw=2)
+        for i in range(3):
+            ylab=ax[i].set_ylabel('Dec')
+            ax[i].legend(loc='lower right')
+        xlab=ax[2].set_xlabel('RA')
+        plt.savefig(savefn,bbox_extra_artists=[xlab,ylab], bbox_inches='tight')
+        plt.close()
+        print('Wrote %s' % savefn)
+        
+    def in_region(self,region,table):
+        if self.eboss_or_dr5 == 'eboss':
+            if region == 'ngc':
+                i= ((bricks.ra >= 120) & 
+                    (bricks.ra <= 170) & 
+                    (bricks.dec >= 12) & 
+                    (bricks.dec <= 30))
+            elif region == 'sgc':
+                a= ((bricks.ra >= 316) & 
+                    (bricks.ra <= 360) & 
+                    (bricks.dec >= -2) & 
+                    (bricks.dec <= 2))
+                b= ((bricks.ra >= 0) & 
+                    (bricks.ra <= 45) & 
+                    (bricks.dec >= -5) & 
+                    (bricks.dec <= 5))
+                i= a | b
+        return i
+
 class getDepth(object):
     def __init__(self):
         self.desi= dict(g=24.0,
