@@ -90,8 +90,10 @@ def main_mpi(doWhat=None,bricks=[],nproc=1,
     tab= tabMerger.run(bricks)
 
 def fits_table_cols(randoms_fn):
-    columns= ['ra','dec','obiwan_mask','targets_mask']
-    return fits_table(randoms_fn, columns=columns)
+    columns= ['unique_id','ra','dec','obiwan_mask','targets_mask']
+    T= fits_table(randoms_fn, columns=columns)
+    T.set('brickname',pd.Series(a.unique_id).str.split('_').str[1].values)
+    return T
 
 def main_serial(doWhat=None,derived_dir=None,
                 randoms_subset=False):
