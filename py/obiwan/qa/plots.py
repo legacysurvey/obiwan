@@ -28,6 +28,7 @@ import pdb
 import logging
 from glob import glob
 import numpy as np
+import pandas as pd
 
 # import seaborn as sns
 from PIL import Image, ImageDraw
@@ -109,6 +110,26 @@ def myerrorbar(ax,x,y, yerr=None,xerr=None,color='b',ls='none',m='o',s=10.,mew=1
 #######
 
 
+class getDepth(object):
+    def __init__(self):
+        self.desi= dict(g=24.0,
+                        r=23.4,
+                        z=22.5)
+        self.eboss_ngc= dict(g=22.9,
+                             r=self.desi['r'],
+                             z=self.desi['z'])
+        self.eboss_sgc= dict(g=22.825,
+                             r=self.desi['r'],
+                             z=self.desi['z'])
+
+    def get_single_pass_depth(self,band,which,camera):
+        assert(which in ['gal','psf'])
+        assert(camera in ['decam','mosaic'])
+        # After 1 pass
+        if camera == 'decam':
+            return self.desi[which][band] - 2.5*np.log10(np.sqrt(2))
+        elif camera == 'mosaic':
+            return self.desi[which][band] - 2.5*np.log10(np.sqrt(3))
 
 def print_wrote_fn(func,fn='test'):
     """decorator"""
@@ -759,8 +780,8 @@ if __name__ == "__main__":
     from argparse import ArgumentParser
     parser = ArgumentParser(description='DECaLS simulations.')
     parser.add_argument('--data_dir', default='~/mydata', help='where obiwan outputs and DR5 outputs have been untarred to',required=False)
-    parser.add_argument('--brick',help='process this brick',required=True)
-    parser.add_argument('--objtype', type=str, choices=['star','qso','elg','lrg'], help='object type',required=True) 
+    parser.add_argument('--brick',help='process this brick',default='0001p035',required=False)
+    parser.add_argument('--objtype', type=str, choices=['star','qso','elg','lrg'], default='elg',help='object type',required=False) 
     parser.add_argument('--output_dir', default='./',help='relative path to output directory',required=False) 
     parser.add_argument('--skip_coadds', action='store_true',default=False, 
                         help='speed up by not drawing added sources on coadd jpegs')
