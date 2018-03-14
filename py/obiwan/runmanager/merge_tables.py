@@ -153,12 +153,6 @@ if __name__ == '__main__':
         main_serial(**kwargs)
         sys.exit(0)
    
-    if args.randoms_subset_table:
-        randoms_fn= os.path.join(dir_for_serial(args.derived_dir),
-                                 'randoms.fits')
-        randoms_subsets(randoms_fn,args.derived_dir)
-        sys.exit(0)
-    
     # Bricks to run
     if args.bricks_fn is None:
         bricks= ['1266p292']
