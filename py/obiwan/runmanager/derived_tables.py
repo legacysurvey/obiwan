@@ -287,6 +287,12 @@ class RandomsTable(object):
             db_randoms_table: name of the psql db table
         """
         db_dict= all_psqlcols_for_ids(uniform.id, db_randoms_table=db_randoms_table)
+        if any(db_dict['id'] - uniform.id != 0):
+           sort_db= np.argsort(db_dict['id'])
+           sort_uniform= np.argsort(uniform.id)
+           for key in db_dict.keys():
+               db_dict[key]= db_dict[key][sort_db]
+           uniform= uniform[sort_uniform]
         assert(all(db_dict['id'] - uniform.id == 0))
         for key,val in db_dict.items():
             if key in ['id']:
