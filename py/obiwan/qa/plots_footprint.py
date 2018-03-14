@@ -27,6 +27,8 @@ class Footprint(object):
                 psql_radec= self.cut_to_region(psql_radec),
                 bricks_to_run= self.cut_to_region(bricks_to_run),
                 uniform_randoms= self.cut_to_region(uniform_randoms))
+        if self.which == 'cosmos':
+            kw['ccds']= kw['ccds'][kw['ccds'].subset == self.subset]
         #kw= dict(ccds= ccds[i['ccds']],
         #         psql_radec= psql_radec[i['psql_radec']],
         #         bricks_to_run= bricks_to_run[i['bricks_to_run']],
@@ -98,10 +100,7 @@ class Footprint(object):
                (T.ra <= lims['ra'][1]) & 
                (T.dec >= lims['dec'][0]) & 
                (T.dec <= lims['dec'][1]))
-        if self.which == 'cosmos':
-            keep= keep & (T.subset == self.subset)
-        return T[keep]
-         
+        return T[keep] 
 
     def footprint_outline(self):
         if self.which == 'eboss':
@@ -117,7 +116,7 @@ class Footprint(object):
                 x += [ramin,ramax,ramax,ramin,ramin]
                 y += [decmax,decmax,decmin,decmin,-2]
         elif self.which == 'cosmos':
-            lims= self.radec_lims()
+            lims= self.radec_limits()
             ramin,ramax= lims['ra'][0],lims['ra'][1]
             decmin,decmax= lims['dec'][0],lims['dec'][1]
             x= [ramin,ramax,ramax,ramin,ramin]
