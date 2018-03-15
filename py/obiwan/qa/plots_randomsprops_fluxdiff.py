@@ -40,13 +40,11 @@ isRec= dat.obiwan_mask == 1
 rz= dat.psql_r - dat.psql_z
 gr= dat.psql_g - dat.psql_r
 is_elg_input= eboss_ts(dat.psql_g,rz,gr,region='ngc')
-is_elg_trac= np.zeros(len(dat),bool)
 mags={}
 for band in 'grz':
-    mags[band]= plots.flux2mag(dat.get('tractor_flux_'+band)[isRec]/\
-                                     dat.get('tractor_mw_transmission_'+band)[isRec])
-is_elg_trac[isRec][eboss_ts(mags['g'],mags['r']-mags['z'],mags['g']-mags['r'],region='ngc')]= True
-
+    mags[band]= plots.flux2mag(dat.get('tractor_flux_'+band)/\
+                                 dat.get('tractor_mw_transmission_'+band))
+is_elg_trac= eboss_ts(mags['g'],mags['r']-mags['z'],mags['g']-mags['r'],region='ngc')
 
 def myhist(ax,data,bins=20,color='b',normed=False,lw=2,ls='solid',label=None,
            range=None):
@@ -140,26 +138,25 @@ def noise_added_2(dat,fn='noise_added_2.png'):
                r=(20.5,23),
                z=(19.5,22.5))
 
-    fig,axes=plt.subplots(3,1,figsize=(5,10))
+    fig,axes=plt.subplots(3,1,figsize=(5,8))
+    plt.subplots_adjust(hspace=0.2)
     kw_hist= dict(color='b',bins=30,normed=False)
     ylim=2e-15
     for ax,band in zip(axes,'grz'):
         flux= plots.mag2flux(dat.get('psql_'+band))
         flux_noise= dat.get(band+'flux')/\
                         dat.get('mw_transmission_'+band)
-        g = sns.jointplot(plots.flux2mag(flux_noise),flux_noise-flux,
-                          stat_func=None)
-                          #plots.flux2mag(-1*(flux_noise - flux))) # color="g")
-        g.ax_joint.set_ylim(-ylim,ylim)
-        g.ax_joint.set_xlabel(band+' mag')
-        g.ax_joint.set_ylabel('dflux (input - db)')
-    g.savefig(fn)
+        ax.scatter(plots.flux2mag(flux_noise),flux_noise-flux,color='b')
+        ax.set_ylim(-ylim,ylim)
+        xlab=ax.set_xlabel(band+' mag')
+        ylab=ax.set_ylabel('dflux (input - db)')
+    plt.savefig(fn,bbox_extra_artists=[xlab,ylab], bbox_inches='tight')
+    plt.close()
     print('Wrote %s' % fn)
 
 def delta_dec_vs_delta_ra(dat,fn='delta_dec_vs_delta_ra.png'):
-    i= dat.obiwan_mask == 1
-    plt.scatter((dat.ra[i] - dat.tractor_ra[i])*3600,
-                (dat.dec[i] - dat.tractor_dec[i])*3600,
+    plt.scatter((dat.ra[isRec] - dat.tractor_ra[isRec])*3600,
+                (dat.dec[isRec] - dat.tractor_dec[isRec])*3600,
                 alpha=0.2,s=5,c='b')
     plt.axhline(0,c='k',ls='--')
     plt.axvline(0,c='k',ls='--')
@@ -400,8 +397,8 @@ def rec_lost_contam_grz(dat,fn='rec_lost_contam_grz.png',
         ylabel=ax.set_ylabel(ylab)
         xlabel=ax.set_xlabel(xlab)
 
-    axes[0].legend(loc=(0,1.01),ncol=2,fontsize=12,markerscale=3)
-    plt.savefig(fn,bbox_extra_artists=[xlabel,ylabel], bbox_inches='tight')
+    leg=axes[0].legend(loc=(0,1.01),ncol=2,fontsize=12,markerscale=3)
+    plt.savefig(fn,bbox_extra_artists=[xlabel,ylabel,leg], bbox_inches='tight')
     plt.close()
     print('Wrote %s' % fn)
 
@@ -678,27 +675,27 @@ def rec_lost_contam_fraction(dat,fn='rec_lost_contam_fraction.png'):
     ax= axes[0]
     n_tot,bins= np.histogram(dat.psql_redshift,bins=30,**kw)
 
-    lab,keep= 'ELG fraction', (is_elg_input)
+    lab,keep= 'is ELG', (is_elg_input)
     n_elg,bins= np.histogram(dat.psql_redshift[keep],bins=bins,**kw)
     my_step(ax,bins,n_elg/n_tot,color='b',label=lab)
 
-    lab,keep= 'ELG fraction & Recovered', (isRec) & (is_elg_input)
+    lab,keep= 'is ELG, recovered', (isRec) & (is_elg_input)
     n_elg_rec,_= np.histogram(dat.psql_redshift[keep],bins=bins,**kw)
     my_step(ax,bins,n_elg_rec/n_tot,color='g',label=lab)
 
     # Right panel
     ax= axes[1]
-    lab,keep= 'correct Targets', (isRec) & (is_elg_input) & (is_elg_trac)
+    lab,keep= 'is ELG, recovered ELG', (isRec) & (is_elg_input) & (is_elg_trac)
     n_corr,_= np.histogram(dat.psql_redshift[keep],bins=bins,**kw)
     my_step(ax,bins,n_corr/n_elg_rec,color='b',label=lab)
     print('n_corr=',n_corr)
 
-    lab,keep= 'lost Targets', (isRec) & (is_elg_input) & (~is_elg_trac)
+    lab,keep= 'is ELG, recovered !ELG', (isRec) & (is_elg_input) & (~is_elg_trac)
     n_lost,_= np.histogram(dat.psql_redshift[keep],bins=bins,**kw)
     my_step(ax,bins,n_lost/n_elg_rec,color='g',label=lab)
     print('n_lost=',n_lost)
 
-    lab,keep= 'contaminated Targets', (isRec) & (~is_elg_input) & (is_elg_trac)
+    lab,keep= 'not ELG, recovered ELG', (isRec) & (~is_elg_input) & (is_elg_trac)
     n_contam,_= np.histogram(dat.psql_redshift[keep],bins=bins,**kw)
     my_step(ax,bins,n_contam/n_elg_rec,color='m',label=lab)
     print('n_contam=',n_contam)
@@ -708,8 +705,8 @@ def rec_lost_contam_fraction(dat,fn='rec_lost_contam_fraction.png'):
         ax.set_ylim(-0.1,1.1)
         ylab=ax.set_ylabel('Fraction')
         xlab=ax.set_xlabel('redshift')
-    axes[0].legend(loc='upper left')
-    leg=axes[1].legend(loc=(1.01,0))
+    leg=axes[0].legend(loc=(0,1.01),ncol=1)
+    leg=axes[1].legend(loc=(0,1.01),ncol=1)
     plt.savefig(fn,bbox_extra_artists=[xlab,ylab,leg], bbox_inches='tight')
     plt.close()
     print('Wrote %s' % fn)
@@ -724,6 +721,7 @@ e1_e2_input(dat)
 e1_e2_recovered(dat)
 fraction_recovered_vs_rhalf(dat)
 rec_lost_contam_gr_rz_g(dat)
+rec_lost_contam_grz(dat,x_ivar=0)
 rec_lost_contam_by_type(dat,band='g',x_ivar=0)
 rec_lost_contam_delta(dat,x_ivar=0,y_ivar=0,percentile_lines=False)
 rec_lost_contam_delta_by_type(dat,band='g',
