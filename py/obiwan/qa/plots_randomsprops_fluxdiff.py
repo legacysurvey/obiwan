@@ -167,7 +167,61 @@ def delta_dec_vs_delta_ra(dat,fn='delta_dec_vs_delta_ra.png'):
     plt.savefig(fn,bbox_extra_artists=[xlab,ylab], bbox_inches='tight')
     plt.close()
     print('Wrote %s' % fn)
- 
+
+def number_per_type_input_rec_meas(dat,fn='number_per_type_input_rec_meas.png'):
+    types= np.char.strip(dat.get('tractor_type'))
+    types[pd.Series(types).isin(['SIMP','REX']).values]= 'EXP'
+    use_types= ['PSF','EXP','DEV','COMP']
+
+    isRec=dat.obiwan_mask == 1
+    #number input, recovered,...
+    injected= [0,len(dat[dat.n == 1]),len(dat[dat.n == 4]),0]
+    recovered= [0,len(dat[(isRec) & (dat.n == 1)]),
+                      len(dat[(isRec) & (dat.n == 4)]),0]
+    tractor= [len(dat[(isRec) & (types == typ)])
+                   for typ in use_types]
+
+    df= pd.DataFrame(dict(type=use_types,
+                          injected=injected,
+                          recovered=recovered,
+                          tractor=tractor))
+    df.set_index('type',inplace=True)
+
+    fig,ax= plt.subplots(figsize=(8, 5))
+    df.plot.barh(ax=ax)
+    xlab=ax.set_xlabel('Number')
+    ylab=ax.set_ylabel('type')
+    plt.savefig(fn,bbox_extra_artists=[xlab,ylab], bbox_inches='tight')
+    plt.close()
+    print('Wrote %s' % fn)
+
+def confusion_matrix_by_type(dat,fn='confusion_matrix_by_type.png'):
+    use_types= ['PSF','EXP','DEV','COMP']
+    trac_types= np.char.strip(dat.get('tractor_type'))
+    trac_types[pd.Series(trac_types).isin(['SIMP','REX']).values]= 'EXP'
+    input_types= np.array(['EXP']*len(dat))
+    input_types[(isRec) & (dat.n == 4)]= 'DEV'
+    cm= plots.create_confusion_matrix(input_types[isRec],trac_types[isRec], 
+                                      poss_types=use_types)
+
+    plt.imshow(cm, interpolation='nearest', cmap=plt.cm.Blues, vmin=0,vmax=1)
+    cbar=plt.colorbar()
+    plt.xticks(range(len(use_types)), use_types)
+    plt.yticks(range(len(use_types)), use_types)
+    ylab=plt.ylabel('Truth')
+    xlab=plt.xlabel('Tractor')
+    for row in range(len(use_types)):
+        for col in range(len(use_types)):
+            if np.isnan(cm[row,col]):
+                plt.text(col,row,'n/a',va='center',ha='center')
+            elif cm[row,col] > 0.5:
+                plt.text(col,row,'%.2f' % cm[row,col],va='center',ha='center',color='yellow')
+            else:
+                plt.text(col,row,'%.2f' % cm[row,col],va='center',ha='center',color='black')
+    plt.savefig(fn, bbox_extra_artists=[xlab,ylab], bbox_inches='tight',dpi=150)
+    plt.close()
+    print('Wrote %s' % fn)
+
 def fraction_recovered(dat,fn='fraction_recovered.png',
                        eboss_or_desi='eboss'):
     fig,axes=plt.subplots(3,1,figsize=(5,12))
@@ -763,6 +817,8 @@ grz_hist(dat)
 noise_added_1(dat)
 noise_added_2(dat)
 delta_dec_vs_delta_ra(dat)
+number_per_type_input_rec_meas(dat)
+confusion_matrix_by_type(dat)
 fraction_recovered(dat, eboss_or_desi='eboss')
 e1_e2_input(dat)
 e1_e2_recovered(dat)
