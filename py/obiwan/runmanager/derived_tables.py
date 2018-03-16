@@ -22,13 +22,10 @@ def derived_field_dir(brick,data_dir,date):
     return os.path.join(data_dir,'derived_%s' % date,
                         brick[:3],brick)
 
-def datarelease_dir(eboss_or_desi):
+def datarelease_dir(drNumber):
+    assert(drNumber in ['dr3','dr5'])
     proj='/global/project/projectdirs/cosmo/data/legacysurvey'
-    if eboss_or_desi == 'eboss':
-        dr= 'dr3'
-    elif eboss_or_desi == 'desi':
-        dr='dr5'
-    return os.path.join(proj,dr)
+    return os.path.join(proj,drNumber)
 
 def is_bool(obj):                                        
     return obj.dtype == bool
@@ -63,34 +60,38 @@ class TargetSelection(object):
         """
         self.prefix=prefix
 
-    def run(self,tractor,eboss_or_desi):
-        assert(eboss_or_desi in ['eboss','desi'])
-        if eboss_or_desi == 'eboss':
-            return self.ebossIsElg(tractor)
-        elif eboss_or_desi == 'desi':
-            return self.desiIsElg(tractor)
+    def run(self,tractor,name):
+        assert(name in ['desi','eboss_ngc','eboss_sgc'])
+        if name == 'desi':
+            return self.desi_iselg(tractor)
+        elif name == 'eboss_ngc':
+            return self.eboss_iselg(tractor,'ngc')
+        elif name == 'eboss_sgc':
+            return self.eboss_iselg(tractor,'sgc')
 
-    def desiIsElg(self,tractor):
+    def desi_iselg(self,tractor):
         kw={}
         if self.prefix+'brick_primary' in tractor.get_columns():
             kw.update(primary=tractor.get(self.prefix+'brick_primary'))
         for band,iband in [('g',1),('r',2),('z',4)]:
             kw[band+'flux']= tractor.get(self.prefix+'flux_'+band) / \
                               tractor.get(self.prefix+'mw_transmission_'+band)
-        return self._desiIsElg(**kw)
+        return self._desi_iselg(**kw)
 
-    def ebossIsElg(self,tractor):
-        kw={}
+    def eboss_iselg(self,tractor,n_or_s):
+        kw=dict(n_or_s=n_or_s)
         if self.prefix+'brick_primary' in tractor.get_columns():
             kw.update(primary=tractor.get(self.prefix+'brick_primary'))
         for key in ['ra','dec']:
             kw[key]= tractor.get(key) #self.prefix+key)
+        for band in 'grz':
+            kw['anymask_'+band]= tractor.get(self.prefix+'anymask_'+band)
         kw.update( self.get_grz_mag_dict(tractor) )
-        return self._ebossIsElg(**kw)
+        return self._eboss_iselg(**kw)
  
 
-    def _desiIsElg(self,gflux=None, rflux=None, zflux=None, 
-                   primary=None):
+    def _desi_iselg(self,gflux=None, rflux=None, zflux=None, 
+                    primary=None):
         """VERBATIM from 
         https://github.com/desihub/desitarget/blob/master/py/desitarget/cuts.py
         
@@ -119,48 +120,55 @@ class TargetSelection(object):
 
         return elg 
     
-    def _ebossIsElg(self,primary=None,ra=None,dec=None,
-                    gmag=None,rmag=None,zmag=None):
+    def _eboss_iselg(self,n_or_s=None,
+                     primary=None,ra=None,dec=None,
+                     gmag=None,rmag=None,zmag=None,
+                     anymask_g=None,anymask_r=None,anymask_z=None):
         if primary is None:
             primary = np.ones(len(ra), bool)
         #print('dec.min',dec.min(),'dec.max',dec.max())
-        inRegion=dict(ngc= ((primary) &
-                            (ra > 126.) &
-                            (ra < 168.) &
-                            (dec > 14.) &
-                            (ra < 34.)),
-                      sgc_a= ((primary) &
-                              (ra > 317.) &
-                              (ra < 360.) &
-                              (dec > -2.) &
-                              (ra < 2.)),
-                      sgc_b= ((primary) &
-                              (ra > 0.) &
-                              (ra < 45.) &
-                              (dec > -5.) &
-                              (ra < 5.)))
-        inRegion.update(sgc= ((inRegion['sgc_a']) | 
-                              (inRegion['sgc_b'])))
+        #inRegion=dict(ngc= ((primary) &
+        #                    (ra > 126.) &
+        #                    (ra < 168.) &
+        #                    (dec > 14.) &
+        #                    (ra < 34.)),
+        #              sgc_a= ((primary) &
+        #                      (ra > 317.) &
+        #                      (ra < 360.) &
+        #                      (dec > -2.) &
+        #                      (ra < 2.)),
+        #              sgc_b= ((primary) &
+        #                      (ra > 0.) &
+        #                      (ra < 45.) &
+        #                      (dec > -5.) &
+        #                      (ra < 5.)))
+        #inRegion.update(sgc= ((inRegion['sgc_a']) | 
+        #                      (inRegion['sgc_b'])))
         # tycho2inblob == False
         # SDSS bright object mask & 0 < V < 11.5 mag Tycho2 stars mask
         # anymask[grz] == 0
         # custom mask for eboss23
         gr= gmag - rmag
         rz= rmag - zmag
-        colorCut= dict(sgc= ((gmag > 21.825) &
-                             (gmag < 22.825) &
-                             (-0.068 * rz + 0.457 < gr) &
-                             (gr < 0.112 * rz + 0.773) &
-                             (0.218 * gr + 0.571 < rz) &
-                             (rz < -0.555 * gr + 1.901)),
-                       ngc= ((gmag > 21.825) &
-                             (gmag < 22.9) &
-                             (-0.068 * rz + 0.457 < gr) &
-                             (gr < 0.112 * rz + 0.773) &
-                             (0.637 * gr + 0.399 < rz) &
-                             (rz < -0.555 * gr + 1.901)))
-        return ((inRegion['ngc'] & colorCut['ngc']) |
-                (inRegion['sgc'] & colorCut['sgc']))
+        if n_or_s == 'ngc':
+            colorCut= ((gmag > 21.825) &
+                       (gmag < 22.9) &
+                       (-0.068 * rz + 0.457 < gr) &
+                       (gr < 0.112 * rz + 0.773) &
+                       (0.637 * gr + 0.399 < rz) &
+                       (rz < -0.555 * gr + 1.901))
+        elif n_or_s == 'sgc':
+            colorCut= ((gmag > 21.825) &
+                       (gmag < 22.825) &
+                       (-0.068 * rz + 0.457 < gr) &
+                       (gr < 0.112 * rz + 0.773) &
+                       (0.218 * gr + 0.571 < rz) &
+                       (rz < -0.555 * gr + 1.901))
+        anymask= ((anymask_g == 0) & 
+                  (anymask_r == 0) & 
+                  (anymask_z == 0))
+ 
+        return (colorCut) & (anymask)
 
     def get_grz_mag_dict(self,tractor):
         d={}
@@ -183,10 +191,10 @@ class RandomsTable(object):
         the random is near a previously existing real source in a DR 
         catalogue, like DR3 or DR5
     """
-    def __init__(self, data_dir,eboss_or_desi,db_randoms_table,
+    def __init__(self, data_dir,dr3_or_dr5,db_randoms_table,
                  date='mm-dd-yyyy'):
         self.data_dir= data_dir
-        self.eboss_or_desi= eboss_or_desi
+        self.dr3_or_dr5= dr3_or_dr5
         self.db_randoms_table= db_randoms_table
         self.date= date
 
@@ -238,7 +246,8 @@ class RandomsTable(object):
             del_cols= cols[(pd.Series(cols)
                               .str.startswith('apflux_'))]
             for col in del_cols:
-                if col in ['apflux_resid_g','apflux_resid_r','apflux_resid_z']:
+                if col in ['apflux_resid_g','apflux_resid_r','apflux_resid_z',
+                           'apflux_g','apflux_r','apflux_z']:
                     continue
                 tractor.delete_column(col)
             # nearest match in (ra2,dec2) for each point in (ra1,dec1)
@@ -305,7 +314,7 @@ class RandomsTable(object):
         Args:
             tab: table returned by merged_randoms_table()
         """
-        real= fits_table(os.path.join(datarelease_dir(self.eboss_or_desi),
+        real= fits_table(os.path.join(datarelease_dir(self.dr3_or_dr5),
                                       'tractor',brick[:3],
                                       'tractor-%s.fits' % brick))
         # nearest match in (ra2,dec2) for each point in (ra1,dec1)
@@ -325,9 +334,10 @@ class RandomsTable(object):
     def add_targets_mask(self,table):
         TS= TargetSelection(prefix='tractor_') 
         mask= np.zeros(len(table),dtype=np.int8)
-        for eboss_or_desi,bit in [('eboss',0),
-                                  ('desi',1)]:
-            keep= TS.run(table,eboss_or_desi)
+        for survey_ts,bit in [('desi',0),
+                              ('eboss_ngc',1),
+                              ('eboss_sgc',2)]:
+            keep= TS.run(table,survey_ts)
             if len(table[keep]) > 0:
                 mask[keep]= Bit().set(mask[keep],bit)
         table.set('targets_mask',mask)
@@ -391,9 +401,9 @@ class HeatmapTable(object):
     randoms.fits table. Each brick's table has one 
     row and all tables get merged to make the eatmap plots
     """
-    def __init__(self, data_dir,eboss_or_desi,date='mm-dd-yyyy'):
+    def __init__(self, data_dir,dr3_or_dr5,date='mm-dd-yyyy'):
         self.data_dir= data_dir
-        self.eboss_or_desi= eboss_or_desi
+        self.dr3_or_dr5= dr3_or_dr5
         self.date= date
         self.surveyBricks = fits_table(os.path.join(os.environ['LEGACY_SURVEY_DIR'],
                                                     'survey-bricks.fits.gz'))
@@ -584,7 +594,7 @@ class HeatmapTable(object):
         unique = np.ones((H,W), bool)
         tlast = 0
        
-        dirprefix= datarelease_dir(self.eboss_or_desi)
+        dirprefix= datarelease_dir(self.dr3_or_dr5)
         for ibrick,brick in enumerate(bricklist):
             #words = fn.split('/')
             #dirprefix = '/'.join(words[:-4])
@@ -593,7 +603,7 @@ class HeatmapTable(object):
             #brick = words[2]
             #print('Brick', brick)
             tfn = os.path.join(dirprefix, 'tractor', brick[:3], 'tractor-%s.fits'%brick)
-            if self.eboss_or_desi == 'desi': # DR5 version of tractor cats
+            if self.dr3_or_dr5 == 'dr5': 
                 columns=['brick_primary', 'type',
                          'psfsize_g', 'psfsize_r', 'psfsize_z',
                          'psfdepth_g', 'psfdepth_r', 'psfdepth_z',
@@ -603,7 +613,7 @@ class HeatmapTable(object):
                          'nobs_w1', 'nobs_w2', 'nobs_w3', 'nobs_w4',
                          'nobs_g', 'nobs_r', 'nobs_z',
                          'mw_transmission_w1', 'mw_transmission_w2', 'mw_transmission_w3', 'mw_transmission_w4']
-            elif self.eboss_or_desi == 'eboss': # DR3 version of tractor cats
+            elif self.dr3_or_dr5 == 'dr3': 
                 columns=['brick_primary', 'type', 'decam_psfsize',
                          'decam_depth', 'decam_galdepth',
                          'ebv', 'decam_mw_transmission',
@@ -622,9 +632,9 @@ class HeatmapTable(object):
                 #continue
 
 
-            if self.eboss_or_desi == 'desi':
+            if self.dr3_or_dr5 == 'dr5':
                 hasBands= [band for band in 'grz' if any(T.get('nobs_'+band) > 0)]
-            elif self.eboss_or_desi == 'eboss':
+            elif self.dr3_or_dr5 == 'dr3':
                 hasBands= [band 
                            for band,iband in [('g',1),('r',2),('z',4)]
                            if any(T.decam_nobs[:,iband] > 0)]
@@ -652,7 +662,7 @@ class HeatmapTable(object):
             ncomp.append(types['COMP'])
             print('N sources', nsrcs[-1])
 
-            if self.eboss_or_desi == 'desi':
+            if self.dr3_or_dr5 == 'dr5':
                 gpsfsize.append(np.median(T.psfsize_g))
                 rpsfsize.append(np.median(T.psfsize_r))
                 zpsfsize.append(np.median(T.psfsize_z))
@@ -679,7 +689,7 @@ class HeatmapTable(object):
                 rtrans.append(np.median(T.mw_transmission_r))
                 ztrans.append(np.median(T.mw_transmission_z))
                 
-            elif self.eboss_or_desi == 'eboss':
+            elif self.dr3_or_dr5 == 'dr3':
                 gpsfsize.append(np.median(T.decam_psfsize[:,1]))
                 rpsfsize.append(np.median(T.decam_psfsize[:,2]))
                 zpsfsize.append(np.median(T.decam_psfsize[:,4]))
@@ -844,7 +854,7 @@ class HeatmapTable(object):
         #    break
         return nu,ntot
 
-def main_mpi(bricks=[],doWhat=None,eboss_or_desi=None,
+def main_mpi(bricks=[],doWhat=None,dr3_or_dr5=None,
              db_randoms_table=None,
              nproc=1,data_dir='./',date='mm-dd-yyyy'):
     """
@@ -862,12 +872,12 @@ def main_mpi(bricks=[],doWhat=None,eboss_or_desi=None,
         comm= MyComm()
 
     if doWhat == 'randoms':
-        tabMaker= RandomsTable(data_dir,eboss_or_desi,db_randoms_table,
+        tabMaker= RandomsTable(data_dir,dr3_or_dr5,db_randoms_table,
                                date=date)
     elif doWhat == 'targets':
-        tabMaker= TargetsTable(data_dir,eboss_or_desi,date=date)
+        tabMaker= TargetsTable(data_dir,dr3_or_dr5,date=date)
     elif doWhat == 'heatmap':
-        tabMaker= HeatmapTable(data_dir,eboss_or_desi,date=date)
+        tabMaker= HeatmapTable(data_dir,dr3_or_dr5,date=date)
     
     for cnt,brick in enumerate(bricks):
         if (cnt+1) % 10 == 0: 
@@ -891,7 +901,7 @@ if __name__ == '__main__':
     parser.add_argument('--nproc', type=int, default=1, help='set to > 1 to run mpi4py') 
     parser.add_argument('--bricks_fn', type=str, default=None,
                         help='specify a fn listing bricks to run, or a single default brick will be ran') 
-    parser.add_argument('--eboss_or_desi', type=str, choices=['eboss','desi'], 
+    parser.add_argument('--dr3_or_dr5', type=str, choices=['dr5','dr3'], 
                         help='for obiwan_randoms_b',required=True) 
     parser.add_argument('--date', type=str,help='mm-dd-yyyy, to label derived directory by',required=True) 
     args = parser.parse_args()

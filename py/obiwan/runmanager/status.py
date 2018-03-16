@@ -270,6 +270,7 @@ if __name__ == '__main__':
     parser.add_argument('--failed_to_pending',action="store_true",default=False,help='set to reset all "failed" jobs to "pending"')
     parser.add_argument('--modify',action='store_true',default=False,help='set to actually reset the qdo tasks state AND to delete IFF running_to_pending or failed_message_to_pending are set')
     parser.add_argument('--outdir',default='.',help='',required=False)
+    parser.add_argument('--no_write',action="store_true",default=False,help='modify the qdo DB but dont write out any text files',required=False)
     args = parser.parse_args()
     print(args)
 
@@ -281,8 +282,9 @@ if __name__ == '__main__':
     tasks,ids,logs= Q.get_tasks_logs()
 
     # Logfile lists grouped by succeeded,running,failed
-    for res in logs.keys():
-        writelist(logs[res],"%s_%s_logfns.txt" % (args.qdo_quename,res))
+    if not args.no_write:
+        for res in logs.keys():
+            writelist(logs[res],"%s_%s_logfns.txt" % (args.qdo_quename,res))
 
     # Rerun tasks and delete those tasks' outputs
     if len(ids['running']) > 0:
@@ -313,19 +315,20 @@ if __name__ == '__main__':
                                 rm_files=False)
 
     # logs,tasks for each type of failure
-    print('Writing logs,tasks for each failure mode for failed tasks')
-    for err_key in R.regex_errs + R.regex_errs_extra:
-        err_logs= np.array(logs['failed'])[ tally['failed'] == err_key ]
-        err_tasks= np.array(tasks['failed'])[ tally['failed'] == err_key ]
-        err_string= (err_key[:12] + err_key[-8:])
-        err_string= ((err_key[:10] + err_key[-10:])
-                     .replace(" ","_")
-                     .replace("/","")
-                     .replace("*","")
-                     .replace("?","")
-                     .replace(":",""))
-        writelist(err_logs,"logs_%s_%s.txt" % (args.qdo_quename,err_string))
-        writelist(err_tasks,"tasks_%s_%s.txt" % (args.qdo_quename,err_string))
+    if not args.no_write:
+        print('Writing logs,tasks for each failure mode for failed tasks')
+        for err_key in R.regex_errs + R.regex_errs_extra:
+            err_logs= np.array(logs['failed'])[ tally['failed'] == err_key ]
+            err_tasks= np.array(tasks['failed'])[ tally['failed'] == err_key ]
+            err_string= (err_key[:12] + err_key[-8:])
+            err_string= ((err_key[:10] + err_key[-10:])
+                         .replace(" ","_")
+                         .replace("/","")
+                         .replace("*","")
+                         .replace("?","")
+                         .replace(":",""))
+            writelist(err_logs,"logs_%s_%s.txt" % (args.qdo_quename,err_string))
+            writelist(err_tasks,"tasks_%s_%s.txt" % (args.qdo_quename,err_string))
 
 
     print('done')
