@@ -5,6 +5,8 @@ import numpy as np
 import os
 import pandas as pd
 import seaborn as sns
+from scipy.stats import norm
+from scipy.optimize import leastsq
 
 from astrometry.util.fits import fits_table, merge_tables
 
@@ -47,12 +49,14 @@ for band in 'grz':
 is_elg_trac= eboss_ts(mags['g'],mags['r']-mags['z'],mags['g']-mags['r'],region='ngc')
 
 def myhist(ax,data,bins=20,color='b',normed=False,lw=2,ls='solid',label=None,
-           range=None):
+           range=None, return_h=False):
     kw= dict(bins=bins,color=color,normed=normed,
              histtype='step',range=range,lw=lw,ls=ls)
     if label:
         kw.update(label=label)
     h,bins,_=ax.hist(data,**kw)
+    if return_h:
+        return h
 
 def my_step(ax,bins,height,
             lw=2,color='b',ls='solid',label=None):
@@ -350,6 +354,77 @@ def fix_for_delta_flux(dat,fn='fix_for_delta_flux.png',
     xlab=ax[-1].set_xlabel('%s flux (nanomaggies)' % band)
     ylab=ax[-1].set_ylabel(r'$\Delta\, Flux\,/\,\sigma$ (Tractor - Truth)')
     fn=fn.replace('.png','_%s.png' % band)
+    plt.savefig(fn,bbox_extra_artists=[xlab,ylab], bbox_inches='tight')
+    plt.close()
+    print('Wrote %s' % fn)
+
+
+def gauss_model(p,x):
+    return 1/np.sqrt(2*np.pi*p[0]**2) * np.exp(-x**2/(2*p[0]**2))
+
+def num_std_dev_dflux_gauss_fit(dat,fn='num_std_dev_dflux_gauss_fit.png',
+                                apply_fix= False, sub_mean= True,
+                                use_psql_flux=False, num_std_lims=(-6,6)):
+    figs,axes= plt.subplots(3,1,figsize=(6,10))
+    plt.subplots_adjust(hspace=0.4)
+
+    for ax,band in zip(axes,'grz'):
+        data_lab= 'data'
+        if apply_fix:
+            fix= np.average([dat.get('tractor_apflux_resid_'+band)[:,6],
+                             dat.get('tractor_apflux_resid_'+band)[:,7]],
+                            axis=0)
+            data_lab+='+fix'
+            #fix= apflux_apfluxresid_diff= dat.get('tractor_apflux_'+band)[:,5] - \
+            #            dat.get('tractor_apflux_resid_'+band)[:,5]
+            
+        else:
+            fix=0
+        if use_psql_flux:
+            num_std_dev= dat.get('tractor_flux_'+band) -\
+                           (plots.mag2flux(dat.get('psql_'+band))+  fix)
+        else: 
+            num_std_dev= dat.get('tractor_flux_'+band) -\
+                            (dat.get(band+'flux')+  fix)
+
+        num_std_dev *= np.sqrt(dat.get('tractor_flux_ivar_'+band))
+        if sub_mean:
+            #keep= ((num_std_dev >= num_std_lims[0]) &
+            #       (num_std_dev <= num_std_lims[0]) 
+            dflux_mean= np.mean(num_std_dev[isRec])
+            num_std_dev -= dflux_mean
+            print('%s: dflux_mean=%f' % (band,dflux_mean))
+            data_lab+=' minus mean (%.2f)' % dflux_mean
+        
+        bins= np.linspace(num_std_lims[0],num_std_lims[1],num=30)
+        h=myhist(ax,num_std_dev[isRec],bins=bins,color='b',
+                 label=data_lab,normed=True,
+                 return_h=True)
+        
+        rv = norm()
+        ax.plot(bins,rv.pdf(bins),'k--',label='Standard Norm')
+        
+        errfunc = lambda p, x, y: gauss_model(p, x) - y
+        p0 = [1.] # Initial guess
+        binc= (bins[:-1]+bins[1:])/2
+        p1, success = leastsq(errfunc, p0[:], args=(binc, h))
+        assert(success != 0)
+        norm_fit= norm(scale=p1[0])
+        ax.plot(bins,norm_fit.pdf(bins),'k-',label=r'Fit $\sigma=$%.2f' % p1[0])
+
+        ax.axvline(0,c='k',ls='dotted')
+        plots.mytext(ax,0.9,0.9,band,fontsize=14)
+        #isPostiveFlux= ((np.isfinite(dmag)) &
+        #                (np.isfinite(true_mag)))
+        #isPostiveFlux= np.ones(len(dmag),bool)
+        #print('true_mag=',true_mag[isPostiveFlux],'trac_mag=',dmag[isPostiveFlux])
+
+    xlab=axes[-1].set_xlabel(r'$\Delta$flux (Tractor - True) * sqrt(ivar)')
+    #for ax,band in zip(axes,'grz'):
+    #    ax.set_xlim(ylim)
+    for ax in axes:
+        ylab=ax.set_ylabel('PDF')
+        ax.legend(loc='upper left',fontsize=10,markerscale=3)
     plt.savefig(fn,bbox_extra_artists=[xlab,ylab], bbox_inches='tight')
     plt.close()
     print('Wrote %s' % fn)
@@ -823,6 +898,8 @@ fraction_recovered(dat, eboss_or_desi='eboss')
 e1_e2_input(dat)
 e1_e2_recovered(dat)
 fraction_recovered_vs_rhalf(dat)
+num_std_dev_dflux_gauss_fit(dat,apply_fix= False, sub_mean= True,
+                            use_psql_flux=False, num_std_lims=(-6,6))
 for band in 'grz':
     fix_for_delta_flux(dat, band=band)
     rec_lost_contam_by_type(dat,band=band,x_ivar=0)
