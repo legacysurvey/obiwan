@@ -255,6 +255,52 @@ def fraction_recovered_vs_rhalf(dat,fn='fraction_recovered_vs_rhalf.png'):
     plt.close()
     print('Wrote %s' % fn)
 
+
+def fix_for_delta_flux(dat,fn='fix_for_delta_flux.png',
+                       band='z'):
+    figs,ax= plt.subplots(5,1,figsize=(5,15))
+    plt.subplots_adjust(hspace=0)
+
+    dflux= dat.get('tractor_flux_'+band)[isRec] - dat.get(band+'flux')[isRec]
+    rad_aper= [0.5,0.75,1.0,1.5,2.0,3.5,5.0,7.0]
+    for cnt,i_aper in zip(range(5),
+                          [None,5,6,7,'avg']):
+        ratio_area= 1. 
+        #ratio_area= (1.5*dat.rhalf[isRec] / rad_aper[i_aper])**2
+        if i_aper == 'avg':
+            name= 'fix: avg(-aperture_resid %.1f,%.1f)' % (rad_aper[6],rad_aper[7])
+            fix= ratio_area * np.average([dat.get('tractor_apflux_resid_'+band)[isRec,6],
+                                          dat.get('tractor_apflux_resid_'+band)[isRec,7]],
+                                        axis=0)
+            assert(len(fix)) == len(dat[isRec])
+        elif i_aper is None:
+            name= 'fix: None'
+            fix=0
+        else:
+            name= 'fix: -aperture_resid %.1f' % rad_aper[i_aper]
+            fix= dat.get('tractor_apflux_resid_'+band)[isRec,i_aper]* ratio_area
+        y= dflux - fix
+        ax[cnt].scatter(dat.get(band+'flux')[isRec],y,
+                        alpha=0.2,s=5,c='b',label=name)
+        ax[cnt].axhline(0,c='k',ls='-',lw=2)
+        ax[cnt].axhline(np.median(y),c='y',lw=2,ls='--',
+                        label='Median')
+
+    for i in range(5):
+    #     ax[i].set_yscale('log')
+    #     ax[i].set_ylim(1e-2,2e1)
+        ax[i].set_ylim(-5,5)
+        ax[i].legend(loc='upper right',markerscale=3)
+    for i in range(4):
+        ax[i].set_xticklabels([])
+    xlab=ax[-1].set_xlabel('%s flux (nanomaggies)' % band)
+    ylab=ax[-1].set_ylabel(r'$\Delta\, Flux\,/\,\sigma$ (Tractor - Truth)')
+    fn=fn.replace('.png','_%s.png' % band)
+    plt.savefig(fn,bbox_extra_artists=[xlab,ylab], bbox_inches='tight')
+    plt.close()
+    print('Wrote %s' % fn)
+
+
 def rec_lost_contam_gr_rz_g(dat,fn='rec_lost_contam_gr_rz_g.png'):
     fig,axes=plt.subplots(3,2,figsize=(12,9))
     plt.subplots_adjust(wspace=0.2,hspace=0.4)
@@ -462,10 +508,10 @@ def rec_lost_contam_by_type(dat,fn='rec_lost_contam_by_type',
         ylabel=ax.set_ylabel(ylab)
         xlabel=ax.set_xlabel(xlab)
     axes[0].legend(loc='upper left',ncol=1,fontsize=10)
+    fn=fn.replace('.png','_%s.png' % band)
     plt.savefig(fn,bbox_extra_artists=[xlabel,ylabel], bbox_inches='tight')
     plt.close()
     print('Wrote %s' % fn)
-
 
 def rec_lost_contam_delta(dat,fn='rec_lost_contam_delta.png',
                           x_ivar=0,y_ivar=0,
@@ -637,6 +683,7 @@ def rec_lost_contam_delta_by_type(dat,fn='rec_lost_contam_delta_by_type.png',
         ax.set_ylim(ylim)
     ylabel=axes[-1].set_ylabel(ylab)
     leg=axes[0].legend(loc=(0,1.05),ncol=2,fontsize=10,markerscale=3)
+    fn=fn.replace('.png','_%s.png' % band)
     plt.savefig(fn,bbox_extra_artists=[xlabel,ylabel,leg], bbox_inches='tight')
     plt.close()
     print('Wrote %s' % fn)
@@ -720,12 +767,14 @@ fraction_recovered(dat, eboss_or_desi='eboss')
 e1_e2_input(dat)
 e1_e2_recovered(dat)
 fraction_recovered_vs_rhalf(dat)
+for band in 'grz':
+    fix_for_delta_flux(dat, band=band)
+    rec_lost_contam_by_type(dat,band=band,x_ivar=0)
+    rec_lost_contam_delta_by_type(dat,band=band,
+                                  x_ivar=0,y_ivar=0,percentile_lines=False)
 rec_lost_contam_gr_rz_g(dat)
 rec_lost_contam_grz(dat,x_ivar=0)
-rec_lost_contam_by_type(dat,band='g',x_ivar=0)
 rec_lost_contam_delta(dat,x_ivar=0,y_ivar=0,percentile_lines=False)
-rec_lost_contam_delta_by_type(dat,band='g',
-                              x_ivar=0,y_ivar=0,percentile_lines=False)
 rec_lost_contam_input_elg_notelg(dat)
 rec_lost_contam_fraction(dat)
     
