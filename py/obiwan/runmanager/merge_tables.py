@@ -9,6 +9,7 @@ import numpy as np
 import os
 import sys
 from glob import glob
+import pandas as pd
 
 try: 
     from astrometry.util.fits import fits_table, merge_tables
@@ -90,9 +91,15 @@ def main_mpi(doWhat=None,bricks=[],nproc=1,
     tab= tabMerger.run(bricks)
 
 def fits_table_cols(randoms_fn):
-    columns= ['unique_id','ra','dec','obiwan_mask','targets_mask']
+    columns= ['unique_id','ra','dec','obiwan_mask',
+              'tractor_anymask_g','tractor_anymask_r','tractor_anymask_z',
+              'tractor_flux_g','tractor_flux_r','tractor_flux_z',
+              'tractor_mw_transmission_g','tractor_mw_transmission_r','tractor_mw_transmission_z',
+              'tractor_psfdepth_g','tractor_psfdepth_r','tractor_psfdepth_z']
     T= fits_table(randoms_fn, columns=columns)
-    T.set('brickname',pd.Series(a.unique_id).str.split('_').str[1].values)
+    T.set('brickname',(pd.Series(T.unique_id).str.split('_')
+                                             .str[1].values
+                                             .astype(str)))
     return T
 
 def main_serial(doWhat=None,derived_dir=None,
