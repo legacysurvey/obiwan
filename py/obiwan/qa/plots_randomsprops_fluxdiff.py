@@ -7,6 +7,7 @@ import pandas as pd
 import seaborn as sns
 from scipy.stats import norm
 from scipy.optimize import leastsq
+from argparse import ArgumentParser
 
 from astrometry.util.fits import fits_table, merge_tables
 
@@ -16,24 +17,10 @@ plt.rcParams['axes.labelsize'] = 14
 plt.rcParams['xtick.labelsize'] = 12
 plt.rcParams['ytick.labelsize'] = 12
 
-def eboss_ts(gmag,rz,gr,region='ngc'):
-    colorCut= dict(sgc= ((gmag > 21.825) &
-                         (gmag < 22.825) &
-                         (-0.068 * rz + 0.457 < gr) &
-                         (gr < 0.112 * rz + 0.773) &
-                         (0.218 * gr + 0.571 < rz) &
-                         (rz < -0.555 * gr + 1.901)),
-                   ngc= ((gmag > 21.825) &
-                         (gmag < 22.9) &
-                         (-0.068 * rz + 0.457 < gr) &
-                         (gr < 0.112 * rz + 0.773) &
-                         (0.637 * gr + 0.399 < rz) &
-                         (rz < -0.555 * gr + 1.901)))
-    return colorCut[region]
-
-from argparse import ArgumentParser
+#######################
 parser = ArgumentParser(description='DECaLS simulations.')
 parser.add_argument('--randoms_table', required=True)
+parser.add_argument('--which', choices=['cosmos','eboss','desi'],required=True)
 args = parser.parse_args()
 
 dat= fits_table(args.randoms_table)
@@ -41,12 +28,18 @@ dat= fits_table(args.randoms_table)
 isRec= dat.obiwan_mask == 1
 rz= dat.psql_r - dat.psql_z
 gr= dat.psql_g - dat.psql_r
-is_elg_input= eboss_ts(dat.psql_g,rz,gr,region='ngc')
 mags={}
 for band in 'grz':
     mags[band]= plots.flux2mag(dat.get('tractor_flux_'+band)/\
                                  dat.get('tractor_mw_transmission_'+band))
-is_elg_trac= eboss_ts(mags['g'],mags['r']-mags['z'],mags['g']-mags['r'],region='ngc')
+if args.which == 'eboss':
+    is_elg_input= plots.eboss_ts(dat.psql_g,rz,gr,region='ngc')
+    is_elg_trac= plots.eboss_ts(mags['g'],mags['r']-mags['z'],mags['g']-mags['r'],region='ngc')
+#elif args.which == 'desi':
+#    is_elg_input= plots.desi_ts(dat.psql_g,rz,gr)
+#    is_elg_trac= plots.desi_ts(mags['g'],mags['r']-mags['z'],mags['g']-mags['r'])
+##########################
+
 
 def myhist(ax,data,bins=20,color='b',normed=False,lw=2,ls='solid',label=None,
            range=None, return_h=False):
@@ -119,6 +112,32 @@ def grz_hist(dat,fn='grz_hist.png'):
     plt.close()
     print('Wrote %s' % fn)
 
+def grz_hist_input_rec(dat,fn='grz_hist_input_rec.png',
+                       glim=(21.5,23.25),rlim=(21.5,23.25),zlim=(19.5,22.5)):
+    fig,axes=plt.subplots(3,1,figsize=(5,12))
+    plt.subplots_adjust(hspace=0.2,wspace=0.2)
+    xlim= dict(g=glim,
+               r=rlim,
+               z=zlim)
+
+    kw_hist= dict(normed=False)
+    for ax,band in zip(axes,'grz'):
+        mag= plots.flux2mag(dat.get(band+'flux')/\
+                                dat.get('mw_transmission_'+band))
+        bins=np.linspace(xlim[band][0],xlim[band][1],num=30)
+        myhist(ax,mag,bins=bins,
+               color='b',label='input',**kw_hist)
+        myhist(ax,mag[isRec],bins=bins,
+               color='g',label='recovered',**kw_hist)
+        xlab=ax.set_xlabel('True mag %s' % band)
+        ylab=ax.set_ylabel('Number')
+        
+    leg=axes[0].legend(loc=(0,1.01),ncol=2)
+    plt.savefig(fn,bbox_extra_artists=[xlab,ylab,leg], bbox_inches='tight')
+    plt.close()
+    print('Wrote %s' % fn)
+
+
 def noise_added_1(dat,fn='noise_added_1.png'):
     fig,ax=plt.subplots()
 
@@ -158,26 +177,29 @@ def noise_added_2(dat,fn='noise_added_2.png'):
     plt.close()
     print('Wrote %s' % fn)
 
-def delta_dec_vs_delta_ra(dat,fn='delta_dec_vs_delta_ra.png'):
-    plt.scatter((dat.ra[isRec] - dat.tractor_ra[isRec])*3600,
-                (dat.dec[isRec] - dat.tractor_dec[isRec])*3600,
-                alpha=0.2,s=5,c='b')
-    plt.axhline(0,c='k',ls='--')
-    plt.axvline(0,c='k',ls='--')
-    plt.ylim(-1.2,1.2)
-    plt.xlim(-1.2,1.2)
-    xlab=plt.xlabel(r'$\Delta \, RA$ (truth - measured)')
-    ylab=plt.ylabel(r'$\Delta \, Dec$ (truth - measured)')
+def delta_dec_vs_delta_ra(dat,fn='delta_dec_vs_delta_ra.png',
+                          xlim=(-1,1),ylim=(-1,1),nbins=(30,30)):
+    fig,ax= plt.subplots() #figsize=(8, 5))
+    plots.myhist2D(ax,(dat.ra[isRec] - dat.tractor_ra[isRec])*3600,
+                      (dat.dec[isRec] - dat.tractor_dec[isRec])*3600,
+                   xlim=xlim,ylim=ylim,nbins=nbins)
+    ax.axhline(0,c='k',ls='--')
+    ax.axvline(0,c='k',ls='--')
+    #plt.ylim(-1.2,1.2)
+    #plt.xlim(-1.2,1.2)
+    xlab=plt.xlabel(r'$\Delta \, RA$ arcsec (truth - measured)')
+    ylab=plt.ylabel(r'$\Delta \, Dec$ arcsec (truth - measured)')
     plt.savefig(fn,bbox_extra_artists=[xlab,ylab], bbox_inches='tight')
     plt.close()
     print('Wrote %s' % fn)
+
+
 
 def number_per_type_input_rec_meas(dat,fn='number_per_type_input_rec_meas.png'):
     types= np.char.strip(dat.get('tractor_type'))
     types[pd.Series(types).isin(['SIMP','REX']).values]= 'EXP'
     use_types= ['PSF','EXP','DEV','COMP']
 
-    isRec=dat.obiwan_mask == 1
     #number input, recovered,...
     injected= [0,len(dat[dat.n == 1]),len(dat[dat.n == 4]),0]
     recovered= [0,len(dat[(isRec) & (dat.n == 1)]),
@@ -227,12 +249,14 @@ def confusion_matrix_by_type(dat,fn='confusion_matrix_by_type.png'):
     print('Wrote %s' % fn)
 
 def fraction_recovered(dat,fn='fraction_recovered.png',
-                       eboss_or_desi='eboss'):
+                       survey_for_depth=None,
+                       glim=(20,26),rlim=(20,26),zlim=(20,26)):
+    assert(survey_for_depth in ['eboss_ngc','eboss_sgc','desi'])
     fig,axes=plt.subplots(3,1,figsize=(5,12))
     plt.subplots_adjust(hspace=0.2,wspace=0.2)
-    xlim= dict(g=(21.5,23.25),
-               r=(20.5,23),
-               z=(19.5,22.5))
+    xlim= dict(g=glim,
+               r=rlim,
+               z=zlim)
 
     D= getDepth()
 
@@ -245,7 +269,7 @@ def fraction_recovered(dat,fn='fraction_recovered.png',
         my_step(ax,bins,n_rec.astype(float)/n)
         ax.axhline(0.5,c='k',ls='--')
         #ax.axvline(plots.getDepth().eboss_ngc(band),c='k',ls='--')
-        ax.axvline(D.eboss_ngc[band],c='k',ls='--')
+        ax.axvline(getattr(D,survey_for_depth)[band],c='k',ls='--')
     #     ax.step(bins[:-1],n_rec/n,where='mid')
         xlab=ax.set_xlabel('%s (AB mag)' % band)
     for ax in axes:
@@ -256,13 +280,14 @@ def fraction_recovered(dat,fn='fraction_recovered.png',
     plt.close()
     print('Wrote %s' % fn)
 
-def e1_e2_input(dat,fn='e1_e2_input.png'):
+def e1_e2_input(dat,fn='e1_e2_input.png',nbins=(120,120)):
     fig,ax=plt.subplots(1,2,figsize=(8,5))
     plt.subplots_adjust(wspace=0.3)
 
-    kw=dict(color='b',m='o',s=10.,alpha=0.25)
-    plots.myscatter_open(ax[0],dat.e1,dat.e2,**kw)
-    plots.myscatter_open(ax[1],dat.psql_ba,dat.psql_pa,**kw)
+    plots.myhist2D(ax[0],dat.e1,dat.e2,
+                   xlim=(-1,1),ylim=(-1,1),nbins=nbins)
+    plots.myhist2D(ax[1],dat.psql_ba,dat.psql_pa,
+                   xlim=(0.1,1.1),ylim=(-20,200),nbins=nbins)
 
     ax[0].set_aspect('equal')
     ax[1].set_aspect(abs((ax[1].get_xlim()[1]-ax[1].get_xlim()[0])/\
@@ -275,14 +300,16 @@ def e1_e2_input(dat,fn='e1_e2_input.png'):
     plt.close()
     print('Wrote %s' % fn)
 
+
  
-def e1_e2_recovered(dat,fn='e1_e2_recovered.png'):
+def e1_e2_recovered(dat,fn='e1_e2_recovered.png',nbins=(120,120)):
     fig,ax=plt.subplots(1,2,figsize=(8,5))
     plt.subplots_adjust(wspace=0.3)
 
-    kw=dict(color='b',m='o',s=10.,alpha=0.25)
-    plots.myscatter_open(ax[0],dat.e1[isRec],dat.e2[isRec],**kw)
-    plots.myscatter_open(ax[1],dat.psql_ba[isRec],dat.psql_pa[isRec],**kw)
+    plots.myhist2D(ax[0],dat.e1[isRec],dat.e2[isRec],
+                   xlim=(-1,1),ylim=(-1,1),nbins=nbins)
+    plots.myhist2D(ax[1],dat.psql_ba[isRec],dat.psql_pa[isRec],
+                   xlim=(0.1,1.1),ylim=(-20,200),nbins=nbins)
 
     ax[0].set_aspect('equal')
     ax[1].set_aspect(abs((ax[1].get_xlim()[1]-ax[1].get_xlim()[0])/\
@@ -357,6 +384,51 @@ def fix_for_delta_flux(dat,fn='fix_for_delta_flux.png',
     plt.savefig(fn,bbox_extra_artists=[xlab,ylab], bbox_inches='tight')
     plt.close()
     print('Wrote %s' % fn)
+
+def num_std_dev_dflux_vs_grzmag(dat,fn='num_std_dev_dflux_vs_grzmag.png',
+                                num_std_lims=(-6,6),nbins=(30,30),
+                                glim=(17,26),rlim=(17,26),zlim=(17,26),
+                                percentile_lines=True):
+    figs,axes= plt.subplots(3,1,figsize=(6,10))
+    plt.subplots_adjust(hspace=0.4)
+
+    xlim= dict(g=glim,
+               r=rlim,
+               z=zlim)
+    for ax,band in zip(axes,'grz'):
+        num_std_dev= dat.get('tractor_flux_'+band) -\
+                        dat.get(band+'flux')
+        num_std_dev *= np.sqrt(dat.get('tractor_flux_ivar_'+band))
+        true_mag= plots.flux2mag(dat.get(band+'flux')/\
+                                   dat.get('mw_transmission_'+band))
+        
+        bins= np.linspace(xlim[band][0],xlim[band][1],num=30)
+        plots.myhist2D(ax,true_mag[isRec],num_std_dev[isRec],
+                       xlim=xlim[band],ylim=num_std_lims,nbins=nbins)
+        
+        ax.axhline(0,c='r',ls='dotted')
+        if percentile_lines:
+            binned= plots.bin_up(true_mag[isRec],num_std_dev[isRec], 
+                                 bin_minmax=xlim[band],nbins=30)
+            for perc in ['q25','q50','q75']:
+                kw= dict(c='y',ls='-',lw=1)
+                #if perc == 'q25':
+                #    kw.update(label=lab)
+                ax.plot(binned['binc'],binned[perc],**kw)
+        #isPostiveFlux= ((np.isfinite(dmag)) &
+        #                (np.isfinite(true_mag)))
+        #isPostiveFlux= np.ones(len(dmag),bool)
+        #print('true_mag=',true_mag[isPostiveFlux],'trac_mag=',dmag[isPostiveFlux])
+
+    for ax,band in zip(axes,'grz'):
+        ylab=ax.set_ylabel(r'$\Delta\, Flux\,/\,\sigma$ (Tractor - Truth)')
+        xlab= ax.set_xlabel('true mag %s' % band)
+        ax.legend(loc='upper left',fontsize=10,markerscale=3)
+        #ax.set_xlim(xlim[band])
+    plt.savefig(fn,bbox_extra_artists=[xlab,ylab], bbox_inches='tight')
+    plt.close()
+    print('Wrote %s' % fn)
+
 
 
 def gauss_model(p,x):
@@ -450,8 +522,7 @@ def rec_lost_contam_gr_rz_g(dat,fn='rec_lost_contam_gr_rz_g.png'):
     for band in 'grz':
         mags[band]= plots.flux2mag(dat.get('tractor_flux_'+band)/\
                                      dat.get('tractor_mw_transmission_'+band))
-    is_elg_trac= eboss_ts(mags['g'],mags['r']-mags['z'],mags['g']-mags['r'],region='ngc')
-
+    
     lab,keep= 'lost (recovered but fail TS)', (isRec) & (is_elg_input) & (~is_elg_trac)
     row=1
     axes[row,0].scatter(dat.psql_r[keep]-dat.psql_z[keep],
@@ -887,27 +958,58 @@ def rec_lost_contam_fraction(dat,fn='rec_lost_contam_fraction.png'):
     plt.close()
     print('Wrote %s' % fn)
 
-#if __name__ == "__main__":    
-grz_hist(dat)
-noise_added_1(dat)
-noise_added_2(dat)
-delta_dec_vs_delta_ra(dat)
-number_per_type_input_rec_meas(dat)
-confusion_matrix_by_type(dat)
-fraction_recovered(dat, eboss_or_desi='eboss')
-e1_e2_input(dat)
-e1_e2_recovered(dat)
-fraction_recovered_vs_rhalf(dat)
-num_std_dev_dflux_gauss_fit(dat,apply_fix= False, sub_mean= True,
-                            use_psql_flux=False, num_std_lims=(-6,6))
-for band in 'grz':
-    fix_for_delta_flux(dat, band=band)
-    rec_lost_contam_by_type(dat,band=band,x_ivar=0)
-    rec_lost_contam_delta_by_type(dat,band=band,
-                                  x_ivar=0,y_ivar=0,percentile_lines=False)
-rec_lost_contam_gr_rz_g(dat)
-rec_lost_contam_grz(dat,x_ivar=0)
-rec_lost_contam_delta(dat,x_ivar=0,y_ivar=0,percentile_lines=False)
-rec_lost_contam_input_elg_notelg(dat)
-rec_lost_contam_fraction(dat)
+#################   
+if args.which == 'cosmos':
+    pad=0.2
+    delta_dec_vs_delta_ra(dat,xlim=(-1.,1.),ylim=(-1.,1.),nbins=(60,60))
+    e1_e2_input(dat,nbins=(120,120))
+    e1_e2_recovered(dat,nbins=(120,120))
+    grz_hist(dat)
+    grz_hist_input_rec(dat,
+                       glim=(22-pad,24.5+pad),rlim=(21.4-pad,23.9+pad),zlim=(20.5-pad,23+pad))
+    noise_added_1(dat)
+    noise_added_2(dat)
+    number_per_type_input_rec_meas(dat)
+    confusion_matrix_by_type(dat)
+    fraction_recovered(dat, survey_for_depth='desi',
+                       glim=(22-pad,24.5+pad),rlim=(21.4-pad,23.9+pad),zlim=(20.5-pad,23+pad))
+    fraction_recovered_vs_rhalf(dat)
+    num_std_dev_dflux_gauss_fit(dat,apply_fix= False, sub_mean= True,
+                                use_psql_flux=False, num_std_lims=(-6,6))
+    num_std_dev_dflux_vs_grzmag(dat,
+                                num_std_lims=(-10,10),nbins=(60,30),
+                                glim=(22-pad,24.5+pad),rlim=(21.4-pad,23.9+pad),zlim=(20.5-pad,23+pad))
+    for band in 'grz':
+        fix_for_delta_flux(dat, band=band)
+
+elif args.which == 'eboss':
+    pad=0.2
+    delta_dec_vs_delta_ra(dat,xlim=(-1.,1.),ylim=(-1.,1.),nbins=(60,60))
+    e1_e2_input(dat,nbins=(120,120))
+    e1_e2_recovered(dat,nbins=(120,120))
+    grz_hist(dat)
+    grz_hist_input_rec(dat,
+                       glim=(22-pad,24.5+pad),rlim=(21.4-pad,23.9+pad),zlim=(20.5-pad,23+pad))
+    noise_added_1(dat)
+    noise_added_2(dat)
+    number_per_type_input_rec_meas(dat)
+    confusion_matrix_by_type(dat)
+    fraction_recovered(dat, survey_for_depth='desi',
+                       glim=(22-pad,24.5+pad),rlim=(21.4-pad,23.9+pad),zlim=(20.5-pad,23+pad))
+    fraction_recovered_vs_rhalf(dat)
+    num_std_dev_dflux_gauss_fit(dat,apply_fix= False, sub_mean= True,
+                                use_psql_flux=False, num_std_lims=(-6,6))
+    num_std_dev_dflux_vs_grzmag(dat,
+                                num_std_lims=(-10,10),nbins=(60,30),
+                                glim=(22-pad,24.5+pad),rlim=(21.4-pad,23.9+pad),zlim=(20.5-pad,23+pad))
+    for band in 'grz':
+        fix_for_delta_flux(dat, band=band)
+        rec_lost_contam_by_type(dat,band=band,x_ivar=0)
+        rec_lost_contam_delta_by_type(dat,band=band,
+                                      x_ivar=0,y_ivar=0,percentile_lines=False)
+    rec_lost_contam_gr_rz_g(dat)
+    rec_lost_contam_grz(dat,x_ivar=0)
+    rec_lost_contam_delta(dat,x_ivar=0,y_ivar=0,percentile_lines=False)
+    rec_lost_contam_input_elg_notelg(dat)
+    rec_lost_contam_fraction(dat)
     
