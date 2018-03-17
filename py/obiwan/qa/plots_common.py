@@ -44,11 +44,12 @@ def myhist2D(ax,x,y,xlim=(),ylim=(),nbins=()):
     
     H[H == 0] = 1  # prevent warnings in log10
     ax.imshow(np.log10(H).T, origin='lower',
-              extent=[xbins[0], xbins[-1], ybins[0], ybins[-1]],
+              #extent=[xbins[0], xbins[-1], ybins[0], ybins[-1]],
+              extent=[xlim[0], xlim[1], ylim[0], ylim[1]],
               cmap=cmap, interpolation='nearest',
               aspect='auto')
-    ax.set_xlim(xlim)
-    ax.set_ylim(ylim)
+    #ax.set_xlim(xlim)
+    #ax.set_ylim(ylim)
 
 def myhist(ax,data,bins=20,color='b',normed=False,ls='-',label=None):
     if label:
@@ -122,5 +123,20 @@ def create_confusion_matrix(answer_type,predict_type,
             if ind.size > 0: cm[i_ans,i_pred]= float(n_pred)/ind.size # ind.size is constant for loop over pred_types
             else: cm[i_ans,i_pred]= 0 #np.nan
     return cm
+
+def eboss_ts(gmag,rz,gr,region='ngc'):
+    colorCut= dict(sgc= ((gmag > 21.825) &
+                         (gmag < 22.825) &
+                         (-0.068 * rz + 0.457 < gr) &
+                         (gr < 0.112 * rz + 0.773) &
+                         (0.218 * gr + 0.571 < rz) &
+                         (rz < -0.555 * gr + 1.901)),
+                   ngc= ((gmag > 21.825) &
+                         (gmag < 22.9) &
+                         (-0.068 * rz + 0.457 < gr) &
+                         (gr < 0.112 * rz + 0.773) &
+                         (0.637 * gr + 0.399 < rz) &
+                         (rz < -0.555 * gr + 1.901)))
+    return colorCut[region]
 
 
