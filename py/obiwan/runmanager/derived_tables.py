@@ -238,7 +238,7 @@ class RandomsTable(object):
             simcat.cut( pd.Series(simcat.id).isin(idsadded.id) )
             simcat.set('unique_id',self.unique_id(simcat.id.astype(str),
                                                   brick,os.path.basename(dr)))
-            self.add_psql_to_uniform_table(simcat,self.db_randoms_table)
+            simcat= self.add_psql_to_uniform_table(simcat,self.db_randoms_table)
             # Recovered by Tractor
             tractor= fits_table(os.path.join(dr,'tractor-%s.fits' % brick))
             tractor.cut(tractor.brick_primary)
@@ -307,6 +307,7 @@ class RandomsTable(object):
             if key in ['id']:
                 pass
             uniform.set('psql_%s' % key,val)
+        return uniform
 
     def add_flag_for_realsources(self,tab,brick):
         """Flag sources also in DR3, DR5
