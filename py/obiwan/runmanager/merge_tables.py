@@ -52,12 +52,53 @@ class RandomsTable(MergeTable):
 
 
 class SummaryTable(MergeTable):
+    """In addition to merging over brick tables, compute avg quantities per brick
+    
+    derived table "randoms.fits" must exist. Joins the brick summary 
+    quantities from a data release with a similar set from the 
+    randoms.fits table. Each brick's table has one 
+    row and all tables get merged to make the eatmap plots
+    """
     def __init__(self,derived_dir,savefn):
+        """
+        Args:
+            rank: mpi rank
+        """
         super().__init__(derived_dir,savefn)
 
     def table_fn(self,brick):
         return os.path.join(self.derived_dir,brick[:3],brick,
-                            'summary.fits')
+                            'randoms.fits')
+
+     def run(self,bricks_to_merge):
+        Tlist=[]
+        for brick in bricks_to_merge:
+            tab= self.obiwan_summary(self.table_fn(brick),
+                                     prefix='tractor_')
+            Tlist.append(tab)
+        T= merge_tables(Tlist,columns='fillzero')
+        self.write_table(T,self.savefn)
+
+    def obiwan_summary(self,randoms_fn,prefix=''):
+        T = fits_table(randoms_fn)
+        
+        isRec= T.obiwan_mask == 1
+        summary= defaultdict(list)
+        summary['frac_recovered'].append( len(T[isRec])/ float(len(T)))
+        for band in 'grz':
+            summary['galdepth_'+band]= np.median(T.get(prefix+'galdepth_'+band))
+        # Type
+        T=fits_table()
+        T.set('frac_recovered', np.array(summary['frac_recovered']).astype(np.float32))
+        for b in 'grz':
+            T.set('galdepth_'+b, np.array(summary[b+'galdepth']).astype(np.float32))
+        return T 
+ 
+    def write_table(self,tab,fn):
+        if not os.path.exists(fn): 
+            tab.writeto(fn)
+            print('Wrote %s' % fn)
+
 
 def main_mpi(doWhat=None,bricks=[],nproc=1,
              derived_dir=None):

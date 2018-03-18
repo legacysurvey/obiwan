@@ -394,7 +394,7 @@ def depth_at_half_recovered(randoms,band):
     else:
         return binc_and_vals['binc'][i]
 
-class HeatmapTable(object):
+class SummaryTable(object):
     """Writes one table per brick, with brick averaged quantities
     
     derived table "randoms.fits" must exist. Joins the brick summary 
@@ -410,13 +410,15 @@ class HeatmapTable(object):
                                                     'survey-bricks.fits.gz'))
 
     def run(self,brick):
-        summary_DR= self.brick_summary([brick])
-        summary_obi= self.brick_summary_obiwan(brick,prefix='tractor_')
-        self.add_obiwan_to_DR_table(summary_DR,summary_obi)
+        #summary_DR= self.brick_summary([brick])
+        #summary_obi= self.brick_summary_obiwan(brick,prefix='tractor_')
+        summary_obi= self.brick_summary_obiwan_brief(brick,prefix='tractor_')
+        #self.add_obiwan_to_DR_table(summary_DR,summary_obi)
         # Write
         derived_dir= derived_field_dir(brick,self.data_dir,self.date)
         fn= os.path.join(derived_dir,'summary.fits')
-        self.write_table(summary_DR,fn)
+        #self.write_table(summary_DR,fn)
+        self.write_table(summary_obi,fn)
 
     def write_table(self,tab,fn):
         if not os.path.exists(fn): 
@@ -435,6 +437,25 @@ class HeatmapTable(object):
             summary_DR.set(prefix+col, summary_obi.get(col))
         del summary_obi
 
+    def brick_summary_obiwan_brief(self,brick,prefix=''):
+        """brick_summary_obiwan but only 3-4 quantities"""
+        randoms_fn= os.path.join(derived_field_dir(brick,
+                                        self.data_dir,self.date),
+                                 'randoms.fits')
+        T = fits_table(randoms_fn)
+        
+        isRec= T.obiwan_mask == 1
+        summary= defaultdict(list)
+        summary['frac_recovered'].append( len(T[isRec])/ float(len(T)))
+        for band in 'grz':
+            summary['galdepth_'+band]= np.median(T.get(prefix+'galdepth_'+band))
+        # Type
+        T=fits_table()
+        T.set('frac_recovered', np.array(summary['frac_recovered']).astype(np.float32))
+        for b in 'grz':
+            T.set('galdepth_'+b, np.array(summary[b+'galdepth']).astype(np.float32))
+        return T 
+    
     def brick_summary_obiwan(self,brick,prefix=''):
         """brick summary for obiwan 
         
@@ -875,10 +896,8 @@ def main_mpi(bricks=[],doWhat=None,dr3_or_dr5=None,
     if doWhat == 'randoms':
         tabMaker= RandomsTable(data_dir,dr3_or_dr5,db_randoms_table,
                                date=date)
-    elif doWhat == 'targets':
-        tabMaker= TargetsTable(data_dir,dr3_or_dr5,date=date)
-    elif doWhat == 'heatmap':
-        tabMaker= HeatmapTable(data_dir,dr3_or_dr5,date=date)
+    elif doWhat == 'summary':
+        tabMaker= SummaryTable(data_dir,dr3_or_dr5,date=date)
     
     for cnt,brick in enumerate(bricks):
         if (cnt+1) % 10 == 0: 
@@ -894,7 +913,7 @@ def main_mpi(bricks=[],doWhat=None,dr3_or_dr5=None,
 if __name__ == '__main__':
     from argparse import ArgumentParser
     parser = ArgumentParser()
-    parser.add_argument('--doWhat', type=str, choices=['randoms','targets','heatmap'],required=True)
+    parser.add_argument('--doWhat', type=str, choices=['randoms','summary'],required=True)
     parser.add_argument('--data_dir', type=str, required=True, 
                         help='path to obiwan/, tractor/ dirs') 
     parser.add_argument('--db_randoms_table', type=str, choices=['obiwan_eboss_elg',
