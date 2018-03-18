@@ -10,6 +10,7 @@ import os
 import sys
 from glob import glob
 import pandas as pd
+from collections import defaultdict
 
 try: 
     from astrometry.util.fits import fits_table, merge_tables
@@ -70,29 +71,29 @@ class SummaryTable(MergeTable):
         return os.path.join(self.derived_dir,brick[:3],brick,
                             'randoms.fits')
 
-     def run(self,bricks_to_merge):
-        Tlist=[]
+    def run(self,bricks_to_merge):
+        d=defaultdict(list)
         for brick in bricks_to_merge:
-            tab= self.obiwan_summary(self.table_fn(brick),
-                                     prefix='tractor_')
-            Tlist.append(tab)
-        T= merge_tables(Tlist,columns='fillzero')
+            d['brickname'].append(brick)
+            self.add_obiwan_summary(d,self.table_fn(brick),
+                                    prefix='tractor_')
+        # Type
+        T=fits_table()
+        T.set('brickname', np.array(d['brickname']).astype(np.string_))
+        T.set('frac_recovered', np.array(d['frac_recovered']).astype(np.float32))
+        for b in 'grz':
+            T.set('galdepth_'+b, np.array(d['galdepth_'+b]).astype(np.float32))
         self.write_table(T,self.savefn)
 
-    def obiwan_summary(self,randoms_fn,prefix=''):
+    def add_obiwan_summary(self,summary_dict,randoms_fn,prefix=''):
         T = fits_table(randoms_fn)
         
         isRec= T.obiwan_mask == 1
-        summary= defaultdict(list)
-        summary['frac_recovered'].append( len(T[isRec])/ float(len(T)))
+        summary_dict['frac_recovered'].append( len(T[isRec])/ float(len(T)))
         for band in 'grz':
-            summary['galdepth_'+band]= np.median(T.get(prefix+'galdepth_'+band))
-        # Type
-        T=fits_table()
-        T.set('frac_recovered', np.array(summary['frac_recovered']).astype(np.float32))
-        for b in 'grz':
-            T.set('galdepth_'+b, np.array(summary[b+'galdepth']).astype(np.float32))
-        return T 
+            keep= np.isfinite(T.get(prefix+'galdepth_'+band))
+            depth= np.median(T.get(prefix+'galdepth_'+band)[keep])
+            summary_dict['galdepth_'+band].append( depth)
  
     def write_table(self,tab,fn):
         if not os.path.exists(fn): 
