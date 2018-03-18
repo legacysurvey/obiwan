@@ -1,6 +1,8 @@
 import matplotlib
 matplotlib.use('Agg') # display backend
 import matplotlib.pyplot as plt
+from matplotlib.patches import Rectangle
+from matplotlib.collections import PatchCollection
 import os
 import sys
 from glob import glob
@@ -9,8 +11,61 @@ import pandas as pd
 
 from astrometry.util.fits import fits_table, merge_tables
 
+import obiwan.qa.plots_common as plots
+
+REGIONS= ['eboss_ngc','eboss_sgc','dr5','cosmos']
+
+
+def footprint_outline(region):
+    if region == 'eboss_ngc':
+        ramin,ramax,decmin,decmax= 126,165,14,29
+        x= [ramin,ramax,ramax,ramin,ramin]
+        y= [decmin,decmin,decmax,decmax,decmin]
+    elif region == 'eboss_sgc':
+        ramin,ramax,decmin,decmax= 316,360,-2,2
+        x= [ramax,ramin,ramin,ramax]
+        y= [decmin,decmin,decmax,decmax]
+        ramin,ramax,decmin,decmax= 0,45,-5,5
+        x += [ramin,ramax,ramax,ramin,ramin]
+        y += [decmax,decmax,decmin,decmin,-2]
+    elif region == 'cosmos':
+        lims= radec_limits(region)
+        ramin,ramax= lims['ra'][0],lims['ra'][1]
+        decmin,decmax= lims['dec'][0],lims['dec'][1]
+        x= [ramin,ramax,ramax,ramin,ramin]
+        y= [decmin,decmin,decmax,decmax,decmin]
+    x,y=np.array(x), np.array(y)
+    x[x >= 300] -= 360
+    return x,y
+
+def radec_limits(region):
+    if region == 'eboss_ngc':
+        return dict(ra=(120,170),
+                    dec=(12,32))
+    elif region == 'eboss_sgc':
+        return dict(ra=(-50,50),
+                    dec=(-6,6))
+    elif region == 'cosmos':
+        return dict(ra=(148.5,151.6),
+                    dec=(0.4,3.4))
+
+def cut_to_region(table,region):
+    """returns a copy of table cut to region"""
+    lims= radec_limits(region)
+    T= table.copy()
+    hiRa= T.ra >= 300
+    if len(T[hiRa]) > 0:
+        T.ra[hiRa] -= 360
+    keep= ((T.ra >= lims['ra'][0]) & 
+           (T.ra <= lims['ra'][1]) & 
+           (T.dec >= lims['dec'][0]) & 
+           (T.dec <= lims['dec'][1]))
+    return T[keep] 
+
+
+
 class SummaryMaps(object):
-     def __init__(self,summary_fn,survey_bricks_fn):
+    def __init__(self,summary_fn,survey_bricks_fn):
         self.summary= fits_table(summary_fn)
         # Add ra,dec
         bricks= fits_table(survey_bricks_fn)
@@ -22,20 +77,24 @@ class SummaryMaps(object):
             self.summary.set(key,bricks.get(key))
 
     def plot(self,region=None):
-        assert(region in ['eboss_ngc','eboss_sgc','dr5','cosmos'])
+        assert(region in REGIONS)
+        keep= np.ones(len(self.summary),bool)
         if region == 'eboss_ngc':
             keep= self.summary.dec > 10
         elif region == 'eboss_sgc':
             keep= self.summary.dec < 10
-        
+
         num_density= self.summary.n_injected / 0.25**2 # n/deg2
-        frac_rec= float(self.summary.n_recovered)/self.summary.n_injected
+        frac_rec= self.summary.n_recovered.astype(float)/self.summary.n_injected
+        d={}
         for band in 'grz':
             d['depth_'+band]= plots.flux2mag(5/np.sqrt(self.summary.get('galdepth_'+band)))
-        
+
         x,y= self.summary.ra[keep],self.summary.dec[keep]
-        kw=dict(x=x,y=y, region=region,
-                figsize=(10,5),ms=15,m='o')
+        kw=dict(x=x,y=y, figsize=(10,5),ms=15,m='o')
+        if region == 'cosmos':
+            kw.update(figsize=(3.6,2.9),ms=1.6e2,m='s',
+                      xlim=radec_limits(region)['ra'],ylim=radec_limits(region)['dec'])
         
         kw.update(name='number_density_%s' % region,
                   clab='N / deg2')
@@ -46,254 +105,171 @@ class SummaryMaps(object):
         for band in 'grz':
             kw.update(name='galdepth_%s_%s' % (band,region),
                       clab='galdepth %s (not ext corr)' % band)
-            self.heatmap(d['depth_'+band][keep])
-    
+            newkeep= (keep) & (np.isfinite(d['depth_'+band]))
+            #print('depth= ',d['depth_'+band][newkeep])
+            try:
+                self.heatmap(d['depth_'+band][newkeep])
+            except ValueError:
+                print('WARNING depth_%s FAILED, somethign about Invalid RGBA argument: 23.969765' % band)
+            
     def heatmap(self,color, x=None,y=None,
                 name='test',clab='Label',
-                figsize=(10,5),ms=15,m='o'):
+                figsize=(10,5),ms=15,m='o',
+                xlim=None,ylim=None):
         fn= 'heatmap_%s.png' % name
         fig,ax=plt.subplots(figsize=figsize)
         kw=dict(edgecolors='none',marker=m,s=ms,rasterized=True)
-        
         cax= ax.scatter(x,y,c=color, **kw)
         cbar = fig.colorbar(cax) 
         
-        zlab=cbar.set_label(clab)
+        cbar.set_label(clab)
         xlab=ax.set_xlabel('RA')
-        ylab=ax.set_xlabel('Dec')
-        plt.savefig(fn,bbox_extra_artists=[xlab,ylab,zlab], bbox_inches='tight')
+        ylab=ax.set_ylabel('Dec')
+        if xlim:
+            ax.set_xlim(xlim)
+        if ylim:
+            ax.set_ylim(ylim)
+        plt.savefig(fn,bbox_extra_artists=[xlab,ylab], bbox_inches='tight')
         plt.close()
         print('Wrote %s' % fn)
+
+class CCDsUsed(object):
+    def __init__(self,ccds_used_wildcard=None):
+        '''plot ra,dec of ccds used (the footprint for this run)
+        
+        Args:
+            ccds_used_wildcard: path to ccds file or path containing an asterisk
+        '''
+        if "*" in ccds_used_wildcard:
+            fns= glob(ccds_used_wildcard)
+            assert(len(fns) > 0)
+            ccds= [fits_table(fn,columns=['ra','dec','expid']) for fn in fns]
+            self.ccds= merge_tables(ccds)
+            del ccds
+        else:
+            self.ccds= fits_table(ccds_used_wildcard)
+
+    def plot(self,savefn='ccdsused.png',
+             region=None,subset=None,figsize=(10,5)):
+        assert(region in REGIONS)
+        savefn= savefn.replace('.png','_%s.png' % region)
+        if region == 'cosmos':
+            savefn= savefn.replace('.png','_%d.png' % subset)
+        ccds= cut_to_region(self.ccds,region=region)
+        x,y= footprint_outline(region)
+        lims= radec_limits(region)
+        if region == 'cosmos':
+            assert(subset in [60,64,69])
+            ccds= ccds[ccds.subset == subset]
+        
+        fig,ax= plt.subplots(figsize=figsize)
+        #plt.subplots_adjust(hspace=0.2,wspace=0.2)
+        # CCDs background
+        if region != 'cosmos':
+            ax.plot(ccds.ra,ccds.dec,'k,',lw=5,label='CCDs')
+            ax.plot(x,y,'b-',lw=3)
+        else:
+            # ccd boundaries
+            ra= dict(UL=ccds.ra0,
+                     UR=ccds.ra1,
+                     LR=ccds.ra2,
+                     LL=ccds.ra3)
+            dec= dict(UL=ccds.dec0,
+                      UR=ccds.dec1,
+                      LR=ccds.dec2,
+                      LL=ccds.dec3)
+            patches = []
+            for i in range(len(ccds)):
+                r= Rectangle((ra['LL'][i],dec['LL'][i]), 
+                             width=ra['LR'][i]-ra['LL'][i], 
+                             height=dec['UL'][i] - dec['LL'][i])
+                patches.append(r)
+            kw=dict(color='b',alpha=0.10)
+            p = PatchCollection(patches, **kw)
+            ax.add_collection(p)
+            #ax.plot(x,y,'b--',lw=3)
+        # Official footprint for the production run
+        ax.set_xlim(lims['ra'])
+        ax.set_ylim(lims['dec'])
+        ax.legend(loc='lower right')
+        ylab=ax.set_ylabel('Dec')
+        xlab=ax.set_xlabel('RA')
+        plt.savefig(savefn,bbox_extra_artists=[xlab,ylab], bbox_inches='tight')
+        plt.close()
+        print('Wrote %s' % savefn)
 
 class BricksQueued(object):
     """plot ra,dec of bricks submitted to QDO queue
 
     Are we missing regions because didn't submit all the bricks?
     """
-    def __init__(self,bricks_list_fn=None):
+    def __init__(self,bricks_list_fn=None,survey_bricks_fn=None):
         '''plot ra,dec of ccds used (the footprint for this run)'''
-        self.bricks= np.loadtxt(bricks_list_fn,dtype=str)
+        bricks= np.loadtxt(bricks_list_fn,dtype=str)
+        self.bricks= fits_table()
+        self.bricks.set('brickname',bricks)
+        # Add ra,dec
+        b= fits_table(survey_bricks_fn)
+        keep=pd.Series(np.char.strip(b.brickname)).isin(np.char.strip(self.bricks.brickname))
+        b.cut(keep)
+        b= b[ np.argsort(b.brickname)]
+        self.bricks= self.bricks[ np.argsort(self.bricks.brickname)]
+        for key in ['ra','dec']:
+            self.bricks.set(key,b.get(key))
+    
+    def plot(self,region=None,savefn='bricksqueued.png'):
+        assert(region in REGIONS)
+        savefn= savefn.replace('.png','_%s.png' % region)
+        bricks= cut_to_region(self.bricks,region)
+        x,y= footprint_outline(region)
+        lims= radec_limits(region)
 
-class CCDsUsed(object):
-    def __init__(self,ccds_used_fn=None):
-        '''plot ra,dec of ccds used (the footprint for this run)'''
-        self.ccds= fits_table(ccds_used_fn)
-
-    def plot_ccds(self):
         fig,ax= plt.subplots(figsize=(10,5))
         #plt.subplots_adjust(hspace=0.2,wspace=0.2)
         # CCDs background
-        ax.plot(ccds.ra,ccds.dec,'k,',lw=5,label='CCDs')
-        # Uniform randoms background
-        ax[0,1].plot(uniform_randoms.ra,uniform_randoms.dec,'k,',lw=5,
-                     label='Uniform randoms')
-        # db randoms
-        ax[1,0].plot(psql_radec.ra,psql_radec.dec,'k,',
-                     label='psql randoms')
-        # Bricks background
-        ax[1,1].plot(bricks_to_run.ra,bricks_to_run.dec,'ko',markersize=1,label='Bricks')
+        ax.plot(bricks.ra,bricks.dec,'ko',markersize=1,label='Bricks')
         # Official footprint for the production run
-        x,y= self.footprint_outline()
-        lims= self.radec_limits()
-        for row in range(2):
-            for col in range(2):
-                ax[row,col].plot(x,y,'b-',lw=3)
-                ax[row,col].set_xlim(lims['ra'])
-                ax[row,col].set_ylim(lims['dec'])
-                ax[row,col].legend(loc='lower right')
-        for i in range(2):
-            ylab=ax[i,0].set_ylabel('Dec')
-            xlab=ax[1,i].set_xlabel('RA')
-        savefn='footprint_%s_%s.png' % (self.which,self.region)
+        ax.plot(x,y,'b-',lw=3)
+        ax.set_xlim(lims['ra'])
+        ax.set_ylim(lims['dec'])
+        ax.legend(loc='lower right')
+        ylab=ax.set_ylabel('Dec')
+        xlab=ax.set_xlabel('RA')
         plt.savefig(savefn,bbox_extra_artists=[xlab,ylab], bbox_inches='tight')
         plt.close()
         print('Wrote %s' % savefn)
- 
-
-def __init():
-        ''' 
-        Args:
-            which: eboss,dr5,cosmos
-            region: ngc,sgc, subset number,None
-            subset: cosmos only, integer, 60,64,69
-        '''
-        self.which= which
-        self.region= region
-        self.subset= subset
-        if self.which == 'summary'
-
-
-        kw=dict(ccds= self.cut_to_region(ccds),
-                bricks_to_run= self.cut_to_region(bricks_to_run),
-        if self.which == 'cosmos':
-            kw['ccds']= kw['ccds'][kw['ccds'].subset == self.subset]
-        #kw= dict(ccds= ccds[i['ccds']],
-        #         psql_radec= psql_radec[i['psql_radec']],
-        #         bricks_to_run= bricks_to_run[i['bricks_to_run']],
-        #         uniform_randoms= uniform_randoms[i['uniform_randoms']])
-                #ra= kw[key].ra
-                #ra[split] -= 360
-                #kw[key].set('ra',ra)
-        
-        #box= self.box_for_region()
-        
-        self._plot(**kw)
-        #self._plot(ccds[i['ccds']],psql_radec[i['psql_radec']],
-        #           bricks_to_run[i['bricks_to_run']],
-        #           uniform_randoms[i['uniform_randoms']],
-        #           savefn=savefn,
-        #           ralim=box['ra'],declim=box['dec'])
-
-
-def plot_ccds(self,ccds,bricks_to_run,
-                  uniform_randoms):
-        kw=dict(ccds= self.cut_to_region(ccds),
-                psql_radec= self.cut_to_region(psql_radec),
-                bricks_to_run= self.cut_to_region(bricks_to_run),
-                uniform_randoms= self.cut_to_region(uniform_randoms))
-        if self.which == 'cosmos':
-            kw['ccds']= kw['ccds'][kw['ccds'].subset == self.subset]
-        #kw= dict(ccds= ccds[i['ccds']],
-        #         psql_radec= psql_radec[i['psql_radec']],
-        #         bricks_to_run= bricks_to_run[i['bricks_to_run']],
-        #         uniform_randoms= uniform_randoms[i['uniform_randoms']])
-                #ra= kw[key].ra
-                #ra[split] -= 360
-                #kw[key].set('ra',ra)
-        
-        #box= self.box_for_region()
-        
-        self._plot(**kw)
-        #self._plot(ccds[i['ccds']],psql_radec[i['psql_radec']],
-        #           bricks_to_run[i['bricks_to_run']],
-        #           uniform_randoms[i['uniform_randoms']],
-        #           savefn=savefn,
-        #           ralim=box['ra'],declim=box['dec'])
-
-def _plot(self,ccds,psql_radec,bricks_to_run,
-              uniform_randoms):
-        fig,ax= plt.subplots(2,2,figsize=(10,10))
-        plt.subplots_adjust(hspace=0.2,wspace=0.2)
-        # CCDs background
-        ax[0,0].plot(ccds.ra,ccds.dec,'k,',lw=5,label='CCDs')
-        # Uniform randoms background
-        ax[0,1].plot(uniform_randoms.ra,uniform_randoms.dec,'k,',lw=5,
-                     label='Uniform randoms')
-        # db randoms
-        ax[1,0].plot(psql_radec.ra,psql_radec.dec,'k,',
-                     label='psql randoms')
-        # Bricks background
-        ax[1,1].plot(bricks_to_run.ra,bricks_to_run.dec,'ko',markersize=1,label='Bricks')
-        # Official footprint for the production run
-        x,y= self.footprint_outline()
-        lims= self.radec_limits()
-        for row in range(2):
-            for col in range(2):
-                ax[row,col].plot(x,y,'b-',lw=3)
-                ax[row,col].set_xlim(lims['ra'])
-                ax[row,col].set_ylim(lims['dec'])
-                ax[row,col].legend(loc='lower right')
-        for i in range(2):
-            ylab=ax[i,0].set_ylabel('Dec')
-            xlab=ax[1,i].set_xlabel('RA')
-        savefn='footprint_%s_%s.png' % (self.which,self.region)
-        plt.savefig(savefn,bbox_extra_artists=[xlab,ylab], bbox_inches='tight')
-        plt.close()
-        print('Wrote %s' % savefn)
-      
-
-    def radec_limits(self):
-        if self.which == 'eboss':
-            lims= dict(ngc=dict(ra=(120,170),
-                                dec=(12,32)),
-                       sgc=dict(ra=(-50,50),
-                                dec=(-6,6))
-                      )
-            return lims[self.region]
-        elif self.which == 'cosmos':
-            return dict(ra=(148,152),
-                        dec=(0,4))
-
-    def cut_to_region(self,table):
-        lims= self.radec_limits()
-        T= table.copy()
-        hiRa= T.ra >= 300
-        if len(T[hiRa]) > 0:
-            T.ra[hiRa] -= 360
-        keep= ((T.ra >= lims['ra'][0]) & 
-               (T.ra <= lims['ra'][1]) & 
-               (T.dec >= lims['dec'][0]) & 
-               (T.dec <= lims['dec'][1]))
-        return T[keep] 
-
-    def footprint_outline(self):
-        if self.which == 'eboss':
-            if self.region == 'ngc':
-                ramin,ramax,decmin,decmax= 126,165,14,29
-                x= [ramin,ramax,ramax,ramin,ramin]
-                y= [decmin,decmin,decmax,decmax,decmin]
-            elif self.region == 'sgc':
-                ramin,ramax,decmin,decmax= 316,360,-2,2
-                x= [ramax,ramin,ramin,ramax]
-                y= [decmin,decmin,decmax,decmax]
-                ramin,ramax,decmin,decmax= 0,45,-5,5
-                x += [ramin,ramax,ramax,ramin,ramin]
-                y += [decmax,decmax,decmin,decmin,-2]
-        elif self.which == 'cosmos':
-            lims= self.radec_limits()
-            ramin,ramax= lims['ra'][0],lims['ra'][1]
-            decmin,decmax= lims['dec'][0],lims['dec'][1]
-            x= [ramin,ramax,ramax,ramin,ramin]
-            y= [decmin,decmin,decmax,decmax,decmin]
-        x,y=np.array(x), np.array(y)
-        x[x >= 300] -= 360
-        return x,y
 
 if __name__ == "__main__":    
     from argparse import ArgumentParser
     parser = ArgumentParser(description='DECaLS simulations.')
-    parser.add_argument('--which', default=None,choices=['eboss','dr5','cosmos'], required=True)
-    parser.add_argument('--path_to_ccds_used', default=None,help='./legacysurveydir_dr3', required=False)
-    parser.add_argument('--ccds_used', default=None,help='single table filename', required=False)
-    parser.add_argument('--psql_radec', help='csv file from: psql -d desi -U desi_admin -h nerscdb03.nersc.gov -t -A -F"," -c "select ra,dec from obiwan_eboss_elg" > psql_radec.csv', required=True)
-    parser.add_argument('--bricks_to_run', help='bricks.txt file', required=True)
-    parser.add_argument('--uniform_randoms', help='eboss/derived_03_05_2018/merged/randoms.fits', required=True)
-    parser.add_argument('--survey_bricks', help='path to survey-bricks.fits.fz table', required=False)
+    parser.add_argument('--region', default=None,choices=['eboss_ngc','eboss_sgc','cosmos'], required=True)
+    parser.add_argument('--subset', type=int,default=None,choices=[60,64,69], required=False)
+    parser.add_argument('--summary_table', default=None, required=False)
+    parser.add_argument('--ccds_used_wildcard', default=None, help='path to ccds or path including wildcard for multiple ccds to merge',required=False)
+    parser.add_argument('--bricks_list_fn', default=None,help='bricks.txt file', required=False)
+    parser.add_argument('--survey_bricks', help='path to survey-bricks.fits.fz table', required=True)
+    #parser.add_argument('--psql_radec', help='csv file from: psql -d desi -U desi_admin -h nerscdb03.nersc.gov -t -A -F"," -c "select ra,dec from obiwan_eboss_elg" > psql_radec.csv', required=True)
     args = parser.parse_args()
 
-    foot= Footprint(args.which)
-   
-    if args.ccds_used:
-        ccds= fits_table(args.ccds_used)
-    else:
-        ccd_fns= glob(os.path.join(args.path_to_ccds_used,'survey-ccds-*-used.fits.gz'))
-        assert(len(ccd_fns) > 0)
-        ccds_list= [fits_table(fn,columns=['ra','dec','expid']) for fn in ccd_fns]
-        ccds= merge_tables(ccds_list)
-        del ccds_list
+    if args.summary_table:
+        maps= SummaryMaps(args.summary_table,args.survey_bricks)
+        maps.plot(region=args.region)
 
-    psql_df= pd.read_csv(args.psql_radec,header=None,names=['ra','dec'])
-    psql_radec=fits_table()
-    for key in ['ra','dec']:
-        psql_radec.set(key, psql_df[key].values)
+    if args.ccds_used_wildcard:
+        ccds= CCDsUsed(args.ccds_used_wildcard)
+        kw= dict(region=args.region)
+        if args.region == 'cosmos':
+            kw.update(subset=args.subset)
 
-    bricks= np.loadtxt(args.bricks_to_run,dtype=str)
-    bricks_to_run= fits_table(args.survey_bricks)
-    i=pd.Series(np.char.strip(bricks_to_run.brickname)).isin(bricks)
-    bricks_to_run.cut(i)
+        if args.region == 'eboss_ngc':
+            kw.update(figsize=(7,5))
+        elif args.region == 'eboss_sgc':
+            kw.update(figsize=(10,2.5))
+        elif args.region == 'cosmos':
+            kw.update(figsize=(3,3))
+        ccds.plot(**kw)
 
-    uniform_randoms= fits_table(args.uniform_randoms,
-                                columns=['ra','dec'])
-   
-    if args.which == 'eboss':
-        for region in ['ngc','sgc']:
-            foot.region=region
-            foot.plot(ccds,psql_radec,bricks_to_run,
-                      uniform_randoms)
-    elif args.which == 'cosmos':
-        for subset in [60,64,69]:
-            foot.subset= subset
-            foot.plot(ccds,psql_radec,bricks_to_run,
-                      uniform_randoms)
+    if args.bricks_list_fn:
+        bricks= BricksQueued(args.bricks_list_fn,args.survey_bricks)
+        bricks.plot(region=args.region)
     
-
