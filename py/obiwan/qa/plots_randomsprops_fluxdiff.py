@@ -464,45 +464,32 @@ def delta_vs_grzmag(dat,fn='_vs_grzmag.png',
 def gauss_model(p,x):
     return 1/np.sqrt(2*np.pi*p[0]**2) * np.exp(-x**2/(2*p[0]**2))
 
-def num_std_dev_dflux_gauss_fit(dat,fn='num_std_dev_dflux_gauss_fit.png',
-                                apply_fix= False, sub_mean= True,
-                                use_psql_flux=False, num_std_lims=(-6,6)):
+def num_std_dev_gaussfit_flux(dat,fn='num_std_dev_gaussfit_flux.png',
+                              delta_lims= (-6,6),
+                              sub_mean= True):
     figs,axes= plt.subplots(3,1,figsize=(6,10))
     plt.subplots_adjust(hspace=0.4)
 
     for ax,band in zip(axes,'grz'):
         data_lab= 'data'
-        if apply_fix:
-            fix= np.average([dat.get('tractor_apflux_resid_'+band)[:,6],
-                             dat.get('tractor_apflux_resid_'+band)[:,7]],
-                            axis=0)
-            data_lab+='+fix'
-            #fix= apflux_apfluxresid_diff= dat.get('tractor_apflux_'+band)[:,5] - \
-            #            dat.get('tractor_apflux_resid_'+band)[:,5]
-            
-        else:
-            fix=0
-        if use_psql_flux:
-            num_std_dev= dat.get('tractor_flux_'+band) -\
-                           (plots.mag2flux(dat.get('psql_'+band))+  fix)
-        else: 
-            num_std_dev= dat.get('tractor_flux_'+band) -\
-                            (dat.get(band+'flux')+  fix)
-
+        num_std_dev= dat.get('tractor_flux_'+band) -\
+                        dat.get(band+'flux')
         num_std_dev *= np.sqrt(dat.get('tractor_flux_ivar_'+band))
+        keep= isRec
+        
         if sub_mean:
             #keep= ((num_std_dev >= num_std_lims[0]) &
             #       (num_std_dev <= num_std_lims[0]) 
-            dflux_mean= np.mean(num_std_dev[((isRec) &
-                                             (num_std_dev > num_std_lims[0]) & 
-                                             (num_std_dev < num_std_lims[1]))])
+            dflux_mean= np.mean(num_std_dev[((keep) &
+                                             (num_std_dev > delta_lims[0]) & 
+                                             (num_std_dev < delta_lims[1]))])
             #dflux_mean= np.median(num_std_dev[isRec])
             num_std_dev -= dflux_mean
             print('%s: dflux_mean=%f' % (band,dflux_mean))
             data_lab+=' minus mean (%.2f)' % dflux_mean
         
-        bins= np.linspace(num_std_lims[0],num_std_lims[1],num=30)
-        h=myhist(ax,num_std_dev[isRec],bins=bins,color='b',
+        bins= np.linspace(delta_lims[0],delta_lims[1],num=30)
+        h=myhist(ax,num_std_dev[keep],bins=bins,color='b',
                  label=data_lab,normed=True,
                  return_h=True)
         
@@ -533,6 +520,145 @@ def num_std_dev_dflux_gauss_fit(dat,fn='num_std_dev_dflux_gauss_fit.png',
     plt.savefig(fn,bbox_extra_artists=[xlab,ylab], bbox_inches='tight')
     plt.close()
     print('Wrote %s' % fn)
+
+def num_std_dev_gaussfit_rhalf(dat,fn='num_std_dev_gaussfit_rhalf.png',
+                               delta_lims= (-6,6),
+                               sub_mean= False,sub_bin_at_max=False):
+    types= np.char.strip(dat.get('tractor_type'))
+    types[pd.Series(types).isin(['SIMP','REX']).values]= 'EXP'
+    
+    figs,axes= plt.subplots(2,1,figsize=(6,6))
+    plt.subplots_adjust(hspace=0.4)
+
+    for ax,typ in zip(axes,['exp','dev']):
+        data_lab= 'data'
+        isType= types == typ.upper()
+        num_std_dev= dat.get('tractor_shape%s_r' % typ) -\
+                        dat.rhalf
+        num_std_dev *= np.sqrt(dat.get('tractor_shape%s_r_ivar' % typ))
+        keep= (isType) #& (np.isfinite(num_std_dev)) #num_std_dev= num_std_dev[isType]
+        
+        if sub_mean:
+            #keep= ((num_std_dev >= num_std_lims[0]) &
+            #       (num_std_dev <= num_std_lims[0]) 
+            dflux_mean= np.mean(num_std_dev[((keep) &
+                                             (num_std_dev > delta_lims[0]) & 
+                                             (num_std_dev < delta_lims[1]))])
+            #dflux_mean= np.median(num_std_dev[isRec])
+            num_std_dev -= dflux_mean
+            print('%s: dflux_mean=%f' % (band,dflux_mean))
+            data_lab+=' minus mean (%.2f)' % dflux_mean
+        elif sub_bin_at_max:
+            bins= np.linspace(delta_lims[0],delta_lims[1],num=30)
+            h,bins=np.histogram(num_std_dev[keep],bins=bins)
+            binc= (bins[:-1] + bins[1:])/2
+            bin_at_max= binc[np.argmax(h)]
+            num_std_dev -= bin_at_max
+            data_lab+=' minus bin_at_max (%.2f)' % bin_at_max
+         
+        bins= np.linspace(delta_lims[0],delta_lims[1],num=30)
+        h=myhist(ax,num_std_dev[keep],bins=bins,color='b',
+                 label=data_lab,normed=True,
+                 return_h=True)
+        
+        rv = norm()
+        ax.plot(bins,rv.pdf(bins),'k--',label='Standard Norm')
+        
+        errfunc = lambda p, x, y: gauss_model(p, x) - y
+        p0 = [1.] # Initial guess
+        binc= (bins[:-1]+bins[1:])/2
+        p1, success = leastsq(errfunc, p0[:], args=(binc, h))
+        assert(success != 0)
+        norm_fit= norm(scale=p1[0])
+        ax.plot(bins,norm_fit.pdf(bins),'k-',label=r'Fit $\sigma=$%.2f' % p1[0])
+
+        ax.axvline(0,c='k',ls='dotted')
+        plots.mytext(ax,0.9,0.9,typ.upper(),fontsize=14)
+        #isPostiveFlux= ((np.isfinite(dmag)) &
+        #                (np.isfinite(true_mag)))
+        #isPostiveFlux= np.ones(len(dmag),bool)
+        #print('true_mag=',true_mag[isPostiveFlux],'trac_mag=',dmag[isPostiveFlux])
+
+    xlab=axes[-1].set_xlabel(r'$\Delta$rhalf (Tractor - True) * sqrt(ivar)')
+    #for ax,band in zip(axes,'grz'):
+    #    ax.set_xlim(ylim)
+    for ax in axes:
+        ylab=ax.set_ylabel('PDF')
+        ax.legend(loc='upper left',fontsize=10,markerscale=3)
+    plt.savefig(fn,bbox_extra_artists=[xlab,ylab], bbox_inches='tight')
+    plt.close()
+    print('Wrote %s' % fn)
+
+def num_std_dev_gaussfit_e1_e2(dat,fn='num_std_dev_gaussfit_e1_e2.png',
+                               delta_lims= (-6,6),
+                               sub_mean= True):
+    types= np.char.strip(dat.get('tractor_type'))
+    types[pd.Series(types).isin(['SIMP','REX']).values]= 'EXP'
+    
+    figs,axes= plt.subplots(2,1,figsize=(6,6))
+    plt.subplots_adjust(hspace=0.4)
+
+    typ='exp'
+    for ax,delta in zip(axes,['e1','e2']):
+        data_lab= 'data'
+        isType= types == typ.upper()
+        trac_e= dat.get('tractor_shape%s_%s' % (typ,delta))
+        if delta == 'e2':
+            trac_e *= -1
+        num_std_dev= trac_e -\
+                        dat.get(delta)
+        #print('delta=',delta)
+        #print('straight diff=',num_std_dev[isType])
+        num_std_dev *= np.sqrt(dat.get('tractor_shape%s_%s_ivar' % (typ,delta)))
+        #print('num_std_dev=',num_std_dev[isType])
+        #print('length=',len(num_std_dev[isType]))
+        #print('q25,med,q75 num_std_dev=',np.percentile(num_std_dev[isType],25),np.median(num_std_dev[isType]),np.percentile(num_std_dev[isType],75))
+        keep= (isType) & (np.isfinite(num_std_dev)) #num_std_dev= num_std_dev[isType]
+        
+        if sub_mean:
+            #keep= ((num_std_dev >= num_std_lims[0]) &
+            #       (num_std_dev <= num_std_lims[0]) 
+            dflux_mean= np.mean(num_std_dev[((keep) &
+                                             (num_std_dev > delta_lims[0]) & 
+                                             (num_std_dev < delta_lims[1]))])
+            #dflux_mean= np.median(num_std_dev[isRec])
+            num_std_dev -= dflux_mean
+            print('%s: dflux_mean=%f' % (band,dflux_mean))
+            data_lab+=' minus mean (%.2f)' % dflux_mean
+        
+        bins= np.linspace(delta_lims[0],delta_lims[1],num=30)
+        h=myhist(ax,num_std_dev[keep],bins=bins,color='b',
+                 label=data_lab,normed=True,
+                 return_h=True)
+        
+        rv = norm()
+        ax.plot(bins,rv.pdf(bins),'k--',label='Standard Norm')
+        
+        errfunc = lambda p, x, y: gauss_model(p, x) - y
+        p0 = [1.] # Initial guess
+        binc= (bins[:-1]+bins[1:])/2
+        p1, success = leastsq(errfunc, p0[:], args=(binc, h))
+        assert(success != 0)
+        norm_fit= norm(scale=p1[0])
+        ax.plot(bins,norm_fit.pdf(bins),'k-',label=r'Fit $\sigma=$%.2f' % p1[0])
+
+        ax.axvline(0,c='k',ls='dotted')
+        plots.mytext(ax,0.9,0.9,delta,fontsize=14)
+        #isPostiveFlux= ((np.isfinite(dmag)) &
+        #                (np.isfinite(true_mag)))
+        #isPostiveFlux= np.ones(len(dmag),bool)
+        #print('true_mag=',true_mag[isPostiveFlux],'trac_mag=',dmag[isPostiveFlux])
+
+        xlab=ax.set_xlabel(r'$\Delta$%s (Tractor - True) * sqrt(ivar)' % delta)
+    #for ax,band in zip(axes,'grz'):
+    #    ax.set_xlim(ylim)
+    for ax in axes:
+        ylab=ax.set_ylabel('PDF')
+        ax.legend(loc='upper left',fontsize=10,markerscale=3)
+    plt.savefig(fn,bbox_extra_artists=[xlab,ylab], bbox_inches='tight')
+    plt.close()
+    print('Wrote %s' % fn)
+
 
 
 def rec_lost_contam_gr_rz_g(dat,fn='rec_lost_contam_gr_rz_g.png'):
@@ -1010,8 +1136,12 @@ if args.which == 'cosmos':
     confusion_matrix_by_type(dat)
     fraction_recovered(dat, survey_for_depth='desi',**kw_lims)
     fraction_recovered_vs_rhalf(dat)
-    num_std_dev_dflux_gauss_fit(dat,apply_fix= False, sub_mean= True,
-                                use_psql_flux=False, num_std_lims=(-5,5))
+    num_std_dev_gaussfit_flux(dat,delta_lims= (-5,5),
+                              sub_mean= True)
+    num_std_dev_gaussfit_rhalf(dat,delta_lims= (-7,7),
+                               sub_mean= False,sub_bin_at_max=True)
+    num_std_dev_gaussfit_e1_e2(dat,delta_lims= (-7,7),
+                               sub_mean= False)
     delta_vs_grzmag(dat,delta='num_std_dev',delta_lims=(-10,10),
                     nbins=(60,30),**kw_lims)
     delta_vs_grzmag(dat,delta='dmag',delta_lims=(-1,1),
@@ -1035,8 +1165,12 @@ elif args.which == 'eboss':
     fraction_recovered(dat, survey_for_depth='desi',
                        glim=(22-pad,24.5+pad),rlim=(21.4-pad,23.9+pad),zlim=(20.5-pad,23+pad))
     fraction_recovered_vs_rhalf(dat)
-    num_std_dev_dflux_gauss_fit(dat,apply_fix= False, sub_mean= True,
-                                use_psql_flux=False, num_std_lims=(-5,5))
+    num_std_dev_gaussfit_flux(dat,delta_lims= (-5,5),
+                              sub_mean= True)
+    num_std_dev_gaussfit_rhalf(dat,delta_lims= (-7,7),
+                               sub_mean= False,sub_bin_at_max=True)
+    num_std_dev_gaussfit_e1_e2(dat,delta_lims= (-7,7),
+                               sub_mean= False)
     delta_vs_grzmag(dat,delta='num_std_dev',delta_lims=(-10,10),
                     nbins=(60,30),**kw_lims)
     delta_vs_grzmag(dat,delta='dmag',delta_lims=(-1,1),
