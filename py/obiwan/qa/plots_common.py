@@ -81,6 +81,8 @@ def myscatter_open(ax,x,y, color='b',m='o',s=10.,alpha=0.75,label=None):
     else:
         ax.scatter(x,y, facecolors='none',edgecolors=color,marker=m,s=s,rasterized=True,alpha=alpha,label=label)
 
+
+
 def myannot(ax,xarr,yarr,sarr, ha='left',va='bottom',fontsize=20):
     '''x,y,s are iterable'''
     for x,y,s in zip(xarr,yarr,sarr):
