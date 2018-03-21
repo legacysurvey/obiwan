@@ -80,7 +80,8 @@ class SummaryTable(MergeTable):
         # Type
         T=fits_table()
         T.set('brickname', np.array(d['brickname']).astype(np.string_))
-        T.set('frac_recovered', np.array(d['frac_recovered']).astype(np.float32))
+        for key in ['n_injected','n_recovered']:
+            T.set(key, np.array(d[key]).astype(np.int32))
         for b in 'grz':
             T.set('galdepth_'+b, np.array(d['galdepth_'+b]).astype(np.float32))
         self.write_table(T,self.savefn)
@@ -89,7 +90,8 @@ class SummaryTable(MergeTable):
         T = fits_table(randoms_fn)
         
         isRec= T.obiwan_mask == 1
-        summary_dict['frac_recovered'].append( len(T[isRec])/ float(len(T)))
+        summary_dict['n_injected'].append( len(T))
+        summary_dict['n_recovered'].append( len(T[isRec]) )
         for band in 'grz':
             keep= np.isfinite(T.get(prefix+'galdepth_'+band))
             depth= np.median(T.get(prefix+'galdepth_'+band)[keep])
