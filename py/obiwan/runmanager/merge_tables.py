@@ -185,6 +185,18 @@ def main_serial(doWhat=None,derived_dir=None,
     print('Wrote %s' % outfn)
     print('has %d rows' % len(tab))
 
+def randoms_subset_count_rsdirs_per_brick(rand_subset_fn):
+    """for Hui, count number of rsdirs per brick to get which of the randoms subsets bricks are done/"""
+    a=fits_table(rand_subset_fn)
+    df=pd.DataFrame(dict(brick=pd.Series(a.unique_id).str.split("_").str[1],
+                         rsdir=pd.Series(a.unique_id).str.split("_").str[2]))
+    num_rsdirs= df.groupby(['brick']).agg(lambda x: len(set(x)))
+    num_rsdirs= num_rsdirs.reset_index().sort_values(by='rsdir',ascending=False)
+    fn= rand_subset_fn.replace('.fits','_count_rsdirs_per_brick.csv')
+    num_rsdirs.to_csv(fn,index=False)
+    print('Wrote %s' % fn)
+
+
 if __name__ == '__main__':
     from argparse import ArgumentParser
     parser = ArgumentParser()
@@ -195,6 +207,7 @@ if __name__ == '__main__':
                         help='specify a fn listing bricks to run, or a single default brick will be ran') 
     parser.add_argument('--merge_rank_tables', action="store_true", default=False,help="set to merge the rank tables in the merge_tmp/ dir")
     parser.add_argument('--randoms_subset', action="store_true", default=False,help="make a merged table that is a subset of the randoms columns")
+    parser.add_argument('--count_rsdirs_per_brick', action="store_true", default=False,help="read existing randoms_subset table")
     args = parser.parse_args()
    
     if args.merge_rank_tables:
@@ -202,6 +215,12 @@ if __name__ == '__main__':
         for key in ['merge_rank_tables','nproc','bricks_fn']:
             del kwargs[key]
         main_serial(**kwargs)
+        sys.exit(0)
+
+    if args.count_rsdirs_per_brick:
+        #fn= os.path.join(args.derived_dir,'merged','randoms_subset.fits')
+        fn= '/Users/kaylan1/Downloads/obiwan_plots/randoms_subset_10k.fits'
+        randoms_subset_count_rsdirs_per_brick(fn)
         sys.exit(0)
    
     # Bricks to run

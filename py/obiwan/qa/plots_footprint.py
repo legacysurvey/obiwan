@@ -76,7 +76,7 @@ class SummaryMaps(object):
         for key in ['ra','dec']:
             self.summary.set(key,bricks.get(key))
 
-    def plot(self,region=None):
+    def plot(self,region=None,subset=None):
         assert(region in REGIONS)
         keep= np.ones(len(self.summary),bool)
         if region == 'eboss_ngc':
@@ -91,19 +91,20 @@ class SummaryMaps(object):
             d['depth_'+band]= plots.flux2mag(5/np.sqrt(self.summary.get('galdepth_'+band)))
 
         x,y= self.summary.ra[keep],self.summary.dec[keep]
-        kw=dict(x=x,y=y, figsize=(10,5),ms=15,m='o')
+        kw=dict(x=x,y=y, figsize=(10,5),ms=15,m='o',
+                region=region,subset=subset)
         if region == 'cosmos':
             kw.update(figsize=(3.6,2.9),ms=1.6e2,m='s',
                       xlim=radec_limits(region)['ra'],ylim=radec_limits(region)['dec'])
         
-        kw.update(name='number_density_%s' % region,
+        kw.update(name='number_density',
                   clab='N / deg2')
         self.heatmap(num_density[keep], **kw)
-        kw.update(name='fraction_recovered_%s' % region,
+        kw.update(name='fraction_recovered',
                   clab='Fraction Recovered')
         self.heatmap(frac_rec[keep],**kw)
         for band in 'grz':
-            kw.update(name='galdepth_%s_%s' % (band,region),
+            kw.update(name='galdepth_%s' % band,
                       clab='galdepth %s (not ext corr)' % band)
             newkeep= (keep) & (np.isfinite(d['depth_'+band]))
             #print('depth= ',d['depth_'+band][newkeep])
@@ -113,10 +114,12 @@ class SummaryMaps(object):
                 print('WARNING depth_%s FAILED, somethign about Invalid RGBA argument: 23.969765' % band)
             
     def heatmap(self,color, x=None,y=None,
-                name='test',clab='Label',
+                name='test',clab='Label',region=None,subset=None,
                 figsize=(10,5),ms=15,m='o',
                 xlim=None,ylim=None):
-        fn= 'heatmap_%s.png' % name
+        fn= 'heatmap_%s_%s.png' % (name,region)
+        if region == 'cosmos':
+            fn= fn.replace('.png','_%s.png' % subset)
         fig,ax=plt.subplots(figsize=figsize)
         kw=dict(edgecolors='none',marker=m,s=ms,rasterized=True)
         cax= ax.scatter(x,y,c=color, **kw)
@@ -253,7 +256,7 @@ if __name__ == "__main__":
 
     if args.summary_table:
         maps= SummaryMaps(args.summary_table,args.survey_bricks)
-        maps.plot(region=args.region)
+        maps.plot(region=args.region,subset=args.subset)
 
     if args.ccds_used_wildcard:
         ccds= CCDsUsed(args.ccds_used_wildcard)
