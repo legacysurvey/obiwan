@@ -32,6 +32,7 @@ mags={}
 for band in 'grz':
     mags[band]= plots.flux2mag(dat.get('tractor_flux_'+band)/\
                                  dat.get('tractor_mw_transmission_'+band))
+
 if args.which == 'eboss':
     is_elg_input= plots.eboss_ts(dat.psql_g,rz,gr,region='ngc')
     is_elg_trac= plots.eboss_ts(mags['g'],mags['r']-mags['z'],mags['g']-mags['r'],region='ngc')
@@ -42,9 +43,9 @@ if args.which == 'eboss':
 
 
 def myhist(ax,data,bins=20,color='b',normed=False,lw=2,ls='solid',label=None,
-           range=None, return_h=False):
+           range=None, return_h=False,alpha=1):
     kw= dict(bins=bins,color=color,normed=normed,
-             histtype='step',range=range,lw=lw,ls=ls)
+             histtype='step',range=range,lw=lw,ls=ls,alpha=1)
     if label:
         kw.update(label=label)
     h,bins,_=ax.hist(data,**kw)
@@ -169,6 +170,118 @@ def grz_hist_input_rec(dat,fn='grz_hist_input_rec.png',
     plt.savefig(fn,bbox_extra_artists=[xlab,ylab,leg], bbox_inches='tight')
     plt.close()
     print('Wrote %s' % fn)
+
+def grz_hist_by_type(dat,fn='grz_hist_by_type.png',x_ivar=0,
+                     glim=(21.6,23),rlim=(20.75,22.5),zlim=(19.5,22)):
+
+    x_ivar=0
+    x_var= ['true_mag','galdepth','redshift'][x_ivar]
+    types= np.char.strip(dat.get('tractor_type'))
+
+    kw_hist=dict(bins=30,normed=True)
+
+    figs,axes= plt.subplots(3,1,figsize=(6,9))
+    plt.subplots_adjust(hspace=0.3)
+
+    ratio_area= 1. 
+    xlim= dict(g=glim,
+               r=rlim,
+               z=zlim)
+    for ax,band in zip(axes,'grz'):
+        if x_var == 'true_mag':
+            _x_var= plots.flux2mag(dat.get(band+'flux')/\
+                                   dat.get('mw_transmission_'+band))
+            xlab= '%s (true mag)' % band
+        elif x_var == 'galdepth':
+            flux_for_depth= 5 / np.sqrt(dat.get('tractor_galdepth_'+band))
+            _x_var= plots.flux2mag(flux_for_depth/\
+                                     dat.get('mw_transmission_'+band))
+            xlab= 'galdepth %s' % band
+        elif x_var == 'redshift':
+            _x_var= dat.psql_redshift
+            xlab= 'redshift'
+        #isPostiveFlux= ((np.isfinite(dmag)) &
+        #                (np.isfinite(true_mag)))
+        #isPostiveFlux= np.ones(len(dmag),bool)
+        #print('true_mag=',true_mag[isPostiveFlux],'trac_mag=',dmag[isPostiveFlux])
+        for typ,color in zip(['SIMP','EXP','DEV','PSF'],'bgmc'):
+            keep= (isRec) & (types == typ)
+            if len(_x_var[keep]) > 0:
+                myhist(ax,_x_var[keep],color=color,label=typ,range=xlim[band],**kw_hist)
+        ylab='Number'
+        if kw_hist['normed']:
+            ylab='PDF'
+        ylabel=ax.set_ylabel(ylab)
+        xlabel=ax.set_xlabel(xlab)
+    axes[0].legend(loc='upper left',ncol=1,fontsize=10)
+    plt.savefig(fn,bbox_extra_artists=[xlabel,ylabel], bbox_inches='tight')
+    plt.close()
+    print('Wrote %s' % fn)
+
+def grz_hist_by_type2(dat,fn='grz_hist_by_type2.png',x_ivar=0,
+                      glim=(21.6,23),rlim=(20.75,22.5),zlim=(19.5,22)):
+
+    x_ivar=0
+    x_var= ['true_mag','galdepth','redshift'][x_ivar]
+    types= np.char.strip(dat.get('tractor_type'))
+
+    kw_hist=dict(bins=30,normed=True)
+
+    figs,axes= plt.subplots(3,2,figsize=(10,9))
+    plt.subplots_adjust(hspace=0.3)
+
+    ratio_area= 1. 
+    xlim= dict(g=glim,
+               r=rlim,
+               z=zlim)
+    ylim= dict(g=(0,3.7),
+               r=(0,2.3),
+               z=(0,1.5))
+    for row,band in zip(range(3),'grz'):
+        if x_var == 'true_mag':
+            _x_var= plots.flux2mag(dat.get(band+'flux')/\
+                                   dat.get('mw_transmission_'+band))
+            xlab= '%s (true mag)' % band
+        elif x_var == 'galdepth':
+            flux_for_depth= 5 / np.sqrt(dat.get('tractor_galdepth_'+band))
+            _x_var= plots.flux2mag(flux_for_depth/\
+                                     dat.get('mw_transmission_'+band))
+            xlab= 'galdepth %s' % band
+        elif x_var == 'redshift':
+            _x_var= dat.psql_redshift
+            xlab= 'redshift'
+        #isPostiveFlux= ((np.isfinite(dmag)) &
+        #                (np.isfinite(true_mag)))
+        #isPostiveFlux= np.ones(len(dmag),bool)
+        #print('true_mag=',true_mag[isPostiveFlux],'trac_mag=',dmag[isPostiveFlux])
+        for col,use_types,colors in zip(range(2),[['EXP','DEV','SIMP'],
+                                                  ['SIMP','PSF','EXP']],['bgm','mcb']):
+            xlabel=axes[row,col].set_xlabel(xlab)
+            for typ,color in zip(use_types,colors):
+                keep= (isRec) & (types == typ)
+                if len(_x_var[keep]) > 0:
+                    if (col == 1 and typ == 'EXP') or (col == 0 and typ == 'SIMP'):
+                        #alpha= 0.25
+                        lw= 0.5
+                    else:
+                        lw=2
+                    kw_hist.update(lw=lw) #alpha=alpha)
+                    myhist(axes[row,col],_x_var[keep],color=color,label=typ,range=xlim[band],**kw_hist)
+
+        ylab='Number'
+        if kw_hist['normed']:
+            ylab='PDF'
+        ylabel=axes[row,0].set_ylabel(ylab)
+    for col in range(2):
+        axes[0,col].legend(loc='upper left',ncol=1,fontsize=10)
+    for row,band in zip(range(3),'grz'):
+        for col in range(2):
+            axes[row,col].set_xlim(xlim[band])
+            axes[row,col].set_ylim(ylim[band])
+    plt.savefig(fn,bbox_extra_artists=[xlabel,ylabel], bbox_inches='tight')
+    plt.close()
+    print('Wrote %s' % fn)
+
 
 
 def noise_added_1(dat,fn='noise_added_1.png'):
@@ -661,97 +774,46 @@ def num_std_dev_gaussfit_e1_e2(dat,fn='num_std_dev_gaussfit_e1_e2.png',
 
 
 
-def rec_lost_contam_gr_rz_g(dat,fn='rec_lost_contam_gr_rz_g.png'):
-    fig,axes=plt.subplots(3,2,figsize=(12,9))
-    plt.subplots_adjust(wspace=0.2,hspace=0.4)
+def rec_lost_contam_gr_rz(dat,fn='rec_lost_contam_gr_rz.png'):
+    fig,axes=plt.subplots(4,2,figsize=(10,12))
+    plt.subplots_adjust(wspace=0,hspace=0)
 
     kw_scatter=dict(marker='.',s=20,alpha=1)
-    kw_hist=dict(range=(21.5,23.5),normed=False)
+    kw_leg= dict(loc='upper left',fontsize=12,markerscale=3,frameon=False)
 
-    # Row 0
-    row=0
-    lab,keep= 'true ELG',isRec & is_elg_input
-    axes[row,0].scatter(dat.psql_r[keep]-dat.psql_z[keep],
-                  dat.psql_g[keep]-dat.psql_r[keep],
-                  c='k',label=lab,**kw_scatter)
-    myhist(axes[row,1],dat.psql_g[keep],bins=30,color='k',label=lab,**kw_hist)
-
-    # Rows 1 & 2
-    mags={}
-    for band in 'grz':
-        mags[band]= plots.flux2mag(dat.get('tractor_flux_'+band)/\
-                                     dat.get('tractor_mw_transmission_'+band))
+    for lab,color,row,keep in [('Correct (Tractor ELG)','b',0, 
+                                  (isRec) & (is_elg_input) & (is_elg_trac)),
+                               ('Contamination (Tractor ELG wrong)','g',1,
+                                  (isRec) & (~is_elg_input) & (is_elg_trac)),
+                               ('Lost (measure fails TS)','c',2,
+                                  (isRec) & (is_elg_input) & (~is_elg_trac)),
+                               ('Lost (not recovered)','m',3,
+                                  (~isRec) & (is_elg_input))]:
+        axes[row,0].scatter(dat.psql_r[keep]-dat.psql_z[keep],
+                            dat.psql_g[keep]-dat.psql_r[keep],
+                            c=color,label=lab,**kw_scatter)
+        axes[row,1].scatter(mags['r'][keep]-mags['z'][keep],
+                            mags['g'][keep]-mags['r'][keep],
+                            c=color,label=lab,**kw_scatter)
+        #axes[row,0].legend(**kw_leg)
+        mytext(axes[row,0],0.5,0.9,lab,ha='center',fontsize=12)
     
-    lab,keep= 'lost (recovered but fail TS)', (isRec) & (is_elg_input) & (~is_elg_trac)
-    row=1
-    axes[row,0].scatter(dat.psql_r[keep]-dat.psql_z[keep],
-                        dat.psql_g[keep]-dat.psql_r[keep],
-                        c='g',label=lab,**kw_scatter)
-    myhist(axes[row,1],dat.psql_g[keep],bins=30,color='g',label=lab,**kw_hist)
-    row=2
-    axes[row,0].scatter(mags['r'][keep]-mags['z'][keep],
-                        mags['g'][keep]-mags['r'][keep],
-                        c='g',label=lab,**kw_scatter)
-    myhist(axes[row,1],mags['g'][keep],bins=30,color='g',label=lab,**kw_hist)
-
-    lab,keep= 'Tractor ELG (correct)', (isRec) & (is_elg_input) & (is_elg_trac)
-    row=1
-    axes[row,0].scatter(dat.psql_r[keep]-dat.psql_z[keep],
-                        dat.psql_g[keep]-dat.psql_r[keep],
-                        c='b',label=lab,**kw_scatter)
-    myhist(axes[row,1],dat.psql_g[keep],bins=30,color='b',label=lab,**kw_hist)
-    row=2
-    axes[row,0].scatter(mags['r'][keep]-mags['z'][keep],
-                        mags['g'][keep]-mags['r'][keep],
-                        c='b',label=lab,**kw_scatter)
-    myhist(axes[row,1],mags['g'][keep],bins=30,color='b',label=lab,**kw_hist)
-
-    lab,keep= 'Tractor ELG (contamiation)', (isRec) & (~is_elg_input) & (is_elg_trac)
-    row=1
-    axes[row,0].scatter(dat.psql_r[keep]-dat.psql_z[keep],
-                        dat.psql_g[keep]-dat.psql_r[keep],
-                        c='b',label=lab,**kw_scatter)
-    myhist(axes[row,1],dat.psql_g[keep],bins=30,color='c',label=lab,**kw_hist)
-    row=2
-    axes[row,0].scatter(mags['r'][keep]-mags['z'][keep],
-                        mags['g'][keep]-mags['r'][keep],
-                        c='b',label=lab,**kw_scatter)
-    myhist(axes[row,1],mags['g'][keep],bins=30,color='c',label=lab,**kw_hist)
-
-
-    lab,keep= 'lost (not recovered)', (~isRec) & (is_elg_input)
-    row=1
-    axes[row,0].scatter(dat.psql_r[keep]-dat.psql_z[keep],
-                        dat.psql_g[keep]-dat.psql_r[keep],
-                        c='m',label=lab,**kw_scatter)
-    myhist(axes[row,1],dat.psql_g[keep],bins=30,color='m',label=lab,**kw_hist)
-    row=2
-    axes[row,0].scatter(mags['r'][keep]-mags['z'][keep],
-                        mags['g'][keep]-mags['r'][keep],
-                        c='m',label=lab,**kw_scatter)
-    myhist(axes[row,1],mags['g'][keep],bins=30,color='m',label=lab,**kw_hist)
-
-
-    col=0
-    for row in range(3):
-        axes[row,col].set_xlim(0.5,2)
-        axes[row,col].set_ylim(0.2,1.3)
-    axes[0,col].set_xlabel('True r-z')
-    axes[0,col].set_ylabel('True g-r')
-    axes[1,col].set_xlabel('True r-z')
-    axes[1,col].set_ylabel('True g-r')
-    axes[2,col].set_xlabel('Tractor r-z')
-    ylab=axes[2,col].set_ylabel('Tractor g-r')
-
-    col=1
-    axes[0,col].set_xlabel('True g')
-    axes[1,col].set_xlabel('True g')
-    xlab=axes[2,col].set_xlabel('Tractor g')
-    kw_leg= dict(loc='upper left',fontsize=8)
-    axes[0,col].legend(**kw_leg)
-    axes[1,col].legend(**kw_leg)
-    axes[2,col].legend(**kw_leg) 
-    plt.savefig(fn,bbox_extra_artists=[xlab,ylab], bbox_inches='tight')
+    for row in range(4):
+        for col in range(2):
+            axes[row,col].set_xlim(0.5,2)
+            axes[row,col].set_ylim(0.2,1.3)
+            if row <= 2:
+                axes[row,col].set_xticklabels([])
+            if col == 1:
+                axes[row,col].set_yticklabels([])
+    for row in range(4):
+        ylab=axes[row,0].set_ylabel('g-r') # (True)')
+        #axes[row,1].set_ylabel('g-r (Tractor)')
+    xlab=axes[-1,0].set_xlabel('r-z') # (True)')
+    xlab=axes[-1,1].set_xlabel('r-z') # (Tractor)')
+    title=axes[0,0].set_title('Truth',fontsize=14)
+    title=axes[0,1].set_title('Tractor',fontsize=14)
+    plt.savefig(fn,bbox_extra_artists=[xlab,ylab,title], bbox_inches='tight')
     plt.close()
     print('Wrote %s' % fn)
 
@@ -760,15 +822,15 @@ def rec_lost_contam_grz(dat,fn='rec_lost_contam_grz.png',
     x_var= ['true_mag','galdepth','redshift'][x_ivar]
     kw_hist=dict(bins=30,normed=False)
 
-    figs,axes= plt.subplots(3,1,figsize=(5,10))
-    plt.subplots_adjust(hspace=0.4)
+    figs,axes= plt.subplots(3,1,figsize=(6,9))
+    plt.subplots_adjust(hspace=0.3)
 
     ratio_area= 1. 
     for ax,band in zip(axes,'grz'):
         if x_var == 'true_mag':
             _x_var= plots.flux2mag(dat.get(band+'flux')/\
                                    dat.get('mw_transmission_'+band))
-            xlab= 'true mag %s' % band
+            xlab= '%s (true mag)' % band
             xlim= dict(g=(21.6,23),
                        r=(20.75,22.5),
                        z=(19.5,22))
@@ -792,9 +854,14 @@ def rec_lost_contam_grz(dat,fn='rec_lost_contam_grz.png',
         #print('true_mag=',true_mag[isPostiveFlux],'trac_mag=',dmag[isPostiveFlux])
         
         # Plot
-        for lab,color,keep in [('lost (recovered but fail TS)','g', (isRec) & (is_elg_input) & (~is_elg_trac)),
-                               ('Tractor ELG','b', (isRec) & (is_elg_input) & (is_elg_trac)),
-                               ('Tractor ELG (contamiation)', 'c',(isRec) & (~is_elg_input) & (is_elg_trac))]:
+        for lab,color,keep in [('Correct (Tractor ELG)','b', 
+                                  (isRec) & (is_elg_input) & (is_elg_trac)),
+                               ('Contamination (Tractor ELG wrong)','c',
+                                  (isRec) & (~is_elg_input) & (is_elg_trac)),
+                               ('Lost (measure fails TS)','g',
+                                  (isRec) & (is_elg_input) & (~is_elg_trac)),
+                               ('Lost (not recovered)','m',
+                                  (~isRec) & (is_elg_input))]:
             myhist(ax,_x_var[keep],color=color,label=lab,range=xlim[band],**kw_hist)
         ylab='Number'
         if kw_hist['normed']:
@@ -802,73 +869,8 @@ def rec_lost_contam_grz(dat,fn='rec_lost_contam_grz.png',
         ylabel=ax.set_ylabel(ylab)
         xlabel=ax.set_xlabel(xlab)
 
-    leg=axes[0].legend(loc=(0,1.01),ncol=2,fontsize=12,markerscale=3)
+    leg=axes[0].legend(loc=(0,1.01),ncol=2,fontsize=10,markerscale=3)
     plt.savefig(fn,bbox_extra_artists=[xlabel,ylabel,leg], bbox_inches='tight')
-    plt.close()
-    print('Wrote %s' % fn)
-
-def rec_lost_contam_by_type(dat,fn='rec_lost_contam_by_type',
-                            band='g',x_ivar=0):
-    x_ivar=0
-    x_var= ['true_mag','galdepth','redshift'][x_ivar]
-    types= np.char.strip(dat.get('tractor_type'))
-    use_types= ['PSF','SIMP','REX','EXP','DEV','COMP']
-
-    kw_hist=dict(bins=30,normed=False)
-
-    figs,axes= plt.subplots(1,3,figsize=(12,4))
-    plt.subplots_adjust(wspace=0.2)
-
-    ratio_area= 1. 
-    for ax,which in zip(axes,
-                        ['lost (recovered but fail TS)','Tractor ELG',
-                         'Tractor ELG (contamiation)']):
-        if x_var == 'true_mag':
-            _x_var= plots.flux2mag(dat.get(band+'flux')/\
-                                   dat.get('mw_transmission_'+band))
-            xlab= 'true mag %s' % band
-            xlim= dict(g=(21.6,23),
-                       r=(20.75,22.5),
-                       z=(19.5,22))
-        elif x_var == 'galdepth':
-            flux_for_depth= 5 / np.sqrt(dat.get('tractor_galdepth_'+band))
-            _x_var= plots.flux2mag(flux_for_depth/\
-                                     dat.get('mw_transmission_'+band))
-            xlab= 'galdepth %s' % band
-            xlim= dict(g=(22.5,24.5),
-                       r=(22.5,24.5),
-                       z=(21.5,23.5))
-        elif x_var == 'redshift':
-            _x_var= dat.psql_redshift
-            xlab= 'redshift'
-            xlim= dict(g=(0,1.5),
-                       r=(0,1.5),
-                       z=(0,1.5))
-        #isPostiveFlux= ((np.isfinite(dmag)) &
-        #                (np.isfinite(true_mag)))
-        #isPostiveFlux= np.ones(len(dmag),bool)
-        #print('true_mag=',true_mag[isPostiveFlux],'trac_mag=',dmag[isPostiveFlux])
-        if 'lost' in which:
-            keep= (isRec) & (is_elg_input) & (~is_elg_trac)
-        elif 'contam' in which:
-            keep= (isRec) & (~is_elg_input) & (is_elg_trac)
-        else:
-            keep= (isRec) & (is_elg_input) & (is_elg_trac)
-        ax.set_title(which)
-        
-        # Plot
-        for typ,color in zip(use_types,'kbbgmc'):
-            subset= (keep) & (types == typ)
-            if len(_x_var[subset]) > 0:
-                myhist(ax,_x_var[subset],color=color,label=typ,range=xlim[band],**kw_hist)
-        ylab='Number'
-        if kw_hist['normed']:
-            ylab='PDF'
-        ylabel=ax.set_ylabel(ylab)
-        xlabel=ax.set_xlabel(xlab)
-    axes[0].legend(loc='upper left',ncol=1,fontsize=10)
-    fn=fn.replace('.png','_%s.png' % band)
-    plt.savefig(fn,bbox_extra_artists=[xlabel,ylabel], bbox_inches='tight')
     plt.close()
     print('Wrote %s' % fn)
 
@@ -1130,6 +1132,7 @@ if args.which == 'cosmos':
     grz_hist_input_noise_ext(dat, **kw_lims)
     grz_hist_input_ext(dat,**kw_lims)
     grz_hist_input_rec(dat,**kw_lims)
+    grz_hist_by_type(dat,**kw_lims)
     noise_added_1(dat)
     noise_added_2(dat)
     number_per_type_input_rec_meas(dat)
@@ -1150,20 +1153,23 @@ if args.which == 'cosmos':
         fix_for_delta_flux(dat, band=band)
 
 elif args.which == 'eboss':
-    pad=0.2
+    kw_lims= dict(glim=(21.5,23.25),
+                  rlim=(20.5,23.),
+                  zlim=(19.5,22.5))
+    
     delta_dec_vs_delta_ra(dat,xlim=(-1.,1.),ylim=(-1.,1.),nbins=(60,60))
     e1_e2(dat,nbins=(120,120),recovered=False)
     e1_e2(dat,nbins=(120,120),recovered=True)
-    grz_hist_input_noise_ext(dat)
-    grz_hist_input_ext(dat)
-    grz_hist_input_rec(dat,
-                       glim=(22-pad,24.5+pad),rlim=(21.4-pad,23.9+pad),zlim=(20.5-pad,23+pad))
+    grz_hist_input_noise_ext(dat, **kw_lims)
+    grz_hist_input_ext(dat,**kw_lims)
+    grz_hist_input_rec(dat,**kw_lims)
+    grz_hist_by_type(dat,**kw_lims)
+    grz_hist_by_type2(dat,**kw_lims)
     noise_added_1(dat)
     noise_added_2(dat)
     number_per_type_input_rec_meas(dat)
     confusion_matrix_by_type(dat)
-    fraction_recovered(dat, survey_for_depth='desi',
-                       glim=(22-pad,24.5+pad),rlim=(21.4-pad,23.9+pad),zlim=(20.5-pad,23+pad))
+    fraction_recovered(dat, survey_for_depth='desi',**kw_lims)
     fraction_recovered_vs_rhalf(dat)
     num_std_dev_gaussfit_flux(dat,delta_lims= (-5,5),
                               sub_mean= True)
@@ -1175,12 +1181,12 @@ elif args.which == 'eboss':
                     nbins=(60,30),**kw_lims)
     delta_vs_grzmag(dat,delta='dmag',delta_lims=(-1,1),
                     nbins=(60,30),**kw_lims)
+
     for band in 'grz':
         fix_for_delta_flux(dat, band=band)
-        rec_lost_contam_by_type(dat,band=band,x_ivar=0)
         rec_lost_contam_delta_by_type(dat,band=band,
                                       x_ivar=0,y_ivar=0,percentile_lines=False)
-    rec_lost_contam_gr_rz_g(dat)
+    rec_lost_contam_gr_rz(dat)
     rec_lost_contam_grz(dat,x_ivar=0)
     rec_lost_contam_delta(dat,x_ivar=0,y_ivar=0,percentile_lines=False)
     rec_lost_contam_input_elg_notelg(dat)
