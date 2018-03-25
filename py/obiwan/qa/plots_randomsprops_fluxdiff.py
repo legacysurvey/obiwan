@@ -672,7 +672,10 @@ def num_std_dev_gaussfit_flux(dat,fn='num_std_dev_gaussfit_flux.png',
     fn= fn.replace('.png','_bytype_%s.png' % typ)
     assert(keep_what_put_in in ['all','neq1','neq4','rhalfeqpt5',
                                 'neq1_notrhalf','neq4_notrhalf',
-                                'frac_flux','fracin'])
+                                'fracflux','fracflux_keep_bad',
+                                'fracin','fracin_keep_bad',
+                                'allmask','allmask_keep_bad',
+                                'fracmask','fracmask_keep_bad'])
     if keep_what_put_in != 'all':
         fn= fn.replace('.png','_keepwhatputin_%s.png' % keep_what_put_in)
     if thresh:
@@ -693,18 +696,38 @@ def num_std_dev_gaussfit_flux(dat,fn='num_std_dev_gaussfit_flux.png',
             keep= (keep) & (dat.n == 1)
         elif keep_what_put_in == 'neq4':
             keep= (keep) & (dat.n == 4)
-        elif keep_what_put_in == 'frac_flux':
+        elif keep_what_put_in == 'fracflux':
             fraction= np.max(np.array([dat.tractor_fracflux_g,
                                        dat.tractor_fracflux_r,
                                        dat.tractor_fracflux_z]),axis=0)
             assert(len(fraction) == len(dat))
             keep= (keep) & (fraction < thresh)
-        elif keep_what_put_in == 'fracin':
-            fraction= np.mean(np.array([dat.tractor_fracin_g,
-                                        dat.tractor_fracin_r,
-                                        dat.tractor_fracin_z]),axis=0)
-            assert(len(fraction) == len(dat))
-            keep= (keep) & (fraction > thresh)
+        elif keep_what_put_in in ['fracin','fracin_keep_bad']:
+            frac= np.mean(np.array([dat.tractor_fracin_g,
+                                    dat.tractor_fracin_r,
+                                    dat.tractor_fracin_z]),axis=0)
+            assert(len(frac) == len(dat))
+            if keep_what_put_in == 'fracin':
+                keep= (keep) & (frac > thresh) #higher fractions are good sources
+            elif keep_what_put_in == 'fracin_keep_bad':
+                keep= (keep) & (frac <= thresh) 
+        elif keep_what_put_in in ['fracmask','fracmask_keep_bad']:
+            frac= np.mean(np.array([dat.tractor_fracmasked_g,
+                                    dat.tractor_fracmasked_r,
+                                    dat.tractor_fracmasked_z]),axis=0)
+            assert(len(frac) == len(dat))
+            if keep_what_put_in == 'fracmask':
+                keep= (keep) & (frac < thresh) 
+            elif keep_what_put_in == 'fracmask_keep_bad':
+                keep= (keep) & (frac >= thresh) 
+        elif keep_what_put_in in ['allmask','allmask_keep_bad']:
+            good= ((dat.tractor_allmask_g == 0) &
+                   (dat.tractor_allmask_r == 0) &
+                   (dat.tractor_allmask_z == 0))
+            if keep_what_put_in == 'allmask':
+                keep= (keep) & (good) 
+            elif keep_what_put_in == 'allmask_keep_bad':
+                keep= (keep) & (~good) 
         elif keep_what_put_in == 'rhalfeqpt5':
             keep= (keep) & (is_rhalf)
         elif keep_what_put_in == 'neq1_notrhalf':
@@ -1379,27 +1402,37 @@ elif args.which == 'eboss':
                   rlim=(20.5,23.),
                   zlim=(19.5,22.5))
      
-    # fracin IS RESPONSIBLE for peak at 1-2 sigma!!
-    for thresh in np.linspace(0.5,1.1,num=7): 
-        num_std_dev_gaussfit_flux(dat,keep_what_put_in='fracin',thresh=thresh,
+    for suffix in ['','_keep_bad']:
+        # fracin IS RESPONSIBLE for peak at 1-2 sigma!!
+        # num_std_dev for fracin < 0.7 sample and fracin >= 0.7 sample
+        for thresh in np.linspace(0.4,1.,num=7): 
+            num_std_dev_gaussfit_flux(dat,keep_what_put_in='fracin'+suffix,thresh=thresh,
+                                      typ='all',delta_lims= (-7,7),
+                                      sub_mean= True)
+        # Allmask does not affect peak at 1-2 sigma
+        num_std_dev_gaussfit_flux(dat,keep_what_put_in='allmask'+suffix,
                                   typ='all',delta_lims= (-7,7),
                                   sub_mean= True)
+        # Fracmask does not affect peak at 1-2 sigma
+        for thresh in np.linspace(0.1,0.5,num=5): 
+            num_std_dev_gaussfit_flux(dat,keep_what_put_in='fracmask'+suffix,thresh=thresh,
+                                      typ='all',delta_lims= (-7,7),
+                                      sub_mean= True)
+        # Fracflux does not affect peak at 1-2 sigma
+        for thresh in [0.01,0.5]: 
+            num_std_dev_gaussfit_flux(dat,keep_what_put_in='fracflux'+suffix,thresh=thresh,
+                                      typ='all',delta_lims= (-7,7),
+                                      sub_mean= True)
+    # Injected 0.45 < rhalf < 0.55 does not affect peak at 1-2 sigma
+    for keep_what in ['rhalfeqpt5','neq1_notrhalf','neq4_notrhalf']:
+        num_std_dev_gaussfit_flux(dat,keep_what_put_in=keep_what,
+                                  typ='all',delta_lims= (-7,7),
+                                  sub_mean=True)
     # Tractor measures input EXP much better than in put DEV
     for keep_what in ['neq1','neq4']:
         num_std_dev_gaussfit_flux(dat,keep_what_put_in=keep_what,
                                   typ='all',delta_lims= (-7,7),
                                   sub_mean= True)
-    # proof frac_flux is not responsible for peak at 1-2 sigma
-    for thresh in [0.01,0.5]: #np.linspace(0.01,0.09,num=9): 
-        num_std_dev_gaussfit_flux(dat,keep_what_put_in='frac_flux',thresh=thresh,
-                                  typ='all',delta_lims= (-7,7),
-                                  sub_mean= True)
-    # Proof that injected 0.45 < rhalf < 0.55 
-    # are not responsible for peak at 1-2 sigma
-    for keep_what in ['rhalfeqpt5','neq1_notrhalf','neq4_notrhalf']:
-        num_std_dev_gaussfit_flux(dat,keep_what_put_in=keep_what,
-                                  typ='all',delta_lims= (-7,7),
-                                  sub_mean=True)
    
     delta_dec_vs_delta_ra(dat,xlim=(-1.,1.),ylim=(-1.,1.),nbins=(60,60))
     e1_e2(dat,nbins=(120,120),recovered=False)
