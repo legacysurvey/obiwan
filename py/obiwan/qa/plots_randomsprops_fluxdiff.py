@@ -472,6 +472,42 @@ def fraction_recovered(dat,fn='fraction_recovered.png',
     plt.close()
     print('Wrote %s' % fn)
 
+def redshifts_recovered(dat,fn='redshifts_recovered.png'):
+    figs,ax= plt.subplots(2,1,figsize=(4,6))
+    plt.subplots_adjust(hspace=0.2)
+
+    bins= np.linspace(0,1.5,num=30)
+    # top: pdf of injected all and NGC elgs vs redshift
+    myhist(ax[0],dat.psql_redshift[is_elg_input],bins=bins,color='b',
+           label='NGC ELG',normed=True)
+    #myhist(ax[0],dat.psql_redshift[(is_elg_input) & (isRec)],
+    #       bins=bins,color='m',label='recovered',normed=True)
+    myhist(ax[0],dat.psql_redshift[(is_elg_input) & (isRec) & (is_elg_trac)],
+           bins=bins,color='g',label='legacypipe',normed=True)
+    # bottom: fraction of recovered eboss elgs that loose to tractor measurement error
+    n_elg,_= np.histogram(dat.psql_redshift[(is_elg_input)],
+                                   bins=bins,normed=False)
+    n_elg_legacypipe,_= np.histogram(dat.psql_redshift[(is_elg_input) & (isRec) & (is_elg_trac)],
+                                   bins=bins,normed=False)
+    n_notelg_legacypipe,_= np.histogram(dat.psql_redshift[(~is_elg_input) & (isRec) & (is_elg_trac)],
+                                   bins=bins,normed=False)
+    my_step(ax[1],bins,n_elg_legacypipe/n_elg.astype(float),
+            color='g',label='legacypipe')
+    my_step(ax[1],bins,n_notelg_legacypipe/n_elg.astype(float),
+            color='m',label='contam by legacypipe')
+    
+    xlab=ax[-1].set_xlabel(r'redshift')
+    ylab=ax[0].set_ylabel('PDF')
+    ylab=ax[1].set_ylabel('Fraction')
+    ax[1].set_ylim(0,1)
+    for i in range(2):
+        ax[i].set_xlim(bins[0],bins[-1])
+        ax[i].legend(loc='upper left',fontsize=8)
+    ax[0].set_yscale('log')
+    plt.savefig(fn,bbox_extra_artists=[xlab,ylab], bbox_inches='tight')
+    plt.close()
+    print('Wrote %s' % fn)
+
 
 
 
@@ -1342,7 +1378,7 @@ elif args.which == 'eboss':
     kw_lims= dict(glim=(21.5,23.25),
                   rlim=(20.5,23.),
                   zlim=(19.5,22.5))
-   
+     
     # fracin IS RESPONSIBLE for peak at 1-2 sigma!!
     for thresh in np.linspace(0.5,1.1,num=7): 
         num_std_dev_gaussfit_flux(dat,keep_what_put_in='fracin',thresh=thresh,
@@ -1377,6 +1413,7 @@ elif args.which == 'eboss':
     noise_added_2(dat)
     number_per_type_input_rec_meas(dat)
     confusion_matrix_by_type(dat)
+    redshifts_recovered(dat)
     fraction_recovered(dat, survey_for_depth='desi',**kw_lims)
     fraction_recovered_vs_rhalf(dat)
     num_std_dev_gaussfit_flux(dat,delta_lims= (-5,5),
