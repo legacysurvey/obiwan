@@ -25,10 +25,16 @@ args = parser.parse_args()
 
 dat= fits_table(args.randoms_table)
 
-fracin= np.mean(np.array([dat.tractor_fracin_g,
-                          dat.tractor_fracin_r,
-                          dat.tractor_fracin_z]),axis=0)
-isRec= (dat.obiwan_mask == 1) #& (fracin > 0.7)
+#avg_fracin= np.mean(np.array([dat.tractor_fracin_g,
+#                          dat.tractor_fracin_r,
+#                          dat.tractor_fracin_z]),axis=0)
+#keepFracin= avg_fracin >= 0.7
+
+keepFracin= ((dat.tractor_fracin_g > 0.2) &
+             (dat.tractor_fracin_r > 0.2) & 
+             (dat.tractor_fracin_z > 0.2))
+isRec= (dat.obiwan_mask == 1) 
+#isRec= (isRec) & (keepFracin)
 
 rz= dat.psql_r - dat.psql_z
 gr= dat.psql_g - dat.psql_r
@@ -43,6 +49,12 @@ if args.which == 'eboss':
 #elif args.which == 'desi':
 #    is_elg_input= plots.desi_ts(dat.psql_g,rz,gr)
 #    is_elg_trac= plots.desi_ts(mags['g'],mags['r']-mags['z'],mags['g']-mags['r'])
+print('recovered of total: %f' % (len(dat[isRec])/len(dat)))
+print('recovered keepFracin of total: %f' % (len(dat[(isRec) & (keepFracin)])/len(dat)))
+print('elg input of total: %f' % (len(dat[is_elg_input])/len(dat)))
+print('keepFracin of recovered: %f' % (len(dat[(isRec) & (keepFracin)])/len(dat[isRec])))
+print('fracin elgs >= 0.7 of recovered elgs: %f' % (len(dat[(isRec) & (keepFracin) & (is_elg_trac)])/len(dat[(isRec) & (is_elg_input)])))
+
 ##########################
 
 
@@ -159,13 +171,14 @@ def grz_hist_input_rec(dat,fn='grz_hist_input_rec.png',
                z=zlim)
 
     kw_hist= dict(normed=False)
+    keep= (isRec) & (keepFracin)
     for ax,band in zip(axes,'grz'):
         mag= plots.flux2mag(dat.get(band+'flux')/\
                                 dat.get('mw_transmission_'+band))
         bins=np.linspace(xlim[band][0],xlim[band][1],num=30)
         myhist(ax,mag,bins=bins,
                color='b',label='input',**kw_hist)
-        myhist(ax,mag[isRec],bins=bins,
+        myhist(ax,mag[keep],bins=bins,
                color='g',label='recovered',**kw_hist)
         xlab=ax.set_xlabel('True mag %s' % band)
         ylab=ax.set_ylabel('Number')
@@ -177,53 +190,6 @@ def grz_hist_input_rec(dat,fn='grz_hist_input_rec.png',
 
 def grz_hist_by_type(dat,fn='grz_hist_by_type.png',x_ivar=0,
                      glim=(21.6,23),rlim=(20.75,22.5),zlim=(19.5,22)):
-
-    x_ivar=0
-    x_var= ['true_mag','galdepth','redshift'][x_ivar]
-    types= np.char.strip(dat.get('tractor_type'))
-
-    kw_hist=dict(bins=30,normed=True)
-
-    figs,axes= plt.subplots(3,1,figsize=(6,9))
-    plt.subplots_adjust(hspace=0.3)
-
-    ratio_area= 1. 
-    xlim= dict(g=glim,
-               r=rlim,
-               z=zlim)
-    for ax,band in zip(axes,'grz'):
-        if x_var == 'true_mag':
-            _x_var= plots.flux2mag(dat.get(band+'flux')/\
-                                   dat.get('mw_transmission_'+band))
-            xlab= '%s (true mag)' % band
-        elif x_var == 'galdepth':
-            flux_for_depth= 5 / np.sqrt(dat.get('tractor_galdepth_'+band))
-            _x_var= plots.flux2mag(flux_for_depth/\
-                                     dat.get('mw_transmission_'+band))
-            xlab= 'galdepth %s' % band
-        elif x_var == 'redshift':
-            _x_var= dat.psql_redshift
-            xlab= 'redshift'
-        #isPostiveFlux= ((np.isfinite(dmag)) &
-        #                (np.isfinite(true_mag)))
-        #isPostiveFlux= np.ones(len(dmag),bool)
-        #print('true_mag=',true_mag[isPostiveFlux],'trac_mag=',dmag[isPostiveFlux])
-        for typ,color in zip(['SIMP','EXP','DEV','PSF'],'bgmc'):
-            keep= (isRec) & (types == typ)
-            if len(_x_var[keep]) > 0:
-                myhist(ax,_x_var[keep],color=color,label=typ,range=xlim[band],**kw_hist)
-        ylab='Number'
-        if kw_hist['normed']:
-            ylab='PDF'
-        ylabel=ax.set_ylabel(ylab)
-        xlabel=ax.set_xlabel(xlab)
-    axes[0].legend(loc='upper left',ncol=1,fontsize=10)
-    plt.savefig(fn,bbox_extra_artists=[xlabel,ylabel], bbox_inches='tight')
-    plt.close()
-    print('Wrote %s' % fn)
-
-def grz_hist_by_type2(dat,fn='grz_hist_by_type2.png',x_ivar=0,
-                      glim=(21.6,23),rlim=(20.75,22.5),zlim=(19.5,22)):
 
     x_ivar=0
     x_var= ['true_mag','galdepth','redshift'][x_ivar]
@@ -262,7 +228,7 @@ def grz_hist_by_type2(dat,fn='grz_hist_by_type2.png',x_ivar=0,
                                                   ['SIMP','PSF','EXP']],['bgm','mcb']):
             xlabel=axes[row,col].set_xlabel(xlab)
             for typ,color in zip(use_types,colors):
-                keep= (isRec) & (types == typ)
+                keep= (isRec) & (keepFracin) & (types == typ)
                 if len(_x_var[keep]) > 0:
                     if (col == 1 and typ == 'EXP') or (col == 0 and typ == 'SIMP'):
                         #alpha= 0.25
@@ -286,27 +252,31 @@ def grz_hist_by_type2(dat,fn='grz_hist_by_type2.png',x_ivar=0,
     plt.close()
     print('Wrote %s' % fn)
 
+def grz_hist_elg_notelg(dat,fn='grz_hist_elg_notelg.png',
+                        glim=(21.6,23),rlim=(20.75,22.5),zlim=(19.5,22)):
+    fig,axes=plt.subplots(3,1,figsize=(6,12))
+    plt.subplots_adjust(hspace=0.3)
+    xlim= dict(g=glim,
+               r=rlim,
+               z=zlim)
 
+    kw=dict(normed=True)
+    for ax,band in zip(axes,'grz'):
+        kw.update(bins=np.linspace(xlim[band][0],xlim[band][1],num=30),
+                  range=xlim[band])
+        myhist(ax,dat.get('psql_'+band)[is_elg_input],color='b',label='input, ELG',**kw)
+        myhist(ax,dat.get('psql_'+band)[~is_elg_input],color='g',label='input, not ELG',**kw)
 
-def noise_added_1(dat,fn='noise_added_1.png'):
-    fig,ax=plt.subplots()
-
-    kw_hist= dict(bins=10,normed=False)
-    ylim=2e-15
-    for band,color in zip('grz','gbm'):
-        flux= plots.mag2flux(dat.get('psql_'+band))
-        flux_noise= dat.get(band+'flux')/\
-                        dat.get('mw_transmission_'+band)
-        myhist(ax,flux_noise-flux,range=(-ylim,ylim),color=color,
-               label=band,**kw_hist)
-        ylab=ax.set_ylabel('Number')
-        xlab=ax.set_xlabel('dflux (input - db)')
-    ax.legend()   
+    for ax,band in zip(axes,'grz'):
+        xlab=ax.set_xlabel(band)
+        ylab=ax.set_ylabel('PDF')
+    axes[0].legend(loc='upper left')
     plt.savefig(fn,bbox_extra_artists=[xlab,ylab], bbox_inches='tight')
     plt.close()
     print('Wrote %s' % fn)
 
-def noise_added_2(dat,fn='noise_added_2.png'):
+
+def sum_of_noise_added(dat,fn='sum_of_noise_added.png'):
     xlim= dict(g=(21.5,23.25),
                r=(20.5,23),
                z=(19.5,22.5))
@@ -330,8 +300,9 @@ def noise_added_2(dat,fn='noise_added_2.png'):
 def delta_dec_vs_delta_ra(dat,fn='delta_dec_vs_delta_ra.png',
                           xlim=(-1,1),ylim=(-1,1),nbins=(30,30)):
     fig,ax= plt.subplots() #figsize=(8, 5))
-    plots.myhist2D(ax,(dat.ra[isRec] - dat.tractor_ra[isRec])*3600,
-                      (dat.dec[isRec] - dat.tractor_dec[isRec])*3600,
+    keep= (isRec) & (keepFracin)
+    plots.myhist2D(ax,(dat.ra[keep] - dat.tractor_ra[keep])*3600,
+                      (dat.dec[keep] - dat.tractor_dec[keep])*3600,
                    xlim=xlim,ylim=ylim,nbins=nbins)
     ax.axhline(0,c='k',ls='--')
     ax.axvline(0,c='k',ls='--')
@@ -352,10 +323,10 @@ def number_per_type_input_rec_meas(dat,fn='number_per_type_input_rec_meas.png'):
 
     #number input, recovered,...
     injected= [0,len(dat[dat.n == 1]),len(dat[dat.n == 4]),0]
-    recovered= [0,len(dat[(isRec) & (dat.n == 1)]),
-                      len(dat[(isRec) & (dat.n == 4)]),0]
-    tractor= [len(dat[(isRec) & (types == typ)])
-                   for typ in use_types]
+    recovered= [0,len(dat[(isRec) & (keepFracin) & (dat.n == 1)]),
+                      len(dat[(isRec) & (keepFracin) & (dat.n == 4)]),0]
+    tractor= [len(dat[(isRec) & (keepFracin) & (types == typ)])
+              for typ in use_types]
 
     df= pd.DataFrame(dict(type=use_types,
                           injected=injected,
@@ -376,8 +347,10 @@ def confusion_matrix_by_type(dat,fn='confusion_matrix_by_type.png'):
     trac_types= np.char.strip(dat.get('tractor_type'))
     trac_types[pd.Series(trac_types).isin(['SIMP','REX']).values]= 'EXP'
     input_types= np.array(['EXP']*len(dat))
-    input_types[(isRec) & (dat.n == 4)]= 'DEV'
-    cm= plots.create_confusion_matrix(input_types[isRec],trac_types[isRec], 
+
+    keep= (isRec) & (keepFracin)
+    input_types[(keep) & (dat.n == 4)]= 'DEV'
+    cm= plots.create_confusion_matrix(input_types[keep],trac_types[keep], 
                                       poss_types=use_types)
 
     plt.imshow(cm, interpolation='nearest', cmap=plt.cm.Blues, vmin=0,vmax=1)
@@ -409,13 +382,13 @@ def hist_true_rhalf_by_type(dat,fn='hist_true_rhalf_by_type'):
     bins= np.linspace(0,2,num=30)
     myhist(ax[0],dat.rhalf,bins=bins,color='k',
            label='Injected',normed=True)
+    
+    keep= (isRec) & (keepFracin)
     for typ,color in zip(['SIMP','PSF'],'bc'):
-        keep= (isRec) & (types == typ)
-        myhist(ax[1],dat.rhalf[keep],bins=bins,color=color,
+        myhist(ax[1],dat.rhalf[(keep) & (types == typ)],bins=bins,color=color,
                label=typ,normed=True)
     for typ,color in zip(['EXP','DEV'],'gm'):
-        keep= (isRec) & (types == typ)
-        myhist(ax[2],dat.rhalf[keep],bins=bins,color=color,
+        myhist(ax[2],dat.rhalf[(keep) & (types == typ)],bins=bins,color=color,
                label=typ,normed=True)
     
     #plots.mytext(ax,0.9,0.9,typ.upper(),fontsize=14)
@@ -452,11 +425,12 @@ def fraction_recovered(dat,fn='fraction_recovered.png',
     D= getDepth()
 
     kw= dict(normed=False,return_vals=True)
+    keep= (isRec) & (keepFracin)
     for ax,band in zip(axes,'grz'):
         mag= plots.flux2mag(dat.get(band+'flux'))
-        mag_rec= mag[isRec]
+        mag_rec= mag[keep]
         n,bins= np.histogram(mag,bins=30,range=xlim[band],normed=False)
-        n_rec,_= np.histogram(mag[isRec],bins=bins,range=xlim[band],normed=False)
+        n_rec,_= np.histogram(mag[keep],bins=bins,range=xlim[band],normed=False)
         my_step(ax,bins,n_rec.astype(float)/n)
         ax.axhline(0.5,c='k',ls='--')
         #ax.axvline(plots.getDepth().eboss_ngc(band),c='k',ls='--')
@@ -482,14 +456,14 @@ def redshifts_recovered(dat,fn='redshifts_recovered.png'):
            label='NGC ELG',normed=True)
     #myhist(ax[0],dat.psql_redshift[(is_elg_input) & (isRec)],
     #       bins=bins,color='m',label='recovered',normed=True)
-    myhist(ax[0],dat.psql_redshift[(is_elg_input) & (isRec) & (is_elg_trac)],
+    myhist(ax[0],dat.psql_redshift[(is_elg_input) & (isRec) & (keepFracin) & (is_elg_trac)],
            bins=bins,color='g',label='legacypipe',normed=True)
     # bottom: fraction of recovered eboss elgs that loose to tractor measurement error
     n_elg,_= np.histogram(dat.psql_redshift[(is_elg_input)],
                                    bins=bins,normed=False)
-    n_elg_legacypipe,_= np.histogram(dat.psql_redshift[(is_elg_input) & (isRec) & (is_elg_trac)],
+    n_elg_legacypipe,_= np.histogram(dat.psql_redshift[(is_elg_input) & (isRec) & (keepFracin) & (is_elg_trac)],
                                    bins=bins,normed=False)
-    n_notelg_legacypipe,_= np.histogram(dat.psql_redshift[(~is_elg_input) & (isRec) & (is_elg_trac)],
+    n_notelg_legacypipe,_= np.histogram(dat.psql_redshift[(~is_elg_input) & (isRec) & (keepFracin) & (is_elg_trac)],
                                    bins=bins,normed=False)
     my_step(ax[1],bins,n_elg_legacypipe/n_elg.astype(float),
             color='g',label='legacypipe')
@@ -546,7 +520,8 @@ def fraction_recovered_vs_rhalf(dat,fn='fraction_recovered_vs_rhalf.png'):
     kw=dict(normed=False,range=xlim)
 
     n,bins= np.histogram(dat.rhalf,bins=30,**kw)
-    n_rec,_= np.histogram(dat.rhalf[isRec],bins=bins,**kw)
+    keep= (isRec) & (keepFracin)
+    n_rec,_= np.histogram(dat.rhalf[keep],bins=bins,**kw)
     my_step(ax,bins,n_rec/n)
     ax.axhline(0.5,c='k',ls='--')
 
@@ -557,13 +532,100 @@ def fraction_recovered_vs_rhalf(dat,fn='fraction_recovered_vs_rhalf.png'):
     plt.close()
     print('Wrote %s' % fn)
 
+def hist_all_quantities_fracin_cut(dat,fn='hist_all_quantities_fracin_cut.png',
+                                   glim=None,rlim=None,zlim=None):
+    figs,ax= plt.subplots(3,2,figsize=(8,9))
+    plt.subplots_adjust(hspace=0.3,wspace=0.2)
+    xlim= dict(g=glim,
+               r=rlim,
+               z=zlim)
+    # left column is grz, right column is rhalf, redshift, number n=1,n=4
+    kw_hist= dict(normed=True)
+    for row,band in zip(range(3),'grz'):
+        bins= np.linspace(xlim[band][0],xlim[band][1],num=30)
+        true_mag= plots.flux2mag(dat.get(band+'flux')/\
+                                   dat.get('mw_transmission_'+band))
+        myhist(ax[row,0],true_mag[(isRec) & (keepFracin)],bins=bins,color='b',
+               label='fracin >= 0.7 (good)',**kw_hist)
+        myhist(ax[row,0],true_mag[(isRec) & (~keepFracin)],bins=bins,color='g',
+               label='fracin < 0.7 (bad)',**kw_hist)
+        xlab=ax[row,0].set_xlabel(r'%s (true mag)' % band)
+        ylab=ax[row,0].set_ylabel('PDF')
+    # rhalf,redshift
+    bins= np.linspace(0,3,num=30)
+    myhist(ax[0,1],dat.rhalf[(isRec) & (keepFracin)],bins=bins,color='b',
+           label='fracin >= 0.7 (good)',**kw_hist)
+    myhist(ax[0,1],dat.rhalf[(isRec) & (~keepFracin)],bins=bins,color='g',
+           label='fracin < 0.7 (bad)',**kw_hist)
+    bins= np.linspace(0,2,num=30)
+    myhist(ax[1,1],dat.psql_redshift[(isRec) & (keepFracin)],bins=bins,color='b',
+           label='fracin >= 0.7 (good)',**kw_hist)
+    myhist(ax[1,1],dat.psql_redshift[(isRec) & (~keepFracin)],bins=bins,color='g',
+           label='fracin < 0.7 (bad)',**kw_hist)
+    for row,lab in zip([0,1],['rhalf','redshift']):
+        ax[row,1].set_xlabel(lab)
+        ax[row,1].set_ylabel('PDF')
+    # number n=1,n=4
+    types= np.char.strip(dat.get('tractor_type'))
+    types[pd.Series(types).isin(['SIMP','REX']).values]= 'EXP'
+    use_types= ['EXP','DEV']
+    is_true_exp= (isRec) & (dat.n == 1)
+    is_true_dev= (isRec) & (dat.n == 4)
+    true_frac_rem= [len(dat[(is_true_exp) & (~keepFracin)])/len(dat[is_true_exp]),
+                     len(dat[(is_true_dev) & (~keepFracin)])/len(dat[is_true_dev])]
+    is_trac_exp= (isRec) & (types == 'EXP')
+    is_trac_dev= (isRec) & (types == 'DEV')
+    tractor_frac_rem= [len(dat[(is_trac_exp) & (~keepFracin)])/len(dat[is_trac_exp]),
+                        len(dat[(is_trac_dev) & (~keepFracin)])/len(dat[is_trac_dev])]
+    df= pd.DataFrame(dict(type=use_types,
+                          injected=true_frac_rem,
+                          tractor=tractor_frac_rem))
+    df.set_index('type',inplace=True)
+    axi=ax[2,1]
+    df.plot.barh(ax=axi)
+    xlab=axi.set_xlabel('Fraction that are "bad"')
+    axi.set_ylabel('')
+    #for i in range(2):
+    #    ax[i].set_xlim(bins[0],bins[-1])
+    leg=ax[0,0].legend(loc=(0,1.01),ncol=2,fontsize=10)
+    plt.savefig(fn,bbox_extra_artists=[leg,xlab,ylab], bbox_inches='tight')
+    plt.close()
+    print('Wrote %s' % fn)
+
+def fracin_vs_numstddev_2dhist(dat,fn='fracin_vs_numstddev_2dhist.png',
+                               delta_lims=(-6,6),nbins=(30,30)):
+    figs,axes= plt.subplots(3,1,figsize=(6,10))
+    plt.subplots_adjust(hspace=0.4)
+    for ax,band in zip(axes,'grz'):
+        x= dat.get('tractor_flux_'+band) -\
+                   dat.get(band+'flux')
+        x *= np.sqrt(dat.get('tractor_flux_ivar_'+band))
+        
+        y= dat.get('tractor_fracin_%s' % band)
+
+        keep= isRec
+        plots.myhist2D(ax,x[keep],y[keep],
+                       xlim=delta_lims,ylim=(0,1.2),nbins=nbins)
+        ax.axhline(0.7,c='r',ls='dotted')
+        
+        plots.mytext(ax,0.9,0.9,band,fontsize=14)
+        ylab=ax.set_ylabel('fracin')
+    xlab= axes[-1].set_xlabel(r'$\Delta\, Flux\,/\,\sigma$ (Tractor - Truth)')
+    plt.savefig(fn,bbox_extra_artists=[xlab,ylab], bbox_inches='tight')
+    plt.close()
+    print('Wrote %s' % fn)
+
+
+
 
 def fix_for_delta_flux(dat,fn='fix_for_delta_flux.png',
                        band='z'):
     figs,ax= plt.subplots(5,1,figsize=(5,15))
     plt.subplots_adjust(hspace=0)
 
-    dflux= dat.get('tractor_flux_'+band)[isRec] - dat.get(band+'flux')[isRec]
+    keep= (isRec) & (keepFracin)
+
+    dflux= dat.get('tractor_flux_'+band)[keep] - dat.get(band+'flux')[keep]
     rad_aper= [0.5,0.75,1.0,1.5,2.0,3.5,5.0,7.0]
     for cnt,i_aper in zip(range(5),
                           [None,5,6,7,'avg']):
@@ -571,18 +633,18 @@ def fix_for_delta_flux(dat,fn='fix_for_delta_flux.png',
         #ratio_area= (1.5*dat.rhalf[isRec] / rad_aper[i_aper])**2
         if i_aper == 'avg':
             name= 'fix: avg(-aperture_resid %.1f,%.1f)' % (rad_aper[6],rad_aper[7])
-            fix= ratio_area * np.average([dat.get('tractor_apflux_resid_'+band)[isRec,6],
-                                          dat.get('tractor_apflux_resid_'+band)[isRec,7]],
+            fix= ratio_area * np.average([dat.get('tractor_apflux_resid_'+band)[keep,6],
+                                          dat.get('tractor_apflux_resid_'+band)[keep,7]],
                                         axis=0)
-            assert(len(fix)) == len(dat[isRec])
+            assert(len(fix)) == len(dat[keep])
         elif i_aper is None:
             name= 'fix: None'
             fix=0
         else:
             name= 'fix: -aperture_resid %.1f' % rad_aper[i_aper]
-            fix= dat.get('tractor_apflux_resid_'+band)[isRec,i_aper]* ratio_area
+            fix= dat.get('tractor_apflux_resid_'+band)[keep,i_aper]* ratio_area
         y= dflux - fix
-        ax[cnt].scatter(dat.get(band+'flux')[isRec],y,
+        ax[cnt].scatter(dat.get(band+'flux')[keep],y,
                         alpha=0.2,s=5,c='b',label=name)
         ax[cnt].axhline(0,c='k',ls='-',lw=2)
         ax[cnt].axhline(np.median(y),c='y',lw=2,ls='--',
@@ -617,20 +679,20 @@ def delta_vs_grzmag(dat,fn='_vs_grzmag.png',
     xlim= dict(g=glim,
                r=rlim,
                z=zlim)
+    keep= (isRec) & (keepFracin)
     for ax,band in zip(axes,'grz'):
         if delta == 'num_std_dev':
             y= dat.get('tractor_flux_'+band) -\
                        dat.get(band+'flux')
             y *= np.sqrt(dat.get('tractor_flux_ivar_'+band))
             ylabel=r'$\Delta\, Flux\,/\,\sigma$ (Tractor - Truth)'
-            keep= isRec
         elif delta == 'dmag':
             # Opposite subtraction order, so < 0 mean Truth is brighter
             # Just as for delta = num_std_dev
             y= plots.flux2mag(dat.get(band+'flux')) -\
                 plots.flux2mag(dat.get('tractor_flux_'+band)) 
             ylabel=r'$\Delta\, %s$ (Truth - Tractor)' % band
-            keep= (isRec) & (np.isfinite(y))
+            keep= (keep) & (np.isfinite(y))
 
         if typ != 'all':
             types= np.char.strip(dat.get('tractor_type'))
@@ -667,7 +729,7 @@ def gauss_model(p,x):
 def num_std_dev_gaussfit_flux(dat,fn='num_std_dev_gaussfit_flux.png',
                               delta_lims= (-6,6),typ='all',
                               keep_what_put_in='all',thresh=None,
-                              sub_mean= True):
+                              sub_mean= True,cut_on_fracin=False):
     assert(typ in ['all','PSF','SIMP','EXP','DEV','REX'])
     fn= fn.replace('.png','_bytype_%s.png' % typ)
     assert(keep_what_put_in in ['all','neq1','neq4','rhalfeqpt5',
@@ -686,6 +748,8 @@ def num_std_dev_gaussfit_flux(dat,fn='num_std_dev_gaussfit_flux.png',
 
 
     keep= isRec
+    if cut_on_fracin:
+        keep= (keep) & (keepFracin)
     if typ != 'all':
         types= np.char.strip(dat.get('tractor_type'))
         keep= (keep) & (types == typ)
@@ -703,14 +767,19 @@ def num_std_dev_gaussfit_flux(dat,fn='num_std_dev_gaussfit_flux.png',
             assert(len(fraction) == len(dat))
             keep= (keep) & (fraction < thresh)
         elif keep_what_put_in in ['fracin','fracin_keep_bad']:
-            frac= np.mean(np.array([dat.tractor_fracin_g,
-                                    dat.tractor_fracin_r,
-                                    dat.tractor_fracin_z]),axis=0)
+            #frac= np.mean(np.array([dat.tractor_fracin_g,
+            #                        dat.tractor_fracin_r,
+            #                        dat.tractor_fracin_z]),axis=0)
+            frac= ((dat.tractor_fracin_g > thresh) &
+                   (dat.tractor_fracin_r > thresh) &
+                   (dat.tractor_fracin_z > thresh))
             assert(len(frac) == len(dat))
             if keep_what_put_in == 'fracin':
-                keep= (keep) & (frac > thresh) #higher fractions are good sources
+                #keep= (keep) & (frac > thresh) #higher fractions are good sources
+                keep= (keep) & (frac)
             elif keep_what_put_in == 'fracin_keep_bad':
-                keep= (keep) & (frac <= thresh) 
+                #keep= (keep) & (frac <= thresh) 
+                keep= (keep) & (~frac) 
         elif keep_what_put_in in ['fracmask','fracmask_keep_bad']:
             frac= np.mean(np.array([dat.tractor_fracmasked_g,
                                     dat.tractor_fracmasked_r,
@@ -806,7 +875,7 @@ def num_std_dev_gaussfit_rhalf(dat,fn='num_std_dev_gaussfit_rhalf.png',
     num_std_dev= rhalf - dat.rhalf
     num_std_dev *= np.sqrt(dat.get('tractor_shape%s_r_ivar' % eff_typ))
     #keep= (np.isfinite(num_std_dev)) #num_std_dev= num_std_dev[isType]
-    keep= isRec
+    keep= (isRec) & (keepFracin)
     if typ != 'all':
         types= np.char.strip(dat.get('tractor_type'))
         #types[pd.Series(types).isin(['SIMP','REX']).values]= 'EXP'
@@ -887,7 +956,7 @@ def residual_gaussfit_rhalf(dat,fn='residual_gaussfit_rhalf.png',
         rhalf= dat.get('tractor_shape%s_r' % 'exp')
     resid= rhalf - dat.rhalf
     #keep= (np.isfinite(num_std_dev)) #num_std_dev= num_std_dev[isType]
-    keep= isRec
+    keep= (isRec) & (keepFracin)
     if typ != 'all':
         types= np.char.strip(dat.get('tractor_type'))
         #types[pd.Series(types).isin(['SIMP','REX']).values]= 'EXP'
@@ -957,9 +1026,9 @@ def num_std_dev_gaussfit_e1_e2(dat,fn='num_std_dev_gaussfit_e1_e2.png',
     plt.subplots_adjust(hspace=0.4)
 
     typ='exp'
+    keep= (isRec) & (keepFracin) & (types == typ.upper())
     for ax,delta in zip(axes,['e1','e2']):
         data_lab= 'data'
-        isType= types == typ.upper()
         trac_e= dat.get('tractor_shape%s_%s' % (typ,delta))
         if delta == 'e2':
             trac_e *= -1
@@ -971,12 +1040,12 @@ def num_std_dev_gaussfit_e1_e2(dat,fn='num_std_dev_gaussfit_e1_e2.png',
         #print('num_std_dev=',num_std_dev[isType])
         #print('length=',len(num_std_dev[isType]))
         #print('q25,med,q75 num_std_dev=',np.percentile(num_std_dev[isType],25),np.median(num_std_dev[isType]),np.percentile(num_std_dev[isType],75))
-        keep= (isType) & (np.isfinite(num_std_dev)) #num_std_dev= num_std_dev[isType]
+        good= (keep) & (np.isfinite(num_std_dev)) #num_std_dev= num_std_dev[isType]
         
         if sub_mean:
             #keep= ((num_std_dev >= num_std_lims[0]) &
             #       (num_std_dev <= num_std_lims[0]) 
-            dflux_mean= np.mean(num_std_dev[((keep) &
+            dflux_mean= np.mean(num_std_dev[((good) &
                                              (num_std_dev > delta_lims[0]) & 
                                              (num_std_dev < delta_lims[1]))])
             #dflux_mean= np.median(num_std_dev[isRec])
@@ -985,7 +1054,7 @@ def num_std_dev_gaussfit_e1_e2(dat,fn='num_std_dev_gaussfit_e1_e2.png',
             data_lab+=' minus mean (%.2f)' % dflux_mean
         
         bins= np.linspace(delta_lims[0],delta_lims[1],num=30)
-        h=myhist(ax,num_std_dev[keep],bins=bins,color='b',
+        h=myhist(ax,num_std_dev[good],bins=bins,color='b',
                  label=data_lab,normed=True,
                  return_h=True)
         
@@ -1020,20 +1089,23 @@ def num_std_dev_gaussfit_e1_e2(dat,fn='num_std_dev_gaussfit_e1_e2.png',
 
 
 def rec_lost_contam_gr_rz(dat,fn='rec_lost_contam_gr_rz.png'):
-    fig,axes=plt.subplots(4,2,figsize=(10,12))
+    fig,axes=plt.subplots(5,2,figsize=(10,15))
     plt.subplots_adjust(wspace=0,hspace=0)
 
     kw_scatter=dict(marker='.',s=20,alpha=1)
     kw_leg= dict(loc='upper left',fontsize=12,markerscale=3,frameon=False)
 
+    good= (isRec) & (keepFracin)
     for lab,color,row,keep in [('Correct (Tractor ELG)','b',0, 
-                                  (isRec) & (is_elg_input) & (is_elg_trac)),
+                                  (good) & (is_elg_input) & (is_elg_trac)),
                                ('Contamination (Tractor ELG wrong)','g',1,
-                                  (isRec) & (~is_elg_input) & (is_elg_trac)),
+                                  (good) & (~is_elg_input) & (is_elg_trac)),
                                ('Lost (measure fails TS)','c',2,
-                                  (isRec) & (is_elg_input) & (~is_elg_trac)),
+                                  (good) & (is_elg_input) & (~is_elg_trac)),
                                ('Lost (not recovered)','m',3,
-                                  (~isRec) & (is_elg_input))]:
+                                  (~isRec) & (is_elg_input)),:
+                               ('Lost (fracin)','y',4,
+                                  (isRec) & (~keepFracin) & (is_elg_input))]:
         axes[row,0].scatter(dat.psql_r[keep]-dat.psql_z[keep],
                             dat.psql_g[keep]-dat.psql_r[keep],
                             c=color,label=lab,**kw_scatter)
@@ -1043,7 +1115,7 @@ def rec_lost_contam_gr_rz(dat,fn='rec_lost_contam_gr_rz.png'):
         #axes[row,0].legend(**kw_leg)
         mytext(axes[row,0],0.5,0.9,lab,ha='center',fontsize=12)
     
-    for row in range(4):
+    for row in range(5):
         for col in range(2):
             axes[row,col].set_xlim(0.5,2)
             axes[row,col].set_ylim(0.2,1.3)
@@ -1051,7 +1123,7 @@ def rec_lost_contam_gr_rz(dat,fn='rec_lost_contam_gr_rz.png'):
                 axes[row,col].set_xticklabels([])
             if col == 1:
                 axes[row,col].set_yticklabels([])
-    for row in range(4):
+    for row in range(5):
         ylab=axes[row,0].set_ylabel('g-r') # (True)')
         #axes[row,1].set_ylabel('g-r (Tractor)')
     xlab=axes[-1,0].set_xlabel('r-z') # (True)')
@@ -1099,14 +1171,17 @@ def rec_lost_contam_grz(dat,fn='rec_lost_contam_grz.png',
         #print('true_mag=',true_mag[isPostiveFlux],'trac_mag=',dmag[isPostiveFlux])
         
         # Plot
+        good= (isRec) & (keepFracin)
         for lab,color,keep in [('Correct (Tractor ELG)','b', 
-                                  (isRec) & (is_elg_input) & (is_elg_trac)),
+                                  (good) & (is_elg_input) & (is_elg_trac)),
                                ('Contamination (Tractor ELG wrong)','g',
-                                  (isRec) & (~is_elg_input) & (is_elg_trac)),
+                                  (good) & (~is_elg_input) & (is_elg_trac)),
                                ('Lost (measure fails TS)','c',
-                                  (isRec) & (is_elg_input) & (~is_elg_trac)),
+                                  (good) & (is_elg_input) & (~is_elg_trac)),
                                ('Lost (not recovered)','m',
-                                  (~isRec) & (is_elg_input))]:
+                                  (~isRec) & (is_elg_input)),
+                               ('Lost (fracin)','y',
+                                  (isRec) & (~keepFracin) & (is_elg_input))]:
             myhist(ax,_x_var[keep],color=color,label=lab,range=xlim[band],**kw_hist)
         ylab='Number'
         if kw_hist['normed']:
@@ -1175,9 +1250,10 @@ def rec_lost_contam_delta(dat,fn='rec_lost_contam_delta.png',
         
         # Plot
         xlabel=ax.set_xlabel(xlab)
-        for lab,color,keep in [('lost (recovered but fail TS)','g', (isRec) & (is_elg_input) & (~is_elg_trac)),
-                               ('Tractor ELG','b', (isRec) & (is_elg_input) & (is_elg_trac)),
-                               ('Tractor ELG (contamiation)', 'c',(isRec) & (~is_elg_input) & (is_elg_trac))]:
+        good= (isRec) & (keepFracin)
+        for lab,color,keep in [('lost (recovered but fail TS)','g', (good) & (is_elg_input) & (~is_elg_trac)),
+                               ('Tractor ELG','b', (good) & (is_elg_input) & (is_elg_trac)),
+                               ('Tractor ELG (contamiation)', 'c',(good) & (~is_elg_input) & (is_elg_trac))]:
             if percentile_lines:
                 binned= plots.bin_up(_x_var[keep],_y_var[keep], 
                                      bin_minmax=xlim[band],nbins=30)
@@ -1257,6 +1333,7 @@ def rec_lost_contam_delta_by_type(dat,fn='rec_lost_contam_delta_by_type.png',
                    z=(0,1.5))
     ###   
 
+    good= (isRec) & (keepFracin)
     for ax,typ in zip(axes,use_types):
         mytext(ax,0.9,0.9,typ, fontsize=12)
         #isPostiveFlux= ((np.isfinite(dmag)) &
@@ -1266,9 +1343,9 @@ def rec_lost_contam_delta_by_type(dat,fn='rec_lost_contam_delta_by_type.png',
         
         # Plot
         xlabel=ax.set_xlabel(xlab)
-        for lab,color,keep in [('lost (recovered but fail TS)','g', (isRec) & (is_elg_input) & (~is_elg_trac)),
-                               ('Tractor ELG','b', (isRec) & (is_elg_input) & (is_elg_trac)),
-                               ('Tractor ELG (contamiation)', 'c',(isRec) & (~is_elg_input) & (is_elg_trac))]:
+        for lab,color,keep in [('lost (recovered but fail TS)','g', (good) & (is_elg_input) & (~is_elg_trac)),
+                               ('Tractor ELG','b', (good) & (is_elg_input) & (is_elg_trac)),
+                               ('Tractor ELG (contamiation)', 'c',(good) & (~is_elg_input) & (is_elg_trac))]:
             subset= (keep) & (types == typ)
             if percentile_lines:
                 binned= plots.bin_up(_x_var[subset],_y_var[subset], 
@@ -1294,28 +1371,6 @@ def rec_lost_contam_delta_by_type(dat,fn='rec_lost_contam_delta_by_type.png',
     plt.close()
     print('Wrote %s' % fn)
 
-def rec_lost_contam_input_elg_notelg(dat,fn='rec_lost_contam_input_elg_notelg.png'):
-    fig,axes=plt.subplots(3,1,figsize=(6,12))
-    plt.subplots_adjust(hspace=0.3)
-    xlim= dict(g=(21.6,23),
-               r=(20.75,22.5),
-               z=(19.5,22))
-
-    kw=dict(normed=True)
-    for ax,band in zip(axes,'grz'):
-        kw.update(bins=np.linspace(xlim[band][0],xlim[band][1],num=30),
-                  range=xlim[band])
-        myhist(ax,dat.get('psql_'+band)[is_elg_input],color='b',label='input, ELG',**kw)
-        myhist(ax,dat.get('psql_'+band)[~is_elg_input],color='g',label='input, not ELG',**kw)
-
-    for ax,band in zip(axes,'grz'):
-        xlab=ax.set_xlabel(band)
-        ylab=ax.set_ylabel('PDF')
-    axes[0].legend(loc='upper left')
-    plt.savefig(fn,bbox_extra_artists=[xlab,ylab], bbox_inches='tight')
-    plt.close()
-    print('Wrote %s' % fn)
-
 
 def rec_lost_contam_fraction(dat,fn='rec_lost_contam_fraction.png'):
     fig,axes=plt.subplots(1,2,figsize=(10,5))
@@ -1332,23 +1387,24 @@ def rec_lost_contam_fraction(dat,fn='rec_lost_contam_fraction.png'):
     n_elg,bins= np.histogram(dat.psql_redshift[keep],bins=bins,**kw)
     my_step(ax,bins,n_elg/n_tot,color='b',label=lab)
 
-    lab,keep= 'is ELG, recovered', (isRec) & (is_elg_input)
+    good= (isRec) & (keepFracin)
+    lab,keep= 'is ELG, recovered', (good) & (is_elg_input)
     n_elg_rec,_= np.histogram(dat.psql_redshift[keep],bins=bins,**kw)
     my_step(ax,bins,n_elg_rec/n_tot,color='g',label=lab)
 
     # Right panel
     ax= axes[1]
-    lab,keep= 'is ELG, recovered ELG', (isRec) & (is_elg_input) & (is_elg_trac)
+    lab,keep= 'is ELG, recovered ELG', (good) & (is_elg_input) & (is_elg_trac)
     n_corr,_= np.histogram(dat.psql_redshift[keep],bins=bins,**kw)
     my_step(ax,bins,n_corr/n_elg_rec,color='b',label=lab)
     print('n_corr=',n_corr)
 
-    lab,keep= 'is ELG, recovered !ELG', (isRec) & (is_elg_input) & (~is_elg_trac)
+    lab,keep= 'is ELG, recovered !ELG', (good) & (is_elg_input) & (~is_elg_trac)
     n_lost,_= np.histogram(dat.psql_redshift[keep],bins=bins,**kw)
     my_step(ax,bins,n_lost/n_elg_rec,color='g',label=lab)
     print('n_lost=',n_lost)
 
-    lab,keep= 'not ELG, recovered ELG', (isRec) & (~is_elg_input) & (is_elg_trac)
+    lab,keep= 'not ELG, recovered ELG', (good) & (~is_elg_input) & (is_elg_trac)
     n_contam,_= np.histogram(dat.psql_redshift[keep],bins=bins,**kw)
     my_step(ax,bins,n_contam/n_elg_rec,color='m',label=lab)
     print('n_contam=',n_contam)
@@ -1401,56 +1457,44 @@ elif args.which == 'eboss':
     kw_lims= dict(glim=(21.5,23.25),
                   rlim=(20.5,23.),
                   zlim=(19.5,22.5))
-     
-    for suffix in ['','_keep_bad']:
-        # fracin IS RESPONSIBLE for peak at 1-2 sigma!!
-        # num_std_dev for fracin < 0.7 sample and fracin >= 0.7 sample
-        for thresh in np.linspace(0.4,1.,num=7): 
-            num_std_dev_gaussfit_flux(dat,keep_what_put_in='fracin'+suffix,thresh=thresh,
-                                      typ='all',delta_lims= (-7,7),
-                                      sub_mean= True)
-        # Allmask does not affect peak at 1-2 sigma
-        num_std_dev_gaussfit_flux(dat,keep_what_put_in='allmask'+suffix,
-                                  typ='all',delta_lims= (-7,7),
-                                  sub_mean= True)
-        # Fracmask does not affect peak at 1-2 sigma
-        for thresh in np.linspace(0.1,0.5,num=5): 
-            num_std_dev_gaussfit_flux(dat,keep_what_put_in='fracmask'+suffix,thresh=thresh,
-                                      typ='all',delta_lims= (-7,7),
-                                      sub_mean= True)
-        # Fracflux does not affect peak at 1-2 sigma
-        for thresh in [0.01,0.5]: 
-            num_std_dev_gaussfit_flux(dat,keep_what_put_in='fracflux'+suffix,thresh=thresh,
-                                      typ='all',delta_lims= (-7,7),
-                                      sub_mean= True)
-    # Injected 0.45 < rhalf < 0.55 does not affect peak at 1-2 sigma
-    for keep_what in ['rhalfeqpt5','neq1_notrhalf','neq4_notrhalf']:
-        num_std_dev_gaussfit_flux(dat,keep_what_put_in=keep_what,
-                                  typ='all',delta_lims= (-7,7),
-                                  sub_mean=True)
-    # Tractor measures input EXP much better than in put DEV
-    for keep_what in ['neq1','neq4']:
-        num_std_dev_gaussfit_flux(dat,keep_what_put_in=keep_what,
-                                  typ='all',delta_lims= (-7,7),
-                                  sub_mean= True)
-   
-    delta_dec_vs_delta_ra(dat,xlim=(-1.,1.),ylim=(-1.,1.),nbins=(60,60))
-    e1_e2(dat,nbins=(120,120),recovered=False)
-    e1_e2(dat,nbins=(120,120),recovered=True)
+    # Plots made in same order as presented in obiwan eboss paper 
+    # Input properties
     grz_hist_input_noise_ext(dat, **kw_lims)
     grz_hist_input_ext(dat,**kw_lims)
+    grz_hist_elg_notelg(dat,**kw_lims)
+    e1_e2(dat,nbins=(120,120),recovered=False)
+    sum_of_noise_added(dat)
+    
+    # Identifying the num std dev peak at 1-2 sigma
+    # And we can remove those data points b/c they have same grz,rhalf,redshift,exp & dev frac as the other data points
+    fracin_vs_numstddev_2dhist(dat,delta_lims=(-5,5),nbins=(30,30))
+    hist_all_quantities_fracin_cut(dat,**kw_lims)
+    num_std_dev_gaussfit_flux(dat,delta_lims= (-5,5),
+                              sub_mean= False)
+    thresh=0.2
+    kw= dict(thresh=0.2,typ='all',delta_lims= (-5,5))
+    num_std_dev_gaussfit_flux(dat,keep_what_put_in='fracin_keep_bad',sub_mean= False,**kw)
+    num_std_dev_gaussfit_flux(dat,keep_what_put_in='fracin',sub_mean= True,**kw)
+    #########
+    # Rest of plots throw these data points out
+    
+    # Tractor measures input EXP much better than in put DEV
+    for keep_what in ['neq1','neq4']:
+        num_std_dev_gaussfit_flux(dat,cut_on_fracin=True,typ='all',
+                                  keep_what_put_in=keep_what,
+                                  delta_lims= (-7,7),sub_mean= True)
+   
+    delta_dec_vs_delta_ra(dat,xlim=(-1.,1.),ylim=(-1.,1.),nbins=(60,60))
+    #e1_e2(dat,nbins=(120,120),recovered=True)
     grz_hist_input_rec(dat,**kw_lims)
     grz_hist_by_type(dat,**kw_lims)
-    grz_hist_by_type2(dat,**kw_lims)
-    noise_added_1(dat)
-    noise_added_2(dat)
     number_per_type_input_rec_meas(dat)
     confusion_matrix_by_type(dat)
     redshifts_recovered(dat)
     fraction_recovered(dat, survey_for_depth='desi',**kw_lims)
     fraction_recovered_vs_rhalf(dat)
-    num_std_dev_gaussfit_flux(dat,delta_lims= (-5,5),
-                              sub_mean= True)
+    num_std_dev_gaussfit_flux(dat,cut_on_fracin=True,typ='all',
+                              delta_lims= (-5,5),sub_mean= True)
 
     hist_true_rhalf_by_type(dat)
     for typ in ['PSF']:
@@ -1460,9 +1504,9 @@ elif args.which == 'eboss':
         num_std_dev_gaussfit_rhalf(dat,delta_lims= (-7,7),typ=typ,
                                    sub_bin_at_max=True)
 
-    for typ in ['SIMP','EXP','DEV','PSF','all']:
-        num_std_dev_gaussfit_flux(dat,typ=typ,delta_lims= (-7,7),
-                                  sub_mean= True)
+    for typ in ['SIMP','EXP','DEV','PSF']:
+        num_std_dev_gaussfit_flux(dat,cut_on_fracin=True,typ=typ,
+                                  delta_lims= (-5,5),sub_mean= True)
         delta_vs_grzmag(dat,delta='dmag',typ=typ,delta_lims=(-1,1),
                         nbins=(60,30),**kw_lims)
         delta_vs_grzmag(dat,delta='num_std_dev',typ=typ,delta_lims=(-10,10),
@@ -1477,6 +1521,27 @@ elif args.which == 'eboss':
     rec_lost_contam_gr_rz(dat)
     rec_lost_contam_grz(dat,x_ivar=0)
     rec_lost_contam_delta(dat,x_ivar=0,y_ivar=0,percentile_lines=False)
-    rec_lost_contam_input_elg_notelg(dat)
     rec_lost_contam_fraction(dat)
-    
+
+    # Show that fracin is responsible for peak at 1-2 sigma
+    # And that allmask, fracmask, fracflux, rhalf ~ 0.5 are not
+    if False:
+        for suffix in ['','_keep_bad']:
+            # fracin IS RESPONSIBLE for peak at 1-2 sigma!!
+            # num_std_dev for fracin < 0.7 sample and fracin >= 0.7 sample
+            kw=dict(typ='all',delta_lims= (-7,7),sub_mean= False)
+            for thresh in np.linspace(0.1,0.4,num=4):
+                num_std_dev_gaussfit_flux(dat,keep_what_put_in='fracin'+suffix,thresh=thresh,**kw)
+            # Allmask does not affect peak at 1-2 sigma
+            num_std_dev_gaussfit_flux(dat,keep_what_put_in='allmask'+suffix,**kw)
+            # Fracmask does not affect peak at 1-2 sigma
+            for thresh in np.linspace(0.1,0.5,num=5): 
+                num_std_dev_gaussfit_flux(dat,keep_what_put_in='fracmask'+suffix,thresh=thresh,**kw)
+            # Fracflux does not affect peak at 1-2 sigma
+            for thresh in [0.01,0.5]: 
+                num_std_dev_gaussfit_flux(dat,keep_what_put_in='fracflux'+suffix,thresh=thresh,**kw)
+        # Injected 0.45 < rhalf < 0.55 does not affect peak at 1-2 sigma
+        for keep_what in ['rhalfeqpt5','neq1_notrhalf','neq4_notrhalf']:
+            num_std_dev_gaussfit_flux(dat,keep_what_put_in=keep_what,**kw)
+ 
+
