@@ -742,6 +742,8 @@ def num_std_dev_gaussfit_flux(dat,fn='num_std_dev_gaussfit_flux.png',
         fn= fn.replace('.png','_keepwhatputin_%s.png' % keep_what_put_in)
     if thresh:
         fn= fn.replace('.png','_%.2f.png' % thresh)
+    if not sub_mean:
+        fn= fn.replace('.png','_notsubmean.png')
     
     figs,axes= plt.subplots(3,1,figsize=(6,10))
     plt.subplots_adjust(hspace=0.4)
@@ -860,6 +862,8 @@ def num_std_dev_gaussfit_rhalf(dat,fn='num_std_dev_gaussfit_rhalf.png',
     assert(typ != 'PSF') # psfsize_grz does not have ivar info
     assert(typ in ['SIMP','EXP','DEV','REX'])
     fn= fn.replace('.png','_bytype_%s.png' % typ)
+    if sub_mean:
+        fn= fn.replace('.png','_submean.png')
     
     figs,ax= plt.subplots() #figsize=(6,6))
     #plt.subplots_adjust(hspace=0.4)
@@ -939,6 +943,8 @@ def residual_gaussfit_rhalf(dat,fn='residual_gaussfit_rhalf.png',
     """created for typ PSF b/c there is no psfsize_grz_ivar, so cannot compute num_std_dev"""
     assert(typ in ['PSF','SIMP','EXP','DEV','REX'])
     fn= fn.replace('.png','_bytype_%s.png' % typ)
+    if sub_mean:
+        fn= fn.replace('.png','_submean.png')
     
     figs,ax= plt.subplots() #figsize=(6,6))
     #plt.subplots_adjust(hspace=0.4)
@@ -1103,7 +1109,7 @@ def rec_lost_contam_gr_rz(dat,fn='rec_lost_contam_gr_rz.png'):
                                ('Lost (measure fails TS)','c',2,
                                   (good) & (is_elg_input) & (~is_elg_trac)),
                                ('Lost (not recovered)','m',3,
-                                  (~isRec) & (is_elg_input)),:
+                                  (~isRec) & (is_elg_input)),
                                ('Lost (fracin)','y',4,
                                   (isRec) & (~keepFracin) & (is_elg_input))]:
         axes[row,0].scatter(dat.psql_r[keep]-dat.psql_z[keep],
@@ -1194,88 +1200,6 @@ def rec_lost_contam_grz(dat,fn='rec_lost_contam_grz.png',
     plt.close()
     print('Wrote %s' % fn)
 
-def rec_lost_contam_delta(dat,fn='rec_lost_contam_delta.png',
-                          x_ivar=0,y_ivar=0,
-                          percentile_lines=False):
-    x_var= ['true_mag','galdepth','redshift'][x_ivar]
-    y_var= ['dmag','chisq'][y_ivar]
-
-    figs,axes= plt.subplots(3,1,figsize=(6,10))
-    plt.subplots_adjust(hspace=0.4)
-
-    ratio_area= 1. 
-    for ax,band in zip(axes,'grz'):
-        fix= ratio_area * np.average([dat.get('tractor_apflux_resid_'+band)[:,6],
-                                      dat.get('tractor_apflux_resid_'+band)[:,7]],
-                                    axis=0)
-        assert(len(fix)) == len(dat)
-        if y_var == 'dmag':
-            _y_var= plots.flux2mag(dat.get('tractor_flux_'+band)) -\
-                       plots.flux2mag(dat.get(band+'flux')+  fix)
-            ylab= 'dmag (Tractor - True)'
-            ylim=(-2,2)
-        elif y_var == 'chisq':
-            _y_var= dat.get('tractor_flux_'+band) -\
-                       (dat.get(band+'flux')+  fix)
-            _y_var *= np.sqrt(dat.get('tractor_flux_ivar_'+band))
-            ylab= 'chiflux (Tractor - True) * sqrt(ivar)'
-            ylim=(-10,10)
-        
-        if x_var == 'true_mag':
-            _x_var= plots.flux2mag(dat.get(band+'flux')/\
-                                   dat.get('mw_transmission_'+band))
-            xlab= 'true mag %s' % band
-            xlim= dict(g=(21.6,23),
-                       r=(20.75,22.5),
-                       z=(19.5,22))
-        elif x_var == 'galdepth':
-            flux_for_depth= 5 / np.sqrt(dat.get('tractor_galdepth_'+band))
-            _x_var= plots.flux2mag(flux_for_depth/\
-                                     dat.get('mw_transmission_'+band))
-            xlab= 'galdepth %s' % band
-            xlim= dict(g=(21,24.5),
-                       r=(21,24.5),
-                       z=(21,24.5))
-        elif x_var == 'redshift':
-            _x_var= dat.psql_redshift
-            xlab= 'redshift'
-            xlim= dict(g=(0,1.5),
-                       r=(0,1.5),
-                       z=(0,1.5))
-        
-        #isPostiveFlux= ((np.isfinite(dmag)) &
-        #                (np.isfinite(true_mag)))
-        #isPostiveFlux= np.ones(len(dmag),bool)
-        #print('true_mag=',true_mag[isPostiveFlux],'trac_mag=',dmag[isPostiveFlux])
-        
-        # Plot
-        xlabel=ax.set_xlabel(xlab)
-        good= (isRec) & (keepFracin)
-        for lab,color,keep in [('lost (recovered but fail TS)','g', (good) & (is_elg_input) & (~is_elg_trac)),
-                               ('Tractor ELG','b', (good) & (is_elg_input) & (is_elg_trac)),
-                               ('Tractor ELG (contamiation)', 'c',(good) & (~is_elg_input) & (is_elg_trac))]:
-            if percentile_lines:
-                binned= plots.bin_up(_x_var[keep],_y_var[keep], 
-                                     bin_minmax=xlim[band],nbins=30)
-                for perc in ['q25','q75']:
-                    kw= dict(c=color,lw=2)
-                    if perc == 'q25':
-                        kw.update(label=lab)
-                    ax.plot(binned['binc'],binned[perc],**kw)
-            else:
-                ax.scatter(_x_var[keep],_y_var[keep],
-                           alpha=1,s=5,c=color,label=lab)
-                #ax.scatter(true_mag[(isPostiveFlux) & (keep)],dmag[(isPostiveFlux) & (keep)],
-                #           alpha=1,s=5,c=color,label=lab)
-        
-    for ax,band in zip(axes,'grz'):
-        ax.axhline(0,c='k',ls='--')
-        ax.set_ylim(ylim)
-    ylabel=axes[1].set_ylabel(ylab)
-    leg=axes[0].legend(loc=(0,1.01),ncol=2,fontsize=12,markerscale=3)
-    plt.savefig(fn,bbox_extra_artists=[xlabel,ylabel,leg], bbox_inches='tight')
-    plt.close()
-    print('Wrote %s' % fn)
 
 def rec_lost_contam_delta_by_type(dat,fn='rec_lost_contam_delta_by_type.png',
                                   band='g',
@@ -1372,54 +1296,6 @@ def rec_lost_contam_delta_by_type(dat,fn='rec_lost_contam_delta_by_type.png',
     print('Wrote %s' % fn)
 
 
-def rec_lost_contam_fraction(dat,fn='rec_lost_contam_fraction.png'):
-    fig,axes=plt.subplots(1,2,figsize=(10,5))
-    plt.subplots_adjust(wspace=0.2)
-    # xlim=(0,2.5)
-    xlim=None
-    kw=dict(range=(0,2),normed=False)
-
-    # Left panel
-    ax= axes[0]
-    n_tot,bins= np.histogram(dat.psql_redshift,bins=30,**kw)
-
-    lab,keep= 'is ELG', (is_elg_input)
-    n_elg,bins= np.histogram(dat.psql_redshift[keep],bins=bins,**kw)
-    my_step(ax,bins,n_elg/n_tot,color='b',label=lab)
-
-    good= (isRec) & (keepFracin)
-    lab,keep= 'is ELG, recovered', (good) & (is_elg_input)
-    n_elg_rec,_= np.histogram(dat.psql_redshift[keep],bins=bins,**kw)
-    my_step(ax,bins,n_elg_rec/n_tot,color='g',label=lab)
-
-    # Right panel
-    ax= axes[1]
-    lab,keep= 'is ELG, recovered ELG', (good) & (is_elg_input) & (is_elg_trac)
-    n_corr,_= np.histogram(dat.psql_redshift[keep],bins=bins,**kw)
-    my_step(ax,bins,n_corr/n_elg_rec,color='b',label=lab)
-    print('n_corr=',n_corr)
-
-    lab,keep= 'is ELG, recovered !ELG', (good) & (is_elg_input) & (~is_elg_trac)
-    n_lost,_= np.histogram(dat.psql_redshift[keep],bins=bins,**kw)
-    my_step(ax,bins,n_lost/n_elg_rec,color='g',label=lab)
-    print('n_lost=',n_lost)
-
-    lab,keep= 'not ELG, recovered ELG', (good) & (~is_elg_input) & (is_elg_trac)
-    n_contam,_= np.histogram(dat.psql_redshift[keep],bins=bins,**kw)
-    my_step(ax,bins,n_contam/n_elg_rec,color='m',label=lab)
-    print('n_contam=',n_contam)
-
-    for ax in axes:
-        ax.axhline(0.5,c='k',ls='--')
-        ax.set_ylim(-0.1,1.1)
-        ylab=ax.set_ylabel('Fraction')
-        xlab=ax.set_xlabel('redshift')
-    leg=axes[0].legend(loc=(0,1.01),ncol=1)
-    leg=axes[1].legend(loc=(0,1.01),ncol=1)
-    plt.savefig(fn,bbox_extra_artists=[xlab,ylab,leg], bbox_inches='tight')
-    plt.close()
-    print('Wrote %s' % fn)
-
 #################   
 if args.which == 'cosmos':
     pad=0.2
@@ -1459,6 +1335,7 @@ elif args.which == 'eboss':
                   zlim=(19.5,22.5))
     # Plots made in same order as presented in obiwan eboss paper 
     # Input properties
+    print('INPUT PROPS')
     grz_hist_input_noise_ext(dat, **kw_lims)
     grz_hist_input_ext(dat,**kw_lims)
     grz_hist_elg_notelg(dat,**kw_lims)
@@ -1467,6 +1344,7 @@ elif args.which == 'eboss':
     
     # Identifying the num std dev peak at 1-2 sigma
     # And we can remove those data points b/c they have same grz,rhalf,redshift,exp & dev frac as the other data points
+    print('indentifying num std dev peak at 1-2 sigma'.upper())
     fracin_vs_numstddev_2dhist(dat,delta_lims=(-5,5),nbins=(30,30))
     hist_all_quantities_fracin_cut(dat,**kw_lims)
     num_std_dev_gaussfit_flux(dat,delta_lims= (-5,5),
@@ -1477,7 +1355,8 @@ elif args.which == 'eboss':
     num_std_dev_gaussfit_flux(dat,keep_what_put_in='fracin',sub_mean= True,**kw)
     #########
     # Rest of plots throw these data points out
-    
+   
+    print('rest of plots'.upper())
     # Tractor measures input EXP much better than in put DEV
     for keep_what in ['neq1','neq4']:
         num_std_dev_gaussfit_flux(dat,cut_on_fracin=True,typ='all',
@@ -1500,28 +1379,40 @@ elif args.which == 'eboss':
     for typ in ['PSF']:
         residual_gaussfit_rhalf(dat,delta_lims= (-2,2),typ=typ,
                                 sub_bin_at_max=True)
+        residual_gaussfit_rhalf(dat,delta_lims= (-2,2),typ=typ,
+                                sub_mean=True)
     for typ in ['SIMP','EXP','DEV']:
         num_std_dev_gaussfit_rhalf(dat,delta_lims= (-7,7),typ=typ,
                                    sub_bin_at_max=True)
+        num_std_dev_gaussfit_rhalf(dat,delta_lims= (-7,7),typ=typ,
+                                   sub_mean=True)
 
-    for typ in ['SIMP','EXP','DEV','PSF']:
-        num_std_dev_gaussfit_flux(dat,cut_on_fracin=True,typ=typ,
-                                  delta_lims= (-5,5),sub_mean= True)
-        delta_vs_grzmag(dat,delta='dmag',typ=typ,delta_lims=(-1,1),
-                        nbins=(60,30),**kw_lims)
-        delta_vs_grzmag(dat,delta='num_std_dev',typ=typ,delta_lims=(-10,10),
-                        nbins=(60,30),**kw_lims)
+    typ='all'
+    num_std_dev_gaussfit_flux(dat,cut_on_fracin=True,typ=typ,
+                              delta_lims= (-5,5),sub_mean= True)
+    delta_vs_grzmag(dat,delta='dmag',typ=typ,delta_lims=(-1,1),
+                    nbins=(60,30),**kw_lims)
+    delta_vs_grzmag(dat,delta='num_std_dev',typ=typ,delta_lims=(-10,10),
+                    nbins=(60,30),**kw_lims)
+    # If want to split each of above 3 bands by type
+    if False:
+        for typ in ['SIMP','EXP','DEV','PSF']:
+            num_std_dev_gaussfit_flux(dat,cut_on_fracin=True,typ=typ,
+                                      delta_lims= (-5,5),sub_mean= True)
+            delta_vs_grzmag(dat,delta='dmag',typ=typ,delta_lims=(-1,1),
+                            nbins=(60,30),**kw_lims)
+            delta_vs_grzmag(dat,delta='num_std_dev',typ=typ,delta_lims=(-10,10),
+                            nbins=(60,30),**kw_lims)
 
     num_std_dev_gaussfit_e1_e2(dat,delta_lims= (-7,7),
                                sub_mean= False)
-    for band in 'grz':
-        fix_for_delta_flux(dat, band=band)
-        rec_lost_contam_delta_by_type(dat,band=band,
-                                      x_ivar=0,y_ivar=0,percentile_lines=False)
     rec_lost_contam_gr_rz(dat)
     rec_lost_contam_grz(dat,x_ivar=0)
-    rec_lost_contam_delta(dat,x_ivar=0,y_ivar=0,percentile_lines=False)
-    rec_lost_contam_fraction(dat)
+
+    # FIXME: change this plot to 2D hist
+    for band in 'grz':
+        rec_lost_contam_delta_by_type(dat,band=band,
+                                      x_ivar=0,y_ivar=0,percentile_lines=False)
 
     # Show that fracin is responsible for peak at 1-2 sigma
     # And that allmask, fracmask, fracflux, rhalf ~ 0.5 are not
@@ -1543,5 +1434,10 @@ elif args.which == 'eboss':
         # Injected 0.45 < rhalf < 0.55 does not affect peak at 1-2 sigma
         for keep_what in ['rhalfeqpt5','neq1_notrhalf','neq4_notrhalf']:
             num_std_dev_gaussfit_flux(dat,keep_what_put_in=keep_what,**kw)
+    
+    # Attempt to fix mag offset by adding in sky from apflux
+    if False:
+        for band in 'grz':
+            fix_for_delta_flux(dat, band=band)
  
 
