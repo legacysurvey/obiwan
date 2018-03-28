@@ -857,7 +857,7 @@ def num_std_dev_gaussfit_flux(dat,fn='num_std_dev_gaussfit_flux.png',
     print('Wrote %s' % fn)
 
 def num_std_dev_gaussfit_rhalf(dat,fn='num_std_dev_gaussfit_rhalf.png',
-                               delta_lims= (-6,6),typ=None,
+                               delta_lims= (-6,6),numbins=30,typ=None,
                                sub_mean= False,sub_bin_at_max=False):
     assert(typ != 'PSF') # psfsize_grz does not have ivar info
     assert(typ in ['SIMP','EXP','DEV','REX'])
@@ -896,14 +896,14 @@ def num_std_dev_gaussfit_rhalf(dat,fn='num_std_dev_gaussfit_rhalf.png',
         print('%s: dflux_mean=%f' % (band,dflux_mean))
         data_lab+=' minus mean (%.2f)' % dflux_mean
     elif sub_bin_at_max:
-        bins= np.linspace(delta_lims[0],delta_lims[1],num=30)
+        bins= np.linspace(delta_lims[0],delta_lims[1],num=numbins)
         h,bins=np.histogram(num_std_dev[keep],bins=bins)
         binc= (bins[:-1] + bins[1:])/2
         bin_at_max= binc[np.argmax(h)]
         num_std_dev -= bin_at_max
         data_lab+=' minus bin_at_max (%.2f)' % bin_at_max
      
-    bins= np.linspace(delta_lims[0],delta_lims[1],num=30)
+    bins= np.linspace(delta_lims[0],delta_lims[1],num=numbins)
     h=myhist(ax,num_std_dev[keep],bins=bins,color='b',
              label=data_lab,normed=True,
              return_h=True)
@@ -1023,26 +1023,32 @@ def residual_gaussfit_rhalf(dat,fn='residual_gaussfit_rhalf.png',
 
 
 def num_std_dev_gaussfit_e1_e2(dat,fn='num_std_dev_gaussfit_e1_e2.png',
-                               delta_lims= (-6,6),
+                               delta_lims= (-6,6),typ=None,
                                sub_mean= True):
+    assert(typ in ['exp','dev','simp'])
+    fn= fn.replace('.png','_%s.png' % typ.upper())
     types= np.char.strip(dat.get('tractor_type'))
-    types[pd.Series(types).isin(['SIMP','REX']).values]= 'EXP'
+    #types[pd.Series(types).isin(['SIMP','REX']).values]= 'EXP'
     
     figs,axes= plt.subplots(2,1,figsize=(6,6))
     plt.subplots_adjust(hspace=0.4)
 
-    typ='exp'
     keep= (isRec) & (keepFracin) & (types == typ.upper())
     for ax,delta in zip(axes,['e1','e2']):
         data_lab= 'data'
-        trac_e= dat.get('tractor_shape%s_%s' % (typ,delta))
+        if typ in ['simp','exp']:
+            trac_e= dat.get('tractor_shapeexp_%s' % delta)
+            trac_ivar= dat.get('tractor_shapeexp_%s_ivar' % delta)
+        elif typ in ['dev']:
+            trac_e= dat.get('tractor_shapedev_%s' % delta)
+            trac_ivar= dat.get('tractor_shapedev_%s_ivar' % delta)
         if delta == 'e2':
             trac_e *= -1
         num_std_dev= trac_e -\
                         dat.get(delta)
         #print('delta=',delta)
         #print('straight diff=',num_std_dev[isType])
-        num_std_dev *= np.sqrt(dat.get('tractor_shape%s_%s_ivar' % (typ,delta)))
+        num_std_dev *= np.sqrt(trac_ivar)
         #print('num_std_dev=',num_std_dev[isType])
         #print('length=',len(num_std_dev[isType]))
         #print('q25,med,q75 num_std_dev=',np.percentile(num_std_dev[isType],25),np.median(num_std_dev[isType]),np.percentile(num_std_dev[isType],75))
@@ -1333,6 +1339,10 @@ elif args.which == 'eboss':
     kw_lims= dict(glim=(21.5,23.25),
                   rlim=(20.5,23.),
                   zlim=(19.5,22.5))
+    for typ in ['exp','dev','simp']:
+        num_std_dev_gaussfit_e1_e2(dat,delta_lims= (-7,7),
+                                   sub_mean= True,typ=typ)
+    raise ValueError
     # Plots made in same order as presented in obiwan eboss paper 
     # Input properties
     print('INPUT PROPS')
@@ -1375,17 +1385,18 @@ elif args.which == 'eboss':
     num_std_dev_gaussfit_flux(dat,cut_on_fracin=True,typ='all',
                               delta_lims= (-5,5),sub_mean= True)
 
+    # number std dev rhalf, e1,e2 measurements
     hist_true_rhalf_by_type(dat)
     for typ in ['PSF']:
+        # Very sky distribution so sub bin at max is best
         residual_gaussfit_rhalf(dat,delta_lims= (-2,2),typ=typ,
                                 sub_bin_at_max=True)
-        residual_gaussfit_rhalf(dat,delta_lims= (-2,2),typ=typ,
-                                sub_mean=True)
     for typ in ['SIMP','EXP','DEV']:
-        num_std_dev_gaussfit_rhalf(dat,delta_lims= (-7,7),typ=typ,
-                                   sub_bin_at_max=True)
-        num_std_dev_gaussfit_rhalf(dat,delta_lims= (-7,7),typ=typ,
-                                   sub_mean=True)
+        # closer to normal, so subtract mean
+        num_std_dev_gaussfit_rhalf(dat,delta_lims= (-10,10),typ=typ,
+                                   sub_mean=True,numbins=45) 
+    num_std_dev_gaussfit_e1_e2(dat,delta_lims= (-7,7),
+                               sub_mean= False)
 
     typ='all'
     num_std_dev_gaussfit_flux(dat,cut_on_fracin=True,typ=typ,
@@ -1404,8 +1415,6 @@ elif args.which == 'eboss':
             delta_vs_grzmag(dat,delta='num_std_dev',typ=typ,delta_lims=(-10,10),
                             nbins=(60,30),**kw_lims)
 
-    num_std_dev_gaussfit_e1_e2(dat,delta_lims= (-7,7),
-                               sub_mean= False)
     rec_lost_contam_gr_rz(dat)
     rec_lost_contam_grz(dat,x_ivar=0)
 
