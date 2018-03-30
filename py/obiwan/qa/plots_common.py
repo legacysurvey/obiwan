@@ -110,17 +110,19 @@ def myerrorbar(ax,x,y, yerr=None,xerr=None,color='b',ls='none',m='o',s=10.,mew=1
                     marker=m,ms=s,mfc=color,mec=color,ecolor=color,mew=mew)
 
 def create_confusion_matrix(answer_type,predict_type, 
-                            poss_types=['PSF','SIMP','EXP','DEV','COMP','REX']):
+                            poss_ans_types=['PSF','SIMP','EXP','DEV','COMP','REX'],
+                            poss_pred_types=['PSF','SIMP','EXP','DEV','COMP','REX']):
     '''compares classifications of matched objects, returns 2D array which is conf matrix and xylabels
     return 5x5 confusion matrix and colum/row names
     answer_type,predict_type -- arrays of same length with reference and prediction types'''
-    for typ in set(answer_type): assert(typ in poss_types)
-    for typ in set(predict_type): assert(typ in poss_types)
-    ans_types= set(poss_types)
-    cm=np.zeros((len(poss_types),len(poss_types)))-1
-    for i_ans,ans_type in enumerate(poss_types):
+    for typ in set(answer_type): assert(typ in poss_ans_types)
+    for typ in set(predict_type): 
+        print('typ=',typ)
+        assert(typ in poss_pred_types)
+    cm=np.zeros((len(poss_ans_types),len(poss_pred_types)))-1
+    for i_ans,ans_type in enumerate(poss_ans_types):
         ind= np.where(answer_type == ans_type)[0]
-        for i_pred,pred_type in enumerate(poss_types):
+        for i_pred,pred_type in enumerate(poss_pred_types):
             n_pred= np.where(predict_type[ind] == pred_type)[0].size
             if ind.size > 0: cm[i_ans,i_pred]= float(n_pred)/ind.size # ind.size is constant for loop over pred_types
             else: cm[i_ans,i_pred]= 0 #np.nan

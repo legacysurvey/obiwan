@@ -317,25 +317,28 @@ def delta_dec_vs_delta_ra(dat,fn='delta_dec_vs_delta_ra.png',
 
 
 def number_per_type_input_rec_meas(dat,fn='number_per_type_input_rec_meas.png'):
-    types= np.char.strip(dat.get('tractor_type'))
-    types[pd.Series(types).isin(['SIMP','REX']).values]= 'EXP'
-    use_types= ['PSF','EXP','DEV','COMP']
-
-    #number input, recovered,...
-    injected= [0,len(dat[dat.n == 1]),len(dat[dat.n == 4]),0]
-    recovered= [0,len(dat[(isRec) & (keepFracin) & (dat.n == 1)]),
-                      len(dat[(isRec) & (keepFracin) & (dat.n == 4)]),0]
-    tractor= [len(dat[(isRec) & (keepFracin) & (types == typ)])
-              for typ in use_types]
-
+    """Horizontal Barplot
+    
+    Only count by typ injected b/c confusion matrix is the right tool if 
+    onsidering tractor type
+    """
+    use_types= ['EXP','DEV']
+    injected= [len(dat[dat.n == 1]),len(dat[dat.n == 4])]
+    recovered= [len(dat[(isRec) & (keepFracin) & (dat.n == 1)]),
+                   len(dat[(isRec) & (keepFracin) & (dat.n == 4)])]
     df= pd.DataFrame(dict(type=use_types,
                           injected=injected,
-                          recovered=recovered,
-                          tractor=tractor))
+                          recovered=recovered))
     df.set_index('type',inplace=True)
 
     fig,ax= plt.subplots(figsize=(8, 5))
     df.plot.barh(ax=ax)
+    # Add fractions
+    n_tot= np.sum(injected)
+    plots.mytext(ax,0.02,0.81,'%.2f' % (recovered[1]/n_tot),fontsize=12)
+    plots.mytext(ax,0.02,0.68,'%.2f' % (injected[1]/n_tot),fontsize=12)
+    plots.mytext(ax,0.02,0.3,'%.2f' % (recovered[0]/n_tot),fontsize=12)
+    plots.mytext(ax,0.02,0.18,'%.2f' % (injected[0]/n_tot),fontsize=12)
     xlab=ax.set_xlabel('Number')
     ylab=ax.set_ylabel('type')
     plt.savefig(fn,bbox_extra_artists=[xlab,ylab], bbox_inches='tight')
@@ -343,23 +346,25 @@ def number_per_type_input_rec_meas(dat,fn='number_per_type_input_rec_meas.png'):
     print('Wrote %s' % fn)
 
 def confusion_matrix_by_type(dat,fn='confusion_matrix_by_type.png'):
-    use_types= ['PSF','EXP','DEV','COMP']
+    use_types= ['PSF','EXP','DEV','SIMP','COMP']
     trac_types= np.char.strip(dat.get('tractor_type'))
-    trac_types[pd.Series(trac_types).isin(['SIMP','REX']).values]= 'EXP'
+    #trac_types[pd.Series(trac_types).isin(['SIMP','REX']).values]= 'EXP'
+    
     input_types= np.array(['EXP']*len(dat))
-
     keep= (isRec) & (keepFracin)
     input_types[(keep) & (dat.n == 4)]= 'DEV'
-    cm= plots.create_confusion_matrix(input_types[keep],trac_types[keep], 
-                                      poss_types=use_types)
+    ans_types= ['EXP','DEV']
 
+    cm= plots.create_confusion_matrix(input_types[keep],trac_types[keep], 
+                                      poss_ans_types= ans_types,
+                                      poss_pred_types= use_types)
     plt.imshow(cm, interpolation='nearest', cmap=plt.cm.Blues, vmin=0,vmax=1)
     cbar=plt.colorbar()
+    plt.yticks(range(len(ans_types)), ans_types)
     plt.xticks(range(len(use_types)), use_types)
-    plt.yticks(range(len(use_types)), use_types)
     ylab=plt.ylabel('Truth')
     xlab=plt.xlabel('Tractor')
-    for row in range(len(use_types)):
+    for row in range(len(set(input_types))):
         for col in range(len(use_types)):
             if np.isnan(cm[row,col]):
                 plt.text(col,row,'n/a',va='center',ha='center')
@@ -669,7 +674,7 @@ def delta_vs_grzmag(dat,fn='_vs_grzmag.png',
                     nbins=(30,30),
                     glim=(17,26),rlim=(17,26),zlim=(17,26),
                     percentile_lines=True):
-    assert(delta in ['num_std_dev','dmag'])
+    assert(delta in ['num_std_dev','dmag','num_std_dev_rhalf','drhalf'])
     assert(typ in ['all','PSF','SIMP','EXP','DEV','REX'])
     fn= delta+fn.replace('.png','_bytype_%s.png' % typ)
     
@@ -693,6 +698,17 @@ def delta_vs_grzmag(dat,fn='_vs_grzmag.png',
                 plots.flux2mag(dat.get('tractor_flux_'+band)) 
             ylabel=r'$\Delta\, %s$ (Truth - Tractor)' % band
             keep= (keep) & (np.isfinite(y))
+        elif delta in ['num_std_dev_rhalf','drhalf']:
+            assert(typ in ['SIMP','DEV','EXP'])
+            if typ == 'DEV':
+                eff_typ= 'dev'
+            else:
+                eff_typ= 'exp'
+            y= dat.get('tractor_shape%s_r' % eff_typ) - dat.rhalf
+            ylabel=r'$\Delta\, R_{\rm{1/2}}$ (Tractor - Truth)'
+            if delta == 'num_std_dev_rhalf':
+                y *= np.sqrt(dat.get('tractor_shape%s_r_ivar' % eff_typ))
+                ylabel=r'$\Delta\, R_{\rm{1/2}}\,/\,\sigma$ (Tractor - Truth)'
 
         if typ != 'all':
             types= np.char.strip(dat.get('tractor_type'))
@@ -1339,9 +1355,8 @@ elif args.which == 'eboss':
     kw_lims= dict(glim=(21.5,23.25),
                   rlim=(20.5,23.),
                   zlim=(19.5,22.5))
-    for typ in ['exp','dev','simp']:
-        num_std_dev_gaussfit_e1_e2(dat,delta_lims= (-7,7),
-                                   sub_mean= True,typ=typ)
+    number_per_type_input_rec_meas(dat)
+    confusion_matrix_by_type(dat)
     raise ValueError
     # Plots made in same order as presented in obiwan eboss paper 
     # Input properties
@@ -1385,7 +1400,7 @@ elif args.which == 'eboss':
     num_std_dev_gaussfit_flux(dat,cut_on_fracin=True,typ='all',
                               delta_lims= (-5,5),sub_mean= True)
 
-    # number std dev rhalf, e1,e2 measurements
+    # rhalf measurements
     hist_true_rhalf_by_type(dat)
     for typ in ['PSF']:
         # Very sky distribution so sub bin at max is best
@@ -1395,8 +1410,15 @@ elif args.which == 'eboss':
         # closer to normal, so subtract mean
         num_std_dev_gaussfit_rhalf(dat,delta_lims= (-10,10),typ=typ,
                                    sub_mean=True,numbins=45) 
-    num_std_dev_gaussfit_e1_e2(dat,delta_lims= (-7,7),
-                               sub_mean= False)
+    for typ in ['exp','dev','simp']:
+        delta_vs_grzmag(dat,delta='num_std_dev_rhalf',typ=typ.upper(),delta_lims=(-10,10),
+                        nbins=(60,30),**kw_lims)
+        delta_vs_grzmag(dat,delta='drhalf',typ=typ.upper(),delta_lims=(-1,1),
+                        nbins=(60,30),**kw_lims)
+    # e1,e2 measurements
+    for typ in ['exp','dev','simp']:
+        num_std_dev_gaussfit_e1_e2(dat,delta_lims= (-7,7),
+                                   sub_mean= True,typ=typ)
 
     typ='all'
     num_std_dev_gaussfit_flux(dat,cut_on_fracin=True,typ=typ,
