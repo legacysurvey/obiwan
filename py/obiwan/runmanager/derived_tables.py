@@ -197,9 +197,16 @@ class RandomsTable(object):
         self.dr3_or_dr5= dr3_or_dr5
         self.db_randoms_table= db_randoms_table
         self.date= date
+        self.number_rsdirs= self.num_rsdirs_for_completion()
 
     def run(self,brick):
         tab= self.merge_randoms_tables(brick)
+        if tab:
+            self._run(tab,brick)
+        else:
+            print('brick %s skipped' % brick)
+
+    def _run(self,tab,brick):
         self.add_flag_for_realsources(tab,brick)
         self.add_targets_mask(tab)
         # Write
@@ -225,8 +232,17 @@ class RandomsTable(object):
         rsdirs= glob(search)
         rsdirs= [os.path.dirname(dr)
                  for dr in rsdirs]
-        if len(rsdirs) == 0:
-            raise ValueError('no rsdirs found: %s' % search)
+        if len(rsdirs) == self.number_rsdirs:
+            return self._merge_randoms_tables(rsdirs)
+        elif len(rsdirs) < self.number_rsdirs:
+            print('brick %s not complete, %d/%d rsdirs exists' % \
+                  (brick,len(rsdirs),self.number_rsdirs))
+            return None
+        else:
+            raise ValueError('brick %s more rsdirs than should be possible %d/%d' % \
+                             (brick,len(rsdirs),self.number_rsdirs))
+    
+    def _merge_randoms_tables(self,rsdirs):
         uniform=[]
         for dr in rsdirs:
             simcat= fits_table((os.path.join(dr,'simcat-elg-%s.fits' % brick)
@@ -348,6 +364,18 @@ class RandomsTable(object):
         if not os.path.exists(fn): 
             tab.writeto(fn)
             print('Wrote %s' % fn)
+
+    def num_rsdirs_for_completion(self):
+        outdir_name= os.path.basename(self.data_dir)
+        if outdir_name == 'eboss_elg':
+            n=1
+        elif outdir_name == 'elg_dr5_500per':
+            n=7
+        elif outdir_name == 'elg_dr5_1000per':
+            n=4
+        else:
+            raise ValueError('%s not one of the above options' % outdir_name)
+        return n
 
 def fraction_recovered(randoms):
     return len(randoms[randoms.obiwan_mask == 1]) / float(len(randoms))
