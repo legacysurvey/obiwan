@@ -233,7 +233,7 @@ class RandomsTable(object):
         rsdirs= [os.path.dirname(dr)
                  for dr in rsdirs]
         if len(rsdirs) == self.number_rsdirs:
-            return self._merge_randoms_tables(rsdirs)
+            return self._merge_randoms_tables(brick,rsdirs)
         elif len(rsdirs) < self.number_rsdirs:
             print('brick %s not complete, %d/%d rsdirs exists' % \
                   (brick,len(rsdirs),self.number_rsdirs))
@@ -242,7 +242,7 @@ class RandomsTable(object):
             raise ValueError('brick %s more rsdirs than should be possible %d/%d' % \
                              (brick,len(rsdirs),self.number_rsdirs))
     
-    def _merge_randoms_tables(self,rsdirs):
+    def _merge_randoms_tables(self,brick,rsdirs):
         uniform=[]
         for dr in rsdirs:
             simcat= fits_table((os.path.join(dr,'simcat-elg-%s.fits' % brick)
@@ -254,6 +254,11 @@ class RandomsTable(object):
             simcat.cut( pd.Series(simcat.id).isin(idsadded.id) )
             simcat.set('unique_id',self.unique_id(simcat.id.astype(str),
                                                   brick,os.path.basename(dr)))
+            # Relevant for weights
+            num_injected= np.zeros(len(simcat))+len(simcat)
+            brick_area= 0.25**2 # FIXME: depends on the brick
+            simcat.set('num_density_injected',num_injected/brick_area)
+            # PSQL
             simcat= self.add_psql_to_uniform_table(simcat,self.db_randoms_table)
             # Recovered by Tractor
             tractor= fits_table(os.path.join(dr,'tractor-%s.fits' % brick))
