@@ -220,8 +220,8 @@ if __name__ == '__main__':
         sys.exit(0)
 
     if args.count_rsdirs_per_brick:
-        #fn= os.path.join(args.derived_dir,'merged','randoms_subset.fits')
-        fn= '/Users/kaylan1/Downloads/obiwan_plots/randoms_subset_10k.fits'
+        fn= os.path.join(args.derived_dir,'merged','randoms_subset.fits')
+        #fn= '/Users/kaylan1/Downloads/obiwan_plots/randoms_subset_10k.fits'
         randoms_subset_count_rsdirs_per_brick(fn)
         sys.exit(0)
    
