@@ -571,24 +571,44 @@ def hist_all_quantities_fracin_cut(dat,fn='hist_all_quantities_fracin_cut.png',
         ax[row,1].set_xlabel(lab)
         ax[row,1].set_ylabel('PDF')
     # number n=1,n=4
-    types= np.char.strip(dat.get('tractor_type'))
-    types[pd.Series(types).isin(['SIMP','REX']).values]= 'EXP'
+    frac={}
+    for mod,sersic in [('exp',1),
+                       ('dev',4)]:
+        frac[mod+'_recovered_of_true']= len(dat[(dat.n == sersic) & (isRec)]) / len(dat[dat.n == sersic])
+        print('Fraction of true %s legacypipe recovers: %.2f' %\
+              (mod,frac[mod+'_recovered_of_true']))
+        frac[mod+'_keepfracin_and_rec_of_true']= len(dat[(dat.n == sersic) & (isRec) & (keepFracin)]) / len(dat[(dat.n == sersic)])
+        print('Fraction of recovered true %s kept after frac in:  %.2f' %\
+              (mod,frac[mod+'_keepfracin_and_rec_of_true']))
+    #types= np.char.strip(dat.get('tractor_type'))
+    #types[pd.Series(types).isin(['SIMP','REX']).values]= 'EXP'
+    #use_types= ['EXP','DEV']
+    #is_true_exp= (isRec) & (dat.n == 1)
+    #is_true_dev= (isRec) & (dat.n == 4)
     use_types= ['EXP','DEV']
-    is_true_exp= (isRec) & (dat.n == 1)
-    is_true_dev= (isRec) & (dat.n == 4)
-    true_frac_rem= [len(dat[(is_true_exp) & (~keepFracin)])/len(dat[is_true_exp]),
-                     len(dat[(is_true_dev) & (~keepFracin)])/len(dat[is_true_dev])]
-    is_trac_exp= (isRec) & (types == 'EXP')
-    is_trac_dev= (isRec) & (types == 'DEV')
-    tractor_frac_rem= [len(dat[(is_trac_exp) & (~keepFracin)])/len(dat[is_trac_exp]),
-                        len(dat[(is_trac_dev) & (~keepFracin)])/len(dat[is_trac_dev])]
+    recovered_of_true= [frac['exp_recovered_of_true'],frac['dev_recovered_of_true']]
+    keepfracin_and_rec_of_true= [frac['exp_keepfracin_and_rec_of_true'],frac['dev_keepfracin_and_rec_of_true']]
+    #true_frac_rem= [len(dat[(is_true_exp) & (~keepFracin)])/len(dat[is_true_exp]),
+    #                 len(dat[(is_true_dev) & (~keepFracin)])/len(dat[is_true_dev])]
+    #is_trac_exp= (isRec) & (types == 'EXP')
+    #is_trac_dev= (isRec) & (types == 'DEV')
+    #tractor_frac_rem= [len(dat[(is_trac_exp) & (~keepFracin)])/len(dat[is_trac_exp]),
+    #                    len(dat[(is_trac_dev) & (~keepFracin)])/len(dat[is_trac_dev])]
     df= pd.DataFrame(dict(type=use_types,
-                          injected=true_frac_rem,
-                          tractor=tractor_frac_rem))
+                          fracin=keepfracin_and_rec_of_true,
+                          recovered=recovered_of_true))
     df.set_index('type',inplace=True)
     axi=ax[2,1]
     df.plot.barh(ax=axi)
-    xlab=axi.set_xlabel('Fraction that are "bad"')
+    # Add fractions
+    #n_tot= np.sum(injected)
+    # dev
+    plots.mytext(axi,0.02,0.81,'%.2f' % (recovered_of_true[1]),fontsize=12)
+    plots.mytext(axi,0.02,0.68,'%.2f' % (keepfracin_and_rec_of_true[1]),fontsize=12)
+    # exp
+    plots.mytext(axi,0.02,0.3,'%.2f' % (recovered_of_true[0]),fontsize=12)
+    plots.mytext(axi,0.02,0.18,'%.2f' % (keepfracin_and_rec_of_true[0]),fontsize=12)
+    xlab=axi.set_xlabel('Fraction Remaining')
     axi.set_ylabel('')
     #for i in range(2):
     #    ax[i].set_xlim(bins[0],bins[-1])
@@ -1414,12 +1434,7 @@ elif args.which == 'eboss':
     kw_lims= dict(glim=(21.5,23.25),
                   rlim=(20.5,23.),
                   zlim=(19.5,22.5))
-    for typ in ['exp','dev','simp']:
-        num_std_dev_gaussfit_e1_e2(dat,delta_lims= (-7,7),ylim=(0,0.4),
-                                   typ=typ,sub_mean= True)
-    for typ in ['SIMP','EXP','DEV']:
-        num_std_dev_gaussfit_rhalf(dat,delta_lims= (-10,10),typ=typ,
-                                   sub_mean=True,numbins=45) 
+    hist_all_quantities_fracin_cut(dat,**kw_lims)
     raise ValueError
     # Plots made in same order as presented in obiwan eboss paper 
     # Input properties
@@ -1485,6 +1500,7 @@ elif args.which == 'eboss':
     for typ in ['exp','dev','simp']:
         num_std_dev_gaussfit_e1_e2(dat,delta_lims= (-7,7),ylim=(0,0.4),
                                    typ=typ,sub_mean= True)
+
 
     typ='all'
     num_std_dev_gaussfit_flux(dat,cut_on_fracin=True,typ=typ,
