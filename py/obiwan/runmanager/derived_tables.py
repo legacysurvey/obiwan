@@ -216,7 +216,9 @@ class RandomsTable(object):
                 notExist=False
                 print('skipping brick %s, already exists' % brick)
             except OSError:
-                pass
+                print('Trouble reading %s, deleting and redoing it' % final_table_fn)
+                os.remove(final_table_fn)
+                notExist=True
         
         rsdirs,brickDone= self.get_rsdirs(brick) 
         
