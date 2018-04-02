@@ -206,21 +206,51 @@ class RandomsTable(object):
         self.number_rsdirs= self.num_rsdirs_for_completion()
 
     def run(self,brick):
-        tab= self.merge_randoms_tables(brick)
-        if tab:
-            self._run(tab,brick)
-        else:
-            print('brick %s skipped' % brick)
-
-    def _run(self,tab,brick):
-        self.add_flag_for_realsources(tab,brick)
-        self.add_targets_mask(tab)
-        # Write
         derived_dir= derived_field_dir(brick,self.data_dir,self.date)
-        fn= os.path.join(derived_dir,'randoms.fits')
-        self.write_table(tab,fn)
+        final_table_fn= os.path.join(derived_dir,'randoms.fits')
+        # Already exist and readable table?
+        notExist=True
+        if os.path.exists(final_table_fn):
+            try:
+                tmp= fits_table(final_table_fn)
+                notExist=False
+                print('skipping brick %s, already exists' % brick)
+            except OSError:
+                pass
+        
+        rsdirs,brickDone= self.get_rsdirs(brick) 
+        
+        if notExist and brickDone:
+            tab= self.merge_randoms_tables(brick,rsdirs)
+            self.add_flag_for_realsources(tab,brick)
+            self.add_targets_mask(tab)
+            # Write
+            self.write_table(tab,final_table_fn)
      
-    def merge_randoms_tables(self,brick):
+    def get_rsdirs(self,brick):
+        """get list of rsdirs for a given brick
+        
+        Returns:
+            tuple of rsdirs list and whether the brick is finished or not
+        """
+        search= os.path.join(self.data_dir,'tractor',
+                             brick[:3],brick,
+                             'rs*','tractor-%s.fits' % brick)
+        rsdirs= glob(search)
+        rsdirs= [os.path.dirname(dr)
+                 for dr in rsdirs]
+        if len(rsdirs) == self.number_rsdirs:
+            brickDone=True
+        elif len(rsdirs) < self.number_rsdirs:
+            print('brick %s not complete, %d/%d rsdirs exists' % \
+                  (brick,len(rsdirs),self.number_rsdirs))
+            brickDone=False
+        else:
+            raise ValueError('brick %s more rsdirs than should be possible %d/%d' % \
+                             (brick,len(rsdirs),self.number_rsdirs))
+        return rsdirs,brickDone
+    
+    def merge_randoms_tables(self,brick,rsdirs):
         """Computes final joined randoms tables
 
         Includes uniform randoms, info from psql db, which of these were recovered
@@ -232,23 +262,6 @@ class RandomsTable(object):
         Returns: 
             joined randoms table
         """
-        search= os.path.join(self.data_dir,'tractor',
-                             brick[:3],brick,
-                             'rs*','tractor-%s.fits' % brick)
-        rsdirs= glob(search)
-        rsdirs= [os.path.dirname(dr)
-                 for dr in rsdirs]
-        if len(rsdirs) == self.number_rsdirs:
-            return self._merge_randoms_tables(brick,rsdirs)
-        elif len(rsdirs) < self.number_rsdirs:
-            print('brick %s not complete, %d/%d rsdirs exists' % \
-                  (brick,len(rsdirs),self.number_rsdirs))
-            return None
-        else:
-            raise ValueError('brick %s more rsdirs than should be possible %d/%d' % \
-                             (brick,len(rsdirs),self.number_rsdirs))
-    
-    def _merge_randoms_tables(self,brick,rsdirs):
         uniform=[]
         for dr in rsdirs:
             simcat= fits_table((os.path.join(dr,'simcat-elg-%s.fits' % brick)
