@@ -247,7 +247,7 @@ if __name__ == '__main__':
 
     kwargs= vars(args)
     for dropCol in ['bricks_fn','merge_rank_tables',
-                    'randoms_subset']:
+                    'randoms_subset','count_rsdirs_per_brick']:
         del kwargs[dropCol]
     kwargs.update(bricks=bricks)
     
