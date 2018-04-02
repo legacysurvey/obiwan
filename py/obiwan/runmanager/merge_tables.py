@@ -12,6 +12,8 @@ from glob import glob
 import pandas as pd
 from collections import defaultdict
 
+
+from obiwan.runmanager.derived_tables import TargetSelection
 try: 
     from astrometry.util.fits import fits_table, merge_tables
 except ImportError:
@@ -74,14 +76,19 @@ class SummaryTable(MergeTable):
     def run(self,bricks_to_merge):
         d=defaultdict(list)
         for brick in bricks_to_merge:
-            d['brickname'].append(brick)
-            self.add_obiwan_summary(d,self.table_fn(brick),
-                                    prefix='tractor_')
-        # Type
+            if os.path.exists( self.table_fn(brick)):
+                d['brickname'].append(brick)
+                self.add_obiwan_summary(d,self.table_fn(brick),
+                                        prefix='tractor_')
+            else:
+                print('Skipping brick %s, probaby b/c not enough rsdirs')
+        # Save
         T=fits_table()
         T.set('brickname', np.array(d['brickname']).astype(np.string_))
-        for key in ['n_injected','n_recovered']:
+        for key in ['n_injected','n_recovered',
+                    'n_elg_ngc','n_elg_sgc']:
             T.set(key, np.array(d[key]).astype(np.int32))
+        T.set('brick_area', np.array(d['brick_area']).astype(np.float32))
         for b in 'grz':
             T.set('galdepth_'+b, np.array(d['galdepth_'+b]).astype(np.float32))
         self.write_table(T,self.savefn)
@@ -90,8 +97,15 @@ class SummaryTable(MergeTable):
         T = fits_table(randoms_fn)
         
         isRec= T.obiwan_mask == 1
+        TS= TargetSelection(prefix='tractor_') 
+        is_elg_ngc= TS.run(T,'eboss_ngc')
+        is_elg_sgc= TS.run(T,'eboss_sgc')
         summary_dict['n_injected'].append( len(T))
         summary_dict['n_recovered'].append( len(T[isRec]) )
+        summary_dict['n_elg_ngc'].append( len(T[isRec & is_elg_ngc]) )
+        summary_dict['n_elg_sgc'].append( len(T[isRec & is_elg_sgc]) )
+        # FIXME: depends on the brick
+        summary_dict['brick_area'].append( 0.25**2 )
         for band in 'grz':
             keep= np.isfinite(T.get(prefix+'galdepth_'+band))
             depth= np.median(T.get(prefix+'galdepth_'+band)[keep])

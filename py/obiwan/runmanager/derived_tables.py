@@ -78,14 +78,15 @@ class TargetSelection(object):
                               tractor.get(self.prefix+'mw_transmission_'+band)
         return self._desi_iselg(**kw)
 
-    def eboss_iselg(self,tractor,n_or_s):
-        kw=dict(n_or_s=n_or_s)
+    def eboss_iselg(self,tractor,ngc_or_sgc):
+        kw=dict(ngc_or_sgc=ngc_or_sgc)
         if self.prefix+'brick_primary' in tractor.get_columns():
             kw.update(primary=tractor.get(self.prefix+'brick_primary'))
         for key in ['ra','dec']:
             kw[key]= tractor.get(key) #self.prefix+key)
         for band in 'grz':
             kw['anymask_'+band]= tractor.get(self.prefix+'anymask_'+band)
+            kw['psfdepth_'+band]= tractor.get(self.prefix+'psfepth_'+band)
         kw.update( self.get_grz_mag_dict(tractor) )
         return self._eboss_iselg(**kw)
  
@@ -120,44 +121,46 @@ class TargetSelection(object):
 
         return elg 
     
-    def _eboss_iselg(self,n_or_s=None,
+    def _eboss_iselg(self,ngc_or_sgc=None,
                      primary=None,ra=None,dec=None,
                      gmag=None,rmag=None,zmag=None,
-                     anymask_g=None,anymask_r=None,anymask_z=None):
-        if primary is None:
+                     anymask_g=None,anymask_r=None,anymask_z=None,
+                     psfdepth_g=None,psfdepth_r=None,psfdepth_z=None):
+        """
+        Johan's target selection
+
+        Does NOT do: 
+            tycho2inblob == False
+            SDSS bright object mask & 0 < V < 11.5 mag Tycho2 stars mask
+            custom mask for eboss23
+        """ 
+        if not primary:
             primary = np.ones(len(ra), bool)
-        #print('dec.min',dec.min(),'dec.max',dec.max())
-        #inRegion=dict(ngc= ((primary) &
-        #                    (ra > 126.) &
-        #                    (ra < 168.) &
-        #                    (dec > 14.) &
-        #                    (ra < 34.)),
-        #              sgc_a= ((primary) &
-        #                      (ra > 317.) &
-        #                      (ra < 360.) &
-        #                      (dec > -2.) &
-        #                      (ra < 2.)),
-        #              sgc_b= ((primary) &
-        #                      (ra > 0.) &
-        #                      (ra < 45.) &
-        #                      (dec > -5.) &
-        #                      (ra < 5.)))
-        #inRegion.update(sgc= ((inRegion['sgc_a']) | 
-        #                      (inRegion['sgc_b'])))
-        # tycho2inblob == False
-        # SDSS bright object mask & 0 < V < 11.5 mag Tycho2 stars mask
-        # anymask[grz] == 0
-        # custom mask for eboss23
+        
+        if psfdepth_g:
+            # Johan's cut
+            # https://github.com/DriftingPig/ipynb/blob/master/obiwan_match.py#L96
+            gL = 62.79716079 
+            rL = 30.05661087
+            zL_ngc = 11.0
+            zL_sgc = 12.75            
+            depth_selection= (psfdepth_g > gL) & (psfdepth_r > rL) 
+            if ngc_or_sgc == 'ngc':
+                depth_selection= (depth_selection) & (psfdepth_z > zL_ngc) 
+            else:
+                depth_selection= (depth_selection) & (psfdepth_z > zL_sgc) 
+        else:
+            depth_selection = np.ones(len(ra), bool)
         gr= gmag - rmag
         rz= rmag - zmag
-        if n_or_s == 'ngc':
+        if ngc_or_sgc == 'ngc':
             colorCut= ((gmag > 21.825) &
                        (gmag < 22.9) &
                        (-0.068 * rz + 0.457 < gr) &
                        (gr < 0.112 * rz + 0.773) &
                        (0.637 * gr + 0.399 < rz) &
                        (rz < -0.555 * gr + 1.901))
-        elif n_or_s == 'sgc':
+        elif ngc_or_sgc == 'sgc':
             colorCut= ((gmag > 21.825) &
                        (gmag < 22.825) &
                        (-0.068 * rz + 0.457 < gr) &
@@ -168,7 +171,10 @@ class TargetSelection(object):
                   (anymask_r == 0) & 
                   (anymask_z == 0))
  
-        return (colorCut) & (anymask)
+        return ((primary) &
+                (depth_selection) &
+                (colorCut) & 
+                (anymask))
 
     def get_grz_mag_dict(self,tractor):
         d={}
@@ -254,10 +260,6 @@ class RandomsTable(object):
             simcat.cut( pd.Series(simcat.id).isin(idsadded.id) )
             simcat.set('unique_id',self.unique_id(simcat.id.astype(str),
                                                   brick,os.path.basename(dr)))
-            # Relevant for weights
-            num_injected= np.zeros(len(simcat))+len(simcat)
-            brick_area= 0.25**2 # FIXME: depends on the brick
-            simcat.set('num_density_injected',num_injected/brick_area)
             # PSQL
             simcat= self.add_psql_to_uniform_table(simcat,self.db_randoms_table)
             # Recovered by Tractor
@@ -356,9 +358,9 @@ class RandomsTable(object):
     def add_targets_mask(self,table):
         TS= TargetSelection(prefix='tractor_') 
         mask= np.zeros(len(table),dtype=np.int8)
-        for survey_ts,bit in [('desi',0),
-                              ('eboss_ngc',1),
-                              ('eboss_sgc',2)]:
+        for survey_ts,bit in [('eboss_ngc',0),
+                              ('eboss_sgc',1),
+                              ('desi',2)]:
             keep= TS.run(table,survey_ts)
             if len(table[keep]) > 0:
                 mask[keep]= Bit().set(mask[keep],bit)
