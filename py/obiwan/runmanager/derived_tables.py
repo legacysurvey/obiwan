@@ -86,7 +86,7 @@ class TargetSelection(object):
             kw[key]= tractor.get(key) #self.prefix+key)
         for band in 'grz':
             kw['anymask_'+band]= tractor.get(self.prefix+'anymask_'+band)
-            kw['psfdepth_'+band]= tractor.get(self.prefix+'psfepth_'+band)
+            kw['psfdepth_'+band]= tractor.get(self.prefix+'psfdepth_'+band)
         kw.update( self.get_grz_mag_dict(tractor) )
         return self._eboss_iselg(**kw)
  
@@ -134,10 +134,12 @@ class TargetSelection(object):
             SDSS bright object mask & 0 < V < 11.5 mag Tycho2 stars mask
             custom mask for eboss23
         """ 
-        if not primary:
+        if primary is None:
             primary = np.ones(len(ra), bool)
         
-        if psfdepth_g:
+        if psfdepth_g is None:
+            depth_selection = np.ones(len(ra), bool)
+        else:
             # Johan's cut
             # https://github.com/DriftingPig/ipynb/blob/master/obiwan_match.py#L96
             gL = 62.79716079 
@@ -149,8 +151,6 @@ class TargetSelection(object):
                 depth_selection= (depth_selection) & (psfdepth_z > zL_ngc) 
             else:
                 depth_selection= (depth_selection) & (psfdepth_z > zL_sgc) 
-        else:
-            depth_selection = np.ones(len(ra), bool)
         gr= gmag - rmag
         rz= rmag - zmag
         if ngc_or_sgc == 'ngc':
