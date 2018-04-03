@@ -35,8 +35,12 @@ class MergeTable(object):
     def run(self,bricks_to_merge):
         Tlist=[]
         for brick in bricks_to_merge:
-            tab= fits_table(self.table_fn(brick))
-            Tlist.append(tab)
+            fn= self.table_fn(brick)
+            if os.path.exists(fn):
+                tab= fits_table(self.table_fn(brick))
+                Tlist.append(tab)
+            else:
+                print('Skipping brick %s b/c randoms table doesnt exist' % fn)
         T= merge_tables(Tlist,columns='fillzero')
         T.writeto(self.savefn)
         print('Wrote %s' % self.savefn)
@@ -81,7 +85,7 @@ class SummaryTable(MergeTable):
                 self.add_obiwan_summary(d,self.table_fn(brick),
                                         prefix='tractor_')
             else:
-                print('Skipping brick %s, probaby b/c not enough rsdirs')
+                print('Skipping brick %s b/c randoms table doesnt exist')
         # Save
         T=fits_table()
         T.set('brickname', np.array(d['brickname']).astype(np.string_))
