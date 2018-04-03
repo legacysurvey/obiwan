@@ -94,7 +94,10 @@ class SummaryTable(MergeTable):
         self.write_table(T,self.savefn)
 
     def add_obiwan_summary(self,summary_dict,randoms_fn,prefix=''):
-        T = fits_table(randoms_fn)
+        try:
+            T = fits_table(randoms_fn)
+        except OSError:
+            raise OSError('could not open %s' % randoms_fn)
         
         isRec= T.obiwan_mask == 1
         TS= TargetSelection(prefix='tractor_') 
@@ -228,7 +231,8 @@ if __name__ == '__main__':
    
     if args.merge_rank_tables:
         kwargs= vars(args)
-        for key in ['merge_rank_tables','nproc','bricks_fn']:
+        for key in ['merge_rank_tables','nproc','bricks_fn',
+                    'count_rsdirs_per_brick']:
             del kwargs[key]
         main_serial(**kwargs)
         sys.exit(0)
