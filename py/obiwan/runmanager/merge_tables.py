@@ -103,16 +103,34 @@ class SummaryTable(MergeTable):
         except OSError:
             raise OSError('could not open %s' % randoms_fn)
         
+        TS= TargetSelection()
+        kw= dict(ra=T.ra,dec=T.dec,
+                 gmag=T.psql_g, rmag=T.psql_r, zmag=T.psql_z)
+        true_elg_ngc= TS._eboss_elg('ngc',**kw)
+        true_elg_sgc= TS._eboss_elg('sgc',**kw)
+
+        kw= dict(prefix='tractor_',anymask=True)
+        tractor_elg_ngc= TS.elg_by_measurement(T,'eboss_ngc',**kw)
+        tractor_elg_sgc= TS.elg_by_measurement(T,'eboss_sgc',**kw)
+        kw.update(anymask=False) # uses allmask
+        tractor_elg_ngc_allmask= TS.elg_by_measurement(T,'eboss_ngc',**kw)
+        tractor_elg_sgc_allmask= TS.elg_by_measurement(T,'eboss_sgc',**kw)
+
+        # Truth
+        summary_dict['n_inj'].append( len(T))
+        summary_dict['n_inj_elg_ngc'].append( len(T[true_elg_ngc]) )
+        summary_dict['n_inj_elg_sgc'].append( len(T[true_elg_sgc]) )
+        # Measured
         isRec= T.obiwan_mask == 1
-        TS= TargetSelection(prefix='tractor_') 
-        is_elg_ngc= TS.run(T,'eboss_ngc')
-        is_elg_sgc= TS.run(T,'eboss_sgc')
-        summary_dict['n_injected'].append( len(T))
-        summary_dict['n_recovered'].append( len(T[isRec]) )
-        summary_dict['n_elg_ngc'].append( len(T[isRec & is_elg_ngc]) )
-        summary_dict['n_elg_sgc'].append( len(T[isRec & is_elg_sgc]) )
+        summary_dict['n_rec'].append( len(T[isRec]) )
+        summary_dict['n_measured_elg_ngc'].append( len(T[(isRec) & (tractor_elg_ngc)]) )
+        summary_dict['n_measured_elg_sgc'].append( len(T[(isRec) & (tractor_elg_sgc)]) )
+        summary_dict['n_measured_elg_ngc_allmask'].append( len(T[(isRec) & (tractor_elg_ngc_allmask)]) )
+        summary_dict['n_measured_elg_sgc_allmask'].append( len(T[(isRec) & (tractor_elg_sgc_allmask)]) )
+        
         # FIXME: depends on the brick
         summary_dict['brick_area'].append( 0.25**2 )
+        
         for band in 'grz':
             keep= np.isfinite(T.get(prefix+'galdepth_'+band))
             depth= np.median(T.get(prefix+'galdepth_'+band)[keep])
