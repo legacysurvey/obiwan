@@ -52,46 +52,50 @@ class Bit(object):
 
 
 class TargetSelection(object):
-    def __init__(self,prefix=''): 
-        """Returns bool array of either eboss or desi ELGs
+    def elg_by_measurement(self,tractor,name,
+                           prefix='',anymask=True):
+        """Returns bool array elgs as measured by tractor
         
         Args:
             prefix: 'tractor_' for randoms table, '' for tractor table
+            anymask: True to apply anymask cut, False for allmask
         """
-        self.prefix=prefix
-
-    def run(self,tractor,name):
+        self.prefix= prefix
+        self.anymask= anymask
         assert(name in ['desi','eboss_ngc','eboss_sgc'])
         if name == 'desi':
-            return self.desi_iselg(tractor)
+            return self.desi_elg_by_measurement(tractor)
         elif name == 'eboss_ngc':
-            return self.eboss_iselg(tractor,'ngc')
+            return self.eboss_elg_by_measurement(tractor,'ngc')
         elif name == 'eboss_sgc':
-            return self.eboss_iselg(tractor,'sgc')
+            return self.eboss_elg_by_measurement(tractor,'sgc')
 
-    def desi_iselg(self,tractor):
+    def desi_elg_by_measurement(self,tractor):
         kw={}
         if self.prefix+'brick_primary' in tractor.get_columns():
             kw.update(primary=tractor.get(self.prefix+'brick_primary'))
         for band,iband in [('g',1),('r',2),('z',4)]:
             kw[band+'flux']= tractor.get(self.prefix+'flux_'+band) / \
                               tractor.get(self.prefix+'mw_transmission_'+band)
-        return self._desi_iselg(**kw)
+        return self._desi_elg(**kw)
 
-    def eboss_iselg(self,tractor,ngc_or_sgc):
-        kw=dict(ngc_or_sgc=ngc_or_sgc)
+    def eboss_elg_by_measurement(self,tractor,ngc_or_sgc):
+        kw={}
         if self.prefix+'brick_primary' in tractor.get_columns():
             kw.update(primary=tractor.get(self.prefix+'brick_primary'))
         for key in ['ra','dec']:
             kw[key]= tractor.get(key) #self.prefix+key)
         for band in 'grz':
-            kw['anymask_'+band]= tractor.get(self.prefix+'anymask_'+band)
             kw['psfdepth_'+band]= tractor.get(self.prefix+'psfdepth_'+band)
+            if self.anymask:
+                kw['anymask_'+band]= tractor.get(self.prefix+'anymask_'+band)
+            else:
+                kw['allmask_'+band]= tractor.get(self.prefix+'allmask_'+band)
         kw.update( self.get_grz_mag_dict(tractor) )
-        return self._eboss_iselg(**kw)
+        return self._eboss_elg(ngc_or_sgc,**kw)
  
 
-    def _desi_iselg(self,gflux=None, rflux=None, zflux=None, 
+    def _desi_elg(self,gflux=None, rflux=None, zflux=None, 
                     primary=None):
         """VERBATIM from 
         https://github.com/desihub/desitarget/blob/master/py/desitarget/cuts.py
@@ -121,11 +125,12 @@ class TargetSelection(object):
 
         return elg 
     
-    def _eboss_iselg(self,ngc_or_sgc=None,
-                     primary=None,ra=None,dec=None,
-                     gmag=None,rmag=None,zmag=None,
-                     anymask_g=None,anymask_r=None,anymask_z=None,
-                     psfdepth_g=None,psfdepth_r=None,psfdepth_z=None):
+    def _eboss_elg(self,ngc_or_sgc,
+                   primary=None,ra=None,dec=None,
+                   gmag=None,rmag=None,zmag=None,
+                   anymask_g=None,anymask_r=None,anymask_z=None,
+                   allmask_g=None,allmask_r=None,allmask_z=None,
+                   psfdepth_g=None,psfdepth_r=None,psfdepth_z=None):
         """
         Johan's target selection
 
@@ -134,6 +139,7 @@ class TargetSelection(object):
             SDSS bright object mask & 0 < V < 11.5 mag Tycho2 stars mask
             custom mask for eboss23
         """ 
+        assert(ngc_or_sgc in ['ngc','sgc'])
         if primary is None:
             primary = np.ones(len(ra), bool)
         
@@ -151,6 +157,18 @@ class TargetSelection(object):
                 depth_selection= (depth_selection) & (psfdepth_z > zL_ngc) 
             else:
                 depth_selection= (depth_selection) & (psfdepth_z > zL_sgc) 
+
+        if not (anymask_g is None):
+            mask= ((anymask_g == 0) & 
+                   (anymask_r == 0) & 
+                   (anymask_z == 0))
+        elif not (allmask_g is None):
+            mask= ((allmask_g == 0) & 
+                   (allmask_r == 0) & 
+                   (allmask_z == 0))
+        else:
+            mask = np.ones(len(ra), bool)
+
         gr= gmag - rmag
         rz= rmag - zmag
         if ngc_or_sgc == 'ngc':
@@ -167,14 +185,11 @@ class TargetSelection(object):
                        (gr < 0.112 * rz + 0.773) &
                        (0.218 * gr + 0.571 < rz) &
                        (rz < -0.555 * gr + 1.901))
-        anymask= ((anymask_g == 0) & 
-                  (anymask_r == 0) & 
-                  (anymask_z == 0))
  
         return ((primary) &
                 (depth_selection) &
                 (colorCut) & 
-                (anymask))
+                (mask))
 
     def get_grz_mag_dict(self,tractor):
         d={}
