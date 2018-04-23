@@ -89,8 +89,9 @@ class SummaryTable(MergeTable):
         # Save
         T=fits_table()
         T.set('brickname', np.array(d['brickname']).astype(np.string_))
-        for key in ['n_injected','n_recovered',
-                    'n_elg_ngc','n_elg_sgc']:
+        for key in ['n_inj','n_inj_elg_ngc','n_inj_elg_sgc',
+                    'n_rec','n_measured_elg_ngc','n_measured_elg_sgc',
+                    'n_measured_elg_ngc_allmask','n_measured_elg_sgc_allmask']:
             T.set(key, np.array(d[key]).astype(np.int32))
         T.set('brick_area', np.array(d['brick_area']).astype(np.float32))
         for b in 'grz':
