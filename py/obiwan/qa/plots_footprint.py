@@ -39,12 +39,24 @@ def footprint_outline(region):
     return x,y
 
 def radec_limits(region):
+    """just region I ran with obiwan"""
     if region == 'eboss_ngc':
         return dict(ra=(120,170),
                     dec=(12,32))
     elif region == 'eboss_sgc':
         return dict(ra=(-50,50),
                     dec=(-6,6))
+    elif region == 'cosmos':
+        return dict(ra=(148.5,151.6),
+                    dec=(0.4,3.4))
+
+def radec_limits_tight(region):
+    if region == 'eboss_ngc':
+        return dict(ra=(125,166),
+                    dec=(13.5,29.5))
+    elif region == 'eboss_sgc':
+        return dict(ra=(-46,46),
+                    dec=(-5.2,5.2))
     elif region == 'cosmos':
         return dict(ra=(148.5,151.6),
                     dec=(0.4,3.4))
@@ -78,6 +90,9 @@ class SummaryMaps(object):
 
     def plot(self,region=None,subset=None):
         assert(region in REGIONS)
+        if region == 'eboss_sgc':
+            self.summary= cut_to_region(self.summary,region=region)
+
         keep= np.ones(len(self.summary),bool)
         if region == 'eboss_ngc':
             keep= self.summary.dec > 10
@@ -89,13 +104,19 @@ class SummaryMaps(object):
         d={}
         for band in 'grz':
             d['depth_'+band]= plots.flux2mag(5/np.sqrt(self.summary.get('galdepth_'+band)))
-
+        lims= radec_limits_tight(region)
         x,y= self.summary.ra[keep],self.summary.dec[keep]
-        kw=dict(x=x,y=y, figsize=(10,5),ms=15,m='o',
-                region=region,subset=subset)
-        if region == 'cosmos':
-            kw.update(figsize=(3.6,2.9),ms=1.6e2,m='s',
-                      xlim=radec_limits(region)['ra'],ylim=radec_limits(region)['dec'])
+        kw=dict(x=x,y=y,
+                region=region,subset=subset,
+                xlim=lims['ra'],ylim=lims['dec'])
+        if region == 'eboss_ngc':
+            kw.update(figsize=(10,5),ms=15,m='o')
+                      #aspect_num=1/2.5)
+        elif region == 'eboss_sgc':
+            kw.update(figsize=(10,5),ms=15,m='o')
+                      #aspect_num=1/9.)
+        elif region == 'cosmos':
+            kw.update(figsize=(3.6,2.9),ms=1.6e2,m='s')
         
         kw.update(name='number_density',
                   clab='N / deg2')
@@ -132,6 +153,7 @@ class SummaryMaps(object):
             ax.set_xlim(xlim)
         if ylim:
             ax.set_ylim(ylim)
+        #ax.set_aspect(aspect_num)
         plt.savefig(fn,bbox_extra_artists=[xlab,ylab], bbox_inches='tight')
         plt.close()
         print('Wrote %s' % fn)
