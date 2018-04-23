@@ -160,36 +160,6 @@ def grz_hist_input_ext(dat,fn='grz_hist_input_ext.png',
     plt.close()
     print('Wrote %s' % fn)
 
-def grz_hist_input_ext_separate_panels(dat,fn='grz_hist_input_ext.png',
-                                       glim=None,rlim=None,zlim=None):
-    xlim= dict(g=glim,
-               r=rlim,
-               z=zlim)
-
-    kw_hist= dict(normed=False)
-    for band in 'grz':
-        savefn= fn.replace('.png','_%s.png' % band)
-        fig,ax=plt.subplots()
-        flux=dict(input_ext= dat.get(band+'flux'),
-                  input= dat.get(band+'flux')/\
-                              dat.get('mw_transmission_'+band))
-        bins= np.linspace(xlim[band][0],xlim[band][1],num=30)
-        for key,color in zip(sorted(list(flux.keys()),key=lambda x:len(x)),
-                             'bgk'):
-            mag= plots.flux2mag(flux[key])
-            myhist(ax,mag,bins=bins,range=xlim[band],
-                   color=color,label=key.replace('_','+'),**kw_hist)
-        plots.mytext(ax,0.5,0.05,band,fontsize=14)
-        ylab=ax.set_ylabel('Number')
-        xlab=ax.set_xlabel('True AB mag')
-        if band == 'g':
-            leg=ax.legend(loc=(0,1.01),ncol=2)
-            plt.savefig(savefn,bbox_extra_artists=[xlab,ylab,leg], bbox_inches='tight')
-        else:
-            plt.savefig(savefn,bbox_extra_artists=[xlab,ylab], bbox_inches='tight')
-        plt.close()
-        print('Wrote %s' % savefn)
-
 
 
 def grz_hist_input_rec(dat,fn='grz_hist_input_rec.png',
@@ -406,42 +376,24 @@ def confusion_matrix_by_type(dat,fn='confusion_matrix_by_type.png'):
     plt.close()
     print('Wrote %s' % fn)
 
-def hist_true_rhalf_input(dat,fn='hist_true_rhalf_input',ylims=(0,4.2)):
-    figs,ax= plt.subplots()
-    
-    bins= np.linspace(0,2,num=30)
-    myhist(ax,dat.rhalf,bins=bins,color='k',
-           label='Injected',normed=True)
-
-    xlab=ax.set_xlabel(r'rhalf (true)')
-    #for ax,band in zip(axes,'grz'):
-    #    ax.set_xlim(ylim)
-    #for ax in axes:
-    ax.set_ylim(ylims)
-    ylab=ax.set_ylabel('PDF')
-    ax.legend(loc='upper right',fontsize=10)
-    plt.savefig(fn,bbox_extra_artists=[xlab,ylab], bbox_inches='tight')
-    plt.close()
-    print('Wrote %s' % fn)
-
-
-
 def hist_true_rhalf_by_type(dat,fn='hist_true_rhalf_by_type'):
     use_types= ['SIMP','EXP','DEV','PSF']
     types= np.char.strip(dat.get('tractor_type'))
    
     ylims= (0,7) 
-    figs,ax= plt.subplots(2,1,figsize=(4,6))
+    figs,ax= plt.subplots(3,1,figsize=(4,9))
     plt.subplots_adjust(hspace=0.2)
 
     bins= np.linspace(0,2,num=30)
+    myhist(ax[0],dat.rhalf,bins=bins,color='k',
+           label='Injected',normed=True)
     
     keep= (isRec) & (keepFracin)
     for typ,color in zip(['SIMP','PSF'],'bc'):
-        myhist(ax[0],dat.rhalf[(keep) & (types == typ)],bins=bins,color=color,
+        myhist(ax[1],dat.rhalf[(keep) & (types == typ)],bins=bins,color=color,
                label=typ,normed=True)
     for typ,color in zip(['EXP','DEV'],'gm'):
-        myhist(ax[1],dat.rhalf[(keep) & (types == typ)],bins=bins,color=color,
+        myhist(ax[2],dat.rhalf[(keep) & (types == typ)],bins=bins,color=color,
                label=typ,normed=True)
     
     #plots.mytext(ax,0.9,0.9,typ.upper(),fontsize=14)
@@ -455,7 +407,7 @@ def hist_true_rhalf_by_type(dat,fn='hist_true_rhalf_by_type'):
     #for ax,band in zip(axes,'grz'):
     #    ax.set_xlim(ylim)
     #for ax in axes:
-    for i in range(2):
+    for i in range(3):
         ax[i].set_ylim(ylims)
         ylab=ax[i].set_ylabel('PDF')
         ax[i].legend(loc='upper right',fontsize=10)
@@ -565,31 +517,6 @@ def e1_e2(dat,fn='e1_e2.png',nbins=(120,120),
     plt.savefig(fn,bbox_extra_artists=[xlab,ylab], bbox_inches='tight')
     plt.close()
     print('Wrote %s' % fn)
-
-def e1_e2_separate_panels(dat,fn='e1_e2.png',nbins=(120,120),
-                          recovered=False):
-    fig,ax=plt.subplots()
-    keep= np.ones(len(dat),bool)
-    if recovered:
-        keep= isRec
-    plots.myhist2D(ax,dat.e1[keep],dat.e2[keep],
-                   xlim=(-1,1),ylim=(-1,1),nbins=nbins)
-
-    ax.set_aspect('equal')
-
-    for i,xlab,ylab in [(1,'e1','e2')]:
-        xlab=ax.set_xlabel(xlab)
-        ylab=ax.set_ylabel(ylab)
-    if recovered:
-        fn=fn.replace('.png','_recovered.png')
-    else:
-        fn=fn.replace('.png','_input.png')
-    fn=fn.replace('.png','_1panel.png')
-    plt.savefig(fn,bbox_extra_artists=[xlab,ylab], bbox_inches='tight')
-    plt.close()
-    print('Wrote %s' % fn)
-
-
 
 def fraction_recovered_vs_rhalf(dat,fn='fraction_recovered_vs_rhalf.png'):
     fig,ax=plt.subplots()
@@ -965,7 +892,7 @@ def num_std_dev_gaussfit_flux(dat,fn='num_std_dev_gaussfit_flux.png',
     plt.close()
     print('Wrote %s' % fn)
 
-def num_std_dev_gaussfit_flux_separate_panels(dat,fn='num_std_dev_gaussfit_flux_separate_plots.png',
+def num_std_dev_gaussfit_flux_separate_plots(dat,fn='num_std_dev_gaussfit_flux_separate_plots.png',
                               delta_lims= (-6,6),
                               sub_mean= True,cut_on_fracin=False,
                               ylim=(0,0.4)):
@@ -1507,18 +1434,15 @@ elif args.which == 'eboss':
     kw_lims= dict(glim=(21.5,23.25),
                   rlim=(20.5,23.),
                   zlim=(19.5,22.5))
-    hist_true_rhalf_by_type(dat)
-    hist_true_rhalf_input(dat)
+    hist_all_quantities_fracin_cut(dat,**kw_lims)
     raise ValueError
     # Plots made in same order as presented in obiwan eboss paper 
     # Input properties
     print('INPUT PROPS')
     grz_hist_input_noise_ext(dat, **kw_lims)
     grz_hist_input_ext(dat,**kw_lims)
-    grz_hist_input_ext_separate_panels(dat,**kw_lims)
     grz_hist_elg_notelg(dat,**kw_lims)
     e1_e2(dat,nbins=(120,120),recovered=False)
-    e1_e2_separate_panels(dat,nbins=(120,120),recovered=False)
     sum_of_noise_added(dat)
     
     # Identifying the num std dev peak at 1-2 sigma
@@ -1553,7 +1477,7 @@ elif args.which == 'eboss':
     fraction_recovered_vs_rhalf(dat)
     num_std_dev_gaussfit_flux(dat,cut_on_fracin=True,typ='all',
                               delta_lims= (-5,5),sub_mean= True)
-    num_std_dev_gaussfit_flux_separate_panels(dat,
+    num_std_dev_gaussfit_flux_separate_plots(dat,
                               ylim=(0,0.4),delta_lims= (-5,5),
                               sub_mean= True,cut_on_fracin=True)
 
