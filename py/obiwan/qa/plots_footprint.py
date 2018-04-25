@@ -99,8 +99,13 @@ class SummaryMaps(object):
         elif region == 'eboss_sgc':
             keep= self.summary.dec < 10
 
-        num_density= self.summary.n_injected / 0.25**2 # n/deg2
-        frac_rec= self.summary.n_recovered.astype(float)/self.summary.n_injected
+        dens_inj= self.summary.n_inj / 0.25**2 # n/deg2
+        dens_inj_elg_ngc= self.summary.n_inj_elg_ngc / 0.25**2 # n/deg2
+        dens_inj_elg_sgc= self.summary.n_inj_elg_sgc / 0.25**2 # n/deg2
+        
+        frac_rec= self.summary.n_rec.astype(float)/self.summary.n_inj
+        frac_rec_elg_ngc= self.summary.n_rec.astype(float)/self.summary.n_inj
+
         d={}
         for band in 'grz':
             d['depth_'+band]= plots.flux2mag(5/np.sqrt(self.summary.get('galdepth_'+band)))
