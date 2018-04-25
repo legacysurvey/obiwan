@@ -89,8 +89,11 @@ class SummaryTable(MergeTable):
         # Save
         T=fits_table()
         T.set('brickname', np.array(d['brickname']).astype(np.string_))
-        for key in ['n_injected','n_recovered',
-                    'n_elg_ngc','n_elg_sgc']:
+        for key in ['n_inj','n_inj_elg_ngc','n_inj_elg_sgc',
+                    'n_rec',
+                    'n_inj_elg_trac_elg_ngc','n_inj_elg_trac_elg_sgc',
+                    'n_inj_elg_trac_elg_ngc_allmask',
+                    'n_inj_elg_trac_elg_sgc_allmask']:
             T.set(key, np.array(d[key]).astype(np.int32))
         T.set('brick_area', np.array(d['brick_area']).astype(np.float32))
         for b in 'grz':
@@ -120,10 +123,10 @@ class SummaryTable(MergeTable):
         # Measured
         isRec= T.obiwan_mask == 1
         summary_dict['n_rec'].append( len(T[isRec]) )
-        summary_dict['n_measured_elg_ngc'].append( len(T[(isRec) & (tractor_elg_ngc)]) )
-        summary_dict['n_measured_elg_sgc'].append( len(T[(isRec) & (tractor_elg_sgc)]) )
-        summary_dict['n_measured_elg_ngc_allmask'].append( len(T[(isRec) & (tractor_elg_ngc_allmask)]) )
-        summary_dict['n_measured_elg_sgc_allmask'].append( len(T[(isRec) & (tractor_elg_sgc_allmask)]) )
+        summary_dict['n_inj_elg_trac_elg_ngc'].append( len(T[(true_elg_ngc) & (isRec) & (tractor_elg_ngc)]) )
+        summary_dict['n_inj_elg_trac_elg_sgc'].append( len(T[(true_elg_sgc) & (isRec) & (tractor_elg_sgc)]) )
+        summary_dict['n_inj_elg_trac_elg_ngc_allmask'].append( len(T[(true_elg_ngc) & (isRec) & (tractor_elg_ngc_allmask)]) )
+        summary_dict['n_inj_elg_trac_elg_sgc_allmask'].append( len(T[(true_elg_sgc) & (isRec) & (tractor_elg_sgc_allmask)]) )
         
         # FIXME: depends on the brick
         summary_dict['brick_area'].append( 0.25**2 )

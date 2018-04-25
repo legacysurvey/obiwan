@@ -30,9 +30,14 @@ dat= fits_table(args.randoms_table)
 #                          dat.tractor_fracin_z]),axis=0)
 #keepFracin= avg_fracin >= 0.7
 
-keepFracin= ((dat.tractor_fracin_g > 0.2) &
-             (dat.tractor_fracin_r > 0.2) & 
-             (dat.tractor_fracin_z > 0.2))
+fracin_thresh= 0.2
+types_of_models= ['PSF','EXP','DEV','SIMP','COMP']
+if args.which == 'cosmos':
+    fracin_thresh= 0.1
+    types_of_models= ['PSF','EXP','DEV','REX','COMP']
+keepFracin= ((dat.tractor_fracin_g > fracin_thresh) &
+             (dat.tractor_fracin_r > fracin_thresh) & 
+             (dat.tractor_fracin_z > fracin_thresh))
 isRec= (dat.obiwan_mask == 1) 
 #isRec= (isRec) & (keepFracin)
 
@@ -51,9 +56,11 @@ if args.which == 'eboss':
 #    is_elg_trac= plots.desi_ts(mags['g'],mags['r']-mags['z'],mags['g']-mags['r'])
 print('recovered of total: %f' % (len(dat[isRec])/len(dat)))
 print('recovered keepFracin of total: %f' % (len(dat[(isRec) & (keepFracin)])/len(dat)))
-print('elg input of total: %f' % (len(dat[is_elg_input])/len(dat)))
+if args.which != 'cosmos':
+    print('elg input of total: %f' % (len(dat[is_elg_input])/len(dat)))
 print('keepFracin of recovered: %f' % (len(dat[(isRec) & (keepFracin)])/len(dat[isRec])))
-print('fracin elgs >= 0.7 of recovered elgs: %f' % (len(dat[(isRec) & (keepFracin) & (is_elg_trac)])/len(dat[(isRec) & (is_elg_input)])))
+if args.which != 'cosmos':
+    print('fracin elgs >= 0.7 of recovered elgs: %f' % (len(dat[(isRec) & (keepFracin) & (is_elg_trac)])/len(dat[(isRec) & (is_elg_input)])))
 
 ##########################
 
@@ -376,7 +383,8 @@ def number_per_type_input_rec_meas(dat,fn='number_per_type_input_rec_meas.png'):
     print('Wrote %s' % fn)
 
 def confusion_matrix_by_type(dat,fn='confusion_matrix_by_type.png'):
-    use_types= ['PSF','EXP','DEV','SIMP','COMP']
+    #use_types= ['PSF','EXP','DEV','SIMP','COMP']
+    use_type= types_of_models
     trac_types= np.char.strip(dat.get('tractor_type'))
     #trac_types[pd.Series(trac_types).isin(['SIMP','REX']).values]= 'EXP'
     
@@ -387,15 +395,15 @@ def confusion_matrix_by_type(dat,fn='confusion_matrix_by_type.png'):
 
     cm= plots.create_confusion_matrix(input_types[keep],trac_types[keep], 
                                       poss_ans_types= ans_types,
-                                      poss_pred_types= use_types)
+                                      poss_pred_types= types_of_models)
     plt.imshow(cm, interpolation='nearest', cmap=plt.cm.Blues, vmin=0,vmax=1)
     cbar=plt.colorbar()
     plt.yticks(range(len(ans_types)), ans_types)
-    plt.xticks(range(len(use_types)), use_types)
+    plt.xticks(range(len(types_of_models)), types_of_models)
     ylab=plt.ylabel('Truth')
     xlab=plt.xlabel('Tractor')
     for row in range(len(set(input_types))):
-        for col in range(len(use_types)):
+        for col in range(len(types_of_models)):
             if np.isnan(cm[row,col]):
                 plt.text(col,row,'n/a',va='center',ha='center')
             elif cm[row,col] > 0.5:
@@ -704,8 +712,10 @@ def fracin_vs_numstddev_2dhist(dat,fn='fracin_vs_numstddev_2dhist.png',
         keep= isRec
         plots.myhist2D(ax,x[keep],y[keep],
                        xlim=delta_lims,ylim=(0,1.2),nbins=nbins)
-        ax.axhline(0.7,c='r',ls='dotted')
-        
+        ax.axhline(fracin_thresh,c='r',ls='dashed')
+        plots.mytext(ax,0.75,fracin_thresh+0.05,'Threshold',
+                     color='r',fontsize=14)
+        # label by band
         plots.mytext(ax,0.9,0.9,band,fontsize=14)
         ylab=ax.set_ylabel('fracin')
     xlab= axes[-1].set_xlabel(r'$\Delta\, Flux\,/\,\sigma$ (Tractor - Truth)')
@@ -1470,163 +1480,141 @@ def rec_lost_contam_delta_by_type(dat,fn='rec_lost_contam_delta_by_type.png',
     print('Wrote %s' % fn)
 
 
+################
+# Main
 #################   
 if args.which == 'cosmos':
     pad=0.2
     kw_lims= dict(glim=(22-pad,24.5+pad),
                   rlim=(21.4-pad,23.9+pad),
                   zlim=(20.5-pad,23+pad))
-
-    delta_dec_vs_delta_ra(dat,xlim=(-1.,1.),ylim=(-1.,1.),nbins=(60,60))
-    e1_e2(dat,nbins=(120,120),recovered=False)
-    e1_e2(dat,nbins=(120,120),recovered=True)
-    grz_hist_input_noise_ext(dat, **kw_lims)
-    grz_hist_input_ext(dat,**kw_lims)
-    grz_hist_input_rec(dat,**kw_lims)
-    grz_hist_by_type(dat,**kw_lims)
-    noise_added_1(dat)
-    noise_added_2(dat)
-    number_per_type_input_rec_meas(dat)
-    confusion_matrix_by_type(dat)
-    fraction_recovered(dat, survey_for_depth='desi',**kw_lims)
-    fraction_recovered_vs_rhalf(dat)
-    num_std_dev_gaussfit_flux(dat,delta_lims= (-5,5),
-                              sub_mean= True)
-    num_std_dev_gaussfit_rhalf(dat,delta_lims= (-7,7),
-                               sub_mean= False,sub_bin_at_max=True)
-    num_std_dev_gaussfit_e1_e2(dat,delta_lims= (-7,7),
-                               sub_mean= False)
-    delta_vs_grzmag(dat,delta='num_std_dev',delta_lims=(-10,10),
-                    nbins=(60,30),**kw_lims)
-    delta_vs_grzmag(dat,delta='dmag',delta_lims=(-1,1),
-                    nbins=(60,30),**kw_lims)
-    for band in 'grz':
-        fix_for_delta_flux(dat, band=band)
-
-elif args.which == 'eboss':
+    delta_lims=(-10,10)
+    simp_or_rex='REX'
+elif args.which in ['eboss','desi']:
     kw_lims= dict(glim=(21.5,23.25),
                   rlim=(20.5,23.),
                   zlim=(19.5,22.5))
-    hist_true_rhalf_by_type(dat)
-    hist_true_rhalf_input(dat)
-    raise ValueError
-    # Plots made in same order as presented in obiwan eboss paper 
-    # Input properties
-    print('INPUT PROPS')
-    grz_hist_input_noise_ext(dat, **kw_lims)
-    grz_hist_input_ext(dat,**kw_lims)
-    grz_hist_input_ext_separate_panels(dat,**kw_lims)
-    grz_hist_elg_notelg(dat,**kw_lims)
-    e1_e2(dat,nbins=(120,120),recovered=False)
-    e1_e2_separate_panels(dat,nbins=(120,120),recovered=False)
-    sum_of_noise_added(dat)
-    
-    # Identifying the num std dev peak at 1-2 sigma
-    # And we can remove those data points b/c they have same grz,rhalf,redshift,exp & dev frac as the other data points
-    print('indentifying num std dev peak at 1-2 sigma'.upper())
-    fracin_vs_numstddev_2dhist(dat,delta_lims=(-5,5),nbins=(30,30))
-    hist_all_quantities_fracin_cut(dat,**kw_lims)
-    num_std_dev_gaussfit_flux(dat,delta_lims= (-5,5),
-                              sub_mean= False)
-    thresh=0.2
-    kw= dict(thresh=0.2,typ='all',delta_lims= (-5,5))
-    num_std_dev_gaussfit_flux(dat,keep_what_put_in='fracin_keep_bad',sub_mean= False,**kw)
-    num_std_dev_gaussfit_flux(dat,keep_what_put_in='fracin',sub_mean= True,**kw)
-    #########
-    # Rest of plots throw these data points out
-   
-    print('rest of plots'.upper())
-    # Tractor measures input EXP much better than in put DEV
-    for keep_what in ['neq1','neq4']:
-        num_std_dev_gaussfit_flux(dat,cut_on_fracin=True,typ='all',
-                                  keep_what_put_in=keep_what,
-                                  delta_lims= (-7,7),sub_mean= True)
-   
-    delta_dec_vs_delta_ra(dat,xlim=(-1.,1.),ylim=(-1.,1.),nbins=(60,60))
-    #e1_e2(dat,nbins=(120,120),recovered=True)
-    grz_hist_input_rec(dat,**kw_lims)
-    grz_hist_by_type(dat,**kw_lims)
-    number_per_type_input_rec_meas(dat)
-    confusion_matrix_by_type(dat)
-    redshifts_recovered(dat)
-    fraction_recovered(dat, survey_for_depth='desi',**kw_lims)
-    fraction_recovered_vs_rhalf(dat)
+    delta_lims=(-10,10)
+    simp_or_rex='SIMP'
+ 
+# Plots made in same order as presented in obiwan eboss paper 
+# Input properties
+print('INPUT PROPS')
+grz_hist_input_noise_ext(dat, **kw_lims)
+grz_hist_input_ext(dat,**kw_lims)
+grz_hist_input_ext_separate_panels(dat,**kw_lims)
+e1_e2(dat,nbins=(120,120),recovered=False)
+e1_e2_separate_panels(dat,nbins=(120,120),recovered=False)
+sum_of_noise_added(dat)
+
+# Identifying the num std dev peak at 1-2 sigma
+# And we can remove those data points b/c they have same grz,rhalf,redshift,exp & dev frac as the other data points
+print('indentifying num std dev peak at 1-2 sigma'.upper())
+fracin_vs_numstddev_2dhist(dat,delta_lims=(-5,5),nbins=(30,30))
+hist_all_quantities_fracin_cut(dat,**kw_lims)
+num_std_dev_gaussfit_flux(dat,delta_lims= (-5,5),
+                          sub_mean= False)
+kw= dict(thresh=fracin_thresh,typ='all',delta_lims= (-5,5))
+num_std_dev_gaussfit_flux(dat,keep_what_put_in='fracin_keep_bad',sub_mean= False,**kw)
+num_std_dev_gaussfit_flux(dat,keep_what_put_in='fracin',sub_mean= True,**kw)
+
+
+#########
+# Rest of plots throw these data points out
+print('rest of plots'.upper())
+# Tractor measures input EXP much better than in put DEV
+for keep_what in ['neq1','neq4']:
     num_std_dev_gaussfit_flux(dat,cut_on_fracin=True,typ='all',
-                              delta_lims= (-5,5),sub_mean= True)
-    num_std_dev_gaussfit_flux_separate_panels(dat,
-                              ylim=(0,0.4),delta_lims= (-5,5),
-                              sub_mean= True,cut_on_fracin=True)
+                              keep_what_put_in=keep_what,
+                              delta_lims= (-7,7),sub_mean= True)
 
-    # rhalf measurements
-    hist_true_rhalf_by_type(dat)
-    for typ in ['PSF']:
-        # Very sky distribution so sub bin at max is best
-        residual_gaussfit_rhalf(dat,delta_lims= (-2,2),typ=typ,
-                                sub_bin_at_max=True)
-    for typ in ['SIMP','EXP','DEV']:
-        # closer to normal, so subtract mean
-        num_std_dev_gaussfit_rhalf(dat,delta_lims= (-10,10),typ=typ,
-                                   sub_mean=True,numbins=45) 
-    for typ in ['exp','dev','simp']:
-        delta_vs_grzmag(dat,delta='num_std_dev_rhalf',typ=typ.upper(),delta_lims=(-10,10),
-                        nbins=(60,30),**kw_lims)
-        delta_vs_grzmag(dat,delta='drhalf',typ=typ.upper(),delta_lims=(-1,1),
-                        nbins=(60,30),**kw_lims)
-    # e1,e2 measurements
-    for typ in ['exp','dev','simp']:
-        num_std_dev_gaussfit_e1_e2(dat,delta_lims= (-7,7),ylim=(0,0.4),
-                                   typ=typ,sub_mean= True)
+delta_dec_vs_delta_ra(dat,xlim=(-1.,1.),ylim=(-1.,1.),nbins=(60,60))
+grz_hist_input_rec(dat,**kw_lims)
+grz_hist_by_type(dat,**kw_lims)
+number_per_type_input_rec_meas(dat)
+confusion_matrix_by_type(dat)
+if args.which in ['eboss','desi']:
+    redshifts_recovered(dat)
+    fraction_recovered_vs_rhalf(dat)
+fraction_recovered(dat, survey_for_depth='desi',**kw_lims)
+num_std_dev_gaussfit_flux(dat,cut_on_fracin=True,typ='all',
+                          delta_lims= (-5,5),sub_mean= True)
+num_std_dev_gaussfit_flux_separate_panels(dat,
+                          ylim=(0,0.4),delta_lims= (-5,5),
+                          sub_mean= True,cut_on_fracin=True)
 
-
-    typ='all'
-    num_std_dev_gaussfit_flux(dat,cut_on_fracin=True,typ=typ,
-                              delta_lims= (-5,5),sub_mean= True)
-    delta_vs_grzmag(dat,delta='dmag',typ=typ,delta_lims=(-1,1),
+# rhalf measurements
+hist_true_rhalf_by_type(dat)
+hist_true_rhalf_input(dat)
+for typ in ['PSF']:
+    # Very sky distribution so sub bin at max is best
+    residual_gaussfit_rhalf(dat,delta_lims= (-2,2),typ=typ,
+                            sub_bin_at_max=True)
+for typ in [simp_or_rex,'EXP','DEV']:
+    # closer to normal, so subtract mean
+    num_std_dev_gaussfit_rhalf(dat,delta_lims= delta_lims,typ=typ,
+                               sub_mean=True,numbins=45) 
+for typ in ['exp','dev',simp_or_rex.lower()]:
+    delta_vs_grzmag(dat,delta='num_std_dev_rhalf',typ=typ.upper(),
+                    delta_lims=delta_lims, nbins=(60,30),**kw_lims)
+    delta_vs_grzmag(dat,delta='drhalf',typ=typ.upper(),delta_lims=(-1,1),
                     nbins=(60,30),**kw_lims)
-    delta_vs_grzmag(dat,delta='num_std_dev',typ=typ,delta_lims=(-10,10),
-                    nbins=(60,30),**kw_lims)
-    # If want to split each of above 3 bands by type
-    if False:
-        for typ in ['SIMP','EXP','DEV','PSF']:
-            num_std_dev_gaussfit_flux(dat,cut_on_fracin=True,typ=typ,
-                                      delta_lims= (-5,5),sub_mean= True)
-            delta_vs_grzmag(dat,delta='dmag',typ=typ,delta_lims=(-1,1),
-                            nbins=(60,30),**kw_lims)
-            delta_vs_grzmag(dat,delta='num_std_dev',typ=typ,delta_lims=(-10,10),
-                            nbins=(60,30),**kw_lims)
+# e1,e2 measurements
+for typ in ['exp','dev',simp_or_rex.lower()]:
+    num_std_dev_gaussfit_e1_e2(dat,delta_lims= (-7,7),ylim=(0,0.4),
+                               typ=typ,sub_mean= True)
 
+# Combine all types
+typ='all'
+num_std_dev_gaussfit_flux(dat,cut_on_fracin=True,typ=typ,
+                          delta_lims= (-5,5),sub_mean= True)
+delta_vs_grzmag(dat,delta='num_std_dev',typ=typ,
+                delta_lims=delta_lims,nbins=(60,30),**kw_lims)
+delta_vs_grzmag(dat,delta='dmag',typ=typ,delta_lims=(-1,1),
+                nbins=(60,30),**kw_lims)
+# If want to split each of above 3 bands by type
+if False:
+    for typ in [simp_or_rex,'EXP','DEV','PSF']:
+        num_std_dev_gaussfit_flux(dat,cut_on_fracin=True,typ=typ,
+                                  delta_lims= (-5,5),sub_mean= True)
+        delta_vs_grzmag(dat,delta='dmag',typ=typ,delta_lims=(-1,1),
+                        nbins=(60,30),**kw_lims)
+        delta_vs_grzmag(dat,delta='num_std_dev',typ=typ,delta_lims=(-10,10),
+                        nbins=(60,30),**kw_lims)
+
+# Attempt to fix mag offset by adding in sky from apflux
+if False:
+    for band in 'grz':
+        fix_for_delta_flux(dat, band=band)
+
+if args.which != 'cosmos':
     rec_lost_contam_gr_rz(dat)
     rec_lost_contam_grz(dat,x_ivar=0)
 
-    # FIXME: change this plot to 2D hist
-    for band in 'grz':
-        rec_lost_contam_delta_by_type(dat,band=band,
-                                      x_ivar=0,y_ivar=0,percentile_lines=False)
-
-    # Show that fracin is responsible for peak at 1-2 sigma
-    # And that allmask, fracmask, fracflux, rhalf ~ 0.5 are not
-    if False:
-        for suffix in ['','_keep_bad']:
-            # fracin IS RESPONSIBLE for peak at 1-2 sigma!!
-            # num_std_dev for fracin < 0.7 sample and fracin >= 0.7 sample
-            kw=dict(typ='all',delta_lims= (-7,7),sub_mean= False)
-            for thresh in np.linspace(0.1,0.4,num=4):
-                num_std_dev_gaussfit_flux(dat,keep_what_put_in='fracin'+suffix,thresh=thresh,**kw)
-            # Allmask does not affect peak at 1-2 sigma
-            num_std_dev_gaussfit_flux(dat,keep_what_put_in='allmask'+suffix,**kw)
-            # Fracmask does not affect peak at 1-2 sigma
-            for thresh in np.linspace(0.1,0.5,num=5): 
-                num_std_dev_gaussfit_flux(dat,keep_what_put_in='fracmask'+suffix,thresh=thresh,**kw)
-            # Fracflux does not affect peak at 1-2 sigma
-            for thresh in [0.01,0.5]: 
-                num_std_dev_gaussfit_flux(dat,keep_what_put_in='fracflux'+suffix,thresh=thresh,**kw)
-        # Injected 0.45 < rhalf < 0.55 does not affect peak at 1-2 sigma
-        for keep_what in ['rhalfeqpt5','neq1_notrhalf','neq4_notrhalf']:
-            num_std_dev_gaussfit_flux(dat,keep_what_put_in=keep_what,**kw)
+# FIXME: change this plot to 2D hist
+for band in 'grz':
+    rec_lost_contam_delta_by_type(dat,band=band,
+                                  x_ivar=0,y_ivar=0,percentile_lines=False)
     
-    # Attempt to fix mag offset by adding in sky from apflux
-    if False:
-        for band in 'grz':
-            fix_for_delta_flux(dat, band=band)
- 
+# Show that fracin is responsible for peak at 1-2 sigma
+# And that allmask, fracmask, fracflux, rhalf ~ 0.5 are not
+if False:
+    for suffix in ['','_keep_bad']:
+        # fracin IS RESPONSIBLE for peak at 1-2 sigma!!
+        # num_std_dev for fracin < 0.7 sample and fracin >= 0.7 sample
+        kw=dict(typ='all',delta_lims= (-7,7),sub_mean= False)
+        for thresh in np.linspace(0.1,0.4,num=4):
+            num_std_dev_gaussfit_flux(dat,keep_what_put_in='fracin'+suffix,thresh=thresh,**kw)
+        # Allmask does not affect peak at 1-2 sigma
+        num_std_dev_gaussfit_flux(dat,keep_what_put_in='allmask'+suffix,**kw)
+        # Fracmask does not affect peak at 1-2 sigma
+        for thresh in np.linspace(0.1,0.5,num=5): 
+            num_std_dev_gaussfit_flux(dat,keep_what_put_in='fracmask'+suffix,thresh=thresh,**kw)
+        # Fracflux does not affect peak at 1-2 sigma
+        for thresh in [0.01,0.5]: 
+            num_std_dev_gaussfit_flux(dat,keep_what_put_in='fracflux'+suffix,thresh=thresh,**kw)
+    # Injected 0.45 < rhalf < 0.55 does not affect peak at 1-2 sigma
+    for keep_what in ['rhalfeqpt5','neq1_notrhalf','neq4_notrhalf']:
+        num_std_dev_gaussfit_flux(dat,keep_what_put_in=keep_what,**kw)
+
 
