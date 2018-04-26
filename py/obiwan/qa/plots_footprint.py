@@ -330,8 +330,8 @@ if __name__ == "__main__":
     if args.summary_table:
         summ= SummaryPlots(args.summary_table,args.survey_bricks,
                            region=args.region,subset=args.subset)
-        summ.heatmaps()
         summ.nonheatmaps()
+        summ.heatmaps()
 
     if args.ccds_used_wildcard:
         ccds= CCDsUsed(args.ccds_used_wildcard)
