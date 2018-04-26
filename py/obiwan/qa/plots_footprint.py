@@ -11,7 +11,7 @@ import pandas as pd
 
 from astrometry.util.fits import fits_table, merge_tables
 
-import obiwan.qa.plots_common as plots
+import obiwan.qa.plots_common as common
 
 REGIONS= ['eboss_ngc','eboss_sgc','dr5','cosmos']
 
@@ -76,8 +76,10 @@ def cut_to_region(table,region):
 
 
 
-class SummaryMaps(object):
-    def __init__(self,summary_fn,survey_bricks_fn):
+class SummaryPlots(object):
+    def __init__(self,summary_fn,survey_bricks_fn,
+                 region=None,subset=None):
+        """Add additional info to summary table so can make plots and heatmaps"""
         self.summary= fits_table(summary_fn)
         # Add ra,dec
         bricks= fits_table(survey_bricks_fn)
@@ -87,81 +89,120 @@ class SummaryMaps(object):
         self.summary= self.summary[ np.argsort(self.summary.brickname)]
         for key in ['ra','dec']:
             self.summary.set(key,bricks.get(key))
-
-    def plot(self,region=None,subset=None):
+        # Region to process 
         assert(region in REGIONS)
-        if region == 'eboss_sgc':
-            self.summary= cut_to_region(self.summary,region=region)
+        self.region= region
+        self.subset= subset
+    
+    def heatmaps(self):
+        """Function that plots ALL the heatmaps"""
+        # Continuous RA for SGC
+        if self.region == 'eboss_sgc':
+            self.summary= cut_to_region(self.summary,region=self.region)
+        # bool array for this region
+        self.inRegion= np.ones(len(self.summary),bool)
+        if self.region == 'eboss_ngc':
+            self.inRegion= self.summary.dec > 10
+        elif self.region == 'eboss_sgc':
+            self.inRegion= self.summary.dec < 10
+        # Ra,Dec limits for this region
+        self.radec_lims= radec_limits_tight(self.region)
+        # Good plot properties
+        self.heatmap_props= dict(figsize=(10,5),ms=15,m='o',
+                                 fn_suffix=self.region)
+        if self.region == 'cosmos':
+            self.heatmap_props.update(figsize=(3.6,2.9),ms=1.6e2,m='s',
+                                      fn_suffix='%s_%s' % (self.region,self.subset))
 
-        keep= np.ones(len(self.summary),bool)
-        if region == 'eboss_ngc':
-            keep= self.summary.dec > 10
-        elif region == 'eboss_sgc':
-            keep= self.summary.dec < 10
+        # Plot
+        self.heatmap(self.summary.n_inj / 0.25**2, 
+                     cbar_label='N / deg2',
+                     fn="heatmap_num_dens_inj.png")
 
-        dens_inj= self.summary.n_inj / 0.25**2 # n/deg2
-        dens_inj_elg_ngc= self.summary.n_inj_elg_ngc / 0.25**2 # n/deg2
-        dens_inj_elg_sgc= self.summary.n_inj_elg_sgc / 0.25**2 # n/deg2
+        self.heatmap(self.summary.n_rec.astype(float)/self.summary.n_inj, 
+                     cbar_label='Fraction Recovered',
+                     fn="heatmap_recovered.png")
+   
+        self.heatmap(self.summary.n_inj_elg_trac_elg_ngc.astype(float)/self.summary.n_inj_elg_ngc, 
+                     cbar_label='Fraction Recovered (NGC ELGs)',
+                     fn="heatmap_recovered_ngc_elgs.png")
         
-        frac_rec= self.summary.n_rec.astype(float)/self.summary.n_inj
-        frac_rec_elg_ngc= self.summary.n_rec.astype(float)/self.summary.n_inj
+        self.heatmap(self.summary.n_inj_elg_trac_elg_ngc.astype(float)/self.summary.n_inj_elg_trac_elg_ngc_allmask, 
+                     cbar_label='Ratio of Anymask to Allmask',
+                     fn="heatmap_anymask_allmask_ratio_ngc_elgs.png")
+        #fig,axes=plt.subplots(3,1,figsize=(8,10))
+        #d={}
+        #for band in 'grz':
+        #    d['depth_'+band]= plots.flux2mag(5/np.sqrt(self.summary.get('galdepth_'+band)))
+        #for band in 'grz':
+        #    kw.update(name='galdepth_%s' % band,
+        #              clab='galdepth %s (not ext corr)' % band)
+        #    newkeep= (keep) & (np.isfinite(d['depth_'+band]))
+        #    #print('depth= ',d['depth_'+band][newkeep])
+        #    try:
+        #        self.heatmap(d['depth_'+band][newkeep])
+        #    except ValueError:
+        #        print('WARNING depth_%s FAILED, somethign about Invalid RGBA argument: 23.969765' % band)
 
-        d={}
-        for band in 'grz':
-            d['depth_'+band]= plots.flux2mag(5/np.sqrt(self.summary.get('galdepth_'+band)))
-        lims= radec_limits_tight(region)
-        x,y= self.summary.ra[keep],self.summary.dec[keep]
-        kw=dict(x=x,y=y,
-                region=region,subset=subset,
-                xlim=lims['ra'],ylim=lims['dec'])
-        if region == 'eboss_ngc':
-            kw.update(figsize=(10,5),ms=15,m='o')
-                      #aspect_num=1/2.5)
-        elif region == 'eboss_sgc':
-            kw.update(figsize=(10,5),ms=15,m='o')
-                      #aspect_num=1/9.)
-        elif region == 'cosmos':
-            kw.update(figsize=(3.6,2.9),ms=1.6e2,m='s')
+    def nonheatmaps(self):
+        """Function that plots ALL the nonheatmaps, e.g. histograms"""
+        self.hist_num_dens_injected()
+    
+    def heatmap(self,data, 
+                cbar_label='N / deg2',fn='heatmap_tmp.png'):
+        """Makes and save a single panel heatmap"""
+        fig,ax=plt.subplots(figsize= self.heatmap_props['figsize'])
         
-        kw.update(name='number_density',
-                  clab='N / deg2')
-        self.heatmap(num_density[keep], **kw)
-        kw.update(name='fraction_recovered',
-                  clab='Fraction Recovered')
-        self.heatmap(frac_rec[keep],**kw)
-        for band in 'grz':
-            kw.update(name='galdepth_%s' % band,
-                      clab='galdepth %s (not ext corr)' % band)
-            newkeep= (keep) & (np.isfinite(d['depth_'+band]))
-            #print('depth= ',d['depth_'+band][newkeep])
-            try:
-                self.heatmap(d['depth_'+band][newkeep])
-            except ValueError:
-                print('WARNING depth_%s FAILED, somethign about Invalid RGBA argument: 23.969765' % band)
-            
-    def heatmap(self,color, x=None,y=None,
-                name='test',clab='Label',region=None,subset=None,
-                figsize=(10,5),ms=15,m='o',
-                xlim=None,ylim=None):
-        fn= 'heatmap_%s_%s.png' % (name,region)
-        if region == 'cosmos':
-            fn= fn.replace('.png','_%s.png' % subset)
-        fig,ax=plt.subplots(figsize=figsize)
-        kw=dict(edgecolors='none',marker=m,s=ms,rasterized=True)
-        cax= ax.scatter(x,y,c=color, **kw)
+        x= self.summary.ra[self.inRegion]
+        y= self.summary.dec[self.inRegion]
+        color= data[self.inRegion]
+        cax= ax.scatter(x,y,c=color, 
+                        edgecolors='none',rasterized=True,
+                        marker=self.heatmap_props['m'],
+                        s=self.heatmap_props['ms'])
         cbar = fig.colorbar(cax) 
+
+        cbar.set_label(cbar_label)
+        ax.set_xlim(self.radec_lims['ra'])
+        ax.set_ylim(self.radec_lims['dec'])
+        #ax.set_aspect(aspect_num)
         
-        cbar.set_label(clab)
         xlab=ax.set_xlabel('RA')
         ylab=ax.set_ylabel('Dec')
-        if xlim:
-            ax.set_xlim(xlim)
-        if ylim:
-            ax.set_ylim(ylim)
-        #ax.set_aspect(aspect_num)
+        fn= fn.replace('.png','_%s.png' % self.heatmap_props['fn_suffix'])
         plt.savefig(fn,bbox_extra_artists=[xlab,ylab], bbox_inches='tight')
         plt.close()
         print('Wrote %s' % fn)
+
+    def hist_num_dens_injected(self,fn='hist_num_dens_injected.png'):
+        # FIX ME: this func only supports eboss region 
+        assert(self.region in ['eboss_ngc','eboss_sgc'])
+        isNGC= self.summary.dec > 10
+        dens_inj_ngc= self.summary.n_inj[isNGC] / 0.25**2 # n/deg2
+        dens_inj_sgc= self.summary.n_inj[~isNGC] / 0.25**2 # n/deg2
+        dens_inj_elg_ngc= self.summary.n_inj_elg_ngc[isNGC] / 0.25**2 # n/deg2
+        dens_inj_elg_sgc= self.summary.n_inj_elg_sgc[~isNGC] / 0.25**2
+
+        fig,ax= plt.subplots(1,2,figsize=(8,4))
+        xlab=ax[0].set_xlabel('Density [#/deg2] of Injected Sources')
+        _,bins= np.histogram(dens_inj_ngc,bins=30,normed=False)
+        for data,ls,name in [(dens_inj_ngc,'-','NGC'),
+                             (dens_inj_sgc,'--','SGC')]:
+            common.myhist_step(ax[0],data,bins=bins,
+                          color='k',ls=ls) #,label=name)
+        xlab=ax[1].set_xlabel('Density [#/deg2] of Injected eBOSS ELGs')
+        _,bins= np.histogram(dens_inj_elg_ngc,bins=30,normed=False)
+        for data,ls,name in [(dens_inj_elg_ngc,'-','NGC'),
+                             (dens_inj_elg_sgc,'--','SGC')]:
+            common.myhist_step(ax[1],data,bins=bins,
+                          color='k',ls=ls,label=name)
+        ylab=ax[0].set_ylabel('Number of Bricks')
+        ax[1].legend(loc='upper left')
+        plt.savefig(fn,bbox_extra_artists=[xlab,ylab], bbox_inches='tight')
+        plt.close()
+        print('Wrote %s' % fn)
+
+
 
 class CCDsUsed(object):
     def __init__(self,ccds_used_wildcard=None):
@@ -282,8 +323,10 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     if args.summary_table:
-        maps= SummaryMaps(args.summary_table,args.survey_bricks)
-        maps.plot(region=args.region,subset=args.subset)
+        summ= SummaryPlots(args.summary_table,args.survey_bricks,
+                           region=args.region,subset=args.subset)
+        summ.heatmaps()
+        summ.nonheatmaps()
 
     if args.ccds_used_wildcard:
         ccds= CCDsUsed(args.ccds_used_wildcard)
