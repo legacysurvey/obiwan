@@ -120,15 +120,15 @@ class SummaryPlots(object):
                      fn="heatmap_num_dens_inj.png")
 
         self.heatmap(self.summary.n_rec.astype(float)/self.summary.n_inj, 
-                     cbar_label='Fraction Recovered',
+                     cbar_lims=(0,1),cbar_label='Fraction Recovered',
                      fn="heatmap_recovered.png")
    
-        self.heatmap(self.summary.n_inj_elg_trac_elg_ngc.astype(float)/self.summary.n_inj_elg_ngc, 
-                     cbar_label='Fraction Recovered (NGC ELGs)',
+        self.heatmap(self.summary.n_inj_elg_trac_elg_ngc.astype(float)/self.summary.n_inj_elg_ngc,
+                     cbar_lims=(0,1),cbar_label='Fraction Recovered (NGC ELGs)',
                      fn="heatmap_recovered_ngc_elgs.png")
         
-        self.heatmap(self.summary.n_inj_elg_trac_elg_ngc.astype(float)/self.summary.n_inj_elg_trac_elg_ngc_allmask, 
-                     cbar_label='Ratio of Anymask to Allmask',
+        self.heatmap(self.summary.n_inj_elg_trac_elg_ngc.astype(float)/self.summary.n_inj_elg_trac_elg_ngc_allmask,
+                     cbar_lims=(0,1), cbar_label='Ratio of Anymask to Allmask',
                      fn="heatmap_anymask_allmask_ratio_ngc_elgs.png")
         #fig,axes=plt.subplots(3,1,figsize=(8,10))
         #d={}
@@ -148,7 +148,7 @@ class SummaryPlots(object):
         """Function that plots ALL the nonheatmaps, e.g. histograms"""
         self.hist_num_dens_injected()
     
-    def heatmap(self,data, 
+    def heatmap(self,data, cbar_lims=None,
                 cbar_label='N / deg2',fn='heatmap_tmp.png'):
         """Makes and save a single panel heatmap"""
         fig,ax=plt.subplots(figsize= self.heatmap_props['figsize'])
@@ -160,6 +160,8 @@ class SummaryPlots(object):
                         edgecolors='none',rasterized=True,
                         marker=self.heatmap_props['m'],
                         s=self.heatmap_props['ms'])
+        if cbar_lims:
+            cax.set_clim(cbar_lims) # color bar limits
         cbar = fig.colorbar(cax) 
 
         cbar.set_label(cbar_label)
