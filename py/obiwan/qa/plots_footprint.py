@@ -115,8 +115,11 @@ class SummaryPlots(object):
                                       fn_suffix='%s_%s' % (self.region,self.subset))
 
         # Plot
+        cbar_lims=None
+        if self.region in ['eboss_ngc','eboss_sgc']:
+            cbar_lims= (0,3000)
         self.heatmap(self.summary.n_inj / 0.25**2, 
-                     cbar_label='N / deg2',
+                     cbar_lims=cbar_lims, cbar_label='N / deg2',
                      fn="heatmap_num_dens_inj.png")
 
         self.heatmap(self.summary.n_rec.astype(float)/self.summary.n_inj, 
