@@ -802,7 +802,7 @@ def delta_vs_grzmag(dat,fn='_vs_grzmag.png',
             ylabel=r'$\Delta\, %s$ (Truth - Tractor)' % band
             keep= (keep) & (np.isfinite(y))
         elif delta in ['num_std_dev_rhalf','drhalf']:
-            assert(typ in ['SIMP','DEV','EXP'])
+            assert(typ in ['SIMP','DEV','EXP','REX'])
             if typ == 'DEV':
                 eff_typ= 'dev'
             else:
@@ -1205,7 +1205,7 @@ def residual_gaussfit_rhalf(dat,fn='residual_gaussfit_rhalf.png',
 def num_std_dev_gaussfit_e1_e2(dat,fn='num_std_dev_gaussfit_e1_e2.png',
                                delta_lims= (-6,6),ylim=(0,0.4),typ=None,
                                sub_mean= True):
-    assert(typ in ['exp','dev','simp'])
+    assert(typ in ['exp','dev','simp','rex'])
     fn= fn.replace('.png','_%s.png' % typ.upper())
     types= np.char.strip(dat.get('tractor_type'))
     #types[pd.Series(types).isin(['SIMP','REX']).values]= 'EXP'
@@ -1219,7 +1219,7 @@ def num_std_dev_gaussfit_e1_e2(dat,fn='num_std_dev_gaussfit_e1_e2.png',
     ax.axvline(0,c='k',ls='dotted')
     for delta,color in zip(['e1','e2'],'gb'):
         data_lab= 'data'
-        if typ in ['simp','exp']:
+        if typ in ['simp','rex','exp']:
             trac_e= dat.get('tractor_shapeexp_%s' % delta)
             trac_ivar= dat.get('tractor_shapeexp_%s_ivar' % delta)
         elif typ in ['dev']:
