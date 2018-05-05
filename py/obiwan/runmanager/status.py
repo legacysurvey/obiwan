@@ -78,14 +78,17 @@ class QdoList(object):
     """
     def __init__(self,outdir,que_name='obiwan',
                  skip_succeed=False,
-                 rand_1e3=False,
+                 rand_num=None,
                  firstN=None):
         print('que_name= ',que_name.upper())
         self.outdir= outdir
         self.que_name= que_name
         self.skip_succeed= skip_succeed
-        self.rand_1e3= rand_1e3
+        self.rand_num= rand_num
         self.firstN= firstN
+
+    def isCosmos(self):
+        return "cosmos" in self.que_name
 
     def get_tasks_logs(self):
         """get tasks and logs for the three types of qdo status"""
@@ -100,8 +103,8 @@ class QdoList(object):
                 continue
             # List of "brick rs" for each QDO_RESULT 
             qdo_tasks= np.array(q.tasks(state= getattr(qdo.Task, res.upper())))
-            if self.rand_1e3:
-                qdo_tasks= qdo_tasks[np.random.randint(0,len(qdo_tasks),size=1000)]
+            if self.rand_num:
+                qdo_tasks= qdo_tasks[np.random.randint(0,len(qdo_tasks),size=self.rand_num)]
             elif not self.firstN is None:
                 qdo_tasks= qdo_tasks[:self.firstN]
             if len(qdo_tasks) > 0:
@@ -112,8 +115,13 @@ class QdoList(object):
             # Corresponding log, slurm files  
             for task in tasks[res]:
                 # Logs
-                brick,rs,do_skipids,do_more = task.split(' ')
-                logfn= get_logfile(self.outdir,brick,rs, 
+                if self.isCosmos():
+                    brick,rs,do_skipids,do_more,subset = task.split(' ')
+                    outdir= os.path.join(self.outdir,'subset%s' % subset)
+                else:
+                    brick,rs,do_skipids,do_more = task.split(' ')
+                    outdir= self.outdir
+                logfn= get_logfile(outdir,brick,rs, 
                                    do_skipids=do_skipids,do_more=do_more)
                 logs[res].append( logfn )
         return tasks,ids,logs
@@ -131,20 +139,25 @@ class QdoList(object):
         for task_id in task_ids:
             try:
                 task_obj= q.tasks(id= int(task_id))
-                brick,rs,do_skipids,do_more= task_obj.task.split(' ')
-                del_dirs= get_deldirs(self.outdir,brick,rs, 
+                if self.isCosmos():
+                    brick,rs,do_skipids,do_more,subset = task_obj.task.split(' ')
+                    outdir= os.path.join(self.outdir,'subset%s' % subset)
+                else:
+                    brick,rs,do_skipids,do_more = task_obj.task.split(' ')
+                    outdir= self.outdir
+                del_dirs= get_deldirs(outdir,brick,rs, 
                                        do_skipids=do_skipids,
                                        do_more=do_more)
-                del_fns= [get_checkpoint_fn(self.outdir,brick,rs)]
+                del_fns= [get_checkpoint_fn(outdir,brick,rs)]
                 if modify:
                     if to == 'pending':
                         # Stuck in pending b/c slurm job timed out
                         task_obj.set_state(qdo.Task.PENDING)
-                        print('id %s RUNNING --> PENDING' % task_id)
+                        #print('id %s --> PENDING' % task_id)
                     elif to == 'failed':
                         # Manually force to failed, keep whatever outputs have
                         task_obj.set_state(qdo.Task.FAILED)
-                        print('id %s RUNNING --> FAILED' % task_id)
+                        print('id %s --> FAILED' % task_id)
                     if rm_files:
                         for dr in del_dirs:
                             dobash('rm -r %s/*' % dr)
@@ -174,15 +187,17 @@ class RunStatus(object):
         self.regex_errs= [
             r'ValueError:\ starting\ row=[0-9]*?\ exceeds.*?sources',
             r'\No\ randoms\ in\ brick',
-            #'WARING: found nothing with:',
-            #'File "obiwan/kenobi.py", line 112, in get_skip_ids',
-            #'no skippedids.fits files exist for this brick',
-            #"KeyError: 'do_skipds'",
+            r'pool\.py",\sline\s644,\sin\sget\n\s+raise\sself\._value\nAssertionError',
+            r'assert\(len\(R\)\s==\slen\(blobsrcs\)\)\nAssertionError',
+            r"ModuleNotFoundError:\sNo\smodule\snamed\s'fitsio'",
             r'psycopg2\.OperationalError:',
             r'MemoryError',
             r'astropy\.extern\.configobj\.configobj\.ParseError',
             r'RuntimeError:\ Command\ failed:\ sex\ -c',
             r'multiprocessing\/pool\.py\",\sline\s567',
+            r"ImportError:\scannot\simport\sname\s'_fitsio_wrap'",
+            r"OSError:\sFile\s not\sfound:",
+            r"NothingToDoError:\sNo\sCCDs\stouching\sbrick",
             r'SystemError:\ \<built-in\ method\ flush']
         self.regex_errs_extra= ['Other','log does not exist']
 
@@ -245,45 +260,29 @@ if __name__ == '__main__':
     parser = ArgumentParser()
     parser.add_argument('--qdo_quename',default='obiwan_9deg',help='',required=False)
     parser.add_argument('--skip_succeed',action='store_true',default=False,help='speed up, number succeeded tasks can be very large for production runs and slows down status code',required=False)
-    parser.add_argument('--rand_1e3',action='store_true',default=False,help='speed up, look at up to 1000 random succeed,failed,running tasks to get sense of failure modes occuring',required=False)
+    parser.add_argument('--rand_num',type=int,default=None,help='only process this many succeed,failed,running chosen at random from each',required=False)
     parser.add_argument('--firstN',type=int,default=None,help='speed up, instead of random 1000 do the first N (user specified) qdo tasks',required=False)
     parser.add_argument('--running_to_pending',action="store_true",default=False,help='set to reset all "running" jobs to "pending"')
     parser.add_argument('--running_to_failed',action="store_true",default=False,help='set to reset all "running" jobs to "failed"')
     parser.add_argument('--failed_message_to_pending',action='store',default=None,help='set to message of failed tak and reset all failed tasks with that message to pending')
+    parser.add_argument('--failed_to_pending',action="store_true",default=False,help='set to reset all "failed" jobs to "pending"')
     parser.add_argument('--modify',action='store_true',default=False,help='set to actually reset the qdo tasks state AND to delete IFF running_to_pending or failed_message_to_pending are set')
     parser.add_argument('--outdir',default='.',help='',required=False)
+    parser.add_argument('--no_write',action="store_true",default=False,help='modify the qdo DB but dont write out any text files',required=False)
     args = parser.parse_args()
     print(args)
 
     Q= QdoList(args.outdir,que_name=args.qdo_quename,
                skip_succeed=args.skip_succeed,
-               rand_1e3=args.rand_1e3,
+               rand_num=args.rand_num,
                firstN=args.firstN)
     print('Getting tasks,logs')
     tasks,ids,logs= Q.get_tasks_logs()
 
-    # Write log fns so can inspect
-    for res in logs.keys():
-        writelist(logs[res],"%s_%s_logfns.txt" % (args.qdo_quename,res))
-    R= RunStatus(tasks,logs)
-    print('Counting number of failed,suceed,running tasks for ech failure mode')
-    tally= R.get_tally()
-    R.print_tally(tally)
-
-    # logs,tasks for each type of failure
-    print('Writing logs,tasks for each failure mode for failed tasks')
-    for err_key in R.regex_errs + R.regex_errs_extra:
-        err_logs= np.array(logs['failed'])[ tally['failed'] == err_key ]
-        err_tasks= np.array(tasks['failed'])[ tally['failed'] == err_key ]
-        err_string= (err_key[:12] + err_key[-8:])
-        err_string= ((err_key[:10] + err_key[-10:])
-                     .replace(" ","_")
-                     .replace("/","")
-                     .replace("*","")
-                     .replace("?","")
-                     .replace(":",""))
-        writelist(err_logs,"logs_%s_%s.txt" % (args.qdo_quename,err_string))
-        writelist(err_tasks,"tasks_%s_%s.txt" % (args.qdo_quename,err_string))
+    # Logfile lists grouped by succeeded,running,failed
+    if not args.no_write:
+        for res in logs.keys():
+            writelist(logs[res],"%s_%s_logfns.txt" % (args.qdo_quename,res))
 
     # Rerun tasks and delete those tasks' outputs
     if len(ids['running']) > 0:
@@ -293,12 +292,41 @@ if __name__ == '__main__':
         elif args.running_to_failed:
             Q.change_task_state(ids['running'], to='failed',modify=args.modify,
                                 rm_files=False)
-    
+    if len(ids['failed']) > 0:
+        if args.failed_to_pending:
+            Q.change_task_state(ids['failed'], to='pending',modify=args.modify,
+                                rm_files=False)
+   
+
+    # Failed logfile lists, group by error message
+    R= RunStatus(tasks,logs)
+    print('Counting number of failed,suceed,running tasks for ech failure mode')
+    tally= R.get_tally()
+    R.print_tally(tally)
+
+    # Subset of failed to pending
     if args.failed_message_to_pending:
         hasMessage= np.where(tally['failed'] == args.failed_message_to_pending)[0]
         if hasMessage.size > 0:
             theIds= np.array(ids['failed'])[hasMessage]
             Q.change_task_state(theIds, to='pending', modify=args.modify,
                                 rm_files=False)
+
+    # logs,tasks for each type of failure
+    if not args.no_write:
+        print('Writing logs,tasks for each failure mode for failed tasks')
+        for err_key in R.regex_errs + R.regex_errs_extra:
+            err_logs= np.array(logs['failed'])[ tally['failed'] == err_key ]
+            err_tasks= np.array(tasks['failed'])[ tally['failed'] == err_key ]
+            err_string= (err_key[:12] + err_key[-8:])
+            err_string= ((err_key[:10] + err_key[-10:])
+                         .replace(" ","_")
+                         .replace("/","")
+                         .replace("*","")
+                         .replace("?","")
+                         .replace(":",""))
+            writelist(err_logs,"logs_%s_%s.txt" % (args.qdo_quename,err_string))
+            writelist(err_tasks,"tasks_%s_%s.txt" % (args.qdo_quename,err_string))
+
 
     print('done')
