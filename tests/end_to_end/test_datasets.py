@@ -153,7 +153,7 @@ class Testcase(object):
             assert(os.path.exists(self.logfn))
 
 
-
+y
 
 class AnalyzeTestcase(Testcase):
     """Automatically loads the relevant outputs for a given testcase_DR_*
@@ -182,7 +182,7 @@ class AnalyzeTestcase(Testcase):
         self.rsdir='rs0'
 
     def get_tolerances(self):
-        if self.bands == 'grz':
+        if self.survey == 'decals' and self.bands == 'grz':
             mw_trans= 2.e-5 # Not 0 b/c ra,dec of model can vary
             # also amazing agreement
             return {'rhalf':0.65, 
@@ -190,7 +190,7 @@ class AnalyzeTestcase(Testcase):
                     'skyflux':2.,
                     'modelflux':4.5,
                     'mw_trans':mw_trans}
-        elif self.bands == 'z':
+        elif self.survey == 'decals' and self.bands == 'z':
             mw_trans= 5.e-6 # Not 0 b/c ra,dec of model can vary
             if self.add_noise:
                 # TODO: tune
@@ -218,6 +218,14 @@ class AnalyzeTestcase(Testcase):
                       'skyflux':1.1,
                       'modelflux':6.0,
                       'mw_trans':mw_trans}
+        elif self.survey == 'bassmzls' and self.bands == 'grz':
+            mw_trans= 2.e-5 # Not 0 b/c ra,dec of model can vary
+            # for injected sources at depth and rhalf= 0.5''
+            return {'rhalf':1, 
+                    'apflux':0.1,
+                    'skyflux':0.1,
+                    'modelflux':0.5,
+                    'mw_trans':mw_trans}
 
 
     def load_outputs(self):
@@ -536,7 +544,17 @@ if __name__ == "__main__":
     d.update(survey='bassmzls',dataset='dr6',
              skip_ccd_cuts=True,
              z=False,grz=True)
-    test_case(**d)
+    #test_case(**d)
+
+    d.update(bands='grz')
+    for key in ['grz','z']:
+        del d[key]
+    A= AnalyzeTestcase(**d)
+    A.load_outputs()
+    A.simcat_xy()
+    A.plots()
+    A.numeric_tests()
+    A.qualitative_tests()
 
     #t= TestcaseCosmos(survey='decals')
     #t.run()
