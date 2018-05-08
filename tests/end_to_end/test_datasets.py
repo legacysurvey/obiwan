@@ -153,8 +153,6 @@ class Testcase(object):
             assert(os.path.exists(self.logfn))
 
 
-y
-
 class AnalyzeTestcase(Testcase):
     """Automatically loads the relevant outputs for a given testcase_DR_*
 
@@ -453,13 +451,21 @@ def test_case(survey=None,dataset=None,
 
 
 def test_main():
-    """travis CI"""
-    d=dict(survey='decals',dataset='dr5',
-           z=True,grz=False,
+    """This is what travis CI runs"""
+
+    # BASS/MzLS
+    d=dict(survey='bassmzls',dataset='dr6',
+           z=False,grz=True, skip_ccd_cuts=True,
            obj='elg',
            all_blobs=False,onedge=False,
            early_coadds=False,
            checkpoint=False)
+    test_case(**d)
+
+    # DECaLS
+    d.update(survey='decals',dataset='dr5',
+             z=True,grz=False,
+             skip_ccd_cuts=False)
 
     # dr5
     d.update(early_coadds=True)
@@ -530,7 +536,7 @@ class TestcaseCosmos(object):
         main(args=args)
 
 if __name__ == "__main__":
-    #test_main()
+    test_main()
 
     d=dict(survey='decals',dataset='dr5',
            z=True,grz=False,
@@ -546,15 +552,16 @@ if __name__ == "__main__":
              z=False,grz=True)
     #test_case(**d)
 
-    d.update(bands='grz')
-    for key in ['grz','z']:
-        del d[key]
-    A= AnalyzeTestcase(**d)
-    A.load_outputs()
-    A.simcat_xy()
-    A.plots()
-    A.numeric_tests()
-    A.qualitative_tests()
+    if False:
+        d.update(bands='grz')
+        for key in ['grz','z']:
+            del d[key]
+        A= AnalyzeTestcase(**d)
+        A.load_outputs()
+        A.simcat_xy()
+        A.plots()
+        A.numeric_tests()
+        A.qualitative_tests()
 
     #t= TestcaseCosmos(survey='decals')
     #t.run()
