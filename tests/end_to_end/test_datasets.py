@@ -87,8 +87,7 @@ class Testcase(object):
             self.zoom= [90, 290, 2773, 2973]
         elif self.survey == 'bassmzls':
             self.brick='2176p330'
-            # FIX ME
-            self.zoom= [1,3600,1,3600]
+            self.zoom= [2776,2976, 2900,3100]
         else:
             raise ValueError('bands= %s no allowed' % bands)
 
