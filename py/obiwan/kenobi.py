@@ -59,7 +59,7 @@ try:
 except ImportError:
     pass
 
-DATASETS=['dr5','dr3','cosmos']
+DATASETS=['dr5','dr3','cosmos','dr6']
 
 def write_dict(fn,d):
     '''d -- dictionary'''
@@ -653,7 +653,7 @@ def get_parser():
     parser = argparse.ArgumentParser(formatter_class=argparse.
                                      ArgumentDefaultsHelpFormatter,
                                      description='DECaLS simulations.')
-    parser.add_argument('--dataset', type=str, choices=['dr5','dr3', 'cosmos'], required=True, help='see definitions in obiwan/test/README.md') 
+    parser.add_argument('--dataset', type=str, choices=['dr5','dr3', 'cosmos','dr6'], required=True, help='see definitions in obiwan/test/README.md') 
     parser.add_argument('-o', '--objtype', type=str, choices=['star','elg', 'lrg', 'qso'], default='star', required=True) 
     parser.add_argument('-b', '--brick', type=str, default='2428p117', required=True)
     parser.add_argument('--outdir', default='./', required=False)

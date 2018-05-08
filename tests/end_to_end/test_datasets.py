@@ -23,13 +23,15 @@ try:
 except ImportError:
     pass
 
-DATASETS= ['dr5','dr3','cosmos']
+SURVEYS= ['decals','bassmzls']
+DATASETS= ['dr5','dr3','cosmos','dr6']
 
 
 class Testcase(object):
     """Initialize and run a testcase
 
     Args:
+        survey: decals or bassmzls
         name: testcase name
         dataset: string, 'DR3', 'DR5', 
         obj: elg,star
@@ -38,14 +40,16 @@ class Testcase(object):
         onedge: to add randoms at edge of region, not well within the boundaries
     """
 
-    def __init__(self, dataset='dr5', bands='grz',
-                 obj='elg',rowstart=0,
+    def __init__(self, survey=None, dataset=None, 
+                 bands='grz', obj='elg',rowstart=0,
                  add_noise=False,all_blobs=False,
                  onedge=False, early_coadds=False,
                  checkpoint=False,
                  no_cleanup=False,stage=None,
                  skip_ccd_cuts=False):
+        assert(survey in SURVEYS)
         assert(dataset in DATASETS)
+        self.survey= survey
         self.dataset= dataset
         self.bands= bands
         self.obj= obj
@@ -60,8 +64,8 @@ class Testcase(object):
         self.skip_ccd_cuts= skip_ccd_cuts
 
         self.testcase_dir= os.path.join(os.path.dirname(__file__), 
-                                        'testcase_%s' % bands)
-        self.outname= 'out_testcase_%s_%s_%s' % (bands,
+                                        'testcase_%s_%s' % (survey,bands))
+        self.outname= 'out_testcase_%s_%s_%s_%s' % (survey,bands,
                                 self.dataset,self.obj)
         if self.all_blobs:
             self.outname += '_allblobs'
@@ -75,12 +79,16 @@ class Testcase(object):
                                   self.outname)
         self.logfn=os.path.join(self.outdir,'log.txt')
         
-        if self.bands == 'grz':
+        if self.survey == 'decals' and self.bands == 'grz':
             self.brick='0285m165' 
             self.zoom= [3077, 3277, 2576, 2776]
-        elif self.bands == 'z':
+        elif self.survey == 'decals' and self.bands == 'z':
             self.brick='1741p242'
             self.zoom= [90, 290, 2773, 2973]
+        elif self.survey == 'bassmzls':
+            self.brick='2176p330'
+            # FIX ME
+            self.zoom= [1,3600,1,3600]
         else:
             raise ValueError('bands= %s no allowed' % bands)
 
@@ -384,15 +392,15 @@ class AnalyzeTestcase(Testcase):
         print('passed: Qualitative Tests')
 
 
-def test_case(dataset='dr5',
-               z=True,grz=False,
-               obj='elg',
+def test_case(survey=None,dataset=None,
+               z=True,grz=False, obj='elg',
                add_noise=False,all_blobs=False,
                onedge=False, early_coadds=False,
                checkpoint=False, skip_ccd_cuts=False):
     """
-    Args:
-        dataset: dr5, dr3, cosmos
+    Args: 
+        survey: one of SURVEYS
+        dataset: one of DATASETS
         z, grz: to run the z and/or grz testcases
         all_blobs: to fit models to all blobs, not just the blobs containing sims
         add_noise: to add Poisson noise to simulated galaxy profiles
@@ -400,7 +408,8 @@ def test_case(dataset='dr5',
         early_coadds: write coadds before model fitting and stop there
         dataset: no reason to be anything other than DR5 for these tests
     """
-    d= dict(obj=obj,dataset=dataset,
+    d= dict(survey=survey,dataset=dataset, 
+            obj=obj,
             add_noise=add_noise,all_blobs=all_blobs,
             onedge=onedge,early_coadds=early_coadds,
             checkpoint=checkpoint,
@@ -438,7 +447,7 @@ def test_case(dataset='dr5',
 
 def test_main():
     """travis CI"""
-    d=dict(dataset='dr5',
+    d=dict(survey='decals',dataset='dr5',
            z=True,grz=False,
            obj='elg',
            all_blobs=False,onedge=False,
@@ -482,18 +491,23 @@ def test_main():
 
 
 class TestcaseCosmos(object):
-    def __init__(self, subset=60):
-        self.subset=subset             
+    def __init__(self, survey=None,
+                 dataset='cosmos',subset=60):
+        self.survey=survey
+        self.dataset=dataset
+        self.subset=subset     
+        self.rowstart=0
+        self.obj='elg'  
+        if self.survey == 'decals':
+            self.brick='1501p020'
+        else: 
+            raise ValueError('survey = bassmzls not supported yet')      
         self.outdir= os.path.join(os.path.dirname(__file__), 
-                                  'out_testcasecosmos_subset%d' % self.subset)
+                                  'out_testcase_%s_cosmos_subset%d' % \
+                                  (survey,self.subset))
         os.environ["LEGACY_SURVEY_DIR"]= os.path.join(os.path.dirname(__file__),
                                                 'testcase_cosmos')
-
-        # Defaults
-        self.dataset='cosmos'
-        self.brick='1501p020'
-        self.rowstart=0
-        self.obj='elg'
+        
 
     def run(self):
         randoms_fn= os.path.join(os.environ["LEGACY_SURVEY_DIR"], 
@@ -509,22 +523,23 @@ class TestcaseCosmos(object):
         main(args=args)
 
 if __name__ == "__main__":
-    #test_dataset_DR3()
-    #test_dataset_DR5()
-    # Various tests can do 
-    d=dict(dataset='dr5',
+    #test_main()
+
+    d=dict(survey='decals',dataset='dr5',
            z=True,grz=False,
            obj='elg',
            all_blobs=False,onedge=False,
            early_coadds=False,
            checkpoint=False,
            skip_ccd_cuts=False)
-
-    test_main()
-    #d.update(skip_ccd_cuts=False)
     #test_case(**d)
 
-    #t= TestcaseCosmos(subset=60)
+    d.update(survey='bassmzls',dataset='dr6',
+             skip_ccd_cuts=True,
+             z=False,grz=True)
+    test_case(**d)
+
+    #t= TestcaseCosmos(survey='decals')
     #t.run()
 
 
