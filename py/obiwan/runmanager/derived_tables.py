@@ -256,7 +256,10 @@ class RandomsTable(object):
         rsdirs= glob(search)
         rsdirs= [os.path.dirname(dr)
                  for dr in rsdirs]
-        if len(rsdirs) == self.number_rsdirs:
+        if self.number_rsdirs is None:
+            # overide for using all rsdirs to be used
+            brickDone=True
+        elif len(rsdirs) == self.number_rsdirs:
             brickDone=True
         elif len(rsdirs) < self.number_rsdirs:
             print('brick %s not complete, %d/%d rsdirs exists' % \
@@ -410,6 +413,8 @@ class RandomsTable(object):
             n=7
         elif outdir_name == 'elg_dr5_1000per':
             n=4
+        elif 'subset' in outdir_name:
+            n=None
         else:
             raise ValueError('%s not one of the above options' % outdir_name)
         return n
