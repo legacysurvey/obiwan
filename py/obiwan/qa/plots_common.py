@@ -143,4 +143,10 @@ def eboss_ts(gmag,rz,gr,region='ngc'):
                          (rz < -0.555 * gr + 1.901)))
     return colorCut[region]
 
+def to_csv(d,fn='test.csv'):
+    df= pd.DataFrame(d)
+    #df= df.round({})
+    df.to_csv(fn,index=False)
+    print('Wrote %s' % fn)
+
 

@@ -471,11 +471,10 @@ def hist_true_rhalf_by_type(dat,fn='hist_true_rhalf_by_type'):
     plt.close()
     print('Wrote %s' % fn)
 
-
-
 def fraction_recovered(dat,fn='fraction_recovered.png',
                        survey_for_depth=None,
-                       glim=(20,26),rlim=(20,26),zlim=(20,26)):
+                       glim=(20,26),rlim=(20,26),zlim=(20,26),
+                       write_csv=False):
     assert(survey_for_depth in ['eboss_ngc','eboss_sgc','desi'])
     fig,axes=plt.subplots(3,1,figsize=(5,12))
     plt.subplots_adjust(hspace=0.1,wspace=0.2)
@@ -498,6 +497,11 @@ def fraction_recovered(dat,fn='fraction_recovered.png',
         ax.axvline(getattr(D,survey_for_depth)[band],c='g',ls='--')
     #     ax.step(bins[:-1],n_rec/n,where='mid')
         plots.mytext(ax,0.5,0.05,band,fontsize=14)
+        if write_csv:
+            csv_keep= n > 0
+            plots.to_csv(dict(bins=(bins[1:]+bins[:-1])[csv_keep]/2,
+                              fraction=(n_rec.astype(float)/n)[csv_keep]),
+                         fn=fn.replace('.png','_%s.csv' % band))
     for ax in axes:
         ylab=ax.set_ylabel('Fraction Recovered')
         ax.set_ylim(0,1)
@@ -1522,6 +1526,8 @@ num_std_dev_gaussfit_flux(dat,keep_what_put_in='fracin',sub_mean= True,**kw)
 #########
 # Rest of plots throw these data points out
 print('rest of plots'.upper())
+fraction_recovered(dat, survey_for_depth='desi',write_csv=True,**kw_lims)
+raise ValueError
 # Tractor measures input EXP much better than in put DEV
 for keep_what in ['neq1','neq4']:
     num_std_dev_gaussfit_flux(dat,cut_on_fracin=True,typ='all',
@@ -1536,7 +1542,8 @@ confusion_matrix_by_type(dat)
 if args.which in ['eboss','desi']:
     redshifts_recovered(dat)
     fraction_recovered_vs_rhalf(dat)
-fraction_recovered(dat, survey_for_depth='desi',**kw_lims)
+fraction_recovered(dat, survey_for_depth='desi',write_csv=True,**kw_lims)
+raise ValueError
 num_std_dev_gaussfit_flux(dat,cut_on_fracin=True,typ='all',
                           delta_lims= (-5,5),sub_mean= True)
 num_std_dev_gaussfit_flux_separate_panels(dat,
@@ -1590,11 +1597,10 @@ if False:
 if args.which != 'cosmos':
     rec_lost_contam_gr_rz(dat)
     rec_lost_contam_grz(dat,x_ivar=0)
-
-# FIXME: change this plot to 2D hist
-for band in 'grz':
-    rec_lost_contam_delta_by_type(dat,band=band,
-                                  x_ivar=0,y_ivar=0,percentile_lines=False)
+    # FIXME: change this plot to 2D hist
+    for band in 'grz':
+        rec_lost_contam_delta_by_type(dat,band=band,
+                                      x_ivar=0,y_ivar=0,percentile_lines=False)
     
 # Show that fracin is responsible for peak at 1-2 sigma
 # And that allmask, fracmask, fracflux, rhalf ~ 0.5 are not
