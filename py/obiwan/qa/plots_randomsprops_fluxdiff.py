@@ -1557,10 +1557,11 @@ num_std_dev_gaussfit_flux(dat,keep_what_put_in='fracin',sub_mean= True,**kw)
 #########
 # Rest of plots throw these data points out
 print('rest of plots'.upper())
-num_std_dev_gaussfit_rhalf(dat,delta_lims= delta_lims,typ='EXP',
-                           sub_mean=True,numbins=45) 
-num_std_dev_gaussfit_e1_e2(dat,delta_lims= (-7,7),ylim=(0,0.4),
-                           typ='exp',sub_mean= True)
+for typ in ['exp','dev']:
+    num_std_dev_gaussfit_rhalf(dat,delta_lims= delta_lims,typ=typ.upper(),
+                               sub_mean=True,numbins=45) 
+    num_std_dev_gaussfit_e1_e2(dat,delta_lims= (-7,7),ylim=(0,0.4),
+                               typ=typ,sub_mean= True)
 num_std_dev_gaussfit_flux_separate_panels(dat,
                           ylim=(0,0.4),delta_lims= (-5,5),
                           sub_mean= True,cut_on_fracin=True)
