@@ -306,8 +306,9 @@ try:
             #    seed = None
 
             objtype = self.survey.metacat.get('objtype')[0]
-            objstamp = BuildStamp(tim, gain=self.t.gain, 
-                                  seed=self.survey.seed)
+            objstamp = BuildStamp(tim, seed=self.survey.seed,
+                                  camera=self.t.camera,
+                                  gain=self.t.gain,exptime=self.t.exptime)
             # ids make it onto a ccd (geometry cut)
             tim.ids_added=[]
 
@@ -445,16 +446,20 @@ class BuildStamp():
 
     Attributes:
         band: g,r,z
+        camera: 'decam', 'mosaic', '90prime'
         gsparams: galsim object that configures how accurate simulated source will be
         gsdeviate: galsim object that configures its random number generator
         wcs: WCS from tim
         psf: psf from tim
         galsim_wcs: wcs repackaged into galsim compatible object
-        zpscale: conversion factor 'nanomaggies' to 'ADU'
+        zpscale: conversion factor 'nanomaggies' to 'Image units used by Legacypipe', which
+            are ADU/sec for DECam and e/sec for Bass,MzLS
         nano2e: conversion factor 'nanomaggies' to 'e-'
     """
 
-    def __init__(self,tim, gain=4.0,seed=0):
+    def __init__(self,tim, seed=0,
+                 camera=None,gain=None,exptime=None):
+        #self.camera=camera
         self.band = tim.band.strip()
         # GSParams should be used when galsim object is initialized
         # MAX size for sersic n < 6.2 
@@ -466,8 +471,13 @@ class BuildStamp():
         self.psf = tim.getPsf()
         
         # zpscale equivalent to magzpt = self.t.ccdzpt+2.5*np.log10(self.t.exptime)
-        self.zpscale = tim.zpscale      # nanomaggies-->ADU conversion factor
-        self.nano2e = self.zpscale*gain # nanomaggies-->electrons conversion factor
+        self.zpscale = tim.zpscale      # nanomaggies-->ADU (decam) or e-/sec (bass,mzls)
+        assert(camera in ['decam','mosaic','90prime'])
+        if camera == 'decam':
+            self.nano2e = self.zpscale*gain # nanomaggies -> ADU -> e-
+        else:   
+            # correct for mzls, possibly not for bass
+            self.nano2e = self.zpscale # nanomaggies -> e-/s -> e-
 
     def setlocal(self,obj):
         """Get the pixel positions, local wcs, local PSF.""" 
@@ -482,6 +492,8 @@ class BuildStamp():
         self.localpsf = self.psf.getPointSourcePatch(self.xpos, self.ypos)
         self.localpsf= galsim.Image(self.localpsf.getImage(),
                                     scale=self.wcs.pixscale_at(self.xpos,self.ypos))
+        #if self.camera == '90prime':
+        #    print('band=',self.band,'px scale=',self.wcs.pixscale_at(self.xpos,self.ypos))
 
     def star(self,obj):
         """Render a star (PSF)."""

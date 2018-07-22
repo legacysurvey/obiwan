@@ -27,6 +27,9 @@ SURVEYS= ['decals','bassmzls']
 DATASETS= ['dr5','dr3','cosmos','dr6']
 
 
+def nanomag2mag(nmgy):
+    return -2.5 * (np.log10(nmgy) - 9)
+
 class Testcase(object):
     """Initialize and run a testcase
 
@@ -151,6 +154,9 @@ class Testcase(object):
                               self.brick,self.rowstart)
             assert(os.path.exists(ckpt_fn))
             assert(os.path.exists(self.logfn))
+
+
+
 
 
 class AnalyzeTestcase(Testcase):
@@ -535,6 +541,53 @@ class TestcaseCosmos(object):
 
         main(args=args)
 
+class test_flux_truth_vs_measured(AnalyzeTestcase):
+    def __init__(self,**kw):
+        super(AnalyzeTestcase, self).__init__(**kw)
+        self.config_dir= 'testcase_%s_%s' % (kw['survey'],kw['bands'])
+        self.rsdir='rs0'
+        self.load_outputs()
+        self.run_test()
+
+    def load_outputs(self):
+        """Each output from the testcase becomes an attribute
+
+        Attributes:
+            simcat, obitractor:
+            jpg_coadds:
+            fits_coadds
+        """
+        print('Loading from %s' % self.config_dir)
+        self.randoms= fits_table(os.path.join(self.config_dir,'randoms_elg.fits'))
+        print('Loading from %s' % self.outdir)
+        dr= '%s/%s/%s' % (self.brick[:3],self.brick,self.rsdir)
+        self.obitractor= fits_table(os.path.join(self.outdir,'tractor',
+                                    dr,'tractor-%s.fits' % self.brick))
+        self.simcat= fits_table(os.path.join(self.outdir,'obiwan',
+                                    dr,'simcat-%s-%s.fits' % (self.obj,self.brick)))
+
+    def run_test(self):
+        print(('survey='+self.survey).upper())
+        print('DB mag - Input mag')
+        dmag= [self.randoms.get(band) - \
+                nanomag2mag(self.simcat.get(band+'flux')/self.simcat.get('mw_transmission_'+band))
+               for band in 'grz']
+        print('g=',dmag[0],'r=',dmag[1],'z=',dmag[2])
+        print('Input Mag - Measured Mag')
+        I,J,d = match_radec(self.simcat.ra,self.simcat.dec,
+                            self.obitractor.ra,self.obitractor.dec, 
+                            1./3600,nearest=True)
+        dmag= [nanomag2mag(self.simcat.get(band+'flux')[I]) - nanomag2mag(self.obitractor.get('flux_'+band)[J])
+               for band in 'grz']
+        print('g=',dmag[0],'r=',dmag[1],'z=',dmag[2])
+        print('DB Mag - Measured Mag')
+        I,J,d = match_radec(self.randoms.ra,self.randoms.dec,
+                            self.obitractor.ra,self.obitractor.dec, 
+                            1./3600,nearest=True)
+        dmag= [self.randoms.get(band)[I] - nanomag2mag(self.obitractor.get('flux_'+band)[J]/self.obitractor.get('mw_transmission_'+band)[J])
+               for band in 'grz']
+        print('g=',dmag[0],'r=',dmag[1],'z=',dmag[2])
+
 if __name__ == "__main__":
     test_main()
 
@@ -545,12 +598,26 @@ if __name__ == "__main__":
            early_coadds=False,
            checkpoint=False,
            skip_ccd_cuts=False)
-    #test_case(**d)
+
+    d.update(bands='grz')
+    for key in ['grz','z']:
+        del d[key]
+    test_flux_truth_vs_measured(**d)
+
 
     d.update(survey='bassmzls',dataset='dr6',
              skip_ccd_cuts=True,
              z=False,grz=True)
-    #test_case(**d)
+    test_case(**d)
+
+    d.update(bands='grz')
+    for key in ['grz','z']:
+        del d[key]
+    test_flux_truth_vs_measured(**d)
+
+    raise ValueError('good')
+
+    
 
     if False:
         d.update(bands='grz')
