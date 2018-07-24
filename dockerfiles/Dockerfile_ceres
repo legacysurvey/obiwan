@@ -1,0 +1,23 @@
+#FROM obiwan/legacypipe_srv
+FROM kaylanb/legacypipe
+
+# ceres
+RUN apt-get update && apt-get install -y \
+    cmake  \
+    libgoogle-glog-dev \
+    libatlas-base-dev \
+    libeigen3-dev \
+    libsuitesparse-dev
+
+ENV MYREPO /root/myrepo
+WORKDIR $MYREPO
+RUN source /srv/py3_venv/bin/activate && \
+    curl -SL http://ceres-solver.org/ceres-solver-1.14.0.tar.gz \
+    -o ceres-solver-1.14.0.tar.gz && \
+    tar zxf ceres-solver-1.14.0.tar.gz && \
+    mkdir ceres-bin && \
+    cd ceres-bin && \
+    cmake ../ceres-solver-1.14.0 && \
+    make -j3 && \
+    make test && \
+    make install

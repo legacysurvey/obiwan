@@ -1,8 +1,10 @@
 """
 Continuous integration 'end-to-end' tests of the Obiwan pipeline
 """
-
 from __future__ import print_function
+if __name__ == "__main__":
+    import matplotlib
+    matplotlib.use('Agg')
 import os
 import matplotlib.pyplot as plt
 import numpy as np
@@ -15,7 +17,7 @@ import photutils
 from obiwan.qa.visual import plotImage, readImage
 from obiwan.common import get_brickinfo_hack
 
-try: 
+try:
     from astrometry.util.fits import fits_table
     from astrometry.libkd.spherematch import match_radec
     from legacypipe.survey import LegacySurveyData, wcs_for_brick
@@ -36,14 +38,14 @@ class Testcase(object):
     Args:
         survey: decals or bassmzls
         name: testcase name
-        dataset: string, 'DR3', 'DR5', 
+        dataset: string, 'DR3', 'DR5',
         obj: elg,star
         add_noise: to add Poisson noise to simulated galaxy profiles
         all_blobs: to fit models to all blobs, not just the blobs containing sims
         onedge: to add randoms at edge of region, not well within the boundaries
     """
 
-    def __init__(self, survey=None, dataset=None, 
+    def __init__(self, survey=None, dataset=None,
                  bands='grz', obj='elg',rowstart=0,
                  add_noise=False,all_blobs=False,
                  onedge=False, early_coadds=False,
@@ -66,7 +68,7 @@ class Testcase(object):
         self.stage=stage
         self.skip_ccd_cuts= skip_ccd_cuts
 
-        self.testcase_dir= os.path.join(os.path.dirname(__file__), 
+        self.testcase_dir= os.path.join(os.path.dirname(__file__),
                                         'testcase_%s_%s' % (survey,bands))
         self.outname= 'out_testcase_%s_%s_%s_%s' % (survey,bands,
                                 self.dataset,self.obj)
@@ -78,12 +80,12 @@ class Testcase(object):
             self.outname += '_onedge'
         if self.early_coadds:
             self.outname += '_coadds'
-        self.outdir= os.path.join(os.path.dirname(__file__), 
+        self.outdir= os.path.join(os.path.dirname(__file__),
                                   self.outname)
         self.logfn=os.path.join(self.outdir,'log.txt')
-        
+
         if self.survey == 'decals' and self.bands == 'grz':
-            self.brick='0285m165' 
+            self.brick='0285m165'
             self.zoom= [3077, 3277, 2576, 2776]
         elif self.survey == 'decals' and self.bands == 'z':
             self.brick='1741p242'
@@ -95,7 +97,7 @@ class Testcase(object):
             raise ValueError('bands= %s no allowed' % bands)
 
         os.environ["LEGACY_SURVEY_DIR"]= self.testcase_dir
-         
+
     def run(self):
         """run it
 
@@ -119,15 +121,15 @@ class Testcase(object):
         if self.skip_ccd_cuts:
             extra_cmd_line += ['--skip_ccd_cuts']
 
-        randoms_fn= os.path.join(os.environ["LEGACY_SURVEY_DIR"], 
+        randoms_fn= os.path.join(os.environ["LEGACY_SURVEY_DIR"],
                                  'randoms_%s.fits' % self.obj)
         if self.onedge:
             randoms_fn= randoms_fn.replace('.fits','_onedge.fits')
 
 
-        cmd_line=['--dataset', self.dataset, '-b', self.brick, 
-                  '-rs',str(self.rowstart), '-n', '4', 
-                  '--zoom', str(self.zoom[0]), str(self.zoom[1]), 
+        cmd_line=['--dataset', self.dataset, '-b', self.brick,
+                  '-rs',str(self.rowstart), '-n', '4',
+                  '--zoom', str(self.zoom[0]), str(self.zoom[1]),
                             str(self.zoom[2]), str(self.zoom[3]),
                   '-o', self.obj, '--outdir', self.outdir,
                   '--randoms_from_fits', randoms_fn] + extra_cmd_line
@@ -189,7 +191,7 @@ class AnalyzeTestcase(Testcase):
         if self.survey == 'decals' and self.bands == 'grz':
             mw_trans= 2.e-5 # Not 0 b/c ra,dec of model can vary
             # also amazing agreement
-            return {'rhalf':0.65, 
+            return {'rhalf':0.65,
                     'apflux':0.2,
                     'skyflux':2.,
                     'modelflux':4.5,
@@ -198,13 +200,13 @@ class AnalyzeTestcase(Testcase):
             mw_trans= 5.e-6 # Not 0 b/c ra,dec of model can vary
             if self.add_noise:
                 # TODO: tune
-                return {'rhalf':0.11, 
+                return {'rhalf':0.11,
                       'apflux':0.25,
                       'skyflux':1.1,
                       'modelflux':6.0,
                       'mw_trans':mw_trans}
             if self.onedge:
-                return {'rhalf':0.14, 
+                return {'rhalf':0.14,
                       'apflux':0.2,
                       'skyflux':2.,
                       'modelflux':5.5,
@@ -216,8 +218,8 @@ class AnalyzeTestcase(Testcase):
                         'modelflux':0.6,
                         'mw_trans':mw_trans}
 
-            
-            return {'rhalf':0.11, 
+
+            return {'rhalf':0.11,
                       'apflux':0.25,
                       'skyflux':1.1,
                       'modelflux':6.0,
@@ -225,7 +227,7 @@ class AnalyzeTestcase(Testcase):
         elif self.survey == 'bassmzls' and self.bands == 'grz':
             mw_trans= 2.e-5 # Not 0 b/c ra,dec of model can vary
             # for injected sources at depth and rhalf= 0.5''
-            return {'rhalf':1, 
+            return {'rhalf':1,
                     'apflux':0.1,
                     'skyflux':0.1,
                     'modelflux':0.5,
@@ -253,10 +255,10 @@ class AnalyzeTestcase(Testcase):
             self.resid_jpg= readImage(os.path.join(self.outdir,'coadd',
                                             dr,'legacysurvey-%s-resid.jpg' % self.brick),
                                       jpeg=True)
-        
+
         self.simcat= fits_table(os.path.join(self.outdir,'obiwan',
                                     dr,'simcat-%s-%s.fits' % (self.obj,self.brick)))
-        
+
         self.img_jpg= readImage(os.path.join(self.outdir,'coadd',
                                     dr,'legacysurvey-%s-image.jpg' % self.brick),
                                 jpeg=True)
@@ -272,7 +274,7 @@ class AnalyzeTestcase(Testcase):
             self.sims_fits[b]= readImage(os.path.join(self.outdir,'coadd',
                                             dr,'legacysurvey-%s-sims-%s.fits.fz' % \
                                               (self.brick,b)))
-            
+
     def simcat_xy(self):
         """x,y of each simulated source in the fits coadd. Just like the
             bx,by of tractor catalogues
@@ -285,20 +287,20 @@ class AnalyzeTestcase(Testcase):
         """matches sim and real sources to tractor cat
 
         Returns:
-            isim,itrac: indices into simcat,tractor 
+            isim,itrac: indices into simcat,tractor
             ireal: inices into tractor
         """
         # sims to tractor
         rad= 10. * self.brickwcs.pixel_scale() / 3600 #deg
-        isim,itrac,d= match_radec(self.simcat.ra, self.simcat.dec, 
-                                  self.obitractor.ra, self.obitractor.dec,          
+        isim,itrac,d= match_radec(self.simcat.ra, self.simcat.dec,
+                                  self.obitractor.ra, self.obitractor.dec,
                                   rad,nearest=True)
-        # real galaxy to tractor 
+        # real galaxy to tractor
         ra_real,dec_real= self.brickwcs.pixelxy2radec(
                                 [self.zoom[0] + 100.],
                                 [self.zoom[2] + 100.])
-        _,ireal,d= match_radec(ra_real, dec_real, 
-                               self.obitractor.ra, self.obitractor.dec,          
+        _,ireal,d= match_radec(ra_real, dec_real,
+                               self.obitractor.ra, self.obitractor.dec,
                                rad,nearest=True)
         return isim,itrac,ireal
 
@@ -348,20 +350,20 @@ class AnalyzeTestcase(Testcase):
             diff= rhalf - self.simcat.rhalf
             print('delta_rhalf',diff)
             assert(np.all(np.abs(diff) < self.tol['rhalf']))
-        # Tractor apflux is nearly bang on to my apflux for sims coadd 
+        # Tractor apflux is nearly bang on to my apflux for sims coadd
         # plus my apflux for sky in coadd
         # However, Tractor model flux is does not agree with fits coadd counts
         # so its computing on something else and is currently wrong for sim sources
-        apers= photutils.CircularAperture((self.simcat.x,self.simcat.y), 
+        apers= photutils.CircularAperture((self.simcat.x,self.simcat.y),
                                            r=3.5/self.brickwcs.pixel_scale())
 
-        for b in self.bands: 
+        for b in self.bands:
             print('band= %s' % b)
 
             diff= self.simcat.get('mw_transmission_%s' % b)[isim] -\
                   self.obitractor.get('mw_transmission_%s' % b)[itrac]
             print('delta mw_trans',diff)
-            assert(np.all(np.abs(diff) < self.tol['mw_trans'])) 
+            assert(np.all(np.abs(diff) < self.tol['mw_trans']))
 
             apy_table = photutils.aperture_photometry(self.img_fits[b], apers)
             img_apflux= np.array(apy_table['aperture_sum'])
@@ -370,16 +372,16 @@ class AnalyzeTestcase(Testcase):
             obitractor_apflux= self.obitractor[itrac].get('apflux_'+b)[:,5]
             # my apflux vs tractor apflux
             diff= img_apflux - obitractor_apflux
-            print('delta_apflux',diff) 
+            print('delta_apflux',diff)
             assert(np.all(np.abs(diff) < self.tol['apflux']))
             # sky flux is small
             diff= img_apflux - sims_apflux
-            print('delta_skyflux',diff) 
+            print('delta_skyflux',diff)
             assert(np.all(np.abs(diff) < self.tol['skyflux']))
-            # tractor model flux within 5-6 nanomags of input flux 
+            # tractor model flux within 5-6 nanomags of input flux
             diff= self.simcat.get(b+'flux') -\
                     self.obitractor[itrac].get('flux_'+b)
-            print('delta_modelflux',diff) 
+            print('delta_modelflux',diff)
             assert(np.all(np.abs(diff) < self.tol['modelflux']))
         print('passed: Numeric Tests')
 
@@ -409,7 +411,7 @@ def test_case(survey=None,dataset=None,
                onedge=False, early_coadds=False,
                checkpoint=False, skip_ccd_cuts=False):
     """
-    Args: 
+    Args:
         survey: one of SURVEYS
         dataset: one of DATASETS
         z, grz: to run the z and/or grz testcases
@@ -419,17 +421,17 @@ def test_case(survey=None,dataset=None,
         early_coadds: write coadds before model fitting and stop there
         dataset: no reason to be anything other than DR5 for these tests
     """
-    d= dict(survey=survey,dataset=dataset, 
+    d= dict(survey=survey,dataset=dataset,
             obj=obj,
             add_noise=add_noise,all_blobs=all_blobs,
             onedge=onedge,early_coadds=early_coadds,
             checkpoint=checkpoint,
-            skip_ccd_cuts=skip_ccd_cuts)   
+            skip_ccd_cuts=skip_ccd_cuts)
     if z:
         bands= 'z'
     elif grz:
         bands= 'grz'
-    d.update(bands=bands) 
+    d.update(bands=bands)
 
     if checkpoint:
         # create checkpoint file
@@ -437,13 +439,13 @@ def test_case(survey=None,dataset=None,
 
     T= Testcase(**d)
     T.run()
-    
+
     if checkpoint:
         # restart from checkpoint and finish
         d.update(no_cleanup=False,stage=None)
         T= Testcase(**d)
         T.run()
-     
+
 
     if not early_coadds:
         A= AnalyzeTestcase(**d)
@@ -476,7 +478,7 @@ def test_main():
     # dr5
     d.update(early_coadds=True)
     test_case(**d)
-    
+
     d.update(early_coadds=False)
     test_case(**d)
     d.update(all_blobs=True)
@@ -514,26 +516,26 @@ class TestcaseCosmos(object):
                  dataset='cosmos',subset=60):
         self.survey=survey
         self.dataset=dataset
-        self.subset=subset     
+        self.subset=subset
         self.rowstart=0
-        self.obj='elg'  
+        self.obj='elg'
         if self.survey == 'decals':
             self.brick='1501p020'
-        else: 
-            raise ValueError('survey = bassmzls not supported yet')      
-        self.outdir= os.path.join(os.path.dirname(__file__), 
+        else:
+            raise ValueError('survey = bassmzls not supported yet')
+        self.outdir= os.path.join(os.path.dirname(__file__),
                                   'out_testcase_%s_cosmos_subset%d' % \
                                   (survey,self.subset))
         os.environ["LEGACY_SURVEY_DIR"]= os.path.join(os.path.dirname(__file__),
                                                 'testcase_cosmos')
-        
+
 
     def run(self):
-        randoms_fn= os.path.join(os.environ["LEGACY_SURVEY_DIR"], 
+        randoms_fn= os.path.join(os.environ["LEGACY_SURVEY_DIR"],
                                  'randoms_%s.fits' % self.obj)
-        cmd_line=['--subset', str(self.subset), 
-                  '--dataset', self.dataset, '-b', self.brick, 
-                  '-rs',str(self.rowstart), '-n', '4', 
+        cmd_line=['--subset', str(self.subset),
+                  '--dataset', self.dataset, '-b', self.brick,
+                  '-rs',str(self.rowstart), '-n', '4',
                   '-o', self.obj, '--outdir', self.outdir,
                   '--randoms_from_fits', randoms_fn]
         parser= get_parser()
@@ -575,14 +577,14 @@ class test_flux_truth_vs_measured(AnalyzeTestcase):
         print('g=',dmag[0],'r=',dmag[1],'z=',dmag[2])
         print('Input Mag - Measured Mag')
         I,J,d = match_radec(self.simcat.ra,self.simcat.dec,
-                            self.obitractor.ra,self.obitractor.dec, 
+                            self.obitractor.ra,self.obitractor.dec,
                             1./3600,nearest=True)
         dmag= [nanomag2mag(self.simcat.get(band+'flux')[I]) - nanomag2mag(self.obitractor.get('flux_'+band)[J])
                for band in 'grz']
         print('g=',dmag[0],'r=',dmag[1],'z=',dmag[2])
         print('DB Mag - Measured Mag')
         I,J,d = match_radec(self.randoms.ra,self.randoms.dec,
-                            self.obitractor.ra,self.obitractor.dec, 
+                            self.obitractor.ra,self.obitractor.dec,
                             1./3600,nearest=True)
         dmag= [self.randoms.get(band)[I] - nanomag2mag(self.obitractor.get('flux_'+band)[J]/self.obitractor.get('mw_transmission_'+band)[J])
                for band in 'grz']
@@ -590,7 +592,6 @@ class test_flux_truth_vs_measured(AnalyzeTestcase):
 
 if __name__ == "__main__":
     test_main()
-
     d=dict(survey='decals',dataset='dr5',
            z=True,grz=False,
            obj='elg',
@@ -608,7 +609,7 @@ if __name__ == "__main__":
     d.update(survey='bassmzls',dataset='dr6',
              skip_ccd_cuts=True,
              z=False,grz=True)
-    test_case(**d)
+    #test_case(**d)
 
     d.update(bands='grz')
     for key in ['grz','z']:
@@ -617,7 +618,7 @@ if __name__ == "__main__":
 
     raise ValueError('good')
 
-    
+
 
     if False:
         d.update(bands='grz')
@@ -632,6 +633,3 @@ if __name__ == "__main__":
 
     #t= TestcaseCosmos(survey='decals')
     #t.run()
-
-
-    
