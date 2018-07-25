@@ -5,7 +5,7 @@ type: sphinx
 #    file: readthedocs_environment.yml
 build:
     enabled: True
-    image: kaylanb/desi:obiwan_rtd
+    kaylanb/desi:obiwan_rtd
 
 # python:
 #    version: 3.5
