@@ -1,0 +1,33 @@
+obiwan.common
+=============
+
+.. automodule:: obiwan.common
+   :members:
+   :inherited-members:
+
+   
+   
+   
+
+   
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      dobash
+      fits2pandas
+      get_brickdir
+      get_brickinfo_hack
+      get_outdir_runbrick
+      get_rsdir
+      inJupyter
+      save_png
+      stack_tables
+      writelist
+   
+   
+
+   
+   
+   

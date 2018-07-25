@@ -1,0 +1,18 @@
+# Build DESI software environment ontop an Ubuntu base
+FROM ubuntu:16.04
+MAINTAINER Mustafa Mustafa <mmustafa@lbl.gov>
+
+# install astrometry and tractor dependencies
+RUN apt-get update && \
+    apt-get install -y wget make git python python-dev python-matplotlib \
+                       gcc swig python-numpy libgsl2 gsl-bin pkg-config \
+                       zlib1g-dev libcairo2-dev libnetpbm10-dev netpbm \
+                       libpng12-dev libjpeg-dev python-pyfits zlib1g-dev \
+                       libbz2-dev libcfitsio3-dev python-photutils python-pip && \
+    pip install fitsio cython numpy scipy matplotlib seaborn pyyaml \
+                astropy==1.3.3 hdf5 h5py psutil ephem psycopg2 pytest \
+                numba sqlalchemy scikit-learn scikit-image \
+                ipython jupyter && \
+    pip install --no-binary :all: \
+                speclite hpsspy photutils coveralls \
+                https://github.com/esheldon/fitsio/archive/v0.9.12rc1.zip

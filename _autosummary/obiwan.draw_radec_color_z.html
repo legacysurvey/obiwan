@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>obiwan.draw_radec_color_z &#8212; obiwan 1.2.0 documentation</title>
+    <link rel="stylesheet" href="../_static/bootstrap-sphinx.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script type="text/javascript" src="../_static/js/jquery-1.11.0.min.js"></script>
+    <script type="text/javascript" src="../_static/js/jquery-fix.js"></script>
+    <script type="text/javascript" src="../_static/bootstrap-3.3.7/js/bootstrap.min.js"></script>
+    <script type="text/javascript" src="../_static/bootstrap-sphinx.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+<meta charset='utf-8'>
+<meta http-equiv='X-UA-Compatible' content='IE=edge,chrome=1'>
+<meta name='viewport' content='width=device-width, initial-scale=1.0, maximum-scale=1'>
+<meta name="apple-mobile-web-app-capable" content="yes">
+
+  </head><body>
+
+  <div id="navbar" class="navbar navbar-default ">
+    <div class="container">
+      <div class="navbar-header">
+        <!-- .btn-navbar is used as the toggle for collapsed navbar content -->
+        <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".nav-collapse">
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+        </button>
+        <a class="navbar-brand" href="../index.html">
+          Obiwan</a>
+        <span class="navbar-text navbar-version pull-left"><b>1.2.0</b></span>
+      </div>
+
+        <div class="collapse navbar-collapse nav-collapse">
+          <ul class="nav navbar-nav">
+            
+                <li><a href="../api.html">API</a></li>
+                <li><a href="../tutorials.html">Tutorials</a></li>
+                <li><a href="../deeplearning.html">Deep Learning</a></li>
+            
+            
+              <li class="dropdown globaltoc-container">
+  <a role="button"
+     id="dLabelGlobalToc"
+     data-toggle="dropdown"
+     data-target="#"
+     href="../index.html">Pages <b class="caret"></b></a>
+  <ul class="dropdown-menu globaltoc"
+      role="menu"
+      aria-labelledby="dLabelGlobalToc"></ul>
+</li>
+              
+                <li class="dropdown">
+  <a role="button"
+     id="dLabelLocalToc"
+     data-toggle="dropdown"
+     data-target="#"
+     href="#">This Page <b class="caret"></b></a>
+  <ul class="dropdown-menu localtoc"
+      role="menu"
+      aria-labelledby="dLabelLocalToc"><ul>
+<li><a class="reference internal" href="#">obiwan.draw_radec_color_z</a></li>
+</ul>
+</ul>
+</li>
+              
+            
+            
+              
+                
+              
+            
+            
+            
+            
+          </ul>
+
+          
+            
+<form class="navbar-form navbar-right" action="../search.html" method="get">
+ <div class="form-group">
+  <input type="text" name="q" class="form-control" placeholder="Search" />
+ </div>
+  <input type="hidden" name="check_keywords" value="yes" />
+  <input type="hidden" name="area" value="default" />
+</form>
+          
+        </div>
+    </div>
+  </div>
+
+<div class="container">
+  <div class="row">
+    <div class="col-md-12 content">
+      
+  <div class="section" id="module-obiwan.draw_radec_color_z">
+<span id="obiwan-draw-radec-color-z"></span><h1>obiwan.draw_radec_color_z<a class="headerlink" href="#module-obiwan.draw_radec_color_z" title="Permalink to this headline">¶</a></h1>
+<p>Draw random location and galaxy properties from Gaussian Mixtures</p>
+<p class="rubric">Classes</p>
+<table border="1" class="longtable docutils">
+<colgroup>
+<col width="10%" />
+<col width="90%" />
+</colgroup>
+<tbody valign="top">
+<tr class="row-odd"><td><code class="xref py py-obj docutils literal notranslate"><span class="pre">EbossBox</span></code></td>
+<td></td>
+</tr>
+<tr class="row-even"><td><a class="reference internal" href="#obiwan.draw_radec_color_z.GaussianMixtureModel" title="obiwan.draw_radec_color_z.GaussianMixtureModel"><code class="xref py py-obj docutils literal notranslate"><span class="pre">GaussianMixtureModel</span></code></a>(weights,&nbsp;means,&nbsp;covars)</td>
+<td>John’s class to read, write, and sample from a mixture model.</td>
+</tr>
+</tbody>
+</table>
+<p class="rubric">Functions</p>
+<table border="1" class="longtable docutils">
+<colgroup>
+<col width="10%" />
+<col width="90%" />
+</colgroup>
+<tbody valign="top">
+<tr class="row-odd"><td><code class="xref py py-obj docutils literal notranslate"><span class="pre">draw_points</span></code>(radec,&nbsp;unique_ids[,&nbsp;obj,&nbsp;seed,&nbsp;…])</td>
+<td></td>
+</tr>
+<tr class="row-even"><td><a class="reference internal" href="#obiwan.draw_radec_color_z.draw_points_cosmos" title="obiwan.draw_radec_color_z.draw_points_cosmos"><code class="xref py py-obj docutils literal notranslate"><span class="pre">draw_points_cosmos</span></code></a>(radec,&nbsp;unique_ids[,&nbsp;obj,&nbsp;…])</td>
+<td><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">param radec:</th><td class="field-body">dict with keys ra1,ra2,dec1,dec2</td>
+</tr>
+</tbody>
+</table>
+</td>
+</tr>
+<tr class="row-odd"><td><a class="reference internal" href="#obiwan.draw_radec_color_z.draw_points_desi" title="obiwan.draw_radec_color_z.draw_points_desi"><code class="xref py py-obj docutils literal notranslate"><span class="pre">draw_points_desi</span></code></a>(radec,&nbsp;unique_ids[,&nbsp;obj,&nbsp;…])</td>
+<td><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">param radec:</th><td class="field-body">dict with keys ra1,ra2,dec1,dec2</td>
+</tr>
+</tbody>
+</table>
+</td>
+</tr>
+<tr class="row-even"><td><a class="reference internal" href="#obiwan.draw_radec_color_z.draw_points_eboss" title="obiwan.draw_radec_color_z.draw_points_eboss"><code class="xref py py-obj docutils literal notranslate"><span class="pre">draw_points_eboss</span></code></a>(radec,&nbsp;unique_ids[,&nbsp;obj,&nbsp;…])</td>
+<td><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">param radec:</th><td class="field-body">dict with keys ra1,ra2,dec1,dec2</td>
+</tr>
+</tbody>
+</table>
+</td>
+</tr>
+<tr class="row-odd"><td><a class="reference internal" href="#obiwan.draw_radec_color_z.get_area" title="obiwan.draw_radec_color_z.get_area"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_area</span></code></a>(radec)</td>
+<td>returns area on sphere between ra1,ra2,dec2,dec1 <a class="reference external" href="https://github.com/desihub/imaginglss/model/brick.py#L64">https://github.com/desihub/imaginglss/model/brick.py#L64</a>, self.area=…</td>
+</tr>
+<tr class="row-even"><td><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_parser</span></code>()</td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_py_version</span></code>()</td>
+<td></td>
+</tr>
+<tr class="row-even"><td><a class="reference internal" href="#obiwan.draw_radec_color_z.get_radec" title="obiwan.draw_radec_color_z.get_radec"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_radec</span></code></a>(radec[,&nbsp;ndraws,&nbsp;random_state])</td>
+<td>Draws ndraws samples of Ra,Dec from the unit sphere.</td>
+</tr>
+<tr class="row-odd"><td><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_sample_dir</span></code>(outdir,&nbsp;obj)</td>
+<td></td>
+</tr>
+<tr class="row-even"><td><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_sample_fn</span></code>([seed,&nbsp;startid])</td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><code class="xref py py-obj docutils literal notranslate"><span class="pre">inEbossBox</span></code>(rz,&nbsp;gr[,&nbsp;pad])</td>
+<td></td>
+</tr>
+<tr class="row-even"><td><a class="reference internal" href="#obiwan.draw_radec_color_z.mkdir_needed" title="obiwan.draw_radec_color_z.mkdir_needed"><code class="xref py py-obj docutils literal notranslate"><span class="pre">mkdir_needed</span></code></a>(d)</td>
+<td>make each needed directory d= dictionary, vars(args)</td>
+</tr>
+<tr class="row-odd"><td><a class="reference internal" href="#obiwan.draw_radec_color_z.mog_param_dir" title="obiwan.draw_radec_color_z.mog_param_dir"><code class="xref py py-obj docutils literal notranslate"><span class="pre">mog_param_dir</span></code></a>()</td>
+<td>path to Mixture of Gaussian directory, containing the fitted params</td>
+</tr>
+<tr class="row-even"><td><code class="xref py py-obj docutils literal notranslate"><span class="pre">outside_lims_eboss</span></code>(z)</td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><code class="xref py py-obj docutils literal notranslate"><span class="pre">ptime</span></code>(text,&nbsp;t0)</td>
+<td></td>
+</tr>
+<tr class="row-even"><td><a class="reference internal" href="#obiwan.draw_radec_color_z.write_calling_seq" title="obiwan.draw_radec_color_z.write_calling_seq"><code class="xref py py-obj docutils literal notranslate"><span class="pre">write_calling_seq</span></code></a>(d)</td>
+<td>each <cite>*_randoms/</cite> directory should have a file listing how randoms were created</td>
+</tr>
+</tbody>
+</table>
+<dl class="class">
+<dt id="obiwan.draw_radec_color_z.GaussianMixtureModel">
+<em class="property">class </em><code class="descclassname">obiwan.draw_radec_color_z.</code><code class="descname">GaussianMixtureModel</code><span class="sig-paren">(</span><em>weights</em>, <em>means</em>, <em>covars</em>, <em>py=None</em>, <em>covar_type='full'</em>, <em>is1D=False</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/obiwan/draw_radec_color_z.html#GaussianMixtureModel"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obiwan.draw_radec_color_z.GaussianMixtureModel" title="Permalink to this definition">¶</a></dt>
+<dd><p>John’s class to read, write, and sample from a mixture model.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>weights</strong><strong>,</strong><strong>means</strong><strong>,</strong><strong>covars</strong> – array-like, from mixture fit</li>
+<li><strong>covar_type</strong> – usually ‘full’</li>
+<li><strong>py</strong> – one of [‘27’,‘36’]</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<dl class="staticmethod">
+<dt id="obiwan.draw_radec_color_z.GaussianMixtureModel.load">
+<em class="property">static </em><code class="descname">load</code><span class="sig-paren">(</span><em>name</em>, <em>py=None</em>, <em>is1D=False</em>, <em>indir='./'</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/obiwan/draw_radec_color_z.html#GaussianMixtureModel.load"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obiwan.draw_radec_color_z.GaussianMixtureModel.load" title="Permalink to this definition">¶</a></dt>
+<dd><p>name: prefix to _weights.txt or _means.txt</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="obiwan.draw_radec_color_z.GaussianMixtureModel.sample_py3">
+<code class="descname">sample_py3</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/obiwan/draw_radec_color_z.html#GaussianMixtureModel.sample_py3"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obiwan.draw_radec_color_z.GaussianMixtureModel.sample_py3" title="Permalink to this definition">¶</a></dt>
+<dd><p>Copied from sklearn’s mixture.GaussianMixture().sample()</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="function">
+<dt id="obiwan.draw_radec_color_z.draw_points_cosmos">
+<code class="descclassname">obiwan.draw_radec_color_z.</code><code class="descname">draw_points_cosmos</code><span class="sig-paren">(</span><em>radec</em>, <em>unique_ids</em>, <em>obj='star'</em>, <em>seed=1</em>, <em>outdir='./'</em>, <em>startid=1</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/obiwan/draw_radec_color_z.html#draw_points_cosmos"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obiwan.draw_radec_color_z.draw_points_cosmos" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>radec</strong> – dict with keys ra1,ra2,dec1,dec2
+the ra,dec limits for the sample</li>
+<li><strong>unique_ids</strong> – list of unique integers for each draw</li>
+<li><strong>obj</strong> – star,elg,lrg,qso</li>
+<li><strong>seed</strong> – to initialize random number generator</li>
+<li><strong>outdir</strong> – dir to write randoms to</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last"><dl class="docutils">
+<dt>Nothing, but write a fits_table containing the unique id, ra, dec</dt>
+<dd><p class="first last">and color + redshift + morphology info for each source</p>
+</dd>
+</dl>
+</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="obiwan.draw_radec_color_z.draw_points_desi">
+<code class="descclassname">obiwan.draw_radec_color_z.</code><code class="descname">draw_points_desi</code><span class="sig-paren">(</span><em>radec</em>, <em>unique_ids</em>, <em>obj='star'</em>, <em>seed=1</em>, <em>outdir='./'</em>, <em>startid=1</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/obiwan/draw_radec_color_z.html#draw_points_desi"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obiwan.draw_radec_color_z.draw_points_desi" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>radec</strong> – dict with keys ra1,ra2,dec1,dec2
+the ra,dec limits for the sample</li>
+<li><strong>unique_ids</strong> – list of unique integers for each draw</li>
+<li><strong>obj</strong> – star,elg,lrg,qso</li>
+<li><strong>seed</strong> – to initialize random number generator</li>
+<li><strong>outdir</strong> – dir to write randoms to</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last"><dl class="docutils">
+<dt>Nothing, but write a fits_table containing the unique id, ra, dec</dt>
+<dd><p class="first last">and color + redshift + morphology info for each source</p>
+</dd>
+</dl>
+</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="obiwan.draw_radec_color_z.draw_points_eboss">
+<code class="descclassname">obiwan.draw_radec_color_z.</code><code class="descname">draw_points_eboss</code><span class="sig-paren">(</span><em>radec</em>, <em>unique_ids</em>, <em>obj='star'</em>, <em>seed=1</em>, <em>outdir='./'</em>, <em>startid=1</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/obiwan/draw_radec_color_z.html#draw_points_eboss"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obiwan.draw_radec_color_z.draw_points_eboss" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>radec</strong> – dict with keys ra1,ra2,dec1,dec2
+the ra,dec limits for the sample</li>
+<li><strong>unique_ids</strong> – list of unique integers for each draw</li>
+<li><strong>obj</strong> – star,elg,lrg,qso</li>
+<li><strong>seed</strong> – to initialize random number generator</li>
+<li><strong>outdir</strong> – dir to write randoms to</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last"><dl class="docutils">
+<dt>Nothing, but write a fits_table containing the unique id, ra, dec</dt>
+<dd><p class="first last">and color + redshift + morphology info for each source</p>
+</dd>
+</dl>
+</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="obiwan.draw_radec_color_z.get_area">
+<code class="descclassname">obiwan.draw_radec_color_z.</code><code class="descname">get_area</code><span class="sig-paren">(</span><em>radec</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/obiwan/draw_radec_color_z.html#get_area"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obiwan.draw_radec_color_z.get_area" title="Permalink to this definition">¶</a></dt>
+<dd><p>returns area on sphere between ra1,ra2,dec2,dec1
+<a class="reference external" href="https://github.com/desihub/imaginglss/model/brick.py#L64">https://github.com/desihub/imaginglss/model/brick.py#L64</a>, self.area=…</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="obiwan.draw_radec_color_z.get_radec">
+<code class="descclassname">obiwan.draw_radec_color_z.</code><code class="descname">get_radec</code><span class="sig-paren">(</span><em>radec</em>, <em>ndraws=1</em>, <em>random_state=&lt;mtrand.RandomState object&gt;</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/obiwan/draw_radec_color_z.html#get_radec"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obiwan.draw_radec_color_z.get_radec" title="Permalink to this definition">¶</a></dt>
+<dd><p>Draws ndraws samples of Ra,Dec from the unit sphere.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>radec</strong> – dict with keys ra1,ra2,dec1,dec2
+the ra,dec limits for the sample</li>
+<li><strong>ndraws</strong> – number of samples</li>
+<li><strong>randome_state</strong> – numpy random number generator</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">tuple of arrays having length ndraws</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">ra,dec</p>
+</td>
+</tr>
+</tbody>
+</table>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">Taken from
+<a class="reference external" href="https://github.com/desihub/imaginglss/blob/master/scripts/imglss-mpi-make-random.py#L55">https://github.com/desihub/imaginglss/blob/master/scripts/imglss-mpi-make-random.py#L55</a></p>
+</div>
+</dd></dl>
+
+<dl class="function">
+<dt id="obiwan.draw_radec_color_z.mkdir_needed">
+<code class="descclassname">obiwan.draw_radec_color_z.</code><code class="descname">mkdir_needed</code><span class="sig-paren">(</span><em>d</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/obiwan/draw_radec_color_z.html#mkdir_needed"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obiwan.draw_radec_color_z.mkdir_needed" title="Permalink to this definition">¶</a></dt>
+<dd><p>make each needed directory
+d= dictionary, vars(args)</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="obiwan.draw_radec_color_z.mog_param_dir">
+<code class="descclassname">obiwan.draw_radec_color_z.</code><code class="descname">mog_param_dir</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/obiwan/draw_radec_color_z.html#mog_param_dir"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obiwan.draw_radec_color_z.mog_param_dir" title="Permalink to this definition">¶</a></dt>
+<dd><p>path to Mixture of Gaussian directory, containing the fitted params</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="obiwan.draw_radec_color_z.write_calling_seq">
+<code class="descclassname">obiwan.draw_radec_color_z.</code><code class="descname">write_calling_seq</code><span class="sig-paren">(</span><em>d</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/obiwan/draw_radec_color_z.html#write_calling_seq"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obiwan.draw_radec_color_z.write_calling_seq" title="Permalink to this definition">¶</a></dt>
+<dd><p>each <cite>*_randoms/</cite> directory should have a file listing how randoms were created</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>d</strong> – dict, vars(args)</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</div>
+
+
+    </div>
+      
+  </div>
+</div>
+<footer class="footer">
+  <div class="container">
+    <p class="pull-right">
+      <a href="#">Back to top</a>
+      
+    </p>
+    <p>
+        &copy; Copyright 2014-2018, Kaylan Burleigh, John Moustakas.<br/>
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.7.6.<br/>
+    </p>
+  </div>
+</footer>
+  </body>
+</html>

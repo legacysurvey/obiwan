@@ -1,0 +1,36 @@
+obiwan.qa.plots_common
+======================
+
+.. automodule:: obiwan.qa.plots_common
+   :members:
+   :inherited-members:
+
+   
+   
+   
+
+   
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      bin_up
+      create_confusion_matrix
+      eboss_ts
+      flux2mag
+      mag2flux
+      myannot
+      myerrorbar
+      myhist
+      myhist2D
+      myhist_step
+      myscatter
+      myscatter_open
+      mytext
+   
+   
+
+   
+   
+   

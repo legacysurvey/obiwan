@@ -1,0 +1,304 @@
+{
+ "cells": [
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "# Correlation Functions with Nbodykit"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 13,
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "The autoreload extension is already loaded. To reload it, use:\n",
+      "  %reload_ext autoreload\n"
+     ]
+    }
+   ],
+   "source": [
+    "import numpy as np\n",
+    "import os\n",
+    "import pandas as pd\n",
+    "import seaborn as sns\n",
+    "from astropy.io import fits\n",
+    "\n",
+    "# to make this notebook's output stable across runs\n",
+    "np.random.seed(7)\n",
+    "\n",
+    "# To plot pretty figures\n",
+    "%matplotlib inline\n",
+    "import matplotlib\n",
+    "import matplotlib.pyplot as plt\n",
+    "plt.rcParams['axes.labelsize'] = 14\n",
+    "plt.rcParams['xtick.labelsize'] = 12\n",
+    "plt.rcParams['ytick.labelsize'] = 12\n",
+    "\n",
+    "%load_ext autoreload\n",
+    "%autoreload 2\n"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 14,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "DATA_DIR= os.path.join(os.environ['HOME'],\n",
+    "                       'Downloads/1741p242')\n",
+    "\n",
+    "simcat=fits.open(os.path.join(DATA_DIR,\n",
+    "                 'rs0/obiwan',\n",
+    "                 'simcat-elg-1741p242.fits'))[1].data\n",
+    "\n",
+    "obitractor= fits.open(os.path.join(DATA_DIR,\n",
+    "                     'rs0/tractor',\n",
+    "                     'tractor-1741p242.fits'))[1].data\n",
+    "\n",
+    "dr5tractor= fits.open(os.path.join(DATA_DIR,\n",
+    "                     'dr5',\n",
+    "                     'tractor-1741p242.fits'))[1].data"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 15,
+   "metadata": {
+    "collapsed": true
+   },
+   "outputs": [],
+   "source": [
+    "from astropy.coordinates import SkyCoord\n",
+    "from astropy import units as u\n",
+    "sim_coord = SkyCoord(ra=simcat['ra']*u.degree, \n",
+    "                        dec=simcat['dec']*u.degree)  \n",
+    "obi_coord = SkyCoord(ra=obitractor['ra']*u.degree, \n",
+    "                     dec=obitractor['dec']*u.degree)  \n",
+    "# idx, d2d, d3d = .match_to_catalog_sky(catalog)  \n",
+    "\n",
+    "\n",
+    "# isim,itrac,d= match_radec(simcat.ra, simcat.dec, obitractor.ra, obitractor.dec,          \n",
+    "#                           1./3600.0,nearest=True)\n",
+    "# not_isim= not_index(isim,len(simcat))\n",
+    "# not_itrac= not_index(itrac,len(obitractor))"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 24,
+   "metadata": {
+    "collapsed": true
+   },
+   "outputs": [],
+   "source": [
+    "sim_coord.match_to_catalog_3d?"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "# Randoms are the Recovered sources"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 29,
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/plain": [
+       "<matplotlib.axes._subplots.AxesSubplot at 0x116076c10>"
+      ]
+     },
+     "execution_count": 29,
+     "metadata": {},
+     "output_type": "execute_result"
+    },
+    {
+     "data": {
+      "image/png": "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\nbDPElwAAAABJRU5ErkJggg==\n",
+      "text/plain": [
+       "<matplotlib.figure.Figure at 0x115a0c310>"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    }
+   ],
+   "source": [
+    "isim, itrac, d2d, _ = obi_coord.search_around_sky(sim_coord, u.deg*1./3600)\n",
+    "\n",
+    "def indices2bool(indices,n):\n",
+    "    keep= np.zeros(n,bool)\n",
+    "    keep[indices]=True\n",
+    "    return keep\n",
+    "bsim=indices2bool(isim,len(simcat))\n",
+    "btrac=indices2bool(itrac,len(obitractor))\n",
+    "\n",
+    "sns.distplot(d2d*3600,color='b')"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 30,
+   "metadata": {
+    "collapsed": true
+   },
+   "outputs": [],
+   "source": [
+    "recovered= simcat[bsim]\n",
+    "real= obitractor[~btrac]"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "# Angular Correlation Function"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 40,
+   "metadata": {
+    "collapsed": true
+   },
+   "outputs": [],
+   "source": [
+    "## Example"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 45,
+   "metadata": {},
+   "outputs": [
+    {
+     "ename": "RuntimeError",
+     "evalue": "calling the function 'Corrfunc.mocks.DDtheta_mocks.DDtheta_mocks' failed:\nexception: Could not import the C extension for the angular correlation function for mocks.\nstdout: \nstderr: ",
+     "output_type": "error",
+     "traceback": [
+      "\u001b[0;31m---------------------------------------------------------------------------\u001b[0m",
+      "\u001b[0;31mRuntimeError\u001b[0m                              Traceback (most recent call last)",
+      "\u001b[0;32m<ipython-input-45-52ece9314ac0>\u001b[0m in \u001b[0;36m<module>\u001b[0;34m()\u001b[0m\n\u001b[1;32m      8\u001b[0m \u001b[0;34m\u001b[0m\u001b[0m\n\u001b[1;32m      9\u001b[0m \u001b[0;31m# run the algorithm\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[0;32m---> 10\u001b[0;31m \u001b[0mr_auto\u001b[0m \u001b[0;34m=\u001b[0m \u001b[0mAngularPairCount\u001b[0m\u001b[0;34m(\u001b[0m\u001b[0mdata\u001b[0m\u001b[0;34m,\u001b[0m \u001b[0medges\u001b[0m\u001b[0;34m,\u001b[0m \u001b[0mra\u001b[0m\u001b[0;34m=\u001b[0m\u001b[0;34m'RA'\u001b[0m\u001b[0;34m,\u001b[0m \u001b[0mdec\u001b[0m\u001b[0;34m=\u001b[0m\u001b[0;34m'DEC'\u001b[0m\u001b[0;34m,\u001b[0m \u001b[0mweight\u001b[0m\u001b[0;34m=\u001b[0m\u001b[0;34m'Weight'\u001b[0m\u001b[0;34m)\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[0m\u001b[1;32m     11\u001b[0m \u001b[0;34m\u001b[0m\u001b[0m\n\u001b[1;32m     12\u001b[0m \u001b[0mpc\u001b[0m \u001b[0;34m=\u001b[0m \u001b[0mr_auto\u001b[0m\u001b[0;34m.\u001b[0m\u001b[0mresult\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n",
+      "\u001b[0;32m/Users/kaylan1/miniconda3/lib/python2.7/site-packages/nbodykit/algorithms/survey_paircount.pyc\u001b[0m in \u001b[0;36m__init__\u001b[0;34m(self, first, edges, second, ra, dec, weight, show_progress, **config)\u001b[0m\n\u001b[1;32m    365\u001b[0m \u001b[0;34m\u001b[0m\u001b[0m\n\u001b[1;32m    366\u001b[0m         \u001b[0;31m# run the algorithm\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[0;32m--> 367\u001b[0;31m         \u001b[0mself\u001b[0m\u001b[0;34m.\u001b[0m\u001b[0mrun\u001b[0m\u001b[0;34m(\u001b[0m\u001b[0;34m)\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[0m\u001b[1;32m    368\u001b[0m \u001b[0;34m\u001b[0m\u001b[0m\n\u001b[1;32m    369\u001b[0m     \u001b[0;32mdef\u001b[0m \u001b[0m__setstate__\u001b[0m\u001b[0;34m(\u001b[0m\u001b[0mself\u001b[0m\u001b[0;34m,\u001b[0m \u001b[0mstate\u001b[0m\u001b[0;34m)\u001b[0m\u001b[0;34m:\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n",
+      "\u001b[0;32m/Users/kaylan1/miniconda3/lib/python2.7/site-packages/nbodykit/algorithms/survey_paircount.pyc\u001b[0m in \u001b[0;36mrun\u001b[0;34m(self)\u001b[0m\n\u001b[1;32m    423\u001b[0m         \u001b[0;31m# run\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[1;32m    424\u001b[0m         \u001b[0msizes\u001b[0m \u001b[0;34m=\u001b[0m \u001b[0mself\u001b[0m\u001b[0;34m.\u001b[0m\u001b[0mcomm\u001b[0m\u001b[0;34m.\u001b[0m\u001b[0mallgather\u001b[0m\u001b[0;34m(\u001b[0m\u001b[0mlen\u001b[0m\u001b[0;34m(\u001b[0m\u001b[0mpos1\u001b[0m\u001b[0;34m)\u001b[0m\u001b[0;34m)\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[0;32m--> 425\u001b[0;31m         \u001b[0mpc\u001b[0m \u001b[0;34m=\u001b[0m \u001b[0mself\u001b[0m\u001b[0;34m.\u001b[0m\u001b[0m_run\u001b[0m\u001b[0;34m(\u001b[0m\u001b[0mDDtheta_mocks\u001b[0m\u001b[0;34m,\u001b[0m \u001b[0mkws\u001b[0m\u001b[0;34m,\u001b[0m \u001b[0msizes\u001b[0m\u001b[0;34m,\u001b[0m \u001b[0mcallback\u001b[0m\u001b[0;34m=\u001b[0m\u001b[0mcallback\u001b[0m\u001b[0;34m)\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[0m\u001b[1;32m    426\u001b[0m \u001b[0;34m\u001b[0m\u001b[0m\n\u001b[1;32m    427\u001b[0m         \u001b[0;31m# sum results over all ranks\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n",
+      "\u001b[0;32m/Users/kaylan1/miniconda3/lib/python2.7/site-packages/nbodykit/algorithms/sim_paircount.pyc\u001b[0m in \u001b[0;36m_run\u001b[0;34m(self, func, kwargs, loads, callback)\u001b[0m\n\u001b[1;32m    264\u001b[0m         \u001b[0mchunks\u001b[0m \u001b[0;34m=\u001b[0m \u001b[0mnumpy\u001b[0m\u001b[0;34m.\u001b[0m\u001b[0marray_split\u001b[0m\u001b[0;34m(\u001b[0m\u001b[0mrange\u001b[0m\u001b[0;34m(\u001b[0m\u001b[0mloads\u001b[0m\u001b[0;34m[\u001b[0m\u001b[0mself\u001b[0m\u001b[0;34m.\u001b[0m\u001b[0mcomm\u001b[0m\u001b[0;34m.\u001b[0m\u001b[0mrank\u001b[0m\u001b[0;34m]\u001b[0m\u001b[0;34m)\u001b[0m\u001b[0;34m,\u001b[0m \u001b[0mN\u001b[0m\u001b[0;34m,\u001b[0m \u001b[0maxis\u001b[0m\u001b[0;34m=\u001b[0m\u001b[0;36m0\u001b[0m\u001b[0;34m)\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[1;32m    265\u001b[0m         \u001b[0;32mfor\u001b[0m \u001b[0mi\u001b[0m\u001b[0;34m,\u001b[0m \u001b[0mchunk\u001b[0m \u001b[0;32min\u001b[0m \u001b[0menumerate\u001b[0m\u001b[0;34m(\u001b[0m\u001b[0mchunks\u001b[0m\u001b[0;34m)\u001b[0m\u001b[0;34m:\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[0;32m--> 266\u001b[0;31m             \u001b[0mthis_pc\u001b[0m \u001b[0;34m=\u001b[0m \u001b[0mrun\u001b[0m\u001b[0;34m(\u001b[0m\u001b[0mchunk\u001b[0m\u001b[0;34m)\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[0m\u001b[1;32m    267\u001b[0m             \u001b[0;32mif\u001b[0m \u001b[0mself\u001b[0m\u001b[0;34m.\u001b[0m\u001b[0mcomm\u001b[0m\u001b[0;34m.\u001b[0m\u001b[0mrank\u001b[0m \u001b[0;34m==\u001b[0m \u001b[0mlargest_load\u001b[0m\u001b[0;34m:\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[1;32m    268\u001b[0m                 \u001b[0mself\u001b[0m\u001b[0;34m.\u001b[0m\u001b[0mlogger\u001b[0m\u001b[0;34m.\u001b[0m\u001b[0minfo\u001b[0m\u001b[0;34m(\u001b[0m\u001b[0;34m\"%d%% done\"\u001b[0m \u001b[0;34m%\u001b[0m \u001b[0;34m(\u001b[0m\u001b[0mN\u001b[0m\u001b[0;34m*\u001b[0m\u001b[0;34m(\u001b[0m\u001b[0mi\u001b[0m\u001b[0;34m+\u001b[0m\u001b[0;36m1\u001b[0m\u001b[0;34m)\u001b[0m\u001b[0;34m)\u001b[0m\u001b[0;34m)\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n",
+      "\u001b[0;32m/Users/kaylan1/miniconda3/lib/python2.7/site-packages/nbodykit/algorithms/sim_paircount.pyc\u001b[0m in \u001b[0;36mrun\u001b[0;34m(chunk)\u001b[0m\n\u001b[1;32m    250\u001b[0m             \u001b[0;32mif\u001b[0m \u001b[0mcallback\u001b[0m \u001b[0;32mis\u001b[0m \u001b[0;32mnot\u001b[0m \u001b[0mNone\u001b[0m\u001b[0;34m:\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[1;32m    251\u001b[0m                 \u001b[0mcallback\u001b[0m\u001b[0;34m(\u001b[0m\u001b[0mkwargs\u001b[0m\u001b[0;34m,\u001b[0m \u001b[0mchunk\u001b[0m\u001b[0;34m)\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[0;32m--> 252\u001b[0;31m             \u001b[0;32mreturn\u001b[0m \u001b[0mself\u001b[0m\u001b[0;34m.\u001b[0m\u001b[0m_run_corrfunc\u001b[0m\u001b[0;34m(\u001b[0m\u001b[0mfunc\u001b[0m\u001b[0;34m,\u001b[0m \u001b[0;34m**\u001b[0m\u001b[0mkwargs\u001b[0m\u001b[0;34m)\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[0m\u001b[1;32m    253\u001b[0m \u001b[0;34m\u001b[0m\u001b[0m\n\u001b[1;32m    254\u001b[0m         \u001b[0;31m# log the function start\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n",
+      "\u001b[0;32m/Users/kaylan1/miniconda3/lib/python2.7/site-packages/nbodykit/algorithms/sim_paircount.pyc\u001b[0m in \u001b[0;36m_run_corrfunc\u001b[0;34m(self, func, **kws)\u001b[0m\n\u001b[1;32m    298\u001b[0m             \u001b[0mmsg\u001b[0m \u001b[0;34m+=\u001b[0m \u001b[0;34m\"stdout: %s\\n\"\u001b[0m \u001b[0;34m%\u001b[0m \u001b[0mstdout\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[1;32m    299\u001b[0m             \u001b[0mmsg\u001b[0m \u001b[0;34m+=\u001b[0m \u001b[0;34m\"stderr: %s\"\u001b[0m \u001b[0;34m%\u001b[0m \u001b[0mstderr\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[0;32m--> 300\u001b[0;31m             \u001b[0;32mraise\u001b[0m \u001b[0mRuntimeError\u001b[0m\u001b[0;34m(\u001b[0m\u001b[0mmsg\u001b[0m\u001b[0;34m)\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[0m\u001b[1;32m    301\u001b[0m \u001b[0;34m\u001b[0m\u001b[0m\n\u001b[1;32m    302\u001b[0m         \u001b[0;32mreturn\u001b[0m \u001b[0mCorrfuncResult\u001b[0m\u001b[0;34m(\u001b[0m\u001b[0mresult\u001b[0m\u001b[0;34m)\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n",
+      "\u001b[0;31mRuntimeError\u001b[0m: calling the function 'Corrfunc.mocks.DDtheta_mocks.DDtheta_mocks' failed:\nexception: Could not import the C extension for the angular correlation function for mocks.\nstdout: \nstderr: "
+     ]
+    }
+   ],
+   "source": [
+    "NDATA = 10000\n",
+    "# randomly distributed RA/DEC on the sky\n",
+    "data = RandomCatalog(NDATA, seed=42)\n",
+    "data['RA']  = data.rng.uniform(low=110, high=260, size=len(data))\n",
+    "data['DEC'] = data.rng.uniform(low=-3.6, high=60., size=len(data))\n",
+    "data['Weight'] = np.random.random(size=len(data))\n",
+    "edges = np.linspace(0.1, 10., 20+1) # 20 total bins\n",
+    "\n",
+    "# run the algorithm\n",
+    "r_auto = AngularPairCount(data, edges, ra='RA', dec='DEC', weight='Weight')\n",
+    "\n",
+    "pc = r_auto.result\n",
+    "plt.plot(pc['theta'], pc['npairs'])\n",
+    "\n",
+    "# format the axes\n",
+    "plt.xlabel(r\"$\\theta$ [$\\mathrm{degrees}$]\")\n",
+    "plt.ylabel(r\"$DD(\\theta)$\")"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 41,
+   "metadata": {},
+   "outputs": [
+    {
+     "ename": "ImportError",
+     "evalue": "cannot import name RandomCatalog",
+     "output_type": "error",
+     "traceback": [
+      "\u001b[0;31m---------------------------------------------------------------------------\u001b[0m",
+      "\u001b[0;31mImportError\u001b[0m                               Traceback (most recent call last)",
+      "\u001b[0;32m<ipython-input-41-acde3c3842fc>\u001b[0m in \u001b[0;36m<module>\u001b[0;34m()\u001b[0m\n\u001b[0;32m----> 1\u001b[0;31m \u001b[0;32mfrom\u001b[0m \u001b[0mnbodykit\u001b[0m\u001b[0;34m.\u001b[0m\u001b[0msource\u001b[0m\u001b[0;34m.\u001b[0m\u001b[0mcatalog\u001b[0m\u001b[0;34m.\u001b[0m\u001b[0marray\u001b[0m \u001b[0;32mimport\u001b[0m \u001b[0mArrayCatalog\u001b[0m\u001b[0;34m,\u001b[0m\u001b[0mRandomCatalog\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[0m\u001b[1;32m      2\u001b[0m \u001b[0mrecovered\u001b[0m\u001b[0;34m=\u001b[0m \u001b[0mArrayCatalog\u001b[0m\u001b[0;34m(\u001b[0m\u001b[0msimcat\u001b[0m\u001b[0;34m[\u001b[0m\u001b[0mbsim\u001b[0m\u001b[0;34m]\u001b[0m\u001b[0;34m)\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[1;32m      3\u001b[0m \u001b[0mreal\u001b[0m\u001b[0;34m=\u001b[0m \u001b[0mArrayCatalog\u001b[0m\u001b[0;34m(\u001b[0m\u001b[0mobitractor\u001b[0m\u001b[0;34m[\u001b[0m\u001b[0;34m~\u001b[0m\u001b[0mbtrac\u001b[0m\u001b[0;34m]\u001b[0m\u001b[0;34m)\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n",
+      "\u001b[0;31mImportError\u001b[0m: cannot import name RandomCatalog"
+     ]
+    }
+   ],
+   "source": [
+    "from nbodykit.source.catalog.array import ArrayCatalog,RandomCatalog\n",
+    "recovered= ArrayCatalog(simcat[bsim])\n",
+    "real= ArrayCatalog(obitractor[~btrac])"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 42,
+   "metadata": {},
+   "outputs": [
+    {
+     "ename": "RuntimeError",
+     "evalue": "calling the function 'Corrfunc.mocks.DDtheta_mocks.DDtheta_mocks' failed:\nexception: Could not import the C extension for the angular correlation function for mocks.\nstdout: \nstderr: ",
+     "output_type": "error",
+     "traceback": [
+      "\u001b[0;31m---------------------------------------------------------------------------\u001b[0m",
+      "\u001b[0;31mRuntimeError\u001b[0m                              Traceback (most recent call last)",
+      "\u001b[0;32m<ipython-input-42-a66451d4a86e>\u001b[0m in \u001b[0;36m<module>\u001b[0;34m()\u001b[0m\n\u001b[1;32m      3\u001b[0m \u001b[0medges\u001b[0m \u001b[0;34m=\u001b[0m \u001b[0mnp\u001b[0m\u001b[0;34m.\u001b[0m\u001b[0mlinspace\u001b[0m\u001b[0;34m(\u001b[0m\u001b[0;36m0.25\u001b[0m\u001b[0;34m/\u001b[0m\u001b[0;36m1e2\u001b[0m\u001b[0;34m,\u001b[0m\u001b[0;36m0.25\u001b[0m\u001b[0;34m/\u001b[0m\u001b[0;36m1e1\u001b[0m\u001b[0;34m,\u001b[0m\u001b[0;36m20\u001b[0m\u001b[0;34m+\u001b[0m\u001b[0;36m1\u001b[0m\u001b[0;34m)\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[1;32m      4\u001b[0m r_cross = AngularPairCount(real, edges, ra='ra', dec='dec', \n\u001b[0;32m----> 5\u001b[0;31m                            second=recovered)\n\u001b[0m",
+      "\u001b[0;32m/Users/kaylan1/miniconda3/lib/python2.7/site-packages/nbodykit/algorithms/survey_paircount.pyc\u001b[0m in \u001b[0;36m__init__\u001b[0;34m(self, first, edges, second, ra, dec, weight, show_progress, **config)\u001b[0m\n\u001b[1;32m    365\u001b[0m \u001b[0;34m\u001b[0m\u001b[0m\n\u001b[1;32m    366\u001b[0m         \u001b[0;31m# run the algorithm\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[0;32m--> 367\u001b[0;31m         \u001b[0mself\u001b[0m\u001b[0;34m.\u001b[0m\u001b[0mrun\u001b[0m\u001b[0;34m(\u001b[0m\u001b[0;34m)\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[0m\u001b[1;32m    368\u001b[0m \u001b[0;34m\u001b[0m\u001b[0m\n\u001b[1;32m    369\u001b[0m     \u001b[0;32mdef\u001b[0m \u001b[0m__setstate__\u001b[0m\u001b[0;34m(\u001b[0m\u001b[0mself\u001b[0m\u001b[0;34m,\u001b[0m \u001b[0mstate\u001b[0m\u001b[0;34m)\u001b[0m\u001b[0;34m:\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n",
+      "\u001b[0;32m/Users/kaylan1/miniconda3/lib/python2.7/site-packages/nbodykit/algorithms/survey_paircount.pyc\u001b[0m in \u001b[0;36mrun\u001b[0;34m(self)\u001b[0m\n\u001b[1;32m    423\u001b[0m         \u001b[0;31m# run\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[1;32m    424\u001b[0m         \u001b[0msizes\u001b[0m \u001b[0;34m=\u001b[0m \u001b[0mself\u001b[0m\u001b[0;34m.\u001b[0m\u001b[0mcomm\u001b[0m\u001b[0;34m.\u001b[0m\u001b[0mallgather\u001b[0m\u001b[0;34m(\u001b[0m\u001b[0mlen\u001b[0m\u001b[0;34m(\u001b[0m\u001b[0mpos1\u001b[0m\u001b[0;34m)\u001b[0m\u001b[0;34m)\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[0;32m--> 425\u001b[0;31m         \u001b[0mpc\u001b[0m \u001b[0;34m=\u001b[0m \u001b[0mself\u001b[0m\u001b[0;34m.\u001b[0m\u001b[0m_run\u001b[0m\u001b[0;34m(\u001b[0m\u001b[0mDDtheta_mocks\u001b[0m\u001b[0;34m,\u001b[0m \u001b[0mkws\u001b[0m\u001b[0;34m,\u001b[0m \u001b[0msizes\u001b[0m\u001b[0;34m,\u001b[0m \u001b[0mcallback\u001b[0m\u001b[0;34m=\u001b[0m\u001b[0mcallback\u001b[0m\u001b[0;34m)\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[0m\u001b[1;32m    426\u001b[0m \u001b[0;34m\u001b[0m\u001b[0m\n\u001b[1;32m    427\u001b[0m         \u001b[0;31m# sum results over all ranks\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n",
+      "\u001b[0;32m/Users/kaylan1/miniconda3/lib/python2.7/site-packages/nbodykit/algorithms/sim_paircount.pyc\u001b[0m in \u001b[0;36m_run\u001b[0;34m(self, func, kwargs, loads, callback)\u001b[0m\n\u001b[1;32m    264\u001b[0m         \u001b[0mchunks\u001b[0m \u001b[0;34m=\u001b[0m \u001b[0mnumpy\u001b[0m\u001b[0;34m.\u001b[0m\u001b[0marray_split\u001b[0m\u001b[0;34m(\u001b[0m\u001b[0mrange\u001b[0m\u001b[0;34m(\u001b[0m\u001b[0mloads\u001b[0m\u001b[0;34m[\u001b[0m\u001b[0mself\u001b[0m\u001b[0;34m.\u001b[0m\u001b[0mcomm\u001b[0m\u001b[0;34m.\u001b[0m\u001b[0mrank\u001b[0m\u001b[0;34m]\u001b[0m\u001b[0;34m)\u001b[0m\u001b[0;34m,\u001b[0m \u001b[0mN\u001b[0m\u001b[0;34m,\u001b[0m \u001b[0maxis\u001b[0m\u001b[0;34m=\u001b[0m\u001b[0;36m0\u001b[0m\u001b[0;34m)\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[1;32m    265\u001b[0m         \u001b[0;32mfor\u001b[0m \u001b[0mi\u001b[0m\u001b[0;34m,\u001b[0m \u001b[0mchunk\u001b[0m \u001b[0;32min\u001b[0m \u001b[0menumerate\u001b[0m\u001b[0;34m(\u001b[0m\u001b[0mchunks\u001b[0m\u001b[0;34m)\u001b[0m\u001b[0;34m:\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[0;32m--> 266\u001b[0;31m             \u001b[0mthis_pc\u001b[0m \u001b[0;34m=\u001b[0m \u001b[0mrun\u001b[0m\u001b[0;34m(\u001b[0m\u001b[0mchunk\u001b[0m\u001b[0;34m)\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[0m\u001b[1;32m    267\u001b[0m             \u001b[0;32mif\u001b[0m \u001b[0mself\u001b[0m\u001b[0;34m.\u001b[0m\u001b[0mcomm\u001b[0m\u001b[0;34m.\u001b[0m\u001b[0mrank\u001b[0m \u001b[0;34m==\u001b[0m \u001b[0mlargest_load\u001b[0m\u001b[0;34m:\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[1;32m    268\u001b[0m                 \u001b[0mself\u001b[0m\u001b[0;34m.\u001b[0m\u001b[0mlogger\u001b[0m\u001b[0;34m.\u001b[0m\u001b[0minfo\u001b[0m\u001b[0;34m(\u001b[0m\u001b[0;34m\"%d%% done\"\u001b[0m \u001b[0;34m%\u001b[0m \u001b[0;34m(\u001b[0m\u001b[0mN\u001b[0m\u001b[0;34m*\u001b[0m\u001b[0;34m(\u001b[0m\u001b[0mi\u001b[0m\u001b[0;34m+\u001b[0m\u001b[0;36m1\u001b[0m\u001b[0;34m)\u001b[0m\u001b[0;34m)\u001b[0m\u001b[0;34m)\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n",
+      "\u001b[0;32m/Users/kaylan1/miniconda3/lib/python2.7/site-packages/nbodykit/algorithms/sim_paircount.pyc\u001b[0m in \u001b[0;36mrun\u001b[0;34m(chunk)\u001b[0m\n\u001b[1;32m    250\u001b[0m             \u001b[0;32mif\u001b[0m \u001b[0mcallback\u001b[0m \u001b[0;32mis\u001b[0m \u001b[0;32mnot\u001b[0m \u001b[0mNone\u001b[0m\u001b[0;34m:\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[1;32m    251\u001b[0m                 \u001b[0mcallback\u001b[0m\u001b[0;34m(\u001b[0m\u001b[0mkwargs\u001b[0m\u001b[0;34m,\u001b[0m \u001b[0mchunk\u001b[0m\u001b[0;34m)\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[0;32m--> 252\u001b[0;31m             \u001b[0;32mreturn\u001b[0m \u001b[0mself\u001b[0m\u001b[0;34m.\u001b[0m\u001b[0m_run_corrfunc\u001b[0m\u001b[0;34m(\u001b[0m\u001b[0mfunc\u001b[0m\u001b[0;34m,\u001b[0m \u001b[0;34m**\u001b[0m\u001b[0mkwargs\u001b[0m\u001b[0;34m)\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[0m\u001b[1;32m    253\u001b[0m \u001b[0;34m\u001b[0m\u001b[0m\n\u001b[1;32m    254\u001b[0m         \u001b[0;31m# log the function start\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n",
+      "\u001b[0;32m/Users/kaylan1/miniconda3/lib/python2.7/site-packages/nbodykit/algorithms/sim_paircount.pyc\u001b[0m in \u001b[0;36m_run_corrfunc\u001b[0;34m(self, func, **kws)\u001b[0m\n\u001b[1;32m    298\u001b[0m             \u001b[0mmsg\u001b[0m \u001b[0;34m+=\u001b[0m \u001b[0;34m\"stdout: %s\\n\"\u001b[0m \u001b[0;34m%\u001b[0m \u001b[0mstdout\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[1;32m    299\u001b[0m             \u001b[0mmsg\u001b[0m \u001b[0;34m+=\u001b[0m \u001b[0;34m\"stderr: %s\"\u001b[0m \u001b[0;34m%\u001b[0m \u001b[0mstderr\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[0;32m--> 300\u001b[0;31m             \u001b[0;32mraise\u001b[0m \u001b[0mRuntimeError\u001b[0m\u001b[0;34m(\u001b[0m\u001b[0mmsg\u001b[0m\u001b[0;34m)\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[0m\u001b[1;32m    301\u001b[0m \u001b[0;34m\u001b[0m\u001b[0m\n\u001b[1;32m    302\u001b[0m         \u001b[0;32mreturn\u001b[0m \u001b[0mCorrfuncResult\u001b[0m\u001b[0;34m(\u001b[0m\u001b[0mresult\u001b[0m\u001b[0;34m)\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n",
+      "\u001b[0;31mRuntimeError\u001b[0m: calling the function 'Corrfunc.mocks.DDtheta_mocks.DDtheta_mocks' failed:\nexception: Could not import the C extension for the angular correlation function for mocks.\nstdout: \nstderr: "
+     ]
+    }
+   ],
+   "source": [
+    "# compute the cross correlation pair counts\n",
+    "from nbodykit.lab import AngularPairCount,RandomCatalog\n",
+    "edges = np.linspace(0.25/1e2,0.25/1e1,20+1)\n",
+    "r_cross = AngularPairCount(real, edges, ra='ra', dec='dec', \n",
+    "                           second=recovered)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {
+    "collapsed": true
+   },
+   "outputs": [],
+   "source": []
+  }
+ ],
+ "metadata": {
+  "kernelspec": {
+   "display_name": "Python 3",
+   "language": "python",
+   "name": "python3"
+  },
+  "language_info": {
+   "codemirror_mode": {
+    "name": "ipython",
+    "version": 3
+   },
+   "file_extension": ".py",
+   "mimetype": "text/x-python",
+   "name": "python",
+   "nbconvert_exporter": "python",
+   "pygments_lexer": "ipython3",
+   "version": "3.6.2"
+  }
+ },
+ "nbformat": 4,
+ "nbformat_minor": 1
+}

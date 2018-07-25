@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>tests.end_to_end.test_datasets &#8212; obiwan 1.2.0 documentation</title>
+    <link rel="stylesheet" href="../_static/bootstrap-sphinx.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script type="text/javascript" src="../_static/js/jquery-1.11.0.min.js"></script>
+    <script type="text/javascript" src="../_static/js/jquery-fix.js"></script>
+    <script type="text/javascript" src="../_static/bootstrap-3.3.7/js/bootstrap.min.js"></script>
+    <script type="text/javascript" src="../_static/bootstrap-sphinx.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+<meta charset='utf-8'>
+<meta http-equiv='X-UA-Compatible' content='IE=edge,chrome=1'>
+<meta name='viewport' content='width=device-width, initial-scale=1.0, maximum-scale=1'>
+<meta name="apple-mobile-web-app-capable" content="yes">
+
+  </head><body>
+
+  <div id="navbar" class="navbar navbar-default ">
+    <div class="container">
+      <div class="navbar-header">
+        <!-- .btn-navbar is used as the toggle for collapsed navbar content -->
+        <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".nav-collapse">
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+        </button>
+        <a class="navbar-brand" href="../index.html">
+          Obiwan</a>
+        <span class="navbar-text navbar-version pull-left"><b>1.2.0</b></span>
+      </div>
+
+        <div class="collapse navbar-collapse nav-collapse">
+          <ul class="nav navbar-nav">
+            
+                <li><a href="../api.html">API</a></li>
+                <li><a href="../tutorials.html">Tutorials</a></li>
+                <li><a href="../deeplearning.html">Deep Learning</a></li>
+            
+            
+              <li class="dropdown globaltoc-container">
+  <a role="button"
+     id="dLabelGlobalToc"
+     data-toggle="dropdown"
+     data-target="#"
+     href="../index.html">Pages <b class="caret"></b></a>
+  <ul class="dropdown-menu globaltoc"
+      role="menu"
+      aria-labelledby="dLabelGlobalToc"></ul>
+</li>
+              
+                <li class="dropdown">
+  <a role="button"
+     id="dLabelLocalToc"
+     data-toggle="dropdown"
+     data-target="#"
+     href="#">This Page <b class="caret"></b></a>
+  <ul class="dropdown-menu localtoc"
+      role="menu"
+      aria-labelledby="dLabelLocalToc"><ul>
+<li><a class="reference internal" href="#">tests.end_to_end.test_datasets</a></li>
+</ul>
+</ul>
+</li>
+              
+            
+            
+              
+                
+              
+            
+            
+            
+            
+          </ul>
+
+          
+            
+<form class="navbar-form navbar-right" action="../search.html" method="get">
+ <div class="form-group">
+  <input type="text" name="q" class="form-control" placeholder="Search" />
+ </div>
+  <input type="hidden" name="check_keywords" value="yes" />
+  <input type="hidden" name="area" value="default" />
+</form>
+          
+        </div>
+    </div>
+  </div>
+
+<div class="container">
+  <div class="row">
+    <div class="col-md-12 content">
+      
+  <div class="section" id="module-tests.end_to_end.test_datasets">
+<span id="tests-end-to-end-test-datasets"></span><h1>tests.end_to_end.test_datasets<a class="headerlink" href="#module-tests.end_to_end.test_datasets" title="Permalink to this headline">¶</a></h1>
+<p>Continuous integration ‘end-to-end’ tests of the Obiwan pipeline</p>
+<p class="rubric">Classes</p>
+<table border="1" class="longtable docutils">
+<colgroup>
+<col width="10%" />
+<col width="90%" />
+</colgroup>
+<tbody valign="top">
+<tr class="row-odd"><td><a class="reference internal" href="#tests.end_to_end.test_datasets.AnalyzeTestcase" title="tests.end_to_end.test_datasets.AnalyzeTestcase"><code class="xref py py-obj docutils literal notranslate"><span class="pre">AnalyzeTestcase</span></code></a>(**kwargs)</td>
+<td>Automatically loads the relevant outputs for a given testcase_DR_*</td>
+</tr>
+<tr class="row-even"><td><a class="reference internal" href="#tests.end_to_end.test_datasets.Testcase" title="tests.end_to_end.test_datasets.Testcase"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Testcase</span></code></a>([survey,&nbsp;dataset,&nbsp;bands,&nbsp;obj,&nbsp;…])</td>
+<td>Initialize and run a testcase</td>
+</tr>
+<tr class="row-odd"><td><code class="xref py py-obj docutils literal notranslate"><span class="pre">TestcaseCosmos</span></code>([survey,&nbsp;dataset,&nbsp;subset])</td>
+<td></td>
+</tr>
+<tr class="row-even"><td><a class="reference internal" href="#tests.end_to_end.test_datasets.test_flux_truth_vs_measured" title="tests.end_to_end.test_datasets.test_flux_truth_vs_measured"><code class="xref py py-obj docutils literal notranslate"><span class="pre">test_flux_truth_vs_measured</span></code></a>(**kw)</td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<p class="rubric">Functions</p>
+<table border="1" class="longtable docutils">
+<colgroup>
+<col width="10%" />
+<col width="90%" />
+</colgroup>
+<tbody valign="top">
+<tr class="row-odd"><td><code class="xref py py-obj docutils literal notranslate"><span class="pre">nanomag2mag</span></code>(nmgy)</td>
+<td></td>
+</tr>
+<tr class="row-even"><td><a class="reference internal" href="#tests.end_to_end.test_datasets.test_case" title="tests.end_to_end.test_datasets.test_case"><code class="xref py py-obj docutils literal notranslate"><span class="pre">test_case</span></code></a>([survey,&nbsp;dataset,&nbsp;z,&nbsp;grz,&nbsp;obj,&nbsp;…])</td>
+<td><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">param survey:</th><td class="field-body">one of SURVEYS</td>
+</tr>
+</tbody>
+</table>
+</td>
+</tr>
+<tr class="row-odd"><td><a class="reference internal" href="#tests.end_to_end.test_datasets.test_main" title="tests.end_to_end.test_datasets.test_main"><code class="xref py py-obj docutils literal notranslate"><span class="pre">test_main</span></code></a>()</td>
+<td>This is what travis CI runs</td>
+</tr>
+</tbody>
+</table>
+<dl class="class">
+<dt id="tests.end_to_end.test_datasets.AnalyzeTestcase">
+<em class="property">class </em><code class="descclassname">tests.end_to_end.test_datasets.</code><code class="descname">AnalyzeTestcase</code><span class="sig-paren">(</span><em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tests/end_to_end/test_datasets.html#AnalyzeTestcase"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#tests.end_to_end.test_datasets.AnalyzeTestcase" title="Permalink to this definition">¶</a></dt>
+<dd><p>Automatically loads the relevant outputs for a given testcase_DR_*</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>name</strong> – like ‘testcase_DR5_z_allblobs’</td>
+</tr>
+</tbody>
+</table>
+<dl class="attribute">
+<dt id="tests.end_to_end.test_datasets.AnalyzeTestcase.brick">
+<code class="descname">brick</code><a class="headerlink" href="#tests.end_to_end.test_datasets.AnalyzeTestcase.brick" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="tests.end_to_end.test_datasets.AnalyzeTestcase.bands">
+<code class="descname">bands</code><a class="headerlink" href="#tests.end_to_end.test_datasets.AnalyzeTestcase.bands" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="tests.end_to_end.test_datasets.AnalyzeTestcase.zoom">
+<code class="descname">zoom</code><a class="headerlink" href="#tests.end_to_end.test_datasets.AnalyzeTestcase.zoom" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="tests.end_to_end.test_datasets.AnalyzeTestcase.brickwcs">
+<code class="descname">brickwcs</code><a class="headerlink" href="#tests.end_to_end.test_datasets.AnalyzeTestcase.brickwcs" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="tests.end_to_end.test_datasets.AnalyzeTestcase.load_outputs">
+<code class="descname">load_outputs</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tests/end_to_end/test_datasets.html#AnalyzeTestcase.load_outputs"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#tests.end_to_end.test_datasets.AnalyzeTestcase.load_outputs" title="Permalink to this definition">¶</a></dt>
+<dd><p>Each output from the testcase becomes an attribute</p>
+<dl class="attribute">
+<dt>
+<code class="descname">simcat, obitractor</code></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="tests.end_to_end.test_datasets.AnalyzeTestcase.jpg_coadds">
+<code class="descname">jpg_coadds</code><a class="headerlink" href="#tests.end_to_end.test_datasets.AnalyzeTestcase.jpg_coadds" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="tests.end_to_end.test_datasets.AnalyzeTestcase.fits_coadds">
+<code class="descname">fits_coadds</code><a class="headerlink" href="#tests.end_to_end.test_datasets.AnalyzeTestcase.fits_coadds" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="method">
+<dt id="tests.end_to_end.test_datasets.AnalyzeTestcase.match_simcat_tractor">
+<code class="descname">match_simcat_tractor</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tests/end_to_end/test_datasets.html#AnalyzeTestcase.match_simcat_tractor"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#tests.end_to_end.test_datasets.AnalyzeTestcase.match_simcat_tractor" title="Permalink to this definition">¶</a></dt>
+<dd><p>matches sim and real sources to tractor cat</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">indices into simcat,tractor
+ireal: inices into tractor</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body">isim,itrac</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="tests.end_to_end.test_datasets.AnalyzeTestcase.numeric_tests">
+<code class="descname">numeric_tests</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tests/end_to_end/test_datasets.html#AnalyzeTestcase.numeric_tests"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#tests.end_to_end.test_datasets.AnalyzeTestcase.numeric_tests" title="Permalink to this definition">¶</a></dt>
+<dd><p>T: TestcaseOutputs() object</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="tests.end_to_end.test_datasets.AnalyzeTestcase.plots">
+<code class="descname">plots</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tests/end_to_end/test_datasets.html#AnalyzeTestcase.plots"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#tests.end_to_end.test_datasets.AnalyzeTestcase.plots" title="Permalink to this definition">¶</a></dt>
+<dd><p>outdir: where write plots to</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="tests.end_to_end.test_datasets.AnalyzeTestcase.qualitative_tests">
+<code class="descname">qualitative_tests</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tests/end_to_end/test_datasets.html#AnalyzeTestcase.qualitative_tests"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#tests.end_to_end.test_datasets.AnalyzeTestcase.qualitative_tests" title="Permalink to this definition">¶</a></dt>
+<dd><p>T: TestcaseOutputs() object</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="tests.end_to_end.test_datasets.AnalyzeTestcase.run">
+<code class="descname">run</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#tests.end_to_end.test_datasets.AnalyzeTestcase.run" title="Permalink to this definition">¶</a></dt>
+<dd><p>run it</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>no_cleanup</strong> – don’t run cleanup step</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="tests.end_to_end.test_datasets.AnalyzeTestcase.simcat_xy">
+<code class="descname">simcat_xy</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tests/end_to_end/test_datasets.html#AnalyzeTestcase.simcat_xy"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#tests.end_to_end.test_datasets.AnalyzeTestcase.simcat_xy" title="Permalink to this definition">¶</a></dt>
+<dd><p>x,y of each simulated source in the fits coadd. Just like the
+bx,by of tractor catalogues</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="tests.end_to_end.test_datasets.Testcase">
+<em class="property">class </em><code class="descclassname">tests.end_to_end.test_datasets.</code><code class="descname">Testcase</code><span class="sig-paren">(</span><em>survey=None</em>, <em>dataset=None</em>, <em>bands='grz'</em>, <em>obj='elg'</em>, <em>rowstart=0</em>, <em>add_noise=False</em>, <em>all_blobs=False</em>, <em>onedge=False</em>, <em>early_coadds=False</em>, <em>checkpoint=False</em>, <em>no_cleanup=False</em>, <em>stage=None</em>, <em>skip_ccd_cuts=False</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tests/end_to_end/test_datasets.html#Testcase"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#tests.end_to_end.test_datasets.Testcase" title="Permalink to this definition">¶</a></dt>
+<dd><p>Initialize and run a testcase</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>survey</strong> – decals or bassmzls</li>
+<li><strong>name</strong> – testcase name</li>
+<li><strong>dataset</strong> – string, ‘DR3’, ‘DR5’,</li>
+<li><strong>obj</strong> – elg,star</li>
+<li><strong>add_noise</strong> – to add Poisson noise to simulated galaxy profiles</li>
+<li><strong>all_blobs</strong> – to fit models to all blobs, not just the blobs containing sims</li>
+<li><strong>onedge</strong> – to add randoms at edge of region, not well within the boundaries</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<dl class="method">
+<dt id="tests.end_to_end.test_datasets.Testcase.run">
+<code class="descname">run</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tests/end_to_end/test_datasets.html#Testcase.run"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#tests.end_to_end.test_datasets.Testcase.run" title="Permalink to this definition">¶</a></dt>
+<dd><p>run it</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>no_cleanup</strong> – don’t run cleanup step</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="function">
+<dt id="tests.end_to_end.test_datasets.test_case">
+<code class="descclassname">tests.end_to_end.test_datasets.</code><code class="descname">test_case</code><span class="sig-paren">(</span><em>survey=None</em>, <em>dataset=None</em>, <em>z=True</em>, <em>grz=False</em>, <em>obj='elg'</em>, <em>add_noise=False</em>, <em>all_blobs=False</em>, <em>onedge=False</em>, <em>early_coadds=False</em>, <em>checkpoint=False</em>, <em>skip_ccd_cuts=False</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tests/end_to_end/test_datasets.html#test_case"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#tests.end_to_end.test_datasets.test_case" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>survey</strong> – one of SURVEYS</li>
+<li><strong>dataset</strong> – one of DATASETS</li>
+<li><strong>grz</strong> (<em>z</em><em>,</em>) – to run the z and/or grz testcases</li>
+<li><strong>all_blobs</strong> – to fit models to all blobs, not just the blobs containing sims</li>
+<li><strong>add_noise</strong> – to add Poisson noise to simulated galaxy profiles</li>
+<li><strong>onedge</strong> – to add randoms at edge of region, not well within the boundaries</li>
+<li><strong>early_coadds</strong> – write coadds before model fitting and stop there</li>
+<li><strong>dataset</strong> – no reason to be anything other than DR5 for these tests</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="class">
+<dt id="tests.end_to_end.test_datasets.test_flux_truth_vs_measured">
+<em class="property">class </em><code class="descclassname">tests.end_to_end.test_datasets.</code><code class="descname">test_flux_truth_vs_measured</code><span class="sig-paren">(</span><em>**kw</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tests/end_to_end/test_datasets.html#test_flux_truth_vs_measured"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#tests.end_to_end.test_datasets.test_flux_truth_vs_measured" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="method">
+<dt id="tests.end_to_end.test_datasets.test_flux_truth_vs_measured.load_outputs">
+<code class="descname">load_outputs</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tests/end_to_end/test_datasets.html#test_flux_truth_vs_measured.load_outputs"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#tests.end_to_end.test_datasets.test_flux_truth_vs_measured.load_outputs" title="Permalink to this definition">¶</a></dt>
+<dd><p>Each output from the testcase becomes an attribute</p>
+<dl class="attribute">
+<dt>
+<code class="descname">simcat, obitractor</code></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="tests.end_to_end.test_datasets.test_flux_truth_vs_measured.jpg_coadds">
+<code class="descname">jpg_coadds</code><a class="headerlink" href="#tests.end_to_end.test_datasets.test_flux_truth_vs_measured.jpg_coadds" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="tests.end_to_end.test_datasets.test_flux_truth_vs_measured.fits_coadds">
+<code class="descname">fits_coadds</code><a class="headerlink" href="#tests.end_to_end.test_datasets.test_flux_truth_vs_measured.fits_coadds" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="method">
+<dt id="tests.end_to_end.test_datasets.test_flux_truth_vs_measured.match_simcat_tractor">
+<code class="descname">match_simcat_tractor</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#tests.end_to_end.test_datasets.test_flux_truth_vs_measured.match_simcat_tractor" title="Permalink to this definition">¶</a></dt>
+<dd><p>matches sim and real sources to tractor cat</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">indices into simcat,tractor
+ireal: inices into tractor</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body">isim,itrac</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="tests.end_to_end.test_datasets.test_flux_truth_vs_measured.numeric_tests">
+<code class="descname">numeric_tests</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#tests.end_to_end.test_datasets.test_flux_truth_vs_measured.numeric_tests" title="Permalink to this definition">¶</a></dt>
+<dd><p>T: TestcaseOutputs() object</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="tests.end_to_end.test_datasets.test_flux_truth_vs_measured.plots">
+<code class="descname">plots</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#tests.end_to_end.test_datasets.test_flux_truth_vs_measured.plots" title="Permalink to this definition">¶</a></dt>
+<dd><p>outdir: where write plots to</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="tests.end_to_end.test_datasets.test_flux_truth_vs_measured.qualitative_tests">
+<code class="descname">qualitative_tests</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#tests.end_to_end.test_datasets.test_flux_truth_vs_measured.qualitative_tests" title="Permalink to this definition">¶</a></dt>
+<dd><p>T: TestcaseOutputs() object</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="tests.end_to_end.test_datasets.test_flux_truth_vs_measured.run">
+<code class="descname">run</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#tests.end_to_end.test_datasets.test_flux_truth_vs_measured.run" title="Permalink to this definition">¶</a></dt>
+<dd><p>run it</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>no_cleanup</strong> – don’t run cleanup step</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="tests.end_to_end.test_datasets.test_flux_truth_vs_measured.simcat_xy">
+<code class="descname">simcat_xy</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#tests.end_to_end.test_datasets.test_flux_truth_vs_measured.simcat_xy" title="Permalink to this definition">¶</a></dt>
+<dd><p>x,y of each simulated source in the fits coadd. Just like the
+bx,by of tractor catalogues</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="function">
+<dt id="tests.end_to_end.test_datasets.test_main">
+<code class="descclassname">tests.end_to_end.test_datasets.</code><code class="descname">test_main</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tests/end_to_end/test_datasets.html#test_main"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#tests.end_to_end.test_datasets.test_main" title="Permalink to this definition">¶</a></dt>
+<dd><p>This is what travis CI runs</p>
+</dd></dl>
+
+</div>
+
+
+    </div>
+      
+  </div>
+</div>
+<footer class="footer">
+  <div class="container">
+    <p class="pull-right">
+      <a href="#">Back to top</a>
+      
+    </p>
+    <p>
+        &copy; Copyright 2014-2018, Kaylan Burleigh, John Moustakas.<br/>
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.7.6.<br/>
+    </p>
+  </div>
+</footer>
+  </body>
+</html>

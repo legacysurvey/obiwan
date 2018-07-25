@@ -1,0 +1,41 @@
+#FROM ubuntu:16.04
+#FROM obiwan/legacypipe_srv:latest
+FROM obiwan/py3_srv:latest
+
+ENV MYINSTALL=/root/myinstall
+ENV MYREPO=/root/myrepo
+
+# RUN source /srv/py3_venv/bin/activate && \
+#     apt-get update && apt-get install -y \
+#     python3-future python3-yaml python3-pandas \
+#     fftw3-dev libboost-all-dev
+
+RUN source /srv/py3_venv/bin/activate && \
+    apt-get update && apt-get install -y \
+    wget make \
+    gcc swig libgsl2 gsl-bin pkg-config \
+    zlib1g-dev libcairo2-dev libnetpbm10-dev netpbm \
+    libpng12-dev libjpeg-dev zlib1g-dev \
+    libbz2-dev libcfitsio3-dev \
+    python3-future python3-yaml python3-pandas \
+    scons fftw3-dev libboost-all-dev
+
+WORKDIR $MYREPO
+RUN source /srv/py3_venv/bin/activate && \
+    wget https://github.com/rmjarvis/tmv/archive/v0.73.tar.gz && \
+    tar -xf v0.73.tar.gz && cd tmv-0.73 && \
+    scons DEBUG=True FLAGS="-O0" && \
+    scons install && \
+    cd ../ && rm -rf tmv-0.73
+
+# ENV python_exe "/srv/py3_venv/bin/python3"
+#
+# WORKDIR $MYREPO
+# RUN source /srv/py3_venv/bin/activate && \
+#     wget https://github.com/GalSim-developers/GalSim/archive/v1.4.2.tar.gz \
+#     -O GalSim.tar.gz && tar -xzf GalSim.tar.gz && \
+#     mv GalSim-1.4.2 GalSim && \
+#     cd GalSim && \
+#     scons PYTHON=${python_exe} && \
+#     scons install && \
+#     cd ../ && rm -rf GalSim

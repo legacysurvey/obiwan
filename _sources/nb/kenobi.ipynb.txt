@@ -1,0 +1,222 @@
+{
+ "cells": [
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "Run: python obiwan/kenobi.py -n 2 --DR 5 -b 1238p245 -o elg --add_sim_noise --zoom 1550 1650 1550 1650"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 1,
+   "metadata": {
+    "collapsed": true
+   },
+   "outputs": [],
+   "source": [
+    "%matplotlib inline\n",
+    "%load_ext autoreload\n",
+    "%autoreload "
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 2,
+   "metadata": {
+    "collapsed": false
+   },
+   "outputs": [],
+   "source": [
+    "import h5py\n",
+    "import galsim\n",
+    "import os\n",
+    "import sys\n",
+    "import shutil\n",
+    "import logging\n",
+    "import pdb\n",
+    "import photutils\n",
+    "\n",
+    "import numpy as np\n",
+    "import matplotlib.pyplot as plt\n",
+    "from pkg_resources import resource_filename\n",
+    "from pickle import dump\n",
+    "\n",
+    "\n",
+    "from astropy.table import Table, Column, vstack\n",
+    "from astropy.io import fits\n",
+    "#from astropy import wcs as astropy_wcs\n",
+    "from fitsio import FITSHDR\n",
+    "import fitsio\n",
+    "\n",
+    "from astropy import units\n",
+    "from astropy.coordinates import SkyCoord\n",
+    "\n",
+    "from tractor.psfex import PsfEx, PsfExModel\n",
+    "from tractor.basics import GaussianMixtureEllipsePSF, RaDecPos\n",
+    "\n",
+    "from legacypipe.runbrick import run_brick\n",
+    "from legacypipe.decam import DecamImage\n",
+    "from legacypipe.survey import LegacySurveyData, wcs_for_brick\n",
+    "\n",
+    "from astrometry.util.fits import fits_table, merge_tables\n",
+    "from astrometry.util.ttime import Time"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 24,
+   "metadata": {
+    "collapsed": true
+   },
+   "outputs": [],
+   "source": [
+    "%aimport obiwan.priors\n",
+    "# use getSrcsInBrick\n",
+    "%aimport obiwan.db_tools\n",
+    "# use get_parser,main\n",
+    "%aimport obiwan.kenobi"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 18,
+   "metadata": {
+    "collapsed": false
+   },
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "/global/cscratch1/sd/kaylanb/test/obiwan/py/obiwan/kenobi.py\n"
+     ]
+    }
+   ],
+   "source": [
+    "print(obiwan.kenobi.__file__)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 19,
+   "metadata": {
+    "collapsed": false
+   },
+   "outputs": [
+    {
+     "data": {
+      "text/plain": [
+       "'/global/cscratch1/sd/kaylanb/input_sample/bybrick/sample_hey.fits'"
+      ]
+     },
+     "execution_count": 19,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "obiwan.kenobi.get_sample_fn('hey','/global/cscratch1/sd/kaylanb/')"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 6,
+   "metadata": {
+    "collapsed": true
+   },
+   "outputs": [],
+   "source": [
+    "# Environment Vars\n",
+    "#LEGACY_SURVEY_DIR=\"/global/cscratch1/sd/kaylanb/test/legacypipe/py/legacypipe-dir\"\n",
+    "#desiproc=\"/global/cscratch1/sd/desiproc/\"\n",
+    "#DUST_DIR=desiproc+\"dust/v0_0\"\n",
+    "#UNWISE_COADDS_DIR=\"unwise-coadds/fulldepth\":desiproc+\"unwise-coadds/w3w4\"\n",
+    "#UNWISE_COADDS_TIMERESOLVED_DIR=/global/cscratch1/sd/desiproc/unwise-coadds/time_resolved_neo2\n",
+    "#UNWISE_COADDS_TIMERESOLVED_INDEX=/global/cscratch1/sd/desiproc/unwise-coadds/time_resolved_neo2/time_resolved_neo2-atlas.fits\n",
+    "#DECALS_SIM_DIR=/global/cscratch1/sd/kaylanb/test/obiwan/py/obiwan/junk"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 27,
+   "metadata": {
+    "collapsed": false
+   },
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "/global/cscratch1/sd/kaylanb/test/obiwan/py/obiwan/kenobi.py\n"
+     ]
+    }
+   ],
+   "source": [
+    "print(obiwan.kenobi.__file__)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 25,
+   "metadata": {
+    "collapsed": false
+   },
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "Args: Namespace(DR=5, add_sim_noise=False, all_blobs=False, brick='1238p245,--add_sim_noise', bricklist='bricks-eboss-ngc.txt', bright_galaxies=False, cutouts=False, early_coadds=False, folding_threshold=1e-05, image_eq_model=False, nobj=2, nproc=1, objtype='elg', prefix='', rowstart=0, stage=None, stamp_size=64, survey_dir=None, threads=1, verbose=False, zoom=[1550, 1650, 1550, 1650])\n",
+      "INFO:decals_sim:decals_sim.py args=Namespace(DR=5, add_sim_noise=False, all_blobs=False, brick='1238p245,--add_sim_noise', bricklist='bricks-eboss-ngc.txt', bright_galaxies=False, cutouts=False, early_coadds=False, folding_threshold=1e-05, image_eq_model=False, nobj=2, nproc=1, objtype='elg', prefix='', rowstart=0, stage=None, stamp_size=64, survey_dir=None, threads=1, verbose=False, zoom=[1550, 1650, 1550, 1650])\n",
+      "INFO:decals_sim:Object type = elg\n"
+     ]
+    },
+    {
+     "ename": "AttributeError",
+     "evalue": "'NoneType' object has no attribute 'ra'",
+     "output_type": "error",
+     "traceback": [
+      "\u001b[0;31m\u001b[0m",
+      "\u001b[0;31mAttributeError\u001b[0mTraceback (most recent call last)",
+      "\u001b[0;32m<ipython-input-25-3566123a7157>\u001b[0m in \u001b[0;36m<module>\u001b[0;34m()\u001b[0m\n\u001b[1;32m      5\u001b[0m \u001b[0mparser\u001b[0m\u001b[0;34m=\u001b[0m \u001b[0mobiwan\u001b[0m\u001b[0;34m.\u001b[0m\u001b[0mkenobi\u001b[0m\u001b[0;34m.\u001b[0m\u001b[0mget_parser\u001b[0m\u001b[0;34m(\u001b[0m\u001b[0;34m)\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[1;32m      6\u001b[0m \u001b[0mnamesp\u001b[0m\u001b[0;34m=\u001b[0m \u001b[0mparser\u001b[0m\u001b[0;34m.\u001b[0m\u001b[0mparse_args\u001b[0m\u001b[0;34m(\u001b[0m\u001b[0margs\u001b[0m\u001b[0;34m=\u001b[0m\u001b[0mcmd_line\u001b[0m\u001b[0;34m)\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[0;32m----> 7\u001b[0;31m \u001b[0mobiwan\u001b[0m\u001b[0;34m.\u001b[0m\u001b[0mkenobi\u001b[0m\u001b[0;34m.\u001b[0m\u001b[0mmain\u001b[0m\u001b[0;34m(\u001b[0m\u001b[0margs\u001b[0m\u001b[0;34m=\u001b[0m\u001b[0mnamesp\u001b[0m\u001b[0;34m)\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[0m",
+      "\u001b[0;32m/global/cscratch1/sd/kaylanb/test/obiwan/py/obiwan/kenobi.py\u001b[0m in \u001b[0;36mmain\u001b[0;34m(args)\u001b[0m\n\u001b[1;32m   1181\u001b[0m     \u001b[0msurvey\u001b[0m \u001b[0;34m=\u001b[0m \u001b[0mLegacySurveyData\u001b[0m\u001b[0;34m(\u001b[0m\u001b[0;34m)\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[1;32m   1182\u001b[0m     \u001b[0mbrickinfo\u001b[0m \u001b[0;34m=\u001b[0m \u001b[0msurvey\u001b[0m\u001b[0;34m.\u001b[0m\u001b[0mget_brick_by_name\u001b[0m\u001b[0;34m(\u001b[0m\u001b[0mbrickname\u001b[0m\u001b[0;34m)\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[0;32m-> 1183\u001b[0;31m     \u001b[0;32mprint\u001b[0m\u001b[0;34m(\u001b[0m\u001b[0mbrickname\u001b[0m\u001b[0;34m)\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[0m\u001b[1;32m   1184\u001b[0m     \u001b[0mbrickwcs\u001b[0m \u001b[0;34m=\u001b[0m \u001b[0mwcs_for_brick\u001b[0m\u001b[0;34m(\u001b[0m\u001b[0mbrickinfo\u001b[0m\u001b[0;34m)\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[1;32m   1185\u001b[0m     \u001b[0mW\u001b[0m\u001b[0;34m,\u001b[0m \u001b[0mH\u001b[0m\u001b[0;34m,\u001b[0m \u001b[0mpixscale\u001b[0m \u001b[0;34m=\u001b[0m \u001b[0mbrickwcs\u001b[0m\u001b[0;34m.\u001b[0m\u001b[0mget_width\u001b[0m\u001b[0;34m(\u001b[0m\u001b[0;34m)\u001b[0m\u001b[0;34m,\u001b[0m \u001b[0mbrickwcs\u001b[0m\u001b[0;34m.\u001b[0m\u001b[0mget_height\u001b[0m\u001b[0;34m(\u001b[0m\u001b[0;34m)\u001b[0m\u001b[0;34m,\u001b[0m \u001b[0mbrickwcs\u001b[0m\u001b[0;34m.\u001b[0m\u001b[0mpixel_scale\u001b[0m\u001b[0;34m(\u001b[0m\u001b[0;34m)\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n",
+      "\u001b[0;32m/global/cscratch1/sd/kaylanb/test/legacypipe/py/legacypipe/survey.pyc\u001b[0m in \u001b[0;36mwcs_for_brick\u001b[0;34m(b, W, H, pixscale)\u001b[0m\n\u001b[1;32m    533\u001b[0m     \u001b[0;32mfrom\u001b[0m \u001b[0mastrometry\u001b[0m\u001b[0;34m.\u001b[0m\u001b[0mutil\u001b[0m\u001b[0;34m.\u001b[0m\u001b[0mutil\u001b[0m \u001b[0;32mimport\u001b[0m \u001b[0mTan\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[1;32m    534\u001b[0m     \u001b[0mpixscale\u001b[0m \u001b[0;34m=\u001b[0m \u001b[0mpixscale\u001b[0m \u001b[0;34m/\u001b[0m \u001b[0;36m3600.\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[0;32m--> 535\u001b[0;31m     return Tan(b.ra, b.dec, W/2.+0.5, H/2.+0.5,\n\u001b[0m\u001b[1;32m    536\u001b[0m                \u001b[0;34m-\u001b[0m\u001b[0mpixscale\u001b[0m\u001b[0;34m,\u001b[0m \u001b[0;36m0.\u001b[0m\u001b[0;34m,\u001b[0m \u001b[0;36m0.\u001b[0m\u001b[0;34m,\u001b[0m \u001b[0mpixscale\u001b[0m\u001b[0;34m,\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[1;32m    537\u001b[0m                float(W), float(H))\n",
+      "\u001b[0;31mAttributeError\u001b[0m: 'NoneType' object has no attribute 'ra'"
+     ]
+    }
+   ],
+   "source": [
+    "# notebook cares about order of this list for some reason, -o goes first\n",
+    "cmd_line= ['-o', 'elg','-n', '2', '--DR', '5', '-b', '1238p245,' \n",
+    "           '--add_sim_noise', \n",
+    "           '--zoom', '1550', '1650', '1550', '1650']\n",
+    "parser= obiwan.kenobi.get_parser()\n",
+    "namesp= parser.parse_args(args=cmd_line)\n",
+    "obiwan.kenobi.main(args=namesp)"
+   ]
+  }
+ ],
+ "metadata": {
+  "anaconda-cloud": {},
+  "kernelspec": {
+   "display_name": "imaging py2.7",
+   "language": "python",
+   "name": "imaging-py2.7"
+  },
+  "language_info": {
+   "codemirror_mode": {
+    "name": "ipython",
+    "version": 2
+   },
+   "file_extension": ".py",
+   "mimetype": "text/x-python",
+   "name": "python",
+   "nbconvert_exporter": "python",
+   "pygments_lexer": "ipython2",
+   "version": "2.7.13"
+  }
+ },
+ "nbformat": 4,
+ "nbformat_minor": 0
+}

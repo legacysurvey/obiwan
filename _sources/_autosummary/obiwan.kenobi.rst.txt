@@ -1,0 +1,55 @@
+obiwan.kenobi
+=============
+
+.. automodule:: obiwan.kenobi
+   :members:
+   :inherited-members:
+
+   
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      BuildStamp
+   
+   
+
+   
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      build_simcat
+      create_ith_simcat
+      create_metadata
+      do_ith_cleanup
+      do_one_chunk
+      dobash
+      flag_nearest_neighbors
+      get_checkpoint_fn
+      get_e1_e2
+      get_ellip
+      get_fnsuffix
+      get_parser
+      get_runbrick_setup
+      get_sample
+      get_skip_ids
+      get_srcimg_invvar
+      imshow_stamp
+      ivar_for_galaxy
+      ivar_to_var
+      main
+      noise_for_galaxy
+      plot_radial_profs
+      ptime
+      read_dict
+      saturation_e
+      write_dict
+   
+   
+
+   
+   
+   

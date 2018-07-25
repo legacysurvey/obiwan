@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>obiwan.qa.visual &#8212; obiwan 1.2.0 documentation</title>
+    <link rel="stylesheet" href="../_static/bootstrap-sphinx.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script type="text/javascript" src="../_static/js/jquery-1.11.0.min.js"></script>
+    <script type="text/javascript" src="../_static/js/jquery-fix.js"></script>
+    <script type="text/javascript" src="../_static/bootstrap-3.3.7/js/bootstrap.min.js"></script>
+    <script type="text/javascript" src="../_static/bootstrap-sphinx.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+<meta charset='utf-8'>
+<meta http-equiv='X-UA-Compatible' content='IE=edge,chrome=1'>
+<meta name='viewport' content='width=device-width, initial-scale=1.0, maximum-scale=1'>
+<meta name="apple-mobile-web-app-capable" content="yes">
+
+  </head><body>
+
+  <div id="navbar" class="navbar navbar-default ">
+    <div class="container">
+      <div class="navbar-header">
+        <!-- .btn-navbar is used as the toggle for collapsed navbar content -->
+        <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".nav-collapse">
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+        </button>
+        <a class="navbar-brand" href="../index.html">
+          Obiwan</a>
+        <span class="navbar-text navbar-version pull-left"><b>1.2.0</b></span>
+      </div>
+
+        <div class="collapse navbar-collapse nav-collapse">
+          <ul class="nav navbar-nav">
+            
+                <li><a href="../api.html">API</a></li>
+                <li><a href="../tutorials.html">Tutorials</a></li>
+                <li><a href="../deeplearning.html">Deep Learning</a></li>
+            
+            
+              <li class="dropdown globaltoc-container">
+  <a role="button"
+     id="dLabelGlobalToc"
+     data-toggle="dropdown"
+     data-target="#"
+     href="../index.html">Pages <b class="caret"></b></a>
+  <ul class="dropdown-menu globaltoc"
+      role="menu"
+      aria-labelledby="dLabelGlobalToc"></ul>
+</li>
+              
+                <li class="dropdown">
+  <a role="button"
+     id="dLabelLocalToc"
+     data-toggle="dropdown"
+     data-target="#"
+     href="#">This Page <b class="caret"></b></a>
+  <ul class="dropdown-menu localtoc"
+      role="menu"
+      aria-labelledby="dLabelLocalToc"><ul>
+<li><a class="reference internal" href="#">obiwan.qa.visual</a></li>
+</ul>
+</ul>
+</li>
+              
+            
+            
+              
+                
+              
+            
+            
+            
+            
+          </ul>
+
+          
+            
+<form class="navbar-form navbar-right" action="../search.html" method="get">
+ <div class="form-group">
+  <input type="text" name="q" class="form-control" placeholder="Search" />
+ </div>
+  <input type="hidden" name="check_keywords" value="yes" />
+  <input type="hidden" name="area" value="default" />
+</form>
+          
+        </div>
+    </div>
+  </div>
+
+<div class="container">
+  <div class="row">
+    <div class="col-md-12 content">
+      
+  <div class="section" id="module-obiwan.qa.visual">
+<span id="obiwan-qa-visual"></span><h1>obiwan.qa.visual<a class="headerlink" href="#module-obiwan.qa.visual" title="Permalink to this headline">¶</a></h1>
+<p>Functions for visualizing the imaging data</p>
+<p class="rubric">Classes</p>
+<table border="1" class="longtable docutils">
+<colgroup>
+<col width="10%" />
+<col width="90%" />
+</colgroup>
+<tbody valign="top">
+<tr class="row-odd"><td><a class="reference internal" href="#obiwan.qa.visual.plotImage" title="obiwan.qa.visual.plotImage"><code class="xref py py-obj docutils literal notranslate"><span class="pre">plotImage</span></code></a></td>
+<td>Helper functions for displaying image and overlaying circles around sources</td>
+</tr>
+</tbody>
+</table>
+<p class="rubric">Functions</p>
+<table border="1" class="longtable docutils">
+<colgroup>
+<col width="10%" />
+<col width="90%" />
+</colgroup>
+<tbody valign="top">
+<tr class="row-odd"><td><code class="xref py py-obj docutils literal notranslate"><span class="pre">flux2mag</span></code>(flux)</td>
+<td></td>
+</tr>
+<tr class="row-even"><td><a class="reference internal" href="#obiwan.qa.visual.readImage" title="obiwan.qa.visual.readImage"><code class="xref py py-obj docutils literal notranslate"><span class="pre">readImage</span></code></a>(fn[,&nbsp;jpeg,&nbsp;ext])</td>
+<td>Reads FITS and jpeg images so that x,y indices refer to the same pixels regardless of image format.</td>
+</tr>
+<tr class="row-odd"><td><a class="reference internal" href="#obiwan.qa.visual.sliceImage" title="obiwan.qa.visual.sliceImage"><code class="xref py py-obj docutils literal notranslate"><span class="pre">sliceImage</span></code></a>(img[,&nbsp;xslice,&nbsp;yslice])</td>
+<td>Not sure why, but simcat.x[xslice],simcat.y[yslice] corresponds to img[yslice,xslice], eg inverted for the image</td>
+</tr>
+</tbody>
+</table>
+<dl class="class">
+<dt id="obiwan.qa.visual.plotImage">
+<em class="property">class </em><code class="descclassname">obiwan.qa.visual.</code><code class="descname">plotImage</code><a class="reference internal" href="../_modules/obiwan/qa/visual.html#plotImage"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obiwan.qa.visual.plotImage" title="Permalink to this definition">¶</a></dt>
+<dd><p>Helper functions for displaying image and overlaying circles around sources</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>img</strong> – need to give as initial input b/c some helper funcs that dont directly
+use img, need its shape at least, see circles()</td>
+</tr>
+</tbody>
+</table>
+<dl class="method">
+<dt id="obiwan.qa.visual.plotImage.circles">
+<code class="descname">circles</code><span class="sig-paren">(</span><em>xs</em>, <em>ys</em>, <em>ax</em>, <em>img_shape=None</em>, <em>xslice=None</em>, <em>yslice=None</em>, <em>r_pixels=19.083969465648853</em>, <em>color='y'</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/obiwan/qa/visual.html#plotImage.circles"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obiwan.qa.visual.plotImage.circles" title="Permalink to this definition">¶</a></dt>
+<dd><p>xs,ys: x,y positions of sources in pixels, e.g. tractor.bx or simcat.x
+img_shape: needed when xslice or yslice is None
+xlice,yslice: slice() objects into the image array
+r_pixels: radius circles in pixels</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="obiwan.qa.visual.plotImage.justInSlice">
+<code class="descname">justInSlice</code><span class="sig-paren">(</span><em>x</em>, <em>y</em>, <em>xslice</em>, <em>yslice</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/obiwan/qa/visual.html#plotImage.justInSlice"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obiwan.qa.visual.plotImage.justInSlice" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns bool array of x,y positions in the slice()</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="function">
+<dt id="obiwan.qa.visual.readImage">
+<code class="descclassname">obiwan.qa.visual.</code><code class="descname">readImage</code><span class="sig-paren">(</span><em>fn</em>, <em>jpeg=False</em>, <em>ext=1</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/obiwan/qa/visual.html#readImage"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obiwan.qa.visual.readImage" title="Permalink to this definition">¶</a></dt>
+<dd><p>Reads FITS and jpeg images so that x,y indices refer to the same pixels
+regardless of image format. x,y and fits correspond so the jpeg is rotated and flipped
+to align with fits</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>fn</strong> – image filename</li>
+<li><strong>jpeg</strong> – bool, is is a jpeg?</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="obiwan.qa.visual.sliceImage">
+<code class="descclassname">obiwan.qa.visual.</code><code class="descname">sliceImage</code><span class="sig-paren">(</span><em>img</em>, <em>xslice=slice(None</em>, <em>None</em>, <em>None)</em>, <em>yslice=slice(None</em>, <em>None</em>, <em>None)</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/obiwan/qa/visual.html#sliceImage"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obiwan.qa.visual.sliceImage" title="Permalink to this definition">¶</a></dt>
+<dd><p>Not sure why, but simcat.x[xslice],simcat.y[yslice]
+corresponds to img[yslice,xslice], eg inverted for the image</p>
+</dd></dl>
+
+</div>
+
+
+    </div>
+      
+  </div>
+</div>
+<footer class="footer">
+  <div class="container">
+    <p class="pull-right">
+      <a href="#">Back to top</a>
+      
+    </p>
+    <p>
+        &copy; Copyright 2014-2018, Kaylan Burleigh, John Moustakas.<br/>
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.7.6.<br/>
+    </p>
+  </div>
+</footer>
+  </body>
+</html>

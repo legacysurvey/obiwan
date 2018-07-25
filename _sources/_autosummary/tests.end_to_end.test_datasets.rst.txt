@@ -1,0 +1,35 @@
+tests.end_to_end.test_datasets
+==============================
+
+.. automodule:: tests.end_to_end.test_datasets
+   :members:
+   :inherited-members:
+
+   
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      AnalyzeTestcase
+      Testcase
+      TestcaseCosmos
+      test_flux_truth_vs_measured
+   
+   
+
+   
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      nanomag2mag
+      test_case
+      test_main
+   
+   
+
+   
+   
+   

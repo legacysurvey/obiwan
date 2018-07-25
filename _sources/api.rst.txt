@@ -1,0 +1,51 @@
+:orphan:
+
+API Documentation
+=================
+
+Modules
+-------
+.. autosummary::
+	:toctree: _autosummary
+	:template: module.rst
+
+	obiwan.fetch
+	obiwan.db_tools
+	obiwan.draw_radec_color_z
+	obiwan.kenobi
+	obiwan.common
+
+Tests
+-----
+.. autosummary::
+	:toctree: _autosummary
+	:template: module.rst
+
+	tests.end_to_end.test_datasets
+
+Compute Jobs
+------------
+.. autosummary::
+	:toctree: _autosummary
+	:template: module.rst
+
+	obiwan.qa.plots_common
+	obiwan.qa.number_finished_by_slurm
+	obiwan.qa.unique_ccds_dr3
+	obiwan.qa.cpu_hours
+	obiwan.qa.visual
+	obiwan.qa.heatmaps
+	obiwan.qa.plots_footprint
+	obiwan.qa.plots_randomsprops_fluxdiff
+
+Deep Learning
+-------------
+.. autosummary::
+	:toctree: _autosummary
+	:template: module.rst
+
+	obiwan.dplearn.cnn
+	obiwan.dplearn.cnn_working_version
+	obiwan.dplearn.create_training
+	obiwan.dplearn.split_testtrain
+

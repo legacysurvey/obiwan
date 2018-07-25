@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>Background &#8212; obiwan 1.2.0 documentation</title>
+    <link rel="stylesheet" href="_static/bootstrap-sphinx.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script type="text/javascript" src="_static/js/jquery-1.11.0.min.js"></script>
+    <script type="text/javascript" src="_static/js/jquery-fix.js"></script>
+    <script type="text/javascript" src="_static/bootstrap-3.3.7/js/bootstrap.min.js"></script>
+    <script type="text/javascript" src="_static/bootstrap-sphinx.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+<meta charset='utf-8'>
+<meta http-equiv='X-UA-Compatible' content='IE=edge,chrome=1'>
+<meta name='viewport' content='width=device-width, initial-scale=1.0, maximum-scale=1'>
+<meta name="apple-mobile-web-app-capable" content="yes">
+
+  </head><body>
+
+  <div id="navbar" class="navbar navbar-default ">
+    <div class="container">
+      <div class="navbar-header">
+        <!-- .btn-navbar is used as the toggle for collapsed navbar content -->
+        <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".nav-collapse">
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+        </button>
+        <a class="navbar-brand" href="index.html">
+          Obiwan</a>
+        <span class="navbar-text navbar-version pull-left"><b>1.2.0</b></span>
+      </div>
+
+        <div class="collapse navbar-collapse nav-collapse">
+          <ul class="nav navbar-nav">
+            
+                <li><a href="api.html">API</a></li>
+                <li><a href="tutorials.html">Tutorials</a></li>
+                <li><a href="#">Deep Learning</a></li>
+            
+            
+              <li class="dropdown globaltoc-container">
+  <a role="button"
+     id="dLabelGlobalToc"
+     data-toggle="dropdown"
+     data-target="#"
+     href="index.html">Pages <b class="caret"></b></a>
+  <ul class="dropdown-menu globaltoc"
+      role="menu"
+      aria-labelledby="dLabelGlobalToc"></ul>
+</li>
+              
+                <li class="dropdown">
+  <a role="button"
+     id="dLabelLocalToc"
+     data-toggle="dropdown"
+     data-target="#"
+     href="#">This Page <b class="caret"></b></a>
+  <ul class="dropdown-menu localtoc"
+      role="menu"
+      aria-labelledby="dLabelLocalToc"><ul>
+<li><a class="reference internal" href="#">Background</a></li>
+<li><a class="reference internal" href="#the-problem">The Problem</a></li>
+<li><a class="reference internal" href="#novel">Novel</a></li>
+<li><a class="reference internal" href="#examples-of-training-data">Examples of Training Data</a></li>
+<li><a class="reference internal" href="#cnn-architecture">CNN Architecture</a></li>
+<li><a class="reference internal" href="#intel-xeon-phi">Intel Xeon Phi</a></li>
+<li><a class="reference internal" href="#tensorboard-profiling">TensorBoard &amp; Profiling</a></li>
+<li><a class="reference internal" href="#instructions">Instructions</a><ul>
+<li><a class="reference internal" href="#create-training-set">Create Training Set</a></li>
+<li><a class="reference internal" href="#split-train-test">Split Train/Test</a></li>
+<li><a class="reference internal" href="#train">Train</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#more-examples">More Examples</a></li>
+</ul>
+</ul>
+</li>
+              
+            
+            
+              
+                
+              
+            
+            
+            
+            
+          </ul>
+
+          
+            
+<form class="navbar-form navbar-right" action="search.html" method="get">
+ <div class="form-group">
+  <input type="text" name="q" class="form-control" placeholder="Search" />
+ </div>
+  <input type="hidden" name="check_keywords" value="yes" />
+  <input type="hidden" name="area" value="default" />
+</form>
+          
+        </div>
+    </div>
+  </div>
+
+<div class="container">
+  <div class="row">
+    <div class="col-md-12 content">
+      
+  <h1>Deep Learning</h1><p>Can a CNN tell the difference between fake galaxies (that I inject into real imaging data) and real ones?</p>
+<div class="contents topic" id="table-of-contents">
+<p class="topic-title first">Table of Contents</p>
+<ul class="simple">
+<li><a class="reference internal" href="#background" id="id6">Background</a></li>
+<li><a class="reference internal" href="#the-problem" id="id7">The Problem</a></li>
+<li><a class="reference internal" href="#novel" id="id8">Novel</a></li>
+<li><a class="reference internal" href="#examples-of-training-data" id="id9">Examples of Training Data</a></li>
+<li><a class="reference internal" href="#cnn-architecture" id="id10">CNN Architecture</a></li>
+<li><a class="reference internal" href="#intel-xeon-phi" id="id11">Intel Xeon Phi</a></li>
+<li><a class="reference internal" href="#tensorboard-profiling" id="id12">TensorBoard &amp; Profiling</a></li>
+<li><a class="reference internal" href="#instructions" id="id13">Instructions</a><ul>
+<li><a class="reference internal" href="#create-training-set" id="id14">Create Training Set</a></li>
+<li><a class="reference internal" href="#split-train-test" id="id15">Split Train/Test</a></li>
+<li><a class="reference internal" href="#train" id="id16">Train</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#more-examples" id="id17">More Examples</a></li>
+</ul>
+</div>
+<div class="section" id="background">
+<h1><a class="toc-backref" href="#id6">Background</a><a class="headerlink" href="#background" title="Permalink to this headline">¶</a></h1>
+<p>I am getting my PhD in astrophysics from UC Berkeley. My research focuses on observational cosmology, which boils down to analyzing images of the night sky. I help develop a <a class="reference external" href="https://github.com/legacysurvey/legacypipe">pipeline</a> that automatically detects stars and galaxies in multi-wavelength images and fits models to them. From the sample of galaxies we collect, it is possible to answer questions like, “how has the expansion rate of the Universe changed over time?”. The <a class="reference external" href="http://www.sdss.org">Sloan Digital Sky Survey</a> (SDSS) showed that you can do this with a large enough sample (about a million galaxies) and region of the sky (1/3 of it). My team is carrying out the <a class="reference external" href="http://www.legacysurvey.org">Legacy Survey</a> to detect 30x more, and up to 6x fainter, galaxies than SDSS. The most distant galaxies are about 10 billion lightyears away.</p>
+<p>Our goal is to create a 2D map of the positions of about 30 million galaxies extracted from more than 100 TBs of images. Given the locations, we can take a spectrum of each galaxy (e.g. how bright it is at many wavelengths of visible light) and infer how far away it is. From this 3D map we can measure the expansion rate of the Universe at different points in time (<a class="reference external" href="https://arxiv.org/abs/astro-ph/9709112">Eisenstein &amp; Hu 1998</a>; <a class="reference external" href="https://arxiv.org/abs/astro-ph/0501171">Eisenstein et al. 2005</a>; <a class="reference external" href="https://arxiv.org/abs/astro-ph/0701079">Seo &amp; Eisenstein 2007</a>; <a class="reference external" href="https://arxiv.org/abs/1607.03150">Butler et al. 2017</a>).</p>
+<p>The primary goal of my thesis is to measure the statistical bias and variance of our pipeline. How does our completeness depend on whether a galaxy is bright or faint, blue or red, big or small? How well does our pipeline handle image artifacts, instrument issues, or transient objects?</p>
+<p>To answer all of this, John Moustakas, a professor at Siena College, and I developed the <a class="reference external" href="https://github.com/legacysurvey/obiwan">obiwan code</a>. It does Monte Carlo simulations of the pipeline by adding fake galaxies to random locations in the images, running the pipeline, and repeating.</p>
+<p>The success of all this depends on whether or not the fake galaxies are representative of the true galaxy population. If not, we are measuring the bias and variance of a sample that does not exist in the data. I need to show that the fake galaxies “look” like the real ones. Enter the Convolutional Neural Network (CNN)…</p>
+</div>
+<div class="section" id="the-problem">
+<h1><a class="toc-backref" href="#id7">The Problem</a><a class="headerlink" href="#the-problem" title="Permalink to this headline">¶</a></h1>
+<p>This is a supervised binary classification problem of labeled multi-wavelength images. The training set is huge, at least 60 million examples, and each example is six images (64 x 64 x 6 pixels). There is one image for each of the three wavelength bands and another three images to encode camera artifacts and the variance of each pixel.</p>
+<p>The CNN predicts whether a galaxy is fake (1) or real (0).</p>
+</div>
+<div class="section" id="novel">
+<h1><a class="toc-backref" href="#id8">Novel</a><a class="headerlink" href="#novel" title="Permalink to this headline">¶</a></h1>
+<p>This project is novel because half the training images are model-generated and the goal is for the CNN to do <em>poorly</em>. If the CNN cannot do better than guessing the most numerous class, then the fake galaxies “look like” real ones. i.e. my model is representative of reality. This has generated interest in the team since a similar CNN could be trained using models of other types of galaxies.</p>
+</div>
+<div class="section" id="examples-of-training-data">
+<h1><a class="toc-backref" href="#id9">Examples of Training Data</a><a class="headerlink" href="#examples-of-training-data" title="Permalink to this headline">¶</a></h1>
+<p>The galaxies below are some of the brightest in the training set (99th percentile in brightness). <a class="reference internal" href="#more-examples"><span class="std std-ref">More Examples</span></a> of fainter galaxies (75th, 50th, 25th, and 1st percentiles in brightness) are at the end.</p>
+<div class="figure align-center" id="id2" style="width: 600px">
+<a class="reference internal image-reference" href="_images/fake_real_mosaic_istart_0.png"><img alt="_images/fake_real_mosaic_istart_0.png" src="_images/fake_real_mosaic_istart_0.png" style="width: 600px;" /></a>
+<p class="caption"><span class="caption-text"><strong>Figure 1.</strong> The label for each image is on the left (R for Real and F for Fake)  and its corresponding g-band magnitude is the number on the right (the smaller the number, the brighter the galaxy). Each row represents a single galaxy imaged at three different wavelengths. The color-image (left most panel) shows the colors you would see by eye, while the black and white-images (right six panels) are the training data: three images for the g, r, and z-bands and their corresponding artifact/inverse variance (ivar) images. Consecutive rows of R and F (rows 1 and 2, 3 and 4, etc.) have similar g-band magnitudes so that a fair comparison can be made.</span></p>
+</div>
+<p>The examples reveal at least two challenges for the CNN.</p>
+<ol class="arabic simple">
+<li>Only the central-object matters, but there are many off-center objects in the images. These are random background sources, often bright galaxies or stars that we are not interested in.</li>
+<li>These galaxies are very faint. The CNN must be able to dig out the low Signal to Noise sources.</li>
+</ol>
+</div>
+<div class="section" id="cnn-architecture">
+<h1><a class="toc-backref" href="#id10">CNN Architecture</a><a class="headerlink" href="#cnn-architecture" title="Permalink to this headline">¶</a></h1>
+<p>As a starting point, I used TensorFlow to build a CNN similar to LeNet-5 with the following architecture:</p>
+<table border="1" class="colwidths-auto docutils align-left">
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">Layer</th>
+<th class="head">Feature Maps</th>
+<th class="head">Size</th>
+<th class="head">Kernel Size</th>
+<th class="head">Stride</th>
+<th class="head">Activation Function</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td>Input Image</td>
+<td>6</td>
+<td>64x64</td>
+<td>&#160;</td>
+<td>&#160;</td>
+<td>&#160;</td>
+</tr>
+<tr class="row-odd"><td>Convolution</td>
+<td>18</td>
+<td>64x64</td>
+<td>7x7</td>
+<td>1</td>
+<td>ReLU</td>
+</tr>
+<tr class="row-even"><td>Avg. Pooling</td>
+<td>18</td>
+<td>32x32</td>
+<td>7x7</td>
+<td>2</td>
+<td>ReLU</td>
+</tr>
+<tr class="row-odd"><td>Convolution</td>
+<td>36</td>
+<td>32x32</td>
+<td>7x7</td>
+<td>1</td>
+<td>ReLU</td>
+</tr>
+<tr class="row-even"><td>Avg. Pooling</td>
+<td>36</td>
+<td>16x16</td>
+<td>7x7</td>
+<td>2</td>
+<td>ReLU</td>
+</tr>
+<tr class="row-odd"><td>Convolution</td>
+<td>54</td>
+<td>16x16</td>
+<td>7x7</td>
+<td>1</td>
+<td>ReLU</td>
+</tr>
+<tr class="row-even"><td>Avg. Pooling</td>
+<td>54</td>
+<td>8x8</td>
+<td>7x7</td>
+<td>2</td>
+<td>ReLU</td>
+</tr>
+<tr class="row-odd"><td>Fully Connected</td>
+<td>&#160;</td>
+<td>64</td>
+<td>&#160;</td>
+<td>&#160;</td>
+<td>ReLU</td>
+</tr>
+<tr class="row-even"><td>Fully Connected</td>
+<td>&#160;</td>
+<td>2</td>
+<td>&#160;</td>
+<td>&#160;</td>
+<td>Softmax</td>
+</tr>
+</tbody>
+</table>
+<p>The input image has 64 x 64 x 6 pixels. The CNN is much shallower than the ImageNet ILSVRC winners, so in addition to tuning the number of feature maps, kernel size, stride, etc., I plan to make it deeper.</p>
+</div>
+<div class="section" id="intel-xeon-phi">
+<h1><a class="toc-backref" href="#id11">Intel Xeon Phi</a><a class="headerlink" href="#intel-xeon-phi" title="Permalink to this headline">¶</a></h1>
+<p>I have used the Cray XC30 (<a class="reference external" href="http://www.nersc.gov/users/computational-systems/edison/">Edison</a>) and Cray XC40 (<a class="reference external" href="http://www.nersc.gov/users/computational-systems/cori/">Cori</a>) supercomputers at the National Energy Research Scientific Computing Center (NERSC) for the majority of my thesis work. With almost 10,000 Intel Xeon Phi processor nodes on Cori, NERSC Staff are particularly interested in helping users run on Xeon Phi.</p>
+<p>I decided to train on Xeon Phi, instead of a GPU, when NERSC/Intel released optimized installs of many of the popular machine learning libraries (Caffe, TensorFlow, Theano, Torch, see <a class="reference external" href="http://www.nersc.gov/users/data-analytics/data-analytics-2/deep-learning/using-tensorflow-at-nersc">full list</a>). I created an initial training set of 2048 images with an equal number of fake and real galaxies. The images are float32 so I stored every 512 examples in a file, thinking that a 50 MB file would fit in memory on most machines.</p>
+<p>It takes about 3 minutes to train 4 epochs of 2048 images on a single Xeon Phi node (68 hardware cores). For hundreds of nodes, I plan on training a different minibatch with each MPI task, updating a global set of weights using the learned weights from the minibatches, then repeating. Although multi-node support is not yet available to users, NERSC Staff can scale ResNet-50 and DCGAN to 1024 Xeon Phi nodes.</p>
+<p>Fortunately, I hope to begin multi-node training soon as the NERSC Staff have volunteered my CNN for non-benchmark multi-node testing.</p>
+</div>
+<div class="section" id="tensorboard-profiling">
+<h1><a class="toc-backref" href="#id12">TensorBoard &amp; Profiling</a><a class="headerlink" href="#tensorboard-profiling" title="Permalink to this headline">¶</a></h1>
+<p>The accuracy, loss, and graph from the 4 training epochs are shown below using TensorBoard. Different colors correspond to me restarting the training twice to demonstrate that the checkpoints are working.</p>
+<div class="figure align-center" id="id3" style="width: 75%">
+<a class="reference internal image-reference" href="_images/tensorboard_scalars.png"><img alt="_images/tensorboard_scalars.png" src="_images/tensorboard_scalars.png" style="width: 75%;" /></a>
+<p class="caption"><span class="caption-text"><strong>Figure 2.</strong> Accuracy and loss with TensorBoard</span></p>
+</div>
+<div class="figure align-center" id="id4" style="width: 75%">
+<a class="reference internal image-reference" href="_images/tensorboard_graph.png"><img alt="_images/tensorboard_graph.png" src="_images/tensorboard_graph.png" style="width: 75%;" /></a>
+<p class="caption"><span class="caption-text"><strong>Figure 3.</strong> Graph with TensorBoard</span></p>
+</div>
+<p>I also profile my CNN using TensorFlow’s <a class="reference external" href="https://stackoverflow.com/questions/34293714/can-i-measure-the-execution-time-of-individual-operations-with-tensorflow">timeline</a> object. This writes timings for each node of the graph to a json file. You can inspect it with Google Chrome, by going to <cite>chrome://tracing</cite> and clicking <cite>load</cite>. Here’s what it looks like.</p>
+<div class="figure align-center" id="id5" style="width: 90%">
+<a class="reference internal image-reference" href="_images/prof_tensorflow.png"><img alt="_images/prof_tensorflow.png" src="_images/prof_tensorflow.png" style="width: 90%;" /></a>
+<p class="caption"><span class="caption-text"><strong>Figure 4.</strong> Profiling with TensorFlow’s <cite>timeline</cite> and Google Chrome</span></p>
+</div>
+</div>
+<div class="section" id="instructions">
+<span id="deep-learn-instructions"></span><h1><a class="toc-backref" href="#id13">Instructions</a><a class="headerlink" href="#instructions" title="Permalink to this headline">¶</a></h1>
+<p>See the following for training the CNN at NERSC.</p>
+<div class="section" id="create-training-set">
+<h2><a class="toc-backref" href="#id14">Create Training Set</a><a class="headerlink" href="#create-training-set" title="Permalink to this headline">¶</a></h2>
+<ul class="simple">
+<li><code class="xref py py-mod docutils literal notranslate"><span class="pre">obiwan.dplearn.create_training</span></code> (source code: <a class="reference external" href="https://github.com/legacysurvey/obiwan/blob/master/py/obiwan/dplearn/create_training.py">create_training.py</a>) saves 64x64 pixels cutouts of each source to an HDF5 file, indexed by its unique tractor id. This writes one HDF5 file per brick for Data Releases, or one file per obiwan Monte Carlo simulation.</li>
+</ul>
+<p>Fake galaxies are designed to occupy the narrow region of parameter space we are interested in, but real galaxies do not. When building the real galaxy training set, real galaxies outside this parameter space are removed.</p>
+<p>There are millions of fake and real galaxy images, so I use mpi4py to scale to a few hundred compute nodes. About 1 million real galaxy examples can be created in an hour using 50 nodes. Use the following SLURM script:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>#SBATCH -p regular
+#SBATCH -N 50
+#SBATCH -t 01:00:00
+#SBATCH --account=desi
+#SBATCH -J train
+#SBATCH -L SCRATCH,project
+#SBATCH -C haswell
+
+let tasks=32*${SLURM_JOB_NUM_NODES}
+
+# NERSC / Cray / Cori / Cori KNL things
+export KMP_AFFINITY=disabled
+export MPICH_GNI_FORK_MODE=FULLCOPY
+export MKL_NUM_THREADS=1
+export OMP_NUM_THREADS=1
+
+srun -n ${tasks} -c 1 python create_training.py \
+     --which tractor --bricks_fn bricks.txt --nproc ${tasks}
+     --savedir /global/cscratch1/sd/kaylanb/obiwan_out/dr5_hdf5
+</pre></div>
+</div>
+<p>For fake galaxies, replace <strong>–which tractor</strong> with <strong>–which sim</strong>. The resulting HDF5 files are on at NERSC:</p>
+<ul class="simple">
+<li>real from DR5: /global/cscratch1/sd/kaylanb/obiwan_out/dr5_hdf5</li>
+<li>fake from Obiwan using DR5: /global/cscratch1/sd/kaylanb/obiwan_out/elg_dr5_coadds/hdf5</li>
+</ul>
+</div>
+<div class="section" id="split-train-test">
+<h2><a class="toc-backref" href="#id15">Split Train/Test</a><a class="headerlink" href="#split-train-test" title="Permalink to this headline">¶</a></h2>
+<ul class="simple">
+<li><a class="reference internal" href="_autosummary/obiwan.dplearn.split_testtrain.html#module-obiwan.dplearn.split_testtrain" title="obiwan.dplearn.split_testtrain"><code class="xref py py-mod docutils literal notranslate"><span class="pre">obiwan.dplearn.split_testtrain</span></code></a> (source code: <a class="reference external" href="https://github.com/legacysurvey/obiwan/blob/master/py/obiwan/dplearn/split_testtrain.py">split_testtrain.py</a>) randomly shuffles the real and fake galaxies in the above HDF5 files, splits this into 80% training and 20% test, then repackages the examples in numpy binary files.</li>
+</ul>
+<p>Use the same SLURM job as above, but with:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>srun -n ${tasks} -c 1 python split_testtrain.py \
+     --bricks_fn bricks.txt --nproc ${tasks} \
+     --real_dir /global/cscratch1/sd/kaylanb/obiwan_out/dr5_hdf5 \
+     --sim_dir /global/cscratch1/sd/kaylanb/obiwan_out/elg_dr5_coadds \
+     --save_dir /global/cscratch1/sd/kaylanb/obiwan_out/dr5_testtrain
+</pre></div>
+</div>
+<p>The resulting numpy files are on at NERSC:
+* /global/cscratch1/sd/kaylanb/obiwan_out/dr5_testtrain</p>
+<p>The training data are named <cite>[xy]train_[0-9]+.npy</cite> and have 512 <cite>64x64x6</cite> examples per file. The test data are named <cite>[xy]test_[0-9]+.npy</cite>.</p>
+</div>
+<div class="section" id="train">
+<h2><a class="toc-backref" href="#id16">Train</a><a class="headerlink" href="#train" title="Permalink to this headline">¶</a></h2>
+<ul>
+<li><p class="first"><code class="xref py py-mod docutils literal notranslate"><span class="pre">obiwan.dplearn.cnn</span></code> (source code: <a class="reference external" href="https://github.com/legacysurvey/obiwan/blob/master/py/obiwan/dplearn/cnn.py">cnn.py</a>) trains the CNN using TensorFlow. The following runs on a single Xeon Phi node using 68 threads (“srun” is not needed because this is a single node job):</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="ch">#!/bin/bash</span>
+<span class="c1">#SBATCH -N 1</span>
+<span class="c1">#SBATCH -C knl,quad,cache</span>
+<span class="c1">#SBATCH -p debug</span>
+<span class="c1">#SBATCH -J tf</span>
+<span class="c1">#SBATCH -t 00:30:00</span>
+
+<span class="n">module</span> <span class="n">load</span> <span class="n">tensorflow</span><span class="o">/</span><span class="n">intel</span><span class="o">-</span><span class="n">head</span>
+<span class="n">export</span> <span class="n">OMP_NUM_THREADS</span><span class="o">=</span><span class="mi">68</span>
+<span class="n">export</span> <span class="n">KMP_AFFINITY</span><span class="o">=</span><span class="s2">&quot;granularity=fine,verbose,compact,1,0&quot;</span>
+<span class="n">export</span> <span class="n">KMP_SETTINGS</span><span class="o">=</span><span class="mi">1</span>
+<span class="n">export</span> <span class="n">KMP_BLOCKTIME</span><span class="o">=</span><span class="mi">1</span>
+<span class="n">export</span> <span class="n">isKNL</span><span class="o">=</span><span class="n">yes</span>
+
+<span class="n">python</span> <span class="n">cnn</span><span class="o">.</span><span class="n">py</span> <span class="o">--</span><span class="n">outdir</span> <span class="o">/</span><span class="k">global</span><span class="o">/</span><span class="n">cscratch1</span><span class="o">/</span><span class="n">sd</span><span class="o">/</span><span class="n">kaylanb</span><span class="o">/</span><span class="n">obiwan_out</span><span class="o">/</span><span class="n">cnn</span>
+</pre></div>
+</div>
+</li>
+</ul>
+<p>This will write three sets of metadata:</p>
+<ul class="simple">
+<li>checkpoints: /global/cscratch1/sd/kaylanb/obiwan_out/cnn/<strong>ckpts</strong></li>
+<li>tensorboard logs: /global/cscratch1/sd/kaylanb/obiwan_out/cnn/<strong>logs</strong></li>
+<li>profiling: /global/cscratch1/sd/kaylanb/obiwan_out/cnn/<strong>prof</strong></li>
+</ul>
+<p>The CNN will restart from the most recent checkpoint file, if any exist.</p>
+</div>
+</div>
+<div class="section" id="more-examples">
+<span id="id1"></span><h1><a class="toc-backref" href="#id17">More Examples</a><a class="headerlink" href="#more-examples" title="Permalink to this headline">¶</a></h1>
+<p>Galaxies with <em>75th</em> perentile in brightness:</p>
+<div class="figure align-center" style="width: 600px">
+<a class="reference internal image-reference" href="_images/fake_real_mosaic_istart_64.png"><img alt="_images/fake_real_mosaic_istart_64.png" src="_images/fake_real_mosaic_istart_64.png" style="width: 600px;" /></a>
+</div>
+<p>Galaxies with <em>50th</em> perentile in brightness:</p>
+<div class="figure align-center" style="width: 600px">
+<a class="reference internal image-reference" href="_images/fake_real_mosaic_istart_112.png"><img alt="_images/fake_real_mosaic_istart_112.png" src="_images/fake_real_mosaic_istart_112.png" style="width: 600px;" /></a>
+</div>
+<p>Galaxies with <em>25th</em> perentile in brightness:</p>
+<div class="figure align-center" style="width: 600px">
+<a class="reference internal image-reference" href="_images/fake_real_mosaic_istart_208.png"><img alt="_images/fake_real_mosaic_istart_208.png" src="_images/fake_real_mosaic_istart_208.png" style="width: 600px;" /></a>
+</div>
+<p>Galaxies with <em>1st</em> percentile in brightness (<em>faintest</em> in the training set):</p>
+<div class="figure align-center" style="width: 600px">
+<a class="reference internal image-reference" href="_images/fake_real_mosaic_istart_254.png"><img alt="_images/fake_real_mosaic_istart_254.png" src="_images/fake_real_mosaic_istart_254.png" style="width: 600px;" /></a>
+</div>
+</div>
+
+
+    </div>
+      
+  </div>
+</div>
+<footer class="footer">
+  <div class="container">
+    <p class="pull-right">
+      <a href="#">Back to top</a>
+      
+    </p>
+    <p>
+        &copy; Copyright 2014-2018, Kaylan Burleigh, John Moustakas.<br/>
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.7.6.<br/>
+    </p>
+  </div>
+</footer>
+  </body>
+</html>

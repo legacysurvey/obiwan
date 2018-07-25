@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>Tutorials &#8212; obiwan 1.2.0 documentation</title>
+    <link rel="stylesheet" href="_static/bootstrap-sphinx.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script type="text/javascript" src="_static/js/jquery-1.11.0.min.js"></script>
+    <script type="text/javascript" src="_static/js/jquery-fix.js"></script>
+    <script type="text/javascript" src="_static/bootstrap-3.3.7/js/bootstrap.min.js"></script>
+    <script type="text/javascript" src="_static/bootstrap-sphinx.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+<meta charset='utf-8'>
+<meta http-equiv='X-UA-Compatible' content='IE=edge,chrome=1'>
+<meta name='viewport' content='width=device-width, initial-scale=1.0, maximum-scale=1'>
+<meta name="apple-mobile-web-app-capable" content="yes">
+
+  </head><body>
+
+  <div id="navbar" class="navbar navbar-default ">
+    <div class="container">
+      <div class="navbar-header">
+        <!-- .btn-navbar is used as the toggle for collapsed navbar content -->
+        <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".nav-collapse">
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+        </button>
+        <a class="navbar-brand" href="index.html">
+          Obiwan</a>
+        <span class="navbar-text navbar-version pull-left"><b>1.2.0</b></span>
+      </div>
+
+        <div class="collapse navbar-collapse nav-collapse">
+          <ul class="nav navbar-nav">
+            
+                <li><a href="api.html">API</a></li>
+                <li><a href="#">Tutorials</a></li>
+                <li><a href="deeplearning.html">Deep Learning</a></li>
+            
+            
+              <li class="dropdown globaltoc-container">
+  <a role="button"
+     id="dLabelGlobalToc"
+     data-toggle="dropdown"
+     data-target="#"
+     href="index.html">Pages <b class="caret"></b></a>
+  <ul class="dropdown-menu globaltoc"
+      role="menu"
+      aria-labelledby="dLabelGlobalToc"></ul>
+</li>
+              
+                <li class="dropdown">
+  <a role="button"
+     id="dLabelLocalToc"
+     data-toggle="dropdown"
+     data-target="#"
+     href="#">This Page <b class="caret"></b></a>
+  <ul class="dropdown-menu localtoc"
+      role="menu"
+      aria-labelledby="dLabelLocalToc"><ul>
+<li><a class="reference internal" href="#">Tutorials</a><ul>
+<li><a class="reference internal" href="#end-to-end-test-cases">End-to-End test cases</a></li>
+<li><a class="reference internal" href="#modeling-the-color-shape-and-redshift-of-elg-like-galaxies">Modeling the color, shape, and redshift of (ELG-like) galaxies</a></li>
+<li><a class="reference internal" href="#deep-learning">Deep Learning</a></li>
+<li><a class="reference internal" href="#test-region-10-deg2">Test Region: 10 deg2</a></li>
+<li><a class="reference internal" href="#correlation-functions">Correlation Functions</a></li>
+</ul>
+</li>
+</ul>
+</ul>
+</li>
+              
+            
+            
+              
+                
+              
+            
+            
+            
+            
+          </ul>
+
+          
+            
+<form class="navbar-form navbar-right" action="search.html" method="get">
+ <div class="form-group">
+  <input type="text" name="q" class="form-control" placeholder="Search" />
+ </div>
+  <input type="hidden" name="check_keywords" value="yes" />
+  <input type="hidden" name="area" value="default" />
+</form>
+          
+        </div>
+    </div>
+  </div>
+
+<div class="container">
+  <div class="row">
+    <div class="col-md-12 content">
+      
+  <div class="section" id="tutorials">
+<span id="id1"></span><h1>Tutorials<a class="headerlink" href="#tutorials" title="Permalink to this headline">¶</a></h1>
+<p>The following links are to the relevant sections of jupyter notebooks.</p>
+<div class="section" id="end-to-end-test-cases">
+<h2>End-to-End test cases<a class="headerlink" href="#end-to-end-test-cases" title="Permalink to this headline">¶</a></h2>
+<p>These show what our Continuous Intergration <cite>end-to-end</cite> tests are doing.</p>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="nb/TestCases.html">Travis continuation integration Test Cases</a></li>
+<li class="toctree-l1"><a class="reference internal" href="nb/TestCases.html#testcase_DR_z-(z-band,-200x200-pix-region,-real-galaxy-at-center)">testcase_DR_z (z-band, 200x200 pix region, real galaxy at center)</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="nb/TestCases.html#all_blobs-==-True-(fit-model-to-all-detected-sources)">all_blobs == True (fit model to all detected sources)</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="nb/TestCases.html#all_blobs-(coadds,-top-to-bottom:-image,-simulated-image,-and-residual)">all_blobs (coadds, top to bottom: image, simulated image, and residual)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="nb/TestCases.html#Early-coadds-(just-make-the-coadds,-don't-fit-models)">Early coadds (just make the coadds, don’t fit models)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="nb/TestCases.html#stars-(inject-stars-into-the-images)">stars (inject stars into the images)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="nb/TestCases.html#onedge-(inject-galaxies-on-the-edges-of-the-images,-how-good-is-best-fit-model?)">onedge (inject galaxies on the edges of the images, how good is best-fit model?)</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="nb/TestCases.html#all_blobs-==-False-(only-fit-models-inside-blobs-that-have-fake-sources)">all_blobs == False (only fit models inside blobs that have fake sources)</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="nb/TestCases.html#The-central-galaxy-is-real-and-was-not-modeled">The central galaxy is real and was not modeled</a></li>
+<li class="toctree-l3"><a class="reference internal" href="nb/TestCases.html#5-galaxies-but-only-4-blobs,-meaning-only-the-4-fake-ones-were-modeled">5 galaxies but only 4 blobs, meaning only the 4 fake ones were modeled</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="nb/TestCases.html#testcase_DR_grz-(Same-as-previous-testcase,-but-three-bands-(grz)-and-a-different-region)">testcase_DR_grz (Same as previous testcase, but three bands (grz) and a different region)</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="nb/TestCases.html#allblobs-==-True">allblobs == True</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="nb/TestCases.html#Many-sources-are-modeled,-not-just-the-4-fake-galaxies-near-center">Many sources are modeled, not just the 4 fake galaxies near center</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="nb/TestCases.html#allblobs-==-False">allblobs == False</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="nb/TestCases.html#blobs-are-more-extended,-so-less-sources-modeled,-but-still-more-than-the-4-fake-galaxies">blobs are more extended, so less sources modeled, but still more than the 4 fake galaxies</a></li>
+<li class="toctree-l3"><a class="reference internal" href="nb/TestCases.html#only-blobs-containing-fake-sources-are-modeled,-but-this-is-still-many-sources">only blobs containing fake sources are modeled, but this is still many sources</a></li>
+<li class="toctree-l3"><a class="reference internal" href="nb/TestCases.html#sim-sources-should-have-similar-flux-to-real-galaxy-at-center">sim sources should have similar flux to real galaxy at center</a></li>
+<li class="toctree-l3"><a class="reference internal" href="nb/TestCases.html#DECam">DECam</a></li>
+<li class="toctree-l3"><a class="reference internal" href="nb/TestCases.html#Mosaic,-90Prime">Mosaic, 90Prime</a></li>
+<li class="toctree-l3"><a class="reference internal" href="nb/TestCases.html#DECam">DECam</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="nb/TestCases.html#6''-separation-+-testcase_DR_z">6’’ separation + testcase_DR_z</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="nb/TestCases.html#allblobs-==-False">allblobs == False</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="nb/TestCases.html#Bug-in-Tractor,-3/5-sources-modeled-because-they-are-apparently-too-close-for-the-algorithm!">Bug in Tractor, 3/5 sources modeled because they are apparently too close for the algorithm!</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="nb/TestCases.html#allblobs-==-True">allblobs == True</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="nb/TestCases.html#Same-Bug-in-Tractor,-even-when-allblobs-(there-is-only-1-blob-anyway)">Same Bug in Tractor, even when allblobs (there is only 1 blob anyway)</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</div>
+</div>
+<div class="section" id="modeling-the-color-shape-and-redshift-of-elg-like-galaxies">
+<h2>Modeling the color, shape, and redshift of (ELG-like) galaxies<a class="headerlink" href="#modeling-the-color-shape-and-redshift-of-elg-like-galaxies" title="Permalink to this headline">¶</a></h2>
+<p>These show how we build of Gaussian Mixture model for galaxies we are intersted in.</p>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="nb/eBOSS_DESI_Priors.html">Model the color, size, and shape of real galaxies (ELG, star forming) sampled by DESI and eBOSS Target Selection</a></li>
+<li class="toctree-l1"><a class="reference internal" href="nb/eBOSS_DESI_Priors.html#eBOSS">eBOSS</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="nb/eBOSS_DESI_Priors.html#Exploratory-Data-analysis">Exploratory Data analysis</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="nb/eBOSS_DESI_Priors.html#DEV-are-larger-than-EXP">DEV are larger than EXP</a></li>
+<li class="toctree-l3"><a class="reference internal" href="nb/eBOSS_DESI_Priors.html#DEV-are-brighter-than-EXP">DEV are brighter than EXP</a></li>
+<li class="toctree-l3"><a class="reference internal" href="nb/eBOSS_DESI_Priors.html#NGC-is-incomplete">NGC is incomplete</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="nb/eBOSS_DESI_Priors.html#Model-(only-use-SGC-data)">Model (only use SGC data)</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="nb/eBOSS_DESI_Priors.html#Colors,-sizes,-shapes">Colors, sizes, shapes</a></li>
+<li class="toctree-l3"><a class="reference internal" href="nb/eBOSS_DESI_Priors.html#Cannot-model-power-law-(g-mag-histogram)-with-Gaussians">Cannot model power law (g-mag histogram) with Gaussians</a></li>
+<li class="toctree-l3"><a class="reference internal" href="nb/eBOSS_DESI_Priors.html#TS-box-with-padding-(0.5-mag)">TS box with padding (0.5 mag)</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="nb/eBOSS_DESI_Priors.html#Add-DR3-Deep2-to-Model">Add DR3-Deep2 to Model</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="nb/eBOSS_DESI_Priors.html#DR3-Deep2-for-outside-the-TS-box">DR3-Deep2 for outside the TS box</a></li>
+<li class="toctree-l3"><a class="reference internal" href="nb/eBOSS_DESI_Priors.html#DR3-Deep2-reproduces-SGC-data-when-cut-to-TS-box!">DR3-Deep2 reproduces SGC data when cut to TS box!</a></li>
+<li class="toctree-l3"><a class="reference internal" href="nb/eBOSS_DESI_Priors.html#Redshift-correlations-also-reproduced!">Redshift correlations also reproduced!</a></li>
+<li class="toctree-l3"><a class="reference internal" href="nb/eBOSS_DESI_Priors.html#DEV-from-DR3-Deep2-span-redshifts-[0,2]-and-0.2-mag-deeper-than-SGC-g-mag,-so-will-can-model-this-even-though-just-79-data-points">DEV from DR3-Deep2 span redshifts [0,2] and 0.2 mag deeper than SGC g-mag, so will can model this even though just 79 data points</a></li>
+<li class="toctree-l3"><a class="reference internal" href="nb/eBOSS_DESI_Priors.html#Same-padding-(0.2-mag)-for-EXP">Same padding (0.2 mag) for EXP</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="nb/eBOSS_DESI_Priors.html#4-Samples-=-Model-(EXP/DEV-and-SGC/DR3-Deep2)">4 Samples = Model (EXP/DEV and SGC/DR3-Deep2)</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="nb/eBOSS_DESI_Priors.html#Model-for-EXP">Model for EXP</a></li>
+<li class="toctree-l3"><a class="reference internal" href="nb/eBOSS_DESI_Priors.html#Model-for-DEV">Model for DEV</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="nb/eBOSS_DESI_Priors.html#n(z)-for-eBOSS-ELGs">n(z) for eBOSS ELGs</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="nb/eBOSS_DESI_Priors.html#n(z)-weighted-by-spectroscopic-completness-(1/TSR)">n(z) weighted by spectroscopic completness (1/TSR)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="nb/eBOSS_DESI_Priors.html#Gaussian-Mixture-for-n(z)">Gaussian Mixture for n(z)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="nb/eBOSS_DESI_Priors.html#10-components-reproduce-true-n(z)">10 components reproduce true n(z)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="nb/eBOSS_DESI_Priors.html#Save-GM-model">Save GM model</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="nb/eBOSS_DESI_Priors.html#Draw-n(z)-&amp;-Query-KDTree-for-nearest-redshift-in-sample">Draw n(z) &amp; Query KDTree for nearest redshift in sample</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="nb/eBOSS_DESI_Priors.html#Nearest-redshifts-are-nearly-all-within-~-0.02">Nearest redshifts are nearly all within ~ 0.02</a></li>
+<li class="toctree-l3"><a class="reference internal" href="nb/eBOSS_DESI_Priors.html#Correct-fraction-of-DEV-~-10%">Correct fraction of DEV ~ 10%</a></li>
+<li class="toctree-l3"><a class="reference internal" href="nb/eBOSS_DESI_Priors.html#EXP/DEV-have-correct-color,-shape,-size-AND-eBOSS-n(z)">EXP/DEV have correct color, shape, size AND eBOSS n(z)</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="nb/eBOSS_DESI_Priors.html#DESI">DESI</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="nb/eBOSS_DESI_Priors.html#Use-DR5-data">Use DR5 data</a></li>
+<li class="toctree-l2"><a class="reference internal" href="nb/eBOSS_DESI_Priors.html#in-TS-box">in TS box</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="nb/eBOSS_DESI_Priors.html#Properties-!=-func(TS-box)">Properties != func(TS box)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="nb/eBOSS_DESI_Priors.html#DEV-are-larger-and-brighter-than-EXP">DEV are larger and brighter than EXP</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="nb/eBOSS_DESI_Priors.html#Model-as-Gaussian-Mixture">Model as Gaussian Mixture</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="nb/eBOSS_DESI_Priors.html#Fit-model">Fit model</a></li>
+<li class="toctree-l3"><a class="reference internal" href="nb/eBOSS_DESI_Priors.html#Minimum-components-for-good-model-is-8-(don't-want-to-overfit)">Minimum components for good model is 8 (don’t want to overfit)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="nb/eBOSS_DESI_Priors.html#Model-in-TS-region">Model in TS region</a></li>
+<li class="toctree-l3"><a class="reference internal" href="nb/eBOSS_DESI_Priors.html#Redshift-correlations">Redshift correlations</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="nb/eBOSS_DESI_Priors.html#Sample-=-Model">Sample = Model</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="nb/eBOSS_DESI_Priors.html#Starting-sample-of-10k">Starting sample of 10k</a></li>
+<li class="toctree-l3"><a class="reference internal" href="nb/eBOSS_DESI_Priors.html#Resample-until-10k-within-redshift-and-size-limits">Resample until 10k within redshift and size limits</a></li>
+<li class="toctree-l3"><a class="reference internal" href="nb/eBOSS_DESI_Priors.html#The-GM-mixture-produced-a-sample-that-was-then-filtered-to-our-redshift-and-mag-limits">The GM mixture produced a sample that was then filtered to our redshift and mag limits</a></li>
+<li class="toctree-l3"><a class="reference internal" href="nb/eBOSS_DESI_Priors.html#Save-the-model-produced-sample">Save the model produced sample</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="nb/eBOSS_DESI_Priors.html#Model-DEV">Model DEV</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="nb/eBOSS_DESI_Priors.html#Fit-Mixture">Fit Mixture</a></li>
+<li class="toctree-l3"><a class="reference internal" href="nb/eBOSS_DESI_Priors.html#Cannot-build-a-good-model,-simply-not-nough-DEV-data-points">Cannot build a good model, simply not nough DEV data points</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="nb/eBOSS_DESI_Priors.html#Model-the-DESI-n(z)">Model the DESI n(z)</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="nb/eBOSS_DESI_Priors.html#100,000-random-draws-from-sanches-&amp;-kirkby,-w/out-replacement">100,000 random draws from sanches &amp; kirkby, w/out replacement</a></li>
+<li class="toctree-l3"><a class="reference internal" href="nb/eBOSS_DESI_Priors.html#Fit-Gaussian-Mixture">Fit Gaussian Mixture</a></li>
+<li class="toctree-l3"><a class="reference internal" href="nb/eBOSS_DESI_Priors.html#12-compoents-to-intentionally-overfit-(we-want-the-exact-n(z))">12 compoents to intentionally overfit (we want the exact n(z))</a></li>
+<li class="toctree-l3"><a class="reference internal" href="nb/eBOSS_DESI_Priors.html#Save-the-model">Save the model</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="nb/eBOSS_DESI_Priors.html#Build-our-final-sample-(from-the-DR3-Deep2-and-n(z)-model)">Build our final sample (from the DR3-Deep2 and n(z) model)</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="nb/eBOSS_DESI_Priors.html#Final-sample-has-DR3-Deep2-color,-shape,-size-AND-DESI-n(z)">Final sample has DR3-Deep2 color, shape, size AND DESI n(z)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="nb/eBOSS_DESI_Priors.html#42%-is-in-the-TS-box">42% is in the TS box</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="nb/eBOSS_DESI_Priors.html#Cosmos-Randoms">Cosmos Randoms</a></li>
+</ul>
+</div>
+</div>
+<div class="section" id="deep-learning">
+<h2>Deep Learning<a class="headerlink" href="#deep-learning" title="Permalink to this headline">¶</a></h2>
+<p>Read about the project <a class="reference internal" href="deeplearning.html"><span class="doc">here</span></a>. Obiwan creates millions of images of fake galaxies. If they are representative fo real galaxies, a Neural Network should not be able to tell them apart.</p>
+<p>Example code is below.</p>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="nb/CNN.html">Visualize the training data</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="nb/CNN.html#read-the-hdf5-files">read the hdf5 files</a></li>
+<li class="toctree-l2"><a class="reference internal" href="nb/CNN.html#For-each-sim-mag_g,-draw-the-nearest-dr5-mag_g,-without-replacements">For each sim mag_g, draw the nearest dr5 mag_g, without replacements</a></li>
+<li class="toctree-l2"><a class="reference internal" href="nb/CNN.html#Mosaic-of-training-images">Mosaic of training images</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="nb/CNN.html#Load-training-data-(.npy-files-created-with-&quot;split_traintest.py&quot;-script)">Load training data (.npy files created with “split_traintest.py” script)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="nb/CNN.html#Build-the-CNN">Build the CNN</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="nb/CNN.html#Layers-(check-that-size-of-each-layer-makes-sense)">Layers (check that size of each layer makes sense)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="nb/CNN.html#Train-(4-epochs)">Train (4 epochs)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="nb/CNN.html#Restart-from-checkpoints">Restart from checkpoints</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="nb/CNN.html#Real-vs.-Fake-galaxies-in-TS-box">Real vs. Fake galaxies in TS box</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="nb/CNN.html#Real-galaxies-are-brighter">Real galaxies are brighter</a></li>
+<li class="toctree-l2"><a class="reference internal" href="nb/CNN.html#apply-cuts-at-bright-end">apply cuts at bright end</a></li>
+</ul>
+</li>
+</ul>
+</div>
+</div>
+<div class="section" id="test-region-10-deg2">
+<h2>Test Region: 10 deg2<a class="headerlink" href="#test-region-10-deg2" title="Permalink to this headline">¶</a></h2>
+<p>Look at the outputs from the <a class="reference internal" href="howto/PRODUCTION_RUN.html#elg-9deg2-ra175"><span class="std std-ref">first test run</span></a> on 10 deg2 of sky.</p>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="nb/10deg2_region.html">10 deg2 Test Region</a></li>
+<li class="toctree-l1"><a class="reference internal" href="nb/10deg2_region.html#Sources-are-clustered-in-the-Data-Base">Sources are clustered in the Data Base</a></li>
+<li class="toctree-l1"><a class="reference internal" href="nb/10deg2_region.html#Recovered-sources-are-within-1-arcsec">Recovered sources are within 1 arcsec</a></li>
+<li class="toctree-l1"><a class="reference internal" href="nb/10deg2_region.html#Brightness-distribution-of-Missed,-Recovered,-and-Real-sources">Brightness distribution of Missed, Recovered, and Real sources</a></li>
+<li class="toctree-l1"><a class="reference internal" href="nb/10deg2_region.html#Missed-or-Recovered-only-depends-on-source-brightness">Missed or Recovered only depends on source brightness</a></li>
+<li class="toctree-l1"><a class="reference internal" href="nb/10deg2_region.html#Truth---Measured-(binned-by-magnitude)">Truth - Measured (binned by magnitude)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="nb/10deg2_region.html#Recovered-sources-are-all-photometric-(flux-&gt;-0,-ivar-&gt;-0,-allmaks)">Recovered sources are all photometric (flux &gt; 0, ivar &gt; 0, allmaks)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="nb/10deg2_region.html#Recovered-sources-by-&quot;type&quot;">Recovered sources by “type”</a></li>
+<li class="toctree-l1"><a class="reference internal" href="nb/10deg2_region.html#Depth-(fraction-recovered-versus-mag)">Depth (fraction recovered versus mag)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="nb/10deg2_region.html#Depth-2-(fraction-recovered-by-&quot;type&quot;)">Depth 2 (fraction recovered by “type”)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="nb/10deg2_region.html#Visualize-Real-vs.-Recovered-sources">Visualize Real vs. Recovered sources</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="nb/10deg2_region.html#Real">Real</a></li>
+<li class="toctree-l2"><a class="reference internal" href="nb/10deg2_region.html#Recovered">Recovered</a></li>
+<li class="toctree-l2"><a class="reference internal" href="nb/10deg2_region.html#Real-vs.-Recovered-grouped-by-g-mag">Real vs. Recovered grouped by g-mag</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="nb/10deg2_region.html#Properties-of-Recovered-sources">Properties of Recovered sources</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="nb/10deg2_region.html#Recovered-!=-func(-rhalf-)">Recovered != func( rhalf )</a></li>
+<li class="toctree-l2"><a class="reference internal" href="nb/10deg2_region.html#Huge-scatter-in-True/Measured-rhalf">Huge scatter in True/Measured rhalf</a></li>
+<li class="toctree-l2"><a class="reference internal" href="nb/10deg2_region.html#Pairplot-(hue=-Recoverec)">Pairplot (hue= Recoverec)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="nb/10deg2_region.html#By-not-adding-DEV-galaxies,-I-put-into-too-many-EXP">By not adding DEV galaxies, I put into too many EXP</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="nb/10deg2_region.html#Reocvered-vs.-Missed">Reocvered vs. Missed</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="nb/10deg2_region.html#TS-box">TS box</a></li>
+<li class="toctree-l2"><a class="reference internal" href="nb/10deg2_region.html#Redshift">Redshift</a></li>
+<li class="toctree-l2"><a class="reference internal" href="nb/10deg2_region.html#TS-box-colorcoded-by-Redshift">TS box colorcoded by Redshift</a></li>
+</ul>
+</li>
+</ul>
+</div>
+</div>
+<div class="section" id="correlation-functions">
+<h2>Correlation Functions<a class="headerlink" href="#correlation-functions" title="Permalink to this headline">¶</a></h2>
+<p>We use <a class="reference external" href="https://github.com/bccp/nbodykit">nbodykit</a> to compute correlation functions using the randoms generated by obiwan.</p>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="nb/AngCorr_Func.html">Correlation Functions with Nbodykit</a></li>
+<li class="toctree-l1"><a class="reference internal" href="nb/AngCorr_Func.html#Randoms-are-the-Recovered-sources">Randoms are the Recovered sources</a></li>
+<li class="toctree-l1"><a class="reference internal" href="nb/AngCorr_Func.html#Angular-Correlation-Function">Angular Correlation Function</a></li>
+</ul>
+</div>
+</div>
+</div>
+
+
+    </div>
+      
+  </div>
+</div>
+<footer class="footer">
+  <div class="container">
+    <p class="pull-right">
+      <a href="#">Back to top</a>
+      
+    </p>
+    <p>
+        &copy; Copyright 2014-2018, Kaylan Burleigh, John Moustakas.<br/>
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.7.6.<br/>
+    </p>
+  </div>
+</footer>
+  </body>
+</html>

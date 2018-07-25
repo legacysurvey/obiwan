@@ -1,0 +1,603 @@
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>obiwan.kenobi &#8212; obiwan 1.2.0 documentation</title>
+    <link rel="stylesheet" href="../_static/bootstrap-sphinx.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script type="text/javascript" src="../_static/js/jquery-1.11.0.min.js"></script>
+    <script type="text/javascript" src="../_static/js/jquery-fix.js"></script>
+    <script type="text/javascript" src="../_static/bootstrap-3.3.7/js/bootstrap.min.js"></script>
+    <script type="text/javascript" src="../_static/bootstrap-sphinx.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+<meta charset='utf-8'>
+<meta http-equiv='X-UA-Compatible' content='IE=edge,chrome=1'>
+<meta name='viewport' content='width=device-width, initial-scale=1.0, maximum-scale=1'>
+<meta name="apple-mobile-web-app-capable" content="yes">
+
+  </head><body>
+
+  <div id="navbar" class="navbar navbar-default ">
+    <div class="container">
+      <div class="navbar-header">
+        <!-- .btn-navbar is used as the toggle for collapsed navbar content -->
+        <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".nav-collapse">
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+        </button>
+        <a class="navbar-brand" href="../index.html">
+          Obiwan</a>
+        <span class="navbar-text navbar-version pull-left"><b>1.2.0</b></span>
+      </div>
+
+        <div class="collapse navbar-collapse nav-collapse">
+          <ul class="nav navbar-nav">
+            
+                <li><a href="../api.html">API</a></li>
+                <li><a href="../tutorials.html">Tutorials</a></li>
+                <li><a href="../deeplearning.html">Deep Learning</a></li>
+            
+            
+              <li class="dropdown globaltoc-container">
+  <a role="button"
+     id="dLabelGlobalToc"
+     data-toggle="dropdown"
+     data-target="#"
+     href="../index.html">Pages <b class="caret"></b></a>
+  <ul class="dropdown-menu globaltoc"
+      role="menu"
+      aria-labelledby="dLabelGlobalToc"></ul>
+</li>
+              
+                <li class="dropdown">
+  <a role="button"
+     id="dLabelLocalToc"
+     data-toggle="dropdown"
+     data-target="#"
+     href="#">This Page <b class="caret"></b></a>
+  <ul class="dropdown-menu localtoc"
+      role="menu"
+      aria-labelledby="dLabelLocalToc"><ul>
+<li><a class="reference internal" href="#">obiwan.kenobi</a></li>
+</ul>
+</ul>
+</li>
+              
+            
+            
+              
+                
+              
+            
+            
+            
+            
+          </ul>
+
+          
+            
+<form class="navbar-form navbar-right" action="../search.html" method="get">
+ <div class="form-group">
+  <input type="text" name="q" class="form-control" placeholder="Search" />
+ </div>
+  <input type="hidden" name="check_keywords" value="yes" />
+  <input type="hidden" name="area" value="default" />
+</form>
+          
+        </div>
+    </div>
+  </div>
+
+<div class="container">
+  <div class="row">
+    <div class="col-md-12 content">
+      
+  <div class="section" id="module-obiwan.kenobi">
+<span id="obiwan-kenobi"></span><h1>obiwan.kenobi<a class="headerlink" href="#module-obiwan.kenobi" title="Permalink to this headline">¶</a></h1>
+<p>The Monte Carlo code that adds fake galaxiesto images from the Legacy Survey</p>
+<p class="rubric">Classes</p>
+<table border="1" class="longtable docutils">
+<colgroup>
+<col width="10%" />
+<col width="90%" />
+</colgroup>
+<tbody valign="top">
+<tr class="row-odd"><td><a class="reference internal" href="#obiwan.kenobi.BuildStamp" title="obiwan.kenobi.BuildStamp"><code class="xref py py-obj docutils literal notranslate"><span class="pre">BuildStamp</span></code></a>(tim[,&nbsp;seed,&nbsp;camera,&nbsp;gain,&nbsp;exptime])</td>
+<td>Does the drawing of simulated sources on a single exposure</td>
+</tr>
+</tbody>
+</table>
+<p class="rubric">Functions</p>
+<table border="1" class="longtable docutils">
+<colgroup>
+<col width="10%" />
+<col width="90%" />
+</colgroup>
+<tbody valign="top">
+<tr class="row-odd"><td><a class="reference internal" href="#obiwan.kenobi.build_simcat" title="obiwan.kenobi.build_simcat"><code class="xref py py-obj docutils literal notranslate"><span class="pre">build_simcat</span></code></a>([Samp,&nbsp;brickwcs,&nbsp;meta])</td>
+<td>Creates the simulated source catalog for a given brick (not CCD).</td>
+</tr>
+<tr class="row-even"><td><a class="reference internal" href="#obiwan.kenobi.create_ith_simcat" title="obiwan.kenobi.create_ith_simcat"><code class="xref py py-obj docutils literal notranslate"><span class="pre">create_ith_simcat</span></code></a>([d])</td>
+<td>Write ‘simcat’ and ‘skipped_ids’ tables for a given sample of sources</td>
+</tr>
+<tr class="row-odd"><td><a class="reference internal" href="#obiwan.kenobi.create_metadata" title="obiwan.kenobi.create_metadata"><code class="xref py py-obj docutils literal notranslate"><span class="pre">create_metadata</span></code></a>([kwargs])</td>
+<td>fits_table with configuration-like params for the simulated sources</td>
+</tr>
+<tr class="row-even"><td><a class="reference internal" href="#obiwan.kenobi.do_ith_cleanup" title="obiwan.kenobi.do_ith_cleanup"><code class="xref py py-obj docutils literal notranslate"><span class="pre">do_ith_cleanup</span></code></a>([d])</td>
+<td>Moves all obiwan+legacypipe outputs to a new directory stucture</td>
+</tr>
+<tr class="row-odd"><td><a class="reference internal" href="#obiwan.kenobi.do_one_chunk" title="obiwan.kenobi.do_one_chunk"><code class="xref py py-obj docutils literal notranslate"><span class="pre">do_one_chunk</span></code></a>([d])</td>
+<td>Runs the legacypipe/Tractor pipeline on images with simulated sources</td>
+</tr>
+<tr class="row-even"><td><code class="xref py py-obj docutils literal notranslate"><span class="pre">dobash</span></code>(cmd)</td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><a class="reference internal" href="#obiwan.kenobi.flag_nearest_neighbors" title="obiwan.kenobi.flag_nearest_neighbors"><code class="xref py py-obj docutils literal notranslate"><span class="pre">flag_nearest_neighbors</span></code></a>(Samp[,&nbsp;radius_in_deg])</td>
+<td>Returns Sample indices to keep (have &gt; dist separations) and indices to skip</td>
+</tr>
+<tr class="row-even"><td><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_checkpoint_fn</span></code>(outdir,&nbsp;brick,&nbsp;rowstart)</td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><a class="reference internal" href="#obiwan.kenobi.get_e1_e2" title="obiwan.kenobi.get_e1_e2"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_e1_e2</span></code></a>(q,&nbsp;beta)</td>
+<td>Given minor to major axis ratio (q) and postion angle (beta), Returns e1,e2 tuple</td>
+</tr>
+<tr class="row-even"><td><a class="reference internal" href="#obiwan.kenobi.get_ellip" title="obiwan.kenobi.get_ellip"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_ellip</span></code></a>(q)</td>
+<td>Given minor to major axis ratio (q) Returns ellipticity</td>
+</tr>
+<tr class="row-odd"><td><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_fnsuffix</span></code>(**kwargs)</td>
+<td></td>
+</tr>
+<tr class="row-even"><td><a class="reference internal" href="#obiwan.kenobi.get_parser" title="obiwan.kenobi.get_parser"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_parser</span></code></a>()</td>
+<td>return parser object, tells it what options to look for options can come from a list of strings or command line</td>
+</tr>
+<tr class="row-odd"><td><a class="reference internal" href="#obiwan.kenobi.get_runbrick_setup" title="obiwan.kenobi.get_runbrick_setup"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_runbrick_setup</span></code></a>(**kwargs)</td>
+<td>Convert runbrick.py cmd line options into <cite>**kwargs</cite> for run_brick()</td>
+</tr>
+<tr class="row-even"><td><a class="reference internal" href="#obiwan.kenobi.get_sample" title="obiwan.kenobi.get_sample"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_sample</span></code></a>(objtype,&nbsp;brick,&nbsp;randoms_db[,&nbsp;…])</td>
+<td>Gets all simulated randoms for a brick from PSQl db, and applies all relevant cuts</td>
+</tr>
+<tr class="row-odd"><td><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_skip_ids</span></code>(decals_sim_dir,&nbsp;brickname,&nbsp;objtype)</td>
+<td></td>
+</tr>
+<tr class="row-even"><td><a class="reference internal" href="#obiwan.kenobi.get_srcimg_invvar" title="obiwan.kenobi.get_srcimg_invvar"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_srcimg_invvar</span></code></a>(stamp_ivar,&nbsp;img_ivar)</td>
+<td>stamp_ivar, img_ivar – galsim Image objects</td>
+</tr>
+<tr class="row-odd"><td><code class="xref py py-obj docutils literal notranslate"><span class="pre">imshow_stamp</span></code>(stamp[,&nbsp;fn,&nbsp;galsimobj])</td>
+<td></td>
+</tr>
+<tr class="row-even"><td><a class="reference internal" href="#obiwan.kenobi.ivar_for_galaxy" title="obiwan.kenobi.ivar_for_galaxy"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ivar_for_galaxy</span></code></a>(gal,&nbsp;nano2e)</td>
+<td>Adds gaussian noise to perfect source</td>
+</tr>
+<tr class="row-odd"><td><code class="xref py py-obj docutils literal notranslate"><span class="pre">ivar_to_var</span></code>(ivar[,&nbsp;nano2e,&nbsp;camera])</td>
+<td></td>
+</tr>
+<tr class="row-even"><td><a class="reference internal" href="#obiwan.kenobi.main" title="obiwan.kenobi.main"><code class="xref py py-obj docutils literal notranslate"><span class="pre">main</span></code></a>([args])</td>
+<td>Main routine which parses the optional inputs.</td>
+</tr>
+<tr class="row-odd"><td><a class="reference internal" href="#obiwan.kenobi.noise_for_galaxy" title="obiwan.kenobi.noise_for_galaxy"><code class="xref py py-obj docutils literal notranslate"><span class="pre">noise_for_galaxy</span></code></a>(gal,&nbsp;nano2e)</td>
+<td>Returns numpy array of noise in Img count units for gal in image cnt units</td>
+</tr>
+<tr class="row-even"><td><code class="xref py py-obj docutils literal notranslate"><span class="pre">plot_radial_profs</span></code>(fn,&nbsp;profs)</td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><a class="reference internal" href="#obiwan.kenobi.ptime" title="obiwan.kenobi.ptime"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ptime</span></code></a>(text,&nbsp;t0)</td>
+<td>Timer</td>
+</tr>
+<tr class="row-even"><td><code class="xref py py-obj docutils literal notranslate"><span class="pre">read_dict</span></code>(fn)</td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><code class="xref py py-obj docutils literal notranslate"><span class="pre">saturation_e</span></code>(camera)</td>
+<td></td>
+</tr>
+<tr class="row-even"><td><a class="reference internal" href="#obiwan.kenobi.write_dict" title="obiwan.kenobi.write_dict"><code class="xref py py-obj docutils literal notranslate"><span class="pre">write_dict</span></code></a>(fn,&nbsp;d)</td>
+<td>d – dictionary</td>
+</tr>
+</tbody>
+</table>
+<dl class="class">
+<dt id="obiwan.kenobi.BuildStamp">
+<em class="property">class </em><code class="descclassname">obiwan.kenobi.</code><code class="descname">BuildStamp</code><span class="sig-paren">(</span><em>tim</em>, <em>seed=0</em>, <em>camera=None</em>, <em>gain=None</em>, <em>exptime=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/obiwan/kenobi.html#BuildStamp"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obiwan.kenobi.BuildStamp" title="Permalink to this definition">¶</a></dt>
+<dd><p>Does the drawing of simulated sources on a single exposure</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>tim</strong> – Tractor Image Object for a specific CCD</li>
+<li><strong>gain</strong> – gain of the CCD</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<dl class="attribute">
+<dt id="obiwan.kenobi.BuildStamp.band">
+<code class="descname">band</code><a class="headerlink" href="#obiwan.kenobi.BuildStamp.band" title="Permalink to this definition">¶</a></dt>
+<dd><p>g,r,z</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="obiwan.kenobi.BuildStamp.camera">
+<code class="descname">camera</code><a class="headerlink" href="#obiwan.kenobi.BuildStamp.camera" title="Permalink to this definition">¶</a></dt>
+<dd><p>‘decam’, ‘mosaic’, ‘90prime’</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="obiwan.kenobi.BuildStamp.gsparams">
+<code class="descname">gsparams</code><a class="headerlink" href="#obiwan.kenobi.BuildStamp.gsparams" title="Permalink to this definition">¶</a></dt>
+<dd><p>galsim object that configures how accurate simulated source will be</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="obiwan.kenobi.BuildStamp.gsdeviate">
+<code class="descname">gsdeviate</code><a class="headerlink" href="#obiwan.kenobi.BuildStamp.gsdeviate" title="Permalink to this definition">¶</a></dt>
+<dd><p>galsim object that configures its random number generator</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="obiwan.kenobi.BuildStamp.wcs">
+<code class="descname">wcs</code><a class="headerlink" href="#obiwan.kenobi.BuildStamp.wcs" title="Permalink to this definition">¶</a></dt>
+<dd><p>WCS from tim</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="obiwan.kenobi.BuildStamp.psf">
+<code class="descname">psf</code><a class="headerlink" href="#obiwan.kenobi.BuildStamp.psf" title="Permalink to this definition">¶</a></dt>
+<dd><p>psf from tim</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="obiwan.kenobi.BuildStamp.galsim_wcs">
+<code class="descname">galsim_wcs</code><a class="headerlink" href="#obiwan.kenobi.BuildStamp.galsim_wcs" title="Permalink to this definition">¶</a></dt>
+<dd><p>wcs repackaged into galsim compatible object</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="obiwan.kenobi.BuildStamp.zpscale">
+<code class="descname">zpscale</code><a class="headerlink" href="#obiwan.kenobi.BuildStamp.zpscale" title="Permalink to this definition">¶</a></dt>
+<dd><p>conversion factor ‘nanomaggies’ to ‘Image units used by Legacypipe’, which
+are ADU/sec for DECam and e/sec for Bass,MzLS</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="obiwan.kenobi.BuildStamp.nano2e">
+<code class="descname">nano2e</code><a class="headerlink" href="#obiwan.kenobi.BuildStamp.nano2e" title="Permalink to this definition">¶</a></dt>
+<dd><p>conversion factor ‘nanomaggies’ to ‘e-‘</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="obiwan.kenobi.BuildStamp.convolve_galaxy">
+<code class="descname">convolve_galaxy</code><span class="sig-paren">(</span><em>gal</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/obiwan/kenobi.html#BuildStamp.convolve_galaxy"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obiwan.kenobi.BuildStamp.convolve_galaxy" title="Permalink to this definition">¶</a></dt>
+<dd><p>Convolve the object with the PSF and then draw it.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="obiwan.kenobi.BuildStamp.elg">
+<code class="descname">elg</code><span class="sig-paren">(</span><em>obj</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/obiwan/kenobi.html#BuildStamp.elg"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obiwan.kenobi.BuildStamp.elg" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create an ELG (disk-like) galaxy.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="obiwan.kenobi.BuildStamp.lrg">
+<code class="descname">lrg</code><span class="sig-paren">(</span><em>obj</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/obiwan/kenobi.html#BuildStamp.lrg"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obiwan.kenobi.BuildStamp.lrg" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create an LRG just like did for ELG</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="obiwan.kenobi.BuildStamp.qso">
+<code class="descname">qso</code><span class="sig-paren">(</span><em>obj</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/obiwan/kenobi.html#BuildStamp.qso"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obiwan.kenobi.BuildStamp.qso" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create a QSO just like a star</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="obiwan.kenobi.BuildStamp.setlocal">
+<code class="descname">setlocal</code><span class="sig-paren">(</span><em>obj</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/obiwan/kenobi.html#BuildStamp.setlocal"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obiwan.kenobi.BuildStamp.setlocal" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the pixel positions, local wcs, local PSF.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="obiwan.kenobi.BuildStamp.star">
+<code class="descname">star</code><span class="sig-paren">(</span><em>obj</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/obiwan/kenobi.html#BuildStamp.star"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obiwan.kenobi.BuildStamp.star" title="Permalink to this definition">¶</a></dt>
+<dd><p>Render a star (PSF).</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="function">
+<dt id="obiwan.kenobi.build_simcat">
+<code class="descclassname">obiwan.kenobi.</code><code class="descname">build_simcat</code><span class="sig-paren">(</span><em>Samp=None</em>, <em>brickwcs=None</em>, <em>meta=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/obiwan/kenobi.html#build_simcat"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obiwan.kenobi.build_simcat" title="Permalink to this definition">¶</a></dt>
+<dd><p>Creates the simulated source catalog for a given brick (not CCD).</p>
+<dl class="docutils">
+<dt>The WCS for the brick (not CCD) is used to convert ra,dec of source</dt>
+<dd>to x,y pixel location in brickspace</dd>
+</dl>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>Samp</strong> – fits_table for the properties of sources in the brick
+usually a subset of all sources in the brick determined by
+rowstart (rs)</li>
+<li><strong>brickwcs</strong> – WCS object for the brick</li>
+<li><strong>meta</strong> – ‘metacat’ table
+fits_table with configuration-like params for the simulated sources</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">tuple of
+cat:
+skipping_ids:</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="obiwan.kenobi.create_ith_simcat">
+<code class="descclassname">obiwan.kenobi.</code><code class="descname">create_ith_simcat</code><span class="sig-paren">(</span><em>d=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/obiwan/kenobi.html#create_ith_simcat"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obiwan.kenobi.create_ith_simcat" title="Permalink to this definition">¶</a></dt>
+<dd><p>Write ‘simcat’ and ‘skipped_ids’ tables for a given sample of sources</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>d</strong> – {‘Samp’: fits_table for the properties of sources in the brick
+‘brickwcs’: WCS object for the brick
+‘metacat’: fits_table with configuration params for the simulated sources
+}</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">Nothing, saves the ‘simcat’ and ‘skipped_ids’ tables
+Adds ‘simcat’ table to dict ‘d’</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="obiwan.kenobi.create_metadata">
+<code class="descclassname">obiwan.kenobi.</code><code class="descname">create_metadata</code><span class="sig-paren">(</span><em>kwargs=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/obiwan/kenobi.html#create_metadata"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obiwan.kenobi.create_metadata" title="Permalink to this definition">¶</a></dt>
+<dd><p>fits_table with configuration-like params for the simulated sources</p>
+<p>TODO: Should metacat table have a rowstart column?
+TODO: One metacat table per brick, instead of one per <cite>rs*</cite> directory?</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>kwargs</strong> – configuration-like params for the simulated sources
+{‘brickname’: which chunk of sky
+‘objtype’: star,elg,lrg,qso
+‘nobj’: number of simulated sources for this run
+}</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">Nothing
+writes the ‘metacat’ fits_table to disk and stores it
+in the kwargs input arg</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="obiwan.kenobi.do_ith_cleanup">
+<code class="descclassname">obiwan.kenobi.</code><code class="descname">do_ith_cleanup</code><span class="sig-paren">(</span><em>d=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/obiwan/kenobi.html#do_ith_cleanup"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obiwan.kenobi.do_ith_cleanup" title="Permalink to this definition">¶</a></dt>
+<dd><p>Moves all obiwan+legacypipe outputs to a new directory stucture</p>
+<dl class="docutils">
+<dt>Uses rsync to move everthing, if all the rsync’s succeed then all the</dt>
+<dd>original files and directories are removed</dd>
+</dl>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>d</strong> – dict with keys brickname, simcat_dir</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="obiwan.kenobi.do_one_chunk">
+<code class="descclassname">obiwan.kenobi.</code><code class="descname">do_one_chunk</code><span class="sig-paren">(</span><em>d=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/obiwan/kenobi.html#do_one_chunk"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obiwan.kenobi.do_one_chunk" title="Permalink to this definition">¶</a></dt>
+<dd><p>Runs the legacypipe/Tractor pipeline on images with simulated sources</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>d</strong> – {‘args’: obiwan.kenobi.py cmd line argparse.Namespace object
+‘brickname’: chunk of sky
+‘metacat’: fits_table configuration params for the simulated sources
+‘simcat’: fits_table simulated source catalog for a given brick (not CCD).</td>
+</tr>
+</tbody>
+</table>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">runb_brick() is ‘main’ for the legacypipe/Tractor pipeline</p>
+</div>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">Nothing, but this func end ups writing out all the obiwan results</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="obiwan.kenobi.flag_nearest_neighbors">
+<code class="descclassname">obiwan.kenobi.</code><code class="descname">flag_nearest_neighbors</code><span class="sig-paren">(</span><em>Samp</em>, <em>radius_in_deg=0.001388888888888889</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/obiwan/kenobi.html#flag_nearest_neighbors"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obiwan.kenobi.flag_nearest_neighbors" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns Sample indices to keep (have &gt; dist separations) and indices to skip</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">keep,skip: indices of Samp to keep and skip</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.7)">tuple</a></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="obiwan.kenobi.get_e1_e2">
+<code class="descclassname">obiwan.kenobi.</code><code class="descname">get_e1_e2</code><span class="sig-paren">(</span><em>q</em>, <em>beta</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/obiwan/kenobi.html#get_e1_e2"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obiwan.kenobi.get_e1_e2" title="Permalink to this definition">¶</a></dt>
+<dd><p>Given minor to major axis ratio (q) and postion angle (beta), Returns e1,e2 tuple</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="obiwan.kenobi.get_ellip">
+<code class="descclassname">obiwan.kenobi.</code><code class="descname">get_ellip</code><span class="sig-paren">(</span><em>q</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/obiwan/kenobi.html#get_ellip"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obiwan.kenobi.get_ellip" title="Permalink to this definition">¶</a></dt>
+<dd><p>Given minor to major axis ratio (q) Returns ellipticity</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="obiwan.kenobi.get_parser">
+<code class="descclassname">obiwan.kenobi.</code><code class="descname">get_parser</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/obiwan/kenobi.html#get_parser"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obiwan.kenobi.get_parser" title="Permalink to this definition">¶</a></dt>
+<dd><p>return parser object, tells it what options to look for
+options can come from a list of strings or command line</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="obiwan.kenobi.get_runbrick_setup">
+<code class="descclassname">obiwan.kenobi.</code><code class="descname">get_runbrick_setup</code><span class="sig-paren">(</span><em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/obiwan/kenobi.html#get_runbrick_setup"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obiwan.kenobi.get_runbrick_setup" title="Permalink to this definition">¶</a></dt>
+<dd><p>Convert runbrick.py cmd line options into <cite>**kwargs</cite> for run_brick()</p>
+<dl class="docutils">
+<dt>The command line options depend on the Data Release (e.g. the</dt>
+<dd>legacypipe code version. The cmd line options associated with
+each DR get modified and repackaged into a dict in
+legacypipe.runbrick so this converter is required to call run_brick
+appropriately</dd>
+</dl>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>**kwargs</strong> – dict of the cmd line options to obiwan.kenobi.py</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><dl class="docutils">
+<dt>dict to use when calling legacypipe.runbrick.run_brick like</dt>
+<dd>run_brick(brickname, survey, <cite>**dict</cite>)</dd>
+</dl>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="obiwan.kenobi.get_sample">
+<code class="descclassname">obiwan.kenobi.</code><code class="descname">get_sample</code><span class="sig-paren">(</span><em>objtype</em>, <em>brick</em>, <em>randoms_db</em>, <em>minid=None</em>, <em>randoms_from_fits=''</em>, <em>do_skipids='no'</em>, <em>outdir=None</em>, <em>dont_sort_sampleid=False</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/obiwan/kenobi.html#get_sample"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obiwan.kenobi.get_sample" title="Permalink to this definition">¶</a></dt>
+<dd><p>Gets all simulated randoms for a brick from PSQl db, and applies all relevant cuts</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>objtype</strong> – elg,lrg</li>
+<li><strong>brick</strong> – </li>
+<li><strong>randoms_db</strong> – name of PSQL db for randoms, e.g. obiwan_elg_ra175</li>
+<li><strong>minid</strong> – None, unless do_more == yes then it is an integer for the randoms id to start from</li>
+<li><strong>randoms_from_fits</strong> – None or filename of fits_table to use for randoms</li>
+<li><strong>do_skipids</strong> – yes or no, rerunning on all skipped randoms?</li>
+<li><strong>outdir</strong> – None if do_skipids=’no’; otherwise path like $CSCRATCH/obiwan_out/elg_9deg2_ra175</li>
+<li><strong>dont_sort_sampleid</strong> – False to sort sample by id</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">sample fits_table, seed</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">tupe</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="obiwan.kenobi.get_srcimg_invvar">
+<code class="descclassname">obiwan.kenobi.</code><code class="descname">get_srcimg_invvar</code><span class="sig-paren">(</span><em>stamp_ivar</em>, <em>img_ivar</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/obiwan/kenobi.html#get_srcimg_invvar"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obiwan.kenobi.get_srcimg_invvar" title="Permalink to this definition">¶</a></dt>
+<dd><p>stamp_ivar, img_ivar – galsim Image objects</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="obiwan.kenobi.ivar_for_galaxy">
+<code class="descclassname">obiwan.kenobi.</code><code class="descname">ivar_for_galaxy</code><span class="sig-paren">(</span><em>gal</em>, <em>nano2e</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/obiwan/kenobi.html#ivar_for_galaxy"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obiwan.kenobi.ivar_for_galaxy" title="Permalink to this definition">¶</a></dt>
+<dd><p>Adds gaussian noise to perfect source</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>gal</strong> – galsim.Image() for source, UNITS: nanomags</li>
+<li><strong>nano2e</strong> – factor to convert to e- (gal * nano2e has units e-)</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">nanomags</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">galsim.Image() of invvar for the source, UNITS</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="obiwan.kenobi.main">
+<code class="descclassname">obiwan.kenobi.</code><code class="descname">main</code><span class="sig-paren">(</span><em>args=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/obiwan/kenobi.html#main"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obiwan.kenobi.main" title="Permalink to this definition">¶</a></dt>
+<dd><p>Main routine which parses the optional inputs.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="obiwan.kenobi.noise_for_galaxy">
+<code class="descclassname">obiwan.kenobi.</code><code class="descname">noise_for_galaxy</code><span class="sig-paren">(</span><em>gal</em>, <em>nano2e</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/obiwan/kenobi.html#noise_for_galaxy"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obiwan.kenobi.noise_for_galaxy" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns numpy array of noise in Img count units for gal in image cnt units</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="obiwan.kenobi.ptime">
+<code class="descclassname">obiwan.kenobi.</code><code class="descname">ptime</code><span class="sig-paren">(</span><em>text</em>, <em>t0</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/obiwan/kenobi.html#ptime"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obiwan.kenobi.ptime" title="Permalink to this definition">¶</a></dt>
+<dd><p>Timer</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="obiwan.kenobi.write_dict">
+<code class="descclassname">obiwan.kenobi.</code><code class="descname">write_dict</code><span class="sig-paren">(</span><em>fn</em>, <em>d</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/obiwan/kenobi.html#write_dict"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obiwan.kenobi.write_dict" title="Permalink to this definition">¶</a></dt>
+<dd><p>d – dictionary</p>
+</dd></dl>
+
+</div>
+
+
+    </div>
+      
+  </div>
+</div>
+<footer class="footer">
+  <div class="container">
+    <p class="pull-right">
+      <a href="#">Back to top</a>
+      
+    </p>
+    <p>
+        &copy; Copyright 2014-2018, Kaylan Burleigh, John Moustakas.<br/>
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.7.6.<br/>
+    </p>
+  </div>
+</footer>
+  </body>
+</html>
