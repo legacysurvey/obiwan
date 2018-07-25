@@ -4,7 +4,7 @@ type: sphinx
 #conda:
 #    file: readthedocs_environment.yml
 build:
-    image: kaylanb/desi:obiwan_rtd
+    kaylanb/desi:obiwan_rtd
 
 python:
    version: 3
