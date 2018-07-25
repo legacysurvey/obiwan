@@ -1,16 +1,12 @@
 name: obiwan-docs
 type: sphinx
 
-#conda:
-#    file: readthedocs_environment.yml
-build:
-    enabled: True
-    kaylanb/desi:obiwan_rtd
+conda:
+   file: readthedocs_environment.yml
+# build:
+#     enabled: True
+#     image: kaylanb/desi:obiwan_rtd
 
-# python:
-#    version: 3.5
-#    setup_py_install: false
-
-# python:
-#    version: 3
-#    setup_py_install: false
+python:
+   version: 3
+   setup_py_install: true
