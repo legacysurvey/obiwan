@@ -6,6 +6,10 @@ type: sphinx
 build:
     kaylanb/desi:obiwan_rtd
 
-python:
-   version: 3
-   setup_py_install: false
+# python:
+#    version: 3.5
+#    setup_py_install: false
+
+# python:
+#    version: 3
+#    setup_py_install: false
