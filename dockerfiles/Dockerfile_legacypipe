@@ -1,6 +1,6 @@
 #FROM ubuntu:16.04
-#FROM kaylanb/py3
-FROM kaylanb/legacypipe
+FROM kaylanb/py3_new
+#FROM kaylanb/legacypipe
 
 #libcfitsio5 libcfitsio3
 RUN source /srv/py3_venv/bin/activate && \
@@ -68,3 +68,6 @@ ENV DUST_DIR $MYREPO/dust
 # RUN git clone https://github.com/legacysurvey/legacypipe.git && \
 #     cd legacypipe && git checkout f4fc46ea0b
 # ENV PYTHONPATH $MYREPO/legacypipe/py:$PYTHONPATH
+
+COPY entrypoint_legacypipe.sh /
+ENTRYPOINT ["/entrypoint_legacypipe.sh"]
