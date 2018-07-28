@@ -11,8 +11,8 @@ import numpy as np
 from glob import glob
 from collections import Counter
 
+import matplotlib
 if __name__ == '__main__':
-	import matplotlib
 	matplotlib.use('Agg')
 matplotlib.rc('text') #, usetex=True)
 matplotlib.rc('font', family='serif')

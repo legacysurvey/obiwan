@@ -41,7 +41,16 @@ RUN source /srv/py3_venv/bin/activate && \
     pip3 install --upgrade pip setuptools wheel && \
     pip3 install sphinx_rtd_theme sphinx_bootstrap_theme \
     nbsphinx && \
-    pip3 install -U tensorflow
+    pip3 install -U tensorflow && \
+    pip3 install healpy
+
+RUN source /srv/py3_venv/bin/activate && \
+    curl -SL https://bitbucket.org/berkeleylab/qdo/get/0.8.tar.gz \
+    -o qdo.0.8.tar.gz && \
+    mkdir qdo.0.8 && \
+    tar -xzf qdo.0.8.tar.gz -C qdo.0.8 --strip-components 1 && \
+    cd qdo.0.8 && python setup.py install && \
+    cd ../ && rm -rf qdo.0.8 qdo.0.8.tar.gz
 
 WORKDIR /
 CMD ["/bin/bash"]

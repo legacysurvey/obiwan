@@ -1,5 +1,5 @@
 """
-Trains a CNN on fake and real galaxy images using TensorFlow.
+Trains a CNN on fake and real galaxy images using TensorFlow. 
 
 Adapted from https://github.com/ageron/handson-ml
 """
@@ -13,16 +13,16 @@ import tensorflow as tf
 
 def get_indir(nersc=False):
     '''Returns path to dr5_testtrain directory'''
-    if nersc:
+    if nersc: 
         return os.path.join('/global/cscratch1/sd/kaylanb','obiwan_out')
     else:
         return os.path.join(os.environ['HOME'],'Downloads')
 
 def get_outdir(nersc=False,knl=False):
     '''Where to write ckpt and log files'''
-    if (nersc) & (knl):
+    if (nersc) & (knl): 
         return os.path.join('/global/cscratch1/sd/kaylanb','obiwan_out','cnn_knl')
-    elif (nersc) & (not knl):
+    elif (nersc) & (not knl): 
         return os.path.join('/global/cscratch1/sd/kaylanb','obiwan_out','cnn')
     else:
         return os.path.join(os.environ['HOME'],'Downloads','cnn')
@@ -73,7 +73,7 @@ def get_bookmark(outdir):
     with open(bookmark_fn(outdir),'r') as f:
         epoch,brick,ith_batch= f.read().strip().split(' ')
     return epoch,brick,ith_batch
-
+        
 def get_logdir(outdir):
     now = datetime.utcnow().strftime("%Y%m%d%H%M%S")
     logdir= os.path.join(outdir,'logs')
@@ -81,7 +81,7 @@ def get_logdir(outdir):
 
 
 
-height,width,channels = (64,64,6)
+height,width,channels = (64,64,6) 
 
 conv_kwargs= dict(strides=1,
                   padding='SAME',
@@ -92,7 +92,7 @@ pool_kwargs= dict(ksize= [1,2,2,1],
 
 with tf.name_scope("inputs"):
     X = tf.placeholder(tf.float32, shape=[None,height,width,channels], name="X")
-    y = tf.placeholder(tf.int32, shape=[None], name="y")
+    y = tf.placeholder(tf.int32, shape=[None], name="y") 
 
 
 
@@ -114,7 +114,7 @@ with tf.name_scope("layer3"):
                              **conv_kwargs)
     pool3 = tf.nn.avg_pool(conv3, **pool_kwargs)
     # next is fc
-    pool3_flat = tf.reshape(pool3,
+    pool3_flat = tf.reshape(pool3, 
                             shape=[-1, pool3.shape[1] * pool3.shape[2] * pool3.shape[3]])
 
 
@@ -174,7 +174,7 @@ if __name__ == '__main__':
     n_epochs = 4
     batch_size = 16
     bricks= get_bricks()
-    file_writer = tf.summary.FileWriter(get_logdir(outdir),
+    file_writer = tf.summary.FileWriter(get_logdir(outdir), 
                                         tf.get_default_graph())
 
     first_epoch,first_brick,first_batch= '0',bricks[0],'0'
@@ -187,15 +187,15 @@ if __name__ == '__main__':
         ckpt_fn= None
     last_ibrick= np.where(bricks == last_brick)[0][0] #+ 1 creates bug where last break skips all epochs
     #bricks= ['1211p060']
-
+       
     with tf.Session(config=config) as sess:
-        if ckpt_fn is None:
+        if ckpt_fn is None: 
             sess.run(init)
             print('Starting from scratch')
         else:
             saver.restore(sess, ckpt_fn)
             print('Restored ckpt %s' % ckpt_fn)
-
+        
         batch_index= int(last_batch)
         for epoch in range(int(last_epoch),n_epochs+1):
             for ibrick,brick in enumerate(bricks):
@@ -209,9 +209,9 @@ if __name__ == '__main__':
                     batch_index+=1
                     if batch_index % 2 == 0:
                         step = batch_index
-                        file_writer.add_summary(loss_summary.eval(feed_dict={X: X_, y: y_}),
+                        file_writer.add_summary(loss_summary.eval(feed_dict={X: X_, y: y_}), 
                                                 step)
-                        file_writer.add_summary(accur_summary.eval(feed_dict={X: X_, y: y_}),
+                        file_writer.add_summary(accur_summary.eval(feed_dict={X: X_, y: y_}), 
                                                 step)
                 acc_train = accuracy.eval(feed_dict={X: X_, y: y_})
                 print(epoch, "Train accuracy:", acc_train)
@@ -224,3 +224,4 @@ if __name__ == '__main__':
                 print('Updated %s' % bookmark_fn(outdir))
                 # Reset last_ibrick so use all bricks in next epoch
                 last_ibrick= 0
+

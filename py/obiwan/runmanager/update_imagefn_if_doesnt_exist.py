@@ -18,7 +18,7 @@ def bashOutput(cmd):
                             stderr=subprocess.PIPE)
     stdout, stderr= proc.communicate()
     return stdout,stderr
-   
+
 def mpi_fns_that_exist(nproc=1,imageFns=[],suffix=''):
     """
 
@@ -37,7 +37,7 @@ def mpi_fns_that_exist(nproc=1,imageFns=[],suffix=''):
         comm= MyComm()
     old2new=[]
     notExist=[]
-   
+
     dirs=dict(proj='/project/projectdirs/cosmo/staging',
               proja='/global/projecta/projectdirs/cosmo/staging')
     for cnt,imageFn in enumerate(imageFns):
@@ -47,9 +47,9 @@ def mpi_fns_that_exist(nproc=1,imageFns=[],suffix=''):
         onProj= os.path.join(dirs['proj'],imageFn)
         onProja= os.path.join(dirs['proja'],imageFn)
         if os.path.exists(onProj):
-            pass
-        elif os.path.exists(onProja): 
-            pass
+            print('Exists: %s' % onProj)
+        elif os.path.exists(onProja):
+            print('Exists: %s' % onProja)
         else:
             print('Doesnt exist on proj or proja under orig name: %s' % imageFn)
             found,err= bashOutput('find %s -name "%s"' % (dirs['proj'],os.path.basename(imageFn)))
@@ -63,8 +63,7 @@ def mpi_fns_that_exist(nproc=1,imageFns=[],suffix=''):
                              .replace(dirs['proj'],'')
                              .replace(dirs['proja'],''))
                 old2new.append((imageFn,newfn))
-        else:
-            print('Exists: %s' % imageFn)
+
     # Gather
     #if nproc > 1:
     #    old2new = comm.gather(old2new, root=0)
@@ -78,7 +77,7 @@ def mpi_fns_that_exist(nproc=1,imageFns=[],suffix=''):
             print(old2new[i][0],old2new[i][1])
             foo.write('%s --> %s\n' % (old2new[i][0],old2new[i][1]))
     print('Wrote %s' % fn)
-    
+
     fn='notExist%s_rank%d.txt' % (suffix,comm.rank)
     #if nproc > 1:
     #    fn= fn.replace('.txt','_rank%d.txt' % comm.rank)
@@ -86,7 +85,7 @@ def mpi_fns_that_exist(nproc=1,imageFns=[],suffix=''):
         for i in range(len(notExist)):
             foo.write('%s\n' % notExist[i])
     print('Wrote %s' % fn)
-        
+
 
 def imagefns_from_ccds_table(table_fn):
     T=fits_table(table_fn)
@@ -102,7 +101,7 @@ def update_surveyccds(ccds_fn,old2new_fn):
         data= f.readlines()
     old=[row.split(" ")[0] for row in data]
     new=[row.split(" ")[-1].strip() for row in data]
-    
+
     fns= np.char.strip(ccds.image_filename)
     for o,n in zip(old,new):
         fns[fns == o]= n
@@ -117,16 +116,16 @@ if __name__ == '__main__':
     #testcase_main()
     from argparse import ArgumentParser
     parser = ArgumentParser()
-    parser.add_argument('--runWhat', type=str, choices=['fns_that_exist','update_ccds'],required=True) 
-    parser.add_argument('--nproc', type=int, default=1, help='set to > 1 to run mpi4py') 
-    parser.add_argument('--image_list', type=str, default=None, 
-                        help='specify a fn listing the image filenames') 
-    parser.add_argument('--ccds_table', type=str, default=None, 
-                        help='use a ccd table insteady, grabbing the imagefilename column') 
-    parser.add_argument('--old2new_fn', type=str, default=None, 
-                        help='output by mpi_fns_that_exist') 
+    parser.add_argument('--runWhat', type=str, choices=['fns_that_exist','update_ccds'],required=True)
+    parser.add_argument('--nproc', type=int, default=1, help='set to > 1 to run mpi4py')
+    parser.add_argument('--image_list', type=str, default=None,
+                        help='specify a fn listing the image filenames')
+    parser.add_argument('--ccds_table', type=str, default=None,
+                        help='use a ccd table insteady, grabbing the imagefilename column')
+    parser.add_argument('--old2new_fn', type=str, default=None,
+                        help='output by mpi_fns_that_exist')
     args = parser.parse_args()
-    
+
     if args.runWhat == 'fns_that_exist':
         if args.image_list:
             imageFns= np.loadtxt(args.image_list,dtype=str)
