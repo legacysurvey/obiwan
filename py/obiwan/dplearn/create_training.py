@@ -11,12 +11,12 @@ import pandas as pd
 from obiwan.qa.visual import readImage,sliceImage
 from obiwan.common import dobash
 
-try:
-    from astrometry.util.fits import fits_table
-    from legacypipe.survey import LegacySurveyData, wcs_for_brick
-    import galsim
-except ImportError:
-    pass
+# try:
+from astrometry.util.fits import fits_table
+from legacypipe.survey import LegacySurveyData, wcs_for_brick
+import galsim
+# except ImportError:
+#     pass
 
 HDF5_KEYS= ['g','r','z','gr','gz','rz','grz']
 

@@ -14,11 +14,11 @@ import sys
 from scipy import spatial
 import pandas as pd
 
-try:
-    from astrometry.util.ttime import Time
-    from astrometry.util.fits import fits_table, merge_tables
-except ImportError:
-    pass
+# try:
+from astrometry.util.ttime import Time
+from astrometry.util.fits import fits_table, merge_tables
+# except ImportError:
+#     pass
 
 SURVEYS=['desi','eboss','cosmos']
 
@@ -26,13 +26,13 @@ SURVEYS=['desi','eboss','cosmos']
 class GaussianMixtureModel(object):
     """
     John's class to read, write, and sample from a mixture model.
-    
-    Args: 
+
+    Args:
         weights,means,covars: array-like, from mixture fit
         covar_type: usually 'full'
         py: one of ['27','36']
     """
-    def __init__(self, weights, means, covars, 
+    def __init__(self, weights, means, covars,
                  py=None,covar_type='full',is1D=False):
         # CANNOT use py27, the draw_points_eboss func won't work
         assert(py in ['36','35'])
@@ -50,7 +50,7 @@ class GaussianMixtureModel(object):
         self.n_components, self.n_dimensions = self.means_.shape
         #print(self.weights_.shape,self.covariances_.shape,len(self.covariances_.shape))
         self.covariance_type= covar_type
-    
+
     @staticmethod
     def save(model, filename):
         for name,data in zip(['means','weights','covars'],
@@ -69,20 +69,20 @@ class GaussianMixtureModel(object):
         return GaussianMixtureModel(
                     d['weights'],d['means'],d['covars'],
                     covar_type='full',py=py,is1D=is1D)
-    
+
     def sample(self, n_samples=1, random_state=None):
         assert(n_samples >= 1)
         self.n_samples= n_samples
         if random_state is None:
             random_state = np.random.RandomState()
         self.rng= random_state
-        
+
         if self.py == '2.7':
             X= self.sample_py2()
         else:
             X,Y= self.sample_py3()
         return X
-    
+
     def sample_py2(self):
         weight_cdf = np.cumsum(self.weights_)
         X = np.empty((self.n_samples, self.n_components))
@@ -99,7 +99,7 @@ class GaussianMixtureModel(object):
                 X[comp_in_X] = self.rng.multivariate_normal(
                     self.means_[comp], self.covariances_[comp], num_comp_in_X)
         return X
-    
+
     def sample_py3(self):
         """Copied from sklearn's mixture.GaussianMixture().sample()"""
         print(self.weights_.shape)
@@ -144,7 +144,7 @@ def get_area(radec):
         ra2=radec['ra2']+360.
     else:
         ra2=radec['ra2']
-    
+
     area= (np.sin(radec['dec2']*deg)- np.sin(radec['dec1']*deg)) * \
           (ra2 - radec['ra1']) * \
           deg* 129600 / np.pi / (4*np.pi)
@@ -165,8 +165,8 @@ def get_radec(radec,\
 	Returns:
 		ra,dec: tuple of arrays having length ndraws
 
-	Note: 
-		Taken from 
+	Note:
+		Taken from
 		https://github.com/desihub/imaginglss/blob/master/scripts/imglss-mpi-make-random.py#L55
 	"""
     ramin,ramax= radec['ra1'],radec['ra2']
@@ -184,7 +184,7 @@ def get_sample_dir(outdir,obj):
     return outdir
 
 def mkdir_needed(d):
-    """make each needed directory 
+    """make each needed directory
     d= dictionary, vars(args)
     """
     dirs=[d['outdir']]
@@ -275,9 +275,9 @@ def draw_points_desi(radec,unique_ids,obj='star',seed=1,
     T.set('ra',ra)
     T.set('dec',dec)
     #redshifts change each draw, not sample_5d_10k's redshift
-    T.set('redshift',redshifts) 
+    T.set('redshift',redshifts)
     T.set('id_5d10k_sample',boot['id'].values)
-    for col in ['g', 'r','z','rhalf']: 
+    for col in ['g', 'r','z','rhalf']:
         T.set(col,boot[col].values)
     # fixed priors
     if obj in ['elg','lrg']:
@@ -298,7 +298,7 @@ class EbossBox(object):
         """Returns dx,dy"""
         theta= np.arctan(abs(slope))
         return pad*np.sin(theta), pad*np.cos(theta)
-    
+
     def get_yint_pad(self,slope,pad=0):
         """Returns dx,dy"""
         theta= np.arctan(slope)
@@ -317,7 +317,7 @@ class EbossBox(object):
             #lines.append(slope*(rz-dx) + yint + dy)
             lines.append(slope*rz + yint + dy)
         return tuple(lines)
-    
+
     def sgc_line(self,rz,pad=0):
         slope,yint= 1/0.218, -0.571/0.218
         dy=0.
@@ -338,10 +338,10 @@ class EbossBox(object):
             pad: magnitudes of padding to expand TS box
         """
         d={}
-        d['y1'],d['y2'],d['y3']= self.three_lines(rz,pad) 
+        d['y1'],d['y2'],d['y3']= self.three_lines(rz,pad)
         d['y4']= self.sgc_line(rz,pad)
         return d
-    
+
     def NGC(self,rz, pad):
         """
         Args:
@@ -349,22 +349,22 @@ class EbossBox(object):
             pad: magnitudes of padding to expand TS box
         """
         d={}
-        d['y1'],d['y2'],d['y3']= self.three_lines(rz,pad) 
+        d['y1'],d['y2'],d['y3']= self.three_lines(rz,pad)
         d['y4']= self.ngc_line(rz,pad)
         return d
 
 
 def inEbossBox(rz,gr,pad=0.):
     sgc_d= EbossBox().SGC(rz,pad=pad)
-    return ((gr > sgc_d['y1']) & 
+    return ((gr > sgc_d['y1']) &
             (gr < sgc_d['y2']) &
             (gr < sgc_d['y3']) &
             (gr < sgc_d['y4']))
 
 def outside_lims_eboss(z):
     red_lims=[0.,2.]
-    return ((z < red_lims[0]) | 
-            (z > red_lims[1])) 
+    return ((z < red_lims[0]) |
+            (z > red_lims[1]))
 
 
 def draw_points_eboss(radec,unique_ids,obj='star',seed=1,
@@ -414,8 +414,8 @@ def draw_points_eboss(radec,unique_ids,obj='star',seed=1,
 
     # Draw z from n(z), if z not in [0,2] redraw
     T= fits_table()
-    redshifts= gmm.sample(ndraws).reshape(-1) 
-    print('redshifts=',redshifts) 
+    redshifts= gmm.sample(ndraws).reshape(-1)
+    print('redshifts=',redshifts)
 
     i=0
     redraw= outside_lims_eboss(redshifts)
@@ -450,7 +450,7 @@ def draw_points_eboss(radec,unique_ids,obj='star',seed=1,
         d[col]= np.zeros(len(T))-1
     d['nn_redshift']= np.zeros(len(T))-1
     d['id']= np.zeros(len(T)).astype(str)
-        
+
     # inBox, use eBOSS data
     keep= (inBox['dr3dp2_both']) & (T.type == 'EXP')
     _,i_df= trees['eboss_exp'].query(T.redshift[keep].reshape(-1,1))
@@ -458,7 +458,7 @@ def draw_points_eboss(radec,unique_ids,obj='star',seed=1,
         d[col][keep]= eboss_exp[col].iloc[i_df]
     d['id'][keep]= eboss_exp['sdss_id'].iloc[i_df]
     d['nn_redshift'][keep]= eboss_exp['redshift'].iloc[i_df]
-        
+
     keep= (inBox['dr3dp2_both']) & (T.type == 'DEV')
     _,i_df= trees['eboss_dev'].query(T.redshift[keep].reshape(-1,1))
     for col in mag_shapes:
@@ -473,7 +473,7 @@ def draw_points_eboss(radec,unique_ids,obj='star',seed=1,
         d[col][keep]= dr3dp2_exp[col].iloc[i_df]
     d['id'][keep]= dr3dp2_exp['tractor_id'].iloc[i_df]
     d['nn_redshift'][keep]= dr3dp2_exp['redshift'].iloc[i_df]
-        
+
     keep= (~inBox['dr3dp2_both']) & (T.type == 'DEV')
     _,i_df= trees['dr3dp2_dev'].query(T.redshift[keep].reshape(-1,1))
     for col in mag_shapes:
@@ -524,7 +524,7 @@ def draw_points_eboss(radec,unique_ids,obj='star',seed=1,
         import matplotlib.pyplot as plt
         sns.distplot(T.nn_redshift - T.redshift)
         plt.savefig('delta_redshift.png')
-        
+
         print(pd.Series(T.n).value_counts())
 
         cols= ['g','r','z','rhalf'] + ['redshift']
@@ -534,7 +534,7 @@ def draw_points_eboss(radec,unique_ids,obj='star',seed=1,
             for col in range(3):
                 i+=1
                 if i >= len(cols):
-                    continue 
+                    continue
                 _=ax[row,col].hist(T.get(cols[i])[T.n == 1],
                                    histtype='step',normed=True,
                                    bins=30,color='b',label='EXP')
@@ -544,7 +544,7 @@ def draw_points_eboss(radec,unique_ids,obj='star',seed=1,
                 ax[row,col].set_xlabel(cols[i])
         ax[1,1].legend()
         plt.savefig('hists.png')
- 
+
 def draw_points_cosmos(radec,unique_ids,obj='star',seed=1,
                        outdir='./',startid=1):
     """
@@ -565,7 +565,7 @@ def draw_points_cosmos(radec,unique_ids,obj='star',seed=1,
     ndraws= len(unique_ids)
     random_state= np.random.RandomState(seed)
     ra,dec= get_radec(radec,ndraws=ndraws,random_state=random_state)
-    
+
     T=fits_table()
     T.set('id',unique_ids)
     # PSQL "integer" is 4 bytes
@@ -599,11 +599,11 @@ def draw_points_cosmos(radec,unique_ids,obj='star',seed=1,
     print('Wrote %s' % fn)
 
 
-        
+
 def get_parser():
     parser = argparse.ArgumentParser(description='Generate a legacypipe-compatible CCDs file from a set of reduced imaging.')
-    parser.add_argument('--survey', type=str, choices=['desi','eboss','cosmos'], default=None, required=True) 
-    parser.add_argument('--obj', type=str, choices=['star','elg', 'lrg', 'qso'], default=None, required=True) 
+    parser.add_argument('--survey', type=str, choices=['desi','eboss','cosmos'], default=None, required=True)
+    parser.add_argument('--obj', type=str, choices=['star','elg', 'lrg', 'qso'], default=None, required=True)
     parser.add_argument('--ra1',type=float,action='store',help='bigbox',required=True)
     parser.add_argument('--ra2',type=float,action='store',help='bigbox',required=True)
     parser.add_argument('--dec1',type=float,action='store',help='bigbox',required=True)
@@ -615,7 +615,7 @@ def get_parser():
     parser.add_argument('--seed', type=int, default=1, help='seed for nproc=1')
     parser.add_argument('--startid', type=int, default=1, help='if generating additional randoms mid-run, will want to start from a specific id')
     parser.add_argument('--max_prev_seed', type=int, default=0, help='if generating  additional randoms need to avoid repeating a previous seed')
-    return parser 
+    return parser
 
 if __name__ == "__main__":
     t0 = Time()
@@ -636,7 +636,7 @@ if __name__ == "__main__":
             write_calling_seq( vars(args) )
     else:
         write_calling_seq( vars(args) )
-         
+
     radec={}
     radec['ra1']=args.ra1
     radec['ra2']=args.ra2
@@ -652,7 +652,7 @@ if __name__ == "__main__":
 
     # Draws per mpi task
     if args.nproc > 1:
-        unique_ids= np.array_split(unique_ids,comm.size)[comm.rank] 
+        unique_ids= np.array_split(unique_ids,comm.size)[comm.rank]
     t0=ptime('parse-args',t0)
 
     if args.nproc > 1:
@@ -672,4 +672,3 @@ if __name__ == "__main__":
         draw_points(radec,unique_ids,obj=args.obj, seed=seed,
                     outdir=args.outdir,survey=args.survey,
                     startid=args.startid)
-        

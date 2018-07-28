@@ -9,11 +9,11 @@ import os
 from glob import glob
 import pandas as pd
 
-try: 
-    from astrometry.util.fits import fits_table, merge_tables
-    from astrometry.libkd.spherematch import match_radec
-except ImportError:
-    pass
+# try:
+from astrometry.util.fits import fits_table, merge_tables
+from astrometry.libkd.spherematch import match_radec
+# except ImportError:
+#     pass
 
 def mpi_expids_per_bri(nproc=1,data_dir='./',outdir='./'):
     """
@@ -26,7 +26,7 @@ def mpi_expids_per_bri(nproc=1,data_dir='./',outdir='./'):
     if nproc > 1:
         from mpi4py.MPI import COMM_WORLD as comm
         bri_dirs= np.array_split(bri_dirs, comm.size)[comm.rank]
-    
+
     for dr in bri_dirs:
         new_dr= os.path.join(outdir,'derived','ccds')
         try:
@@ -94,15 +94,15 @@ def surveyccds_cut_to_expids(expid_npy_fn,survey_ccds_fn):
 if __name__ == '__main__':
     from argparse import ArgumentParser
     parser = ArgumentParser()
-    parser.add_argument('--data_dir', type=str, required=True, 
-                        help='path to obiwan/, tractor/ dirs') 
-    parser.add_argument('--outdir', type=str, required=True, 
-                        help='path to write output file') 
+    parser.add_argument('--data_dir', type=str, required=True,
+                        help='path to obiwan/, tractor/ dirs')
+    parser.add_argument('--outdir', type=str, required=True,
+                        help='path to write output file')
     parser.add_argument('--which', type=str, choices=['per_bri','final','survey_ccds'],
-                        required=True) 
-    parser.add_argument('--nproc', type=int, default=1, help='set to > 1 to run mpi4py')  
-    parser.add_argument('--expid_npy_fn', required=False,help='if which == survey_ccds') 
-    parser.add_argument('--survey_ccds_fn', required=False,help='if which == survey_ccds') 
+                        required=True)
+    parser.add_argument('--nproc', type=int, default=1, help='set to > 1 to run mpi4py')
+    parser.add_argument('--expid_npy_fn', required=False,help='if which == survey_ccds')
+    parser.add_argument('--survey_ccds_fn', required=False,help='if which == survey_ccds')
     args = parser.parse_args()
 
     if args.which == 'per_bri':
@@ -112,5 +112,4 @@ if __name__ == '__main__':
         final_expids(args.outdir)
 
     elif args.which == 'survey_ccds':
-        surveyccds_cut_to_expids(args.expid_npy_fn,args.survey_ccds_fn) 
-
+        surveyccds_cut_to_expids(args.expid_npy_fn,args.survey_ccds_fn)

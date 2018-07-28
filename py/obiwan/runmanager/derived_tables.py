@@ -11,12 +11,12 @@ import pandas as pd
 from collections import Counter,defaultdict
 
 from obiwan.db_tools import all_psqlcols_for_ids
-try: 
-    from astrometry.util.fits import fits_table, merge_tables
-    from astrometry.util.util import Tan
-    from astrometry.libkd.spherematch import match_radec
-except ImportError:
-    pass
+# try:
+from astrometry.util.fits import fits_table, merge_tables
+from astrometry.util.util import Tan
+from astrometry.libkd.spherematch import match_radec
+# except ImportError:
+#     pass
 
 def derived_field_dir(brick,data_dir,date):
     return os.path.join(data_dir,'derived_%s' % date,
@@ -27,11 +27,11 @@ def datarelease_dir(drNumber):
     proj='/global/project/projectdirs/cosmo/data/legacysurvey'
     return os.path.join(proj,drNumber)
 
-def is_bool(obj):                                        
+def is_bool(obj):
     return obj.dtype == bool
 
-def is_numeric(obj):                                        
-    try: 
+def is_numeric(obj):
+    try:
         tmp=obj+5
     except TypeError:
         return False
@@ -39,7 +39,7 @@ def is_numeric(obj):
 
 
 def flux2mag(nmgy):
-    return -2.5 * (np.log10(nmgy) - 9) 
+    return -2.5 * (np.log10(nmgy) - 9)
 
 class Bit(object):
     def set(self,value, bit):
@@ -55,7 +55,7 @@ class TargetSelection(object):
     def elg_by_measurement(self,tractor,name,
                            prefix='',anymask=True):
         """Returns bool array elgs as measured by tractor
-        
+
         Args:
             prefix: 'tractor_' for randoms table, '' for tractor table
             anymask: True to apply anymask cut, False for allmask
@@ -93,13 +93,13 @@ class TargetSelection(object):
                 kw['allmask_'+band]= tractor.get(self.prefix+'allmask_'+band)
         kw.update( self.get_grz_mag_dict(tractor) )
         return self._eboss_elg(ngc_or_sgc,**kw)
- 
 
-    def _desi_elg(self,gflux=None, rflux=None, zflux=None, 
+
+    def _desi_elg(self,gflux=None, rflux=None, zflux=None,
                     primary=None):
-        """VERBATIM from 
+        """VERBATIM from
         https://github.com/desihub/desitarget/blob/master/py/desitarget/cuts.py
-        
+
         Args:
             gflux, rflux, zflux, w1flux, w2flux: array_like
                 The flux in nano-maggies of g, r, z, w1, and w2 bands.
@@ -123,8 +123,8 @@ class TargetSelection(object):
         elg &= rflux**2.15 < gflux * zflux**1.15 * 10**(-0.15/2.5) # (g-r)<1.15(r-z)-0.15
         elg &= zflux**1.2 < gflux * rflux**0.2 * 10**(1.6/2.5)     # (g-r)<1.6-1.2(r-z)
 
-        return elg 
-    
+        return elg
+
     def _eboss_elg(self,ngc_or_sgc,
                    primary=None,ra=None,dec=None,
                    gmag=None,rmag=None,zmag=None,
@@ -134,37 +134,37 @@ class TargetSelection(object):
         """
         Johan's target selection
 
-        Does NOT do: 
+        Does NOT do:
             tycho2inblob == False
             SDSS bright object mask & 0 < V < 11.5 mag Tycho2 stars mask
             custom mask for eboss23
-        """ 
+        """
         assert(ngc_or_sgc in ['ngc','sgc'])
         if primary is None:
             primary = np.ones(len(ra), bool)
-        
+
         if psfdepth_g is None:
             depth_selection = np.ones(len(ra), bool)
         else:
             # Johan's cut
             # https://github.com/DriftingPig/ipynb/blob/master/obiwan_match.py#L96
-            gL = 62.79716079 
+            gL = 62.79716079
             rL = 30.05661087
             zL_ngc = 11.0
-            zL_sgc = 12.75            
-            depth_selection= (psfdepth_g > gL) & (psfdepth_r > rL) 
+            zL_sgc = 12.75
+            depth_selection= (psfdepth_g > gL) & (psfdepth_r > rL)
             if ngc_or_sgc == 'ngc':
-                depth_selection= (depth_selection) & (psfdepth_z > zL_ngc) 
+                depth_selection= (depth_selection) & (psfdepth_z > zL_ngc)
             else:
-                depth_selection= (depth_selection) & (psfdepth_z > zL_sgc) 
+                depth_selection= (depth_selection) & (psfdepth_z > zL_sgc)
 
         if not (anymask_g is None):
-            mask= ((anymask_g == 0) & 
-                   (anymask_r == 0) & 
+            mask= ((anymask_g == 0) &
+                   (anymask_r == 0) &
                    (anymask_z == 0))
         elif not (allmask_g is None):
-            mask= ((allmask_g == 0) & 
-                   (allmask_r == 0) & 
+            mask= ((allmask_g == 0) &
+                   (allmask_r == 0) &
                    (allmask_z == 0))
         else:
             mask = np.ones(len(ra), bool)
@@ -185,10 +185,10 @@ class TargetSelection(object):
                        (gr < 0.112 * rz + 0.773) &
                        (0.218 * gr + 0.571 < rz) &
                        (rz < -0.555 * gr + 1.901))
- 
+
         return ((primary) &
                 (depth_selection) &
-                (colorCut) & 
+                (colorCut) &
                 (mask))
 
     def get_grz_mag_dict(self,tractor):
@@ -209,7 +209,7 @@ class RandomsTable(object):
         rows are filled in wherever there is a matching unique_id
         between uniform and obiwan. A bitmask column 'obiwan_mask' which says
         whether the random was recovered by Tractor or not, and whether
-        the random is near a previously existing real source in a DR 
+        the random is near a previously existing real source in a DR
         catalogue, like DR3 or DR5
     """
     def __init__(self, data_dir,dr3_or_dr5,db_randoms_table,
@@ -234,19 +234,19 @@ class RandomsTable(object):
                 print('Trouble reading %s, deleting and redoing it' % final_table_fn)
                 os.remove(final_table_fn)
                 notExist=True
-        
-        rsdirs,brickDone= self.get_rsdirs(brick) 
-        
+
+        rsdirs,brickDone= self.get_rsdirs(brick)
+
         if notExist and brickDone:
             tab= self.merge_randoms_tables(brick,rsdirs)
             self.add_flag_for_realsources(tab,brick)
             self.add_targets_mask(tab)
             # Write
             self.write_table(tab,final_table_fn)
-     
+
     def get_rsdirs(self,brick):
         """get list of rsdirs for a given brick
-        
+
         Returns:
             tuple of rsdirs list and whether the brick is finished or not
         """
@@ -266,17 +266,17 @@ class RandomsTable(object):
             raise ValueError('brick %s more rsdirs than should be possible %d/%d' % \
                              (brick,len(rsdirs),self.number_rsdirs))
         return rsdirs,brickDone
-    
+
     def merge_randoms_tables(self,brick,rsdirs):
         """Computes final joined randoms tables
 
         Includes uniform randoms, info from psql db, which of these were recovered
-            by Tractor, and the associated tractor info for those 
+            by Tractor, and the associated tractor info for those
 
         Args:
             brick: brickname
-        
-        Returns: 
+
+        Returns:
             joined randoms table
         """
         uniform=[]
@@ -333,7 +333,7 @@ class RandomsTable(object):
         """For a given random injected into a brick during a given iteration
 
         Args:
-            id_array: randoms ids 
+            id_array: randoms ids
             brick: brick
             rs_dir: like rs0 or rs300
         """
@@ -378,7 +378,7 @@ class RandomsTable(object):
         assert(np.all(d <= 1./3600))
         bool_matched= np.zeros(len(tab),bool)
         bool_matched[I]= True
-        recovered_and_matched= ((tab.obiwan_mask == 1) & 
+        recovered_and_matched= ((tab.obiwan_mask == 1) &
                                 (bool_matched))
         if len(tab[recovered_and_matched]) > 0:
             mask= tab.obiwan_mask
@@ -386,7 +386,7 @@ class RandomsTable(object):
             tab.set('obiwan_mask',mask)
 
     def add_targets_mask(self,table):
-        TS= TargetSelection(prefix='tractor_') 
+        TS= TargetSelection(prefix='tractor_')
         mask= np.zeros(len(table),dtype=np.int8)
         for survey_ts,bit in [('eboss_ngc',0),
                               ('eboss_sgc',1),
@@ -398,7 +398,7 @@ class RandomsTable(object):
 
     def write_table(self,tab,fn):
         """Write the merged randoms table is doesn't already exist"""
-        if not os.path.exists(fn): 
+        if not os.path.exists(fn):
             tab.writeto(fn)
             print('Wrote %s' % fn)
 
@@ -438,7 +438,7 @@ def bin_by_mag(randoms, func_to_apply, band=None,bin_minmax=(18.,26.),nbins=20):
         if np.where(keep)[0].size > 0:
             vals['val'][i]= func_to_apply(randoms[keep])
         else:
-            vals['val'][i]=np.nan 
+            vals['val'][i]=np.nan
     return vals
 
 
@@ -461,10 +461,10 @@ def depth_at_half_recovered(randoms,band):
 
 class SummaryTable(object):
     """Writes one table per brick, with brick averaged quantities
-    
-    derived table "randoms.fits" must exist. Joins the brick summary 
-    quantities from a data release with a similar set from the 
-    randoms.fits table. Each brick's table has one 
+
+    derived table "randoms.fits" must exist. Joins the brick summary
+    quantities from a data release with a similar set from the
+    randoms.fits table. Each brick's table has one
     row and all tables get merged to make the eatmap plots
     """
     def __init__(self, data_dir,dr3_or_dr5,date='mm-dd-yyyy'):
@@ -486,13 +486,13 @@ class SummaryTable(object):
         self.write_table(summary_obi,fn)
 
     def write_table(self,tab,fn):
-        if not os.path.exists(fn): 
+        if not os.path.exists(fn):
             tab.writeto(fn)
             print('Wrote %s' % fn)
 
     def add_obiwan_to_DR_table(self,summary_DR,summary_obi):
         """adds the summary_obi columsn to the summary_DR table
-        
+
         Args:
             summary_DR: brick summary for the data release bricks
             summary_obiwan: brick summary for the obiwan bricks
@@ -508,7 +508,7 @@ class SummaryTable(object):
                                         self.data_dir,self.date),
                                  'randoms.fits')
         T = fits_table(randoms_fn)
-        
+
         isRec= T.obiwan_mask == 1
         summary= defaultdict(list)
         summary['frac_recovered'].append( len(T[isRec])/ float(len(T)))
@@ -519,11 +519,11 @@ class SummaryTable(object):
         T.set('frac_recovered', np.array(summary['frac_recovered']).astype(np.float32))
         for b in 'grz':
             T.set('galdepth_'+b, np.array(summary[b+'galdepth']).astype(np.float32))
-        return T 
-    
+        return T
+
     def brick_summary_obiwan(self,brick,prefix=''):
-        """brick summary for obiwan 
-        
+        """brick summary for obiwan
+
         Args:
             prefix: prefix for obiwan tractor columns, e.g. tractor_
         """
@@ -531,11 +531,11 @@ class SummaryTable(object):
                                         self.data_dir,self.date),
                                  'randoms.fits')
         T = fits_table(randoms_fn)
-        
+
         brickset = set()
         summary= defaultdict(list)
         nnhist = 6
-    
+
         # Obiwan stuff
         was_recovered= T.obiwan_mask == 1
         summary['frac_recovered'].append( len(T[was_recovered])/ float(len(T)))
@@ -547,7 +547,7 @@ class SummaryTable(object):
         # xx,yy = np.meshgrid(np.arange(W), np.arange(H))
         unique = np.ones((H,W), bool)
         tlast = 0
-        
+
         brickset.add(brick)
         for key in ['gn','rn','zn']:
             summary[key].append(0)
@@ -570,7 +570,7 @@ class SummaryTable(object):
             summary[b+'psfdepth'].append(np.median(T.get(prefix+'psfdepth_'+b)))
             summary[b+'galdepth'].append(np.median(T.get(prefix+'galdepth_'+b)))
             summary[b+'trans'].append(np.median(T.get(prefix+'mw_transmission_'+b)))
-            
+
         summary['ebv'].append(np.median(T.get(prefix+'ebv')))
 
         br = self.surveyBricks[ibrick]
@@ -585,11 +585,11 @@ class SummaryTable(object):
                                 br.ra1, br.ra2, br.dec1, br.dec2)
         U = np.flatnonzero(unique)
         #print(len(U), 'of', W*H, 'pixels are unique to this brick')
-         
+
         ibricks = np.array(summary['ibricks'])
-        
+
         #print('Maximum number of sources:', max(nsrcs))
-        
+
         T = fits_table()
         #T.brickname = np.array([brick])
         #T.ra  = self.surveyBricks.ra [ibricks]
@@ -603,22 +603,22 @@ class SummaryTable(object):
             T.set('psfsize_'+b, np.array(summary[b+'psfsize']).astype(np.float32))
             T.set('trans_'+b, np.array(summary[b+'trans']).astype(np.float32))
             T.set('ext_'+b, -2.5 * np.log10(T.get('trans_'+b)))
-        
+
         for typ in 'psf simp rex exp dev comp'.split(' '):
             T.set('n'+typ, np.array(summary['n'+typ]).astype(np.int16))
-        
+
         with np.errstate(divide='ignore'):
             for b in 'grz':
                 T.set('psfdepth_'+b, (-2.5*(-9.+np.log10(5.*np.sqrt(1. / np.array(summary[b+'psfdepth']))))).astype(np.float32))
                 T.set('galdepth_'+b, (-2.5*(-9.+np.log10(5.*np.sqrt(1. / np.array(summary[b+'galdepth']))))).astype(np.float32))
-        
-        for k in ['psfdepth_g', 'psfdepth_r', 'psfdepth_z', 
+
+        for k in ['psfdepth_g', 'psfdepth_r', 'psfdepth_z',
                   'galdepth_g', 'galdepth_r', 'galdepth_z']:
             v = T.get(k)
             v[np.logical_not(np.isfinite(v))] = 0.
-        
+
         T.ebv = np.array(summary['ebv']).astype(np.float32)
-        return T 
+        return T
 
 
 
@@ -633,17 +633,17 @@ class SummaryTable(object):
         gn = []
         rn = []
         zn = []
-        
+
         gnhist = []
         rnhist = []
         znhist = []
-        
+
         nnhist = 6
-        
+
         gdepth = []
         rdepth = []
         zdepth = []
-        
+
         ibricks = []
         nsrcs = []
         npsf  = []
@@ -666,21 +666,21 @@ class SummaryTable(object):
 
         wise_nobs = []
         wise_trans = []
-        
+
         ebv = []
         gtrans = []
         rtrans = []
         ztrans = []
-        
-        
+
+
         #sfd = SFDMap()
-        
+
         W = H = 3600
         # H=3600
         # xx,yy = np.meshgrid(np.arange(W), np.arange(H))
         unique = np.ones((H,W), bool)
         tlast = 0
-       
+
         dirprefix= datarelease_dir(self.dr3_or_dr5)
         for ibrick,brick in enumerate(bricklist):
             #words = fn.split('/')
@@ -690,7 +690,7 @@ class SummaryTable(object):
             #brick = words[2]
             #print('Brick', brick)
             tfn = os.path.join(dirprefix, 'tractor', brick[:3], 'tractor-%s.fits'%brick)
-            if self.dr3_or_dr5 == 'dr5': 
+            if self.dr3_or_dr5 == 'dr5':
                 columns=['brick_primary', 'type',
                          'psfsize_g', 'psfsize_r', 'psfsize_z',
                          'psfdepth_g', 'psfdepth_r', 'psfdepth_z',
@@ -700,7 +700,7 @@ class SummaryTable(object):
                          'nobs_w1', 'nobs_w2', 'nobs_w3', 'nobs_w4',
                          'nobs_g', 'nobs_r', 'nobs_z',
                          'mw_transmission_w1', 'mw_transmission_w2', 'mw_transmission_w3', 'mw_transmission_w4']
-            elif self.dr3_or_dr5 == 'dr3': 
+            elif self.dr3_or_dr5 == 'dr3':
                 columns=['brick_primary', 'type', 'decam_psfsize',
                          'decam_depth', 'decam_galdepth',
                          'ebv', 'decam_mw_transmission',
@@ -722,7 +722,7 @@ class SummaryTable(object):
             if self.dr3_or_dr5 == 'dr5':
                 hasBands= [band for band in 'grz' if any(T.get('nobs_'+band) > 0)]
             elif self.dr3_or_dr5 == 'dr3':
-                hasBands= [band 
+                hasBands= [band
                            for band,iband in [('g',1),('r',2),('z',4)]
                            if any(T.decam_nobs[:,iband] > 0)]
             brickset.add(brick)
@@ -775,7 +775,7 @@ class SummaryTable(object):
                 gtrans.append(np.median(T.mw_transmission_g))
                 rtrans.append(np.median(T.mw_transmission_r))
                 ztrans.append(np.median(T.mw_transmission_z))
-                
+
             elif self.dr3_or_dr5 == 'dr3':
                 gpsfsize.append(np.median(T.decam_psfsize[:,1]))
                 rpsfsize.append(np.median(T.decam_psfsize[:,2]))
@@ -795,7 +795,7 @@ class SummaryTable(object):
                 gtrans.append(np.median(T.decam_mw_transmission[:,1]))
                 rtrans.append(np.median(T.decam_mw_transmission[:,2]))
                 ztrans.append(np.median(T.decam_mw_transmission[:,4]))
-                
+
             ebv.append(np.median(T.ebv))
 
             br = self.surveyBricks[ibrick]
@@ -810,13 +810,13 @@ class SummaryTable(object):
                                     br.ra1, br.ra2, br.dec1, br.dec2)
             U = np.flatnonzero(unique)
             #print(len(U), 'of', W*H, 'pixels are unique to this brick')
-             
+
             index = bricklist.index(brick)
             assert(index == len(bricklist)-1)
-        
-      
+
+
             # Does a check on the legacysurvey-{brick}-nexp*.fits files
-            if False: 
+            if False:
                 #filepart = words[-1]
                 #filepart = filepart.replace('.fits.gz', '')
                 #filepart = filepart.replace('.fits.fz', '')
@@ -825,14 +825,14 @@ class SummaryTable(object):
                 #assert(band in 'grz')
                 nlist,nhist = dict(g=(gn,gnhist), r=(rn,rnhist), z=(zn,znhist))[band]
                 for band in hasBands:
-                    fn= os.path.join(dirprefix, 'coadd', 
+                    fn= os.path.join(dirprefix, 'coadd',
                                      brick[:3],brick,
                                      'legacysurvey-%s-nexp-%s.fits.gz' % (brick,band))
                     upix = fitsio.read(fn).flat[U]
                     med = np.median(upix)
                     print('Band', band, ': Median', med)
                     nlist[index] = med
-                
+
                     hist = nhist[index]
                     for i in range(nnhist):
                         if i < nnhist-1:
@@ -841,11 +841,11 @@ class SummaryTable(object):
                             hist[i] = np.sum(upix >= i)
                     assert(sum(hist) == len(upix))
                     print('Number of exposures histogram:', hist)
-        
+
         ibricks = np.array(ibricks)
-        
+
         #print('Maximum number of sources:', max(nsrcs))
-        
+
         T = fits_table()
         T.brickname = np.array(bricklist)
         T.ra  = self.surveyBricks.ra [ibricks]
@@ -889,7 +889,7 @@ class SummaryTable(object):
         T.ext_w2 = -2.5 * np.log10(T.trans_wise[:,1])
         T.ext_w3 = -2.5 * np.log10(T.trans_wise[:,2])
         T.ext_w4 = -2.5 * np.log10(T.trans_wise[:,3])
-        return T 
+        return T
 
     def find_unique_pixels(self,wcs, W, H, unique, ra1,ra2,dec1,dec2):
         if unique is None:
@@ -963,9 +963,9 @@ def main_mpi(bricks=[],doWhat=None,dr3_or_dr5=None,
                                date=date)
     elif doWhat == 'summary':
         tabMaker= SummaryTable(data_dir,dr3_or_dr5,date=date)
-    
+
     for cnt,brick in enumerate(bricks):
-        if (cnt+1) % 10 == 0: 
+        if (cnt+1) % 10 == 0:
             print('rank %d: %d/%d' % (comm.rank,cnt+1,len(bricks)))
         dr= derived_field_dir(brick,data_dir,date)
         try:
@@ -973,24 +973,24 @@ def main_mpi(bricks=[],doWhat=None,dr3_or_dr5=None,
         except OSError:
             pass
         tabMaker.run(brick)
-            
+
 
 if __name__ == '__main__':
     from argparse import ArgumentParser
     parser = ArgumentParser()
     parser.add_argument('--doWhat', type=str, choices=['randoms','summary'],required=True)
-    parser.add_argument('--data_dir', type=str, required=True, 
-                        help='path to obiwan/, tractor/ dirs') 
+    parser.add_argument('--data_dir', type=str, required=True,
+                        help='path to obiwan/, tractor/ dirs')
     parser.add_argument('--db_randoms_table', type=str, choices=['obiwan_eboss_elg',
                                     'obiwan_elg_dr5','obiwan_cosmos'],required=False)
-    parser.add_argument('--nproc', type=int, default=1, help='set to > 1 to run mpi4py') 
+    parser.add_argument('--nproc', type=int, default=1, help='set to > 1 to run mpi4py')
     parser.add_argument('--bricks_fn', type=str, default=None,
-                        help='specify a fn listing bricks to run, or a single default brick will be ran') 
-    parser.add_argument('--dr3_or_dr5', type=str, choices=['dr5','dr3'], 
-                        help='for obiwan_randoms_b',required=True) 
-    parser.add_argument('--date', type=str,help='mm-dd-yyyy, to label derived directory by',required=True) 
+                        help='specify a fn listing bricks to run, or a single default brick will be ran')
+    parser.add_argument('--dr3_or_dr5', type=str, choices=['dr5','dr3'],
+                        help='for obiwan_randoms_b',required=True)
+    parser.add_argument('--date', type=str,help='mm-dd-yyyy, to label derived directory by',required=True)
     args = parser.parse_args()
-    
+
     # Bricks to run
     if args.bricks_fn is None:
         bricks= ['1266p292']
@@ -1003,4 +1003,3 @@ if __name__ == '__main__':
     kwargs.update(bricks=bricks)
 
     main_mpi(**kwargs)
-
