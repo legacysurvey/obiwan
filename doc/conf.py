@@ -70,24 +70,25 @@ intersphinx_mapping = {
 
 from glob import glob
 def get_rel_path(name):
-    return dict(tests= '../tests/end_to_end',
-           obiwan= '../py/obiwan',
-           qa= '../py/obiwan/qa',
-           dplearn= '../py/obiwan/dplearn')[name]
+    d=dict(obiwan='../py/obiwan',
+           tests='../tests/end_to_end')
+    for key in ['runmanager','qa','scaling','dplearn']:
+        d[key]= '../py/obiwan/'+key
+    return d[name]
+    # if name == 'obiwan':
+    #     d['obiwan']=
+    #
+    # return dict(tests= ,
+    #         ,
+    #        qa= '../py/obiwan/qa',
+    #        dplearn= '../py/obiwan/dplearn')[name]
 
 def get_rm_modules(name):
-    general= ['__init__']
-    return dict(tests=[],
-                obiwan=['_version','mk_fits_image',
-                        'runs','time_per_brick'],
-                qa=['aaron_healpix','merge_and_match_ccds',
-                    'plots','tally'],
-                dplearn=[]
-                )[name] + general
+    return ['__init__']
 
 import pandas as pd
 def get_modules(name):
-    assert(name in ['obiwan','tests','qa','dplearn'])
+    #assert(name in ['obiwan','tests','qa','dplearn'])
     rel_path= get_rel_path(name)
     mods=glob(os.path.join(rel_path,"*.py"))
     mods= [(mod.replace('../py/','')
@@ -104,6 +105,27 @@ def get_modules(name):
         mods.remove(key)
     return mods
 
+
+def write_set_of_modules(name_in_code,title_in_api,
+                         file_obj):
+    """Used by create_api_rst to write the list of
+    obiwan.fetch, obiwan.kenobi, ... in api.rst for
+    the obiwan module.
+
+    Args:
+        name_in_code: ex) obiwan, runmanager, qa
+        title_in_api: ex) modules, post processing,
+    """
+    section=  title_in_api
+    section += "\n" + "-"*len(section) + "\n"
+    file_obj.write(section+".. autosummary::\n\t:toctree: _autosummary\n\t:template: module.rst\n\n")
+    # modules= ['obiwan.common',
+    #           'obiwan.draw_radec_color_z',
+    #           'obiwan.kenobi']
+    modules= get_modules(name_in_code)
+    for module in modules:
+        file_obj.write("\t" + module + "\n")
+    file_obj.write("\n")
 
 def create_api_rst():
     """
@@ -123,40 +145,17 @@ def create_api_rst():
         title += "\n" + "="*len(title) + "\n"
         title = ":orphan:\n\n" + title
         ff.write(title + "\n")
-        section=  "Modules"
-        section += "\n" + "-"*len(section) + "\n"
-        ff.write(section+".. autosummary::\n\t:toctree: _autosummary\n\t:template: module.rst\n\n")
-        # modules= ['obiwan.common',
-        #           'obiwan.draw_radec_color_z',
-        #           'obiwan.kenobi']
-        modules= get_modules('obiwan')
-        for module in modules:
-            ff.write("\t" + module + "\n")
-        ff.write("\n")
-        section=  "Tests"
-        section += "\n" + "-"*len(section) + "\n"
-        ff.write(section+".. autosummary::\n\t:toctree: _autosummary\n\t:template: module.rst\n\n")
-        # modules= ['tests.end_to_end.test_datasets']
-        modules= get_modules('tests')
-        for module in modules:
-            ff.write("\t" + module + "\n")
-        ff.write("\n")
-        section=  "Compute Jobs"
-        section += "\n" + "-"*len(section) + "\n"
-        ff.write(section+".. autosummary::\n\t:toctree: _autosummary\n\t:template: module.rst\n\n")
-        #modules= ['obiwan.qa.cpu_hours']
-        modules= get_modules('qa')
-        for module in modules:
-            ff.write("\t" + module + "\n")
-        ff.write("\n")
-        section=  "Deep Learning"
-        section += "\n" + "-"*len(section) + "\n"
-        ff.write(section+".. autosummary::\n\t:toctree: _autosummary\n\t:template: module.rst\n\n")
-        #modules= ['obiwan.dplearn.cnn']
-        modules= get_modules('dplearn')
-        for module in modules:
-            ff.write("\t" + module + "\n")
-        ff.write("\n")
+        for name_in_code,title_in_api in [
+                ('obiwan','Modules'),
+                ('runmanager','Post-Processing'),
+                ('qa','Analysis & Plotting'),
+                ('scaling','Scaling Tests'),
+                ('tests','Tests'),
+                ('dplearn','Deep Learning')]:
+            write_set_of_modules(name_in_code,title_in_api,ff)
+        # write_set_of_modules('tests','Tests',ff)
+        # write_set_of_modules('qa','Compute Jobs',ff)
+        # write_set_of_modules('dplearn','Deep Learning',ff)
 
     # make the output directory if it doesn't exist
     #output_path = os.path.join(cur_dir, 'api', '_autosummary')

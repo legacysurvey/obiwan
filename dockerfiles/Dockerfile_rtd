@@ -1,0 +1,47 @@
+#FROM ubuntu:16.04
+FROM kaylanb/obiwan_new
+
+RUN apt-get update && apt-get install -y \
+  vim software-properties-common
+
+RUN apt-get update && apt-get install -y \
+  bzr subversion git-core mercurial libpq-dev libxml2-dev libxslt-dev \
+  libxslt1-dev build-essential postgresql-client libmysqlclient-dev curl \
+  doxygen g++ graphviz-dev libfreetype6 libbz2-dev libcairo2-dev \
+  libenchant1c2a libevent-dev libffi-dev libfreetype6-dev \
+  libgraphviz-dev libjpeg-dev libjpeg8-dev liblcms2-dev libreadline-dev \
+  libsqlite3-dev libtiff5-dev libwebp-dev pandoc pkg-config zlib1g-dev \
+  && rm -rf /var/lib/apt/lists/*
+
+RUN apt-get update && apt-get install -y \
+    make libssl-dev wget llvm libncurses5-dev libncursesw5-dev xz-utils \
+    tk-dev
+
+# LaTeX -- split to reduce image layer size
+RUN apt-get update && apt-get install -y \
+  texlive-fonts-extra
+RUN apt-get update && apt-get install -y \
+  texlive-latex-extra-doc texlive-publishers-doc \
+  texlive-pictures-doc
+RUN apt-get update && apt-get install -y \
+  texlive-lang-english texlive-lang-japanese
+RUN apt-get update && apt-get install -y \
+  texlive-full
+RUN apt-get update && apt-get install -y \
+    texlive-fonts-recommended latex-cjk-chinese-arphic-bkai00mp \
+    latex-cjk-chinese-arphic-gbsn00lp latex-cjk-chinese-arphic-gkai00mp \
+    fonts-symbola
+
+# Install plantuml
+RUN apt-get update && apt-get install -y \
+  plantuml
+
+COPY requirements_py3.txt /tmp/
+RUN source /srv/py3_venv/bin/activate && \
+    pip3 install --upgrade pip setuptools wheel && \
+    pip3 install sphinx_rtd_theme sphinx_bootstrap_theme \
+    nbsphinx && \
+    pip3 install -U tensorflow
+
+WORKDIR /
+CMD ["/bin/bash"]
