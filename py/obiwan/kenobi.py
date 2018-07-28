@@ -36,28 +36,28 @@ import fitsio
 from astropy import units
 from astropy.coordinates import SkyCoord
 
-from obiwan.db_tools import getSrcsInBrick 
-from obiwan.common import get_outdir_runbrick, get_brickinfo_hack 
+from obiwan.db_tools import getSrcsInBrick
+from obiwan.common import get_outdir_runbrick, get_brickinfo_hack
 from obiwan.common import stack_tables
 
 # Sphinx build would crash
-try:
-    from legacypipe.runbrick import run_brick
-    from legacypipe.decam import DecamImage
-    from legacypipe.survey import LegacySurveyData, wcs_for_brick
-    from legacypipe.runcosmos import DecamImagePlusNoise, CosmosSurvey 
+#try:
+from legacypipe.runbrick import run_brick
+from legacypipe.decam import DecamImage
+from legacypipe.survey import LegacySurveyData, wcs_for_brick
+from legacypipe.runcosmos import DecamImagePlusNoise, CosmosSurvey
 
-    from astrometry.util.fits import fits_table, merge_tables
-    from astrometry.util.ttime import Time
-    from astrometry.libkd.spherematch import match_radec
+from astrometry.util.fits import fits_table, merge_tables
+from astrometry.util.ttime import Time
+from astrometry.libkd.spherematch import match_radec
 
-    from tractor.psfex import PsfEx, PsfExModel
-    from tractor.basics import GaussianMixtureEllipsePSF, RaDecPos
-    from tractor.sfd import SFDMap
+from tractor.psfex import PsfEx, PsfExModel
+from tractor.basics import GaussianMixtureEllipsePSF, RaDecPos
+from tractor.sfd import SFDMap
 
-    import galsim
-except ImportError:
-    pass
+import galsim
+#except ImportError:
+#    pass
 
 DATASETS=['dr5','dr3','cosmos','dr6']
 
@@ -78,7 +78,7 @@ def imshow_stamp(stamp,fn='test.png',galsimobj=True):
         img = stamp.array.copy()
     else:
         img= stamp.copy()
-    img=img + abs(img.min())+1 
+    img=img + abs(img.min())+1
     plt.imsave(fn,np.log10(img),origin='lower',cmap='gray')
     #plt.imshow(np.log10(img),origin='lower',cmap='gray')
     #plt.savefig(fn)
@@ -96,7 +96,7 @@ def plot_radial_profs(fn,profs):
 
 
 def ptime(text,t0):
-    '''Timer'''    
+    '''Timer'''
     tnow=Time()
     print('TIMING:%s ' % text,tnow-t0)
     return tnow
@@ -115,21 +115,21 @@ def get_fnsuffix(**kwargs):
     return '-{}-{}.fits'.format(kwargs['objtype'], kwargs['brickname'])
                                    #'rs%d' % kwargs['rowst'])
 
-try: 
+try:
     class SimDecals(LegacySurveyData):
         """Top level object that specifying which data to run through pipeline
-        
+
         Same behavior as legacypipe.runs.Dr3DecalsSurvey which chooses which
             CCDs to include. But this also stores all the relevant obiwan
             objects
-        
+
         Args:
-            dataset: see definition in 
-                https://github.com/legacysurvey/obiwan/blob/master/py/obiwan/test/end_to_end/README.md 
+            dataset: see definition in
+                https://github.com/legacysurvey/obiwan/blob/master/py/obiwan/test/end_to_end/README.md
             survey_dir: as used by legacypipe.runbrick.run_brick()
                 Defaults to $LEGACY_SURVEY_DIR environment variable.  Where to look for
                 files including calibration files, tables of CCDs and bricks, image data
-            metacat: fits_table 
+            metacat: fits_table
                 configuration-like params for the simulated sources
             simcat: fits_table
                 simulated source catalog for a given brick (not CCD).
@@ -141,24 +141,24 @@ try:
                 with that of the simulated source only
 
         Attributes:
-            DR: see above 
-            metacat: fits_table 
+            DR: see above
+            metacat: fits_table
                 configuration-like params for the simulated sources
             simcat: fits_table
                 simulated source catalog for a given brick (not CCD).
             output_dir: legacypipe's outdir
-            add_sim_noise: add Poisson noise from the simulated source to the image 
+            add_sim_noise: add Poisson noise from the simulated source to the image
             image_eq_model: referred to as 'testA'
                 wherever add a simulated source, replace both image and invvar of the image
                 with that of the simulated source only
         """
-        
-        def __init__(self, dataset=None, survey_dir=None, metacat=None, simcat=None, 
+
+        def __init__(self, dataset=None, survey_dir=None, metacat=None, simcat=None,
                      output_dir=None,add_sim_noise=False, seed=0,
                      image_eq_model=False,**kwargs):
             self.dataset= dataset
-            
-            kw= dict(survey_dir=survey_dir, 
+
+            kw= dict(survey_dir=survey_dir,
                      output_dir=output_dir)
             if self.dataset == 'cosmos':
                 kw.update(subset=kwargs['subset'])
@@ -171,17 +171,17 @@ try:
             self.seed= seed
             self.image_eq_model= image_eq_model
             print('SimDecals: self.image_eq_model=',self.image_eq_model)
-            
+
         def get_image_object(self, t):
             if self.dataset == 'cosmos':
                 return SimImageCosmos(self, t)
             else:
                 return SimImage(self, t)
-        
+
         def filter_ccds_files(self, fns):
             """see legacypipe/runs.py"""
             return fns
-        
+
         def ccds_for_fitting(self, brick, ccds):
             if self.dataset in ['dr3','dr5']:
                 return np.flatnonzero(ccds.camera == 'decam')
@@ -190,26 +190,26 @@ try:
             #elif self.dataset == 'DR4':
                 #   return np.flatnonzero(np.logical_or(ccds.camera == 'mosaic',
             #                         ccds.camera == '90prime'))
-        
+
         def filter_ccd_kd_files(self, fns):
             """see legacypipe/runs.py"""
             return []
-        
+
     def get_srcimg_invvar(stamp_ivar,img_ivar):
         """stamp_ivar, img_ivar -- galsim Image objects"""
         # Use img_ivar when stamp_ivar == 0, both otherwise
         use_img_ivar= np.ones(img_ivar.array.shape).astype(bool)
         use_img_ivar[ stamp_ivar.array > 0 ] = False
         # First compute using both
-        ivar= np.power(stamp_ivar.array.copy(), -1) + np.power(img_ivar.array.copy(), -1) 
-        ivar= np.power(ivar,-1) 
+        ivar= np.power(stamp_ivar.array.copy(), -1) + np.power(img_ivar.array.copy(), -1)
+        ivar= np.power(ivar,-1)
         keep= np.ones(ivar.shape).astype(bool)
         keep[ (stamp_ivar.array > 0)*\
               (img_ivar.array > 0) ] = False
         ivar[keep] = 0.
         # Now use img_ivar only where need to
         ivar[ use_img_ivar ] = img_ivar.array.copy()[ use_img_ivar ]
-        # return 
+        # return
         obj_ivar = stamp_ivar.copy()
         obj_ivar.fill(0.)
         obj_ivar+= ivar
@@ -228,20 +228,20 @@ try:
         # var * nano2e^2 = e-^2
         sat= saturation_e(camera) / nano2e**2
         var[flag]= sat
-        return var 
+        return var
 except NameError:
     pass
 
-try: 
+try:
     class SimDecalsCosmos(SimDecals,CosmosSurvey):
         """Filters the CCDs to just those in the cosmos realizations
 
-        Call just like SimDecals except with additional Argument 'subset'        
-        
+        Call just like SimDecals except with additional Argument 'subset'
+
         Args:
             **kwargs: SimDecals args + 'subset'
         """
-        
+
         def __init__(self, **kwargs):
             super(SimDecalsCosmos, self).__init__(**kwargs)
 except NameError:
@@ -249,13 +249,13 @@ except NameError:
 
 
 
-try: 
+try:
     class SimImage(DecamImage):
         """Adds simulated sources to a single exposure
 
-        Similar behavior as legacypipe.decam.DecamImage. Instead of 
+        Similar behavior as legacypipe.decam.DecamImage. Instead of
             loading images specifically from DECam, this  loads images
-            with simulated sources added in 
+            with simulated sources added in
 
         Args:
             survey: SimDecals() object
@@ -317,11 +317,11 @@ try:
             tim_invvar = galsim.Image(tim.getInvvar())
             tim_dq = galsim.Image(tim.dq)
             # Also store galaxy sims and sims invvar
-            sims_image = tim_image.copy() 
+            sims_image = tim_image.copy()
             sims_image.fill(0.0)
             sims_ivar = sims_image.copy()
 
-            # Store simulated galaxy images in tim object 
+            # Store simulated galaxy images in tim object
             # Loop on each object.
             for ii, obj in enumerate(self.survey.simcat):
                 # Print timing
@@ -339,8 +339,8 @@ try:
                     stamp = objstamp.lrg(obj)
                 elif objtype == 'qso':
                     stamp = objstamp.qso(obj)
-                t0= ptime('Finished Drawing %s: id=%d band=%s dbflux=%f addedflux=%f' % 
-                    (objtype.upper(), obj.id,objstamp.band, 
+                t0= ptime('Finished Drawing %s: id=%d band=%s dbflux=%f addedflux=%f' %
+                    (objtype.upper(), obj.id,objstamp.band,
                      obj.get(objstamp.band+'flux'),stamp.array.sum()), t0)
 
                 stamp_nonoise= stamp.copy()
@@ -350,12 +350,12 @@ try:
                 # Add source if EVEN 1 pix falls on the CCD
                 overlap = stamp.bounds & tim_image.bounds
                 if overlap.area() > 0:
-                    print('Stamp overlaps tim: id=%d band=%s' % (obj.id,objstamp.band))     
+                    print('Stamp overlaps tim: id=%d band=%s' % (obj.id,objstamp.band))
                     tim.ids_added.append(obj.id)
-                    stamp = stamp[overlap]   
-                    ivarstamp = ivarstamp[overlap]      
+                    stamp = stamp[overlap]
+                    ivarstamp = ivarstamp[overlap]
                     stamp_nonoise= stamp_nonoise[overlap]
-                    
+
                     # Zero out invvar where bad pixel mask is flagged (> 0)
                     keep = np.ones(tim_dq[overlap].array.shape)
                     keep[ tim_dq[overlap].array > 0 ] = 0.
@@ -368,11 +368,11 @@ try:
                     back_ivar= tim_invvar[overlap].copy()
                     tot_ivar= get_srcimg_invvar(ivarstamp, back_ivar)
                     tim_invvar[overlap] = tot_ivar.copy()
-                    
+
                     #Extra
-                    sims_image[overlap] += stamp.copy() 
+                    sims_image[overlap] += stamp.copy()
                     sims_ivar[overlap] += ivarstamp.copy()
-                    
+
                     if np.min(sims_ivar.array) < 0:
                         log.warning('Negative invvar!')
                         import pdb ; pdb.set_trace()
@@ -382,7 +382,7 @@ try:
             if self.survey.image_eq_model:
                 tim.data = sims_image.array.copy()
                 tim.inverr = np.zeros(tim.data.shape)
-                tim.inverr[sims_image.array > 0.] = np.sqrt(1./sims_image.array.copy()[sims_image.array > 0.]) 
+                tim.inverr[sims_image.array > 0.] = np.sqrt(1./sims_image.array.copy()[sims_image.array > 0.])
             else:
                 tim.data = tim_image.array
                 tim.inverr = np.sqrt(tim_invvar.array)
@@ -390,16 +390,16 @@ try:
 except NameError:
     pass
 
-try: 
+try:
     class SimImageCosmos(SimImage,DecamImagePlusNoise):
         """Filters the CCDs to just those in the cosmos realizations
 
-        Call just like SimDecals except with additional Argument 'subset'        
-        
+        Call just like SimDecals except with additional Argument 'subset'
+
         Args:
             **kwargs: SimDecals args + 'subset'
         """
-        
+
         def __init__(self, survey, t):
             super(SimImageCosmos, self).__init__(survey, t)
 except NameError:
@@ -440,7 +440,7 @@ def ivar_for_galaxy(gal,nano2e):
 class BuildStamp():
     """Does the drawing of simulated sources on a single exposure
 
-    Args: 
+    Args:
         tim: Tractor Image Object for a specific CCD
         gain: gain of the CCD
 
@@ -462,32 +462,32 @@ class BuildStamp():
         #self.camera=camera
         self.band = tim.band.strip()
         # GSParams should be used when galsim object is initialized
-        # MAX size for sersic n < 6.2 
+        # MAX size for sersic n < 6.2
         # https://github.com/GalSim-developers/GalSim/pull/450/commits/755bcfdca25afe42cccfd6a7f8660da5ecda2a65
         self.gsparams = galsim.GSParams(maximum_fft_size=65536)
         #print('FIX ME!!!!!!!!!!!!!!!!!!!!!!!!!!!!')
         self.gsdeviate = galsim.BaseDeviate(seed)
         self.wcs = tim.getWcs()
         self.psf = tim.getPsf()
-        
+
         # zpscale equivalent to magzpt = self.t.ccdzpt+2.5*np.log10(self.t.exptime)
         self.zpscale = tim.zpscale      # nanomaggies-->ADU (decam) or e-/sec (bass,mzls)
         assert(camera in ['decam','mosaic','90prime'])
         if camera == 'decam':
             self.nano2e = self.zpscale*gain # nanomaggies -> ADU -> e-
-        else:   
+        else:
             # correct for mzls, possibly not for bass
             self.nano2e = self.zpscale # nanomaggies -> e-/s -> e-
 
     def setlocal(self,obj):
-        """Get the pixel positions, local wcs, local PSF.""" 
+        """Get the pixel positions, local wcs, local PSF."""
 
         xx, yy = self.wcs.positionToPixel(RaDecPos(obj.get('ra'), obj.get('dec')))
         self.pos = galsim.PositionD(xx, yy)
         self.xpos = int(self.pos.x)
         self.ypos = int(self.pos.y)
         self.offset = galsim.PositionD(self.pos.x-self.xpos, self.pos.y-self.ypos)
-        
+
         # Get the local PSF
         self.localpsf = self.psf.getPointSourcePatch(self.xpos, self.ypos)
         self.localpsf= galsim.Image(self.localpsf.getImage(),
@@ -501,7 +501,7 @@ class BuildStamp():
         # Use input flux as the 7'' aperture flux
         self.setlocal(obj)
         stamp = self.localpsf.copy()
-        stamp.shift(dx=self.offset.x,dy=self.offset.y)      
+        stamp.shift(dx=self.offset.x,dy=self.offset.y)
         # Scale to desired flux
         stamp *= float(obj.get(self.band+'flux')) # [nanomaggies]
         # position in observed image
@@ -514,7 +514,7 @@ class BuildStamp():
         psf= self.localpsf.copy()
         # doesn't change tractor measurements
         #psf /= psf.array.sum()
-        psf= galsim.InterpolatedImage(psf) 
+        psf= galsim.InterpolatedImage(psf)
                                              #gsparams=self.gsparams)
         return galsim.Convolve([gal, psf]) #, gsparams=self.gsparams)
 
@@ -524,15 +524,15 @@ class BuildStamp():
         self.setlocal(obj)
         #try:
         # TRIAL: galaxy profile
-        gal = galsim.Sersic(float(obj.get('n')), 
+        gal = galsim.Sersic(float(obj.get('n')),
                     half_light_radius=float(obj.get('rhalf')),\
-                    flux=float(obj.get(self.band+'flux')), 
+                    flux=float(obj.get(self.band+'flux')),
                     gsparams=self.gsparams)
         gal = gal.shear(e1=float(obj.get('e1')), e2=float(obj.get('e2')))
         # Convolve with normed-psf
         gal = self.convolve_galaxy(gal)
         gal = gal.drawImage(method='auto',
-                            offset=self.offset,  
+                            offset=self.offset,
                             scale= self.wcs.pixscale_at(self.xpos,self.ypos))
                             #method='no_pixel'
         # Scale to desired flux
@@ -595,10 +595,10 @@ def build_simcat(Samp=None,brickwcs=None, meta=None):
             usually a subset of all sources in the brick determined by
             rowstart (rs)
         brickwcs: WCS object for the brick
-        meta: 'metacat' table 
+        meta: 'metacat' table
             fits_table with configuration-like params for the simulated sources
 
-    Returns: 
+    Returns:
         tuple of
         cat:
         skipping_ids:
@@ -617,7 +617,7 @@ def build_simcat(Samp=None,brickwcs=None, meta=None):
     skipping_ids= Samp.get('id')[i_skip]
     log.info('sources %d, keeping %d, flagged as nearby %d' % (len(Samp),len(i_keep),len(i_skip)))
     Samp.cut(i_keep)
-    
+
     xxyy = brickwcs.radec2pixelxy(Samp.ra,Samp.dec)
 
     #cat = Table()
@@ -634,11 +634,11 @@ def build_simcat(Samp=None,brickwcs=None, meta=None):
 
     typ=meta.get('objtype')[0]
     # Mags
-    filts = ['%s %s' % ('DES', f) for f in 'grz'] 
+    filts = ['%s %s' % ('DES', f) for f in 'grz']
     for band in ['g','r','z']:
-        nanomag= 1E9*10**(-0.4*Samp.get(band)) 
+        nanomag= 1E9*10**(-0.4*Samp.get(band))
         # Add extinction (to stars too, b/c "decam-chatter 6517")
-        mw_transmission= SFDMap().extinction(['DES %s' % band], 
+        mw_transmission= SFDMap().extinction(['DES %s' % band],
                                              Samp.ra, Samp.dec)
         mw_transmission= 10**(-mw_transmission[:,0].astype(np.float32)/2.5)
         cat.set('%sflux' % band, nanomag * mw_transmission)
@@ -649,8 +649,8 @@ def build_simcat(Samp=None,brickwcs=None, meta=None):
         # Convert to e1,e2 if given ba,pa
         if ('ba' in Samp.get_columns()) & ('pa' in Samp.get_columns()):
             e1,e2= get_e1_e2(Samp.get('ba'),Samp.get('pa'))
-            Samp.set('e1',e1) 
-            Samp.set('e2',e2) 
+            Samp.set('e1',e1)
+            Samp.set('e2',e2)
         for key in ['n','rhalf','e1','e2']:
             cat.set(key, Samp.get(key))
         # Sersic n: GALSIM n = [0.3,6.2] for numerical stability,see
@@ -665,14 +665,14 @@ def get_parser():
     parser = argparse.ArgumentParser(formatter_class=argparse.
                                      ArgumentDefaultsHelpFormatter,
                                      description='DECaLS simulations.')
-    parser.add_argument('--dataset', type=str, choices=['dr5','dr3', 'cosmos','dr6'], required=True, help='see definitions in obiwan/test/README.md') 
-    parser.add_argument('-o', '--objtype', type=str, choices=['star','elg', 'lrg', 'qso'], default='star', required=True) 
+    parser.add_argument('--dataset', type=str, choices=['dr5','dr3', 'cosmos','dr6'], required=True, help='see definitions in obiwan/test/README.md')
+    parser.add_argument('-o', '--objtype', type=str, choices=['star','elg', 'lrg', 'qso'], default='star', required=True)
     parser.add_argument('-b', '--brick', type=str, default='2428p117', required=True)
     parser.add_argument('--outdir', default='./', required=False)
     parser.add_argument('--logfn', default='./', required=False)
-    parser.add_argument('-n', '--nobj', type=int, default=500, metavar='', 
+    parser.add_argument('-n', '--nobj', type=int, default=500, metavar='',
                         help='number of objects to simulate (required input)')
-    parser.add_argument('-rs', '--rowstart', type=int, default=0, metavar='', 
+    parser.add_argument('-rs', '--rowstart', type=int, default=0, metavar='',
                         help='zero indexed, row of ra,dec,mags table, after it is cut to brick, to start on')
     parser.add_argument('--do_skipids', type=str, choices=['no','yes'],default='no', help='inject skipped ids for brick, otherwise run as usual')
     parser.add_argument('--do_more', type=str, choices=['no','yes'],default='no', help='yes if running more randoms b/c TS returns too few targets')
@@ -680,15 +680,15 @@ def get_parser():
     parser.add_argument('--randoms_db', default='obiwan_elg', help='desi db table name for randoms')
     parser.add_argument('--randoms_from_fits', default=None, help='set to read randoms from fits file instead of scidb2.nersc.gov db, set to absolute path of local fits file on computer')
     parser.add_argument('--dont_sort_sampleid', action="store_true", default=False, help='False to sort sample by id')
-    parser.add_argument('-t', '--threads', type=int, default=1, metavar='', 
+    parser.add_argument('-t', '--threads', type=int, default=1, metavar='',
                         help='number of threads to use when calling The Tractor')
-    parser.add_argument('-z', '--zoom', nargs=4, default=(0, 3600, 0, 3600), type=int, metavar='', 
+    parser.add_argument('-z', '--zoom', nargs=4, default=(0, 3600, 0, 3600), type=int, metavar='',
                         help='see runbrick.py; (default is 0 3600 0 3600)')
-    parser.add_argument('-survey-dir', '--survey_dir', metavar='', 
+    parser.add_argument('-survey-dir', '--survey_dir', metavar='',
                         help='Location of survey-ccds*.fits.gz')
     parser.add_argument('--add_sim_noise', action="store_true", help="set to add noise to simulated sources")
     parser.add_argument('-testA','--image_eq_model', action="store_true", help="set to set image,inverr by model only (ignore real image,invvar)")
-    parser.add_argument('--all-blobs', action='store_true', 
+    parser.add_argument('--all-blobs', action='store_true',
                         help='Process all the blobs, not just those that contain simulated sources.')
     parser.add_argument('--stage', choices=['tims', 'image_coadds', 'srcs', 'fitblobs', 'coadds'],
                         type=str, default=None, metavar='', help='Run through the stage then stop')
@@ -712,20 +712,20 @@ def get_parser():
                         help='run the code even if expected output already exists')
     parser.add_argument('-v', '--verbose', action='store_true', help='toggle on verbose output')
     return parser
- 
+
 def create_metadata(kwargs=None):
     """fits_table with configuration-like params for the simulated sources
-    
+
     TODO: Should metacat table have a rowstart column?
     TODO: One metacat table per brick, instead of one per `rs*` directory?
-    
+
     Args:
         kwargs: configuration-like params for the simulated sources
             {'brickname': which chunk of sky
             'objtype': star,elg,lrg,qso
             'nobj': number of simulated sources for this run
             }
-    
+
     Returns:
         Nothing
         writes the 'metacat' fits_table to disk and stores it
@@ -753,11 +753,11 @@ def create_metadata(kwargs=None):
     #if not kwargs['args'].seed:
     #    log.info('Random seed = {}'.format(kwargs['args'].seed))
     #    metacat['SEED'] = kwargs['args'].seed
-    #metacat_dir = os.path.join(kwargs['decals_sim_dir'], kwargs['objtype'],kwargs['brickname'][:3],kwargs['brickname'])    
+    #metacat_dir = os.path.join(kwargs['decals_sim_dir'], kwargs['objtype'],kwargs['brickname'][:3],kwargs['brickname'])
     metacat_dir= get_outdir_runbrick(kwargs['decals_sim_dir'],
                              kwargs['brickname'],kwargs['rowst'],
                              do_skipids=kwargs['do_skipids'],do_more=kwargs['do_more'])
-    if not os.path.exists(metacat_dir): 
+    if not os.path.exists(metacat_dir):
         os.makedirs(metacat_dir)
     metafile = os.path.join(metacat_dir, 'metacat'+get_fnsuffix(**kwargs))
     log.info('Writing {}'.format(metafile))
@@ -777,7 +777,7 @@ def create_ith_simcat(d=None):
             'brickwcs': WCS object for the brick
             'metacat': fits_table with configuration params for the simulated sources
             }
-        
+
     Returns:
         Nothing, saves the 'simcat' and 'skipped_ids' tables
         Adds 'simcat' table to dict 'd'
@@ -789,11 +789,11 @@ def create_ith_simcat(d=None):
     #seed= d['seeds'][ith_chunk]
     #simcat = build_simcat(d['nobj'], d['brickname'], d['brickwcs'], d['metacat'], seed)
     simcat, skipped_ids = build_simcat(Samp=d['Samp'],brickwcs=d['brickwcs'],meta=d['metacat'])
-    # Simcat 
+    # Simcat
     simcat_dir = get_outdir_runbrick(d['decals_sim_dir'],
                            d['brickname'],d['rowst'],
                            do_skipids=d['do_skipids'],do_more=d['do_more'])
-    if not os.path.exists(simcat_dir): 
+    if not os.path.exists(simcat_dir):
         os.makedirs(simcat_dir)
     #simcatfile = os.path.join(simcat_dir, 'simcat-{}-{}-row{}-{}.fits'.format(d['brickname'], d['objtype'],rowstart,rowend)) # chunksuffix))
     simcatfile = os.path.join(simcat_dir, 'simcat'+get_fnsuffix(**d))
@@ -822,19 +822,19 @@ def get_checkpoint_fn(outdir,brick,rowstart):
 
 def get_runbrick_setup(**kwargs):
     """Convert runbrick.py cmd line options into `**kwargs` for run_brick()
-    
+
     The command line options depend on the Data Release (e.g. the
-        legacypipe code version. The cmd line options associated with 
-        each DR get modified and repackaged into a dict in 
+        legacypipe code version. The cmd line options associated with
+        each DR get modified and repackaged into a dict in
         legacypipe.runbrick so this converter is required to call run_brick
         appropriately
-    
+
     Args:
         **kwargs: dict of the cmd line options to obiwan.kenobi.py
-    
+
     Returns:
         dict to use when calling legacypipe.runbrick.run_brick like
-            run_brick(brickname, survey, `**dict`)      
+            run_brick(brickname, survey, `**dict`)
     """
     dataset= kwargs['dataset']
     assert(dataset in DATASETS)
@@ -862,8 +862,8 @@ def get_runbrick_setup(**kwargs):
     elif dataset == 'dr5':
         # defaults: rex (use --simp), nsigma 6 ,hybrid-psf (--no-hybrid-psf otherwise)
         # depth cut already done (use --depth-cut to do depth cut anyway)
-        cmd_line += ['--run', 'dr5'] 
-    
+        cmd_line += ['--run', 'dr5']
+
     rb_parser= get_runbrick_parser()
     rb_opt = rb_parser.parse_args(args=cmd_line)
     rb_optdict = vars(rb_opt)
@@ -875,18 +875,18 @@ def get_runbrick_setup(**kwargs):
 
 def do_one_chunk(d=None):
     """Runs the legacypipe/Tractor pipeline on images with simulated sources
-    
+
     Args:
         d: {'args': obiwan.kenobi.py cmd line argparse.Namespace object
             'brickname': chunk of sky
             'metacat': fits_table configuration params for the simulated sources
             'simcat': fits_table simulated source catalog for a given brick (not CCD).
-    
+
     Note:
         runb_brick() is 'main' for the legacypipe/Tractor pipeline
-    
+
     Returns:
-        Nothing, but this func end ups writing out all the obiwan results 
+        Nothing, but this func end ups writing out all the obiwan results
     """
     assert(d is not None)
     kw= dict(dataset=d['args'].dataset,\
@@ -905,7 +905,7 @@ def do_one_chunk(d=None):
     else:
         blobxy = zip(d['simcat'].get('x'), d['simcat'].get('y'))
     # Default runbrick call sequence
-    obiwan_kwargs= vars(d['args']) 
+    obiwan_kwargs= vars(d['args'])
     runbrick_kwargs= get_runbrick_setup(**obiwan_kwargs)
     # Obiwan modifications
     runbrick_kwargs.update(blobxy=blobxy)
@@ -926,13 +926,13 @@ def dobash(cmd):
 def do_ith_cleanup(d=None):
     """Moves all obiwan+legacypipe outputs to a new directory stucture
 
-    Uses rsync to move everthing, if all the rsync's succeed then all the 
-        original files and directories are removed 
+    Uses rsync to move everthing, if all the rsync's succeed then all the
+        original files and directories are removed
 
     Args:
         d: dict with keys brickname, simcat_dir
     """
-    assert(d is not None) 
+    assert(d is not None)
     log = logging.getLogger('decals_sim')
     log.info('Cleaning up...')
     brick= d['brickname']
@@ -975,13 +975,13 @@ def do_ith_cleanup(d=None):
     if not d['args'].early_coadds:
         drs+= ['chi2']
     for name in names:
-        dobash('rm %s/coadd/%s/%s/%s/*%s*' % 
+        dobash('rm %s/coadd/%s/%s/%s/*%s*' %
                     (base,bri,brick,rsdir,name))
     if rsdir != 'rs0':
         # jpgs are nice to look at, but only keep in 1 dir
         for name in ['jpg']:
-            dobash('rm %s/coadd/%s/%s/%s/*.%s' % 
-                        (base,bri,brick,rsdir,name))    
+            dobash('rm %s/coadd/%s/%s/%s/*.%s' %
+                        (base,bri,brick,rsdir,name))
 
 
 def get_sample(objtype,brick,randoms_db,
@@ -1000,7 +1000,7 @@ def get_sample(objtype,brick,randoms_db,
         outdir: None if do_skipids='no'; otherwise path like $CSCRATCH/obiwan_out/elg_9deg2_ra175
         dont_sort_sampleid: False to sort sample by id
 
-    
+
     Returns:
         tupe: sample fits_table, seed
     """
@@ -1016,7 +1016,7 @@ def get_sample(objtype,brick,randoms_db,
         skip_ids= get_skip_ids(outdir, brick, objtype)
         Samp,seed= getSrcsInBrick(brick,objtype, db_table=randoms_db,
                              skipped_ids= skip_ids)
-    # Already did these cuts in decals_sim_radeccolors 
+    # Already did these cuts in decals_sim_radeccolors
     #r0,r1,d0,d1= brickwcs.radec_bounds()
     #Samp.cut( (Samp.ra >= r0)*(Samp.ra <= r1)*\
     #          (Samp.dec >= d0)*(Samp.dec <= d1) )
@@ -1037,13 +1037,13 @@ def main(args=None):
     # Command line options
     if args is None:
         # Read from cmd line
-        parser= get_parser()  
+        parser= get_parser()
         args = parser.parse_args(args=args)
     else:
         # args is already a argparse.Namespace obj
-        pass 
+        pass
     # Print calling sequence
-    print('Args:', args)   
+    print('Args:', args)
     if args.do_more == 'yes':
       assert(not args.minid is None)
     # Setup loggers
@@ -1053,19 +1053,19 @@ def main(args=None):
         lvl = logging.INFO
     logging.basicConfig(level=lvl, stream=sys.stdout) #,format='%(message)s')
     log = logging.getLogger('decals_sim')
-    # Sort through args 
+    # Sort through args
     #log.info('decals_sim.py args={}'.format(args))
     #max_nobj=500
     #max_nchunk=1000
     #if args.ith_chunk is not None: assert(args.ith_chunk <= max_nchunk-1)
     #assert(args.nchunk <= max_nchunk)
     #assert(args.nobj <= max_nobj)
-    #if args.ith_chunk is not None: 
+    #if args.ith_chunk is not None:
     #    assert(args.nchunk == 1) #if choose a chunk, only doing 1 chunk
     if args.nobj is None:
         parser.print_help()
         sys.exit(1)
- 
+
     # Exit if expected output already exists
     rsdir= get_outdir_runbrick(args.outdir,
                         args.brick,args.rowstart,
@@ -1076,7 +1076,7 @@ def main(args=None):
                     'tractor',args.brick[:3],args.brick,
                     rsdir,
                     'tractor-%s.fits' % args.brick)
-    if (os.path.exists(tractor_fn) & 
+    if (os.path.exists(tractor_fn) &
         (not args.overwrite_if_exists)):
        print('Exiting, already finished %s' % tractor_fn)
        sys.exit(0)
@@ -1086,7 +1086,7 @@ def main(args=None):
 
     # Output dir
     decals_sim_dir = args.outdir
-        
+
     #nchunk = args.nchunk
     #rand = np.random.RandomState(args.seed) # determines seed for all chunks
     #seeds = rand.random_integers(0,2**18, max_nchunk)
@@ -1162,7 +1162,7 @@ def main(args=None):
         junk= os.system('touch %s' % fn)
         print('Wrote %s' % fn)
         raise ValueError('starting row=%d exceeds number of artificial sources, quit' % args.rowstart)
-    
+
     # Create simulated catalogues and run Tractor
     create_metadata(kwargs=kwargs)
     t0= ptime('create_metadata',t0)
@@ -1181,8 +1181,8 @@ def main(args=None):
     t0= ptime('do_ith_cleanup',t0)
     log.info('All done!')
     return 0
-     
+
 if __name__ == '__main__':
-    print('obiwan started at %s' % time_builtin.strftime("%Y-%m-%d %H:%M:%S"))   
+    print('obiwan started at %s' % time_builtin.strftime("%Y-%m-%d %H:%M:%S"))
     main()
-    print('obiwan finshed at %s' % time_builtin.strftime("%Y-%m-%d %H:%M:%S"))   
+    print('obiwan finshed at %s' % time_builtin.strftime("%Y-%m-%d %H:%M:%S"))

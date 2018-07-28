@@ -1,5 +1,6 @@
-import matplotlib
-matplotlib.use('Agg') # display backend
+if __name__ == '__main__':
+    import matplotlib
+    matplotlib.use('Agg') # display backend
 import matplotlib.pyplot as plt
 from matplotlib.patches import Rectangle
 from matplotlib.collections import PatchCollection
@@ -68,11 +69,11 @@ def cut_to_region(table,region):
     hiRa= T.ra >= 300
     if len(T[hiRa]) > 0:
         T.ra[hiRa] -= 360
-    keep= ((T.ra >= lims['ra'][0]) & 
-           (T.ra <= lims['ra'][1]) & 
-           (T.dec >= lims['dec'][0]) & 
+    keep= ((T.ra >= lims['ra'][0]) &
+           (T.ra <= lims['ra'][1]) &
+           (T.dec >= lims['dec'][0]) &
            (T.dec <= lims['dec'][1]))
-    return T[keep] 
+    return T[keep]
 
 
 
@@ -89,11 +90,11 @@ class SummaryPlots(object):
         self.summary= self.summary[ np.argsort(self.summary.brickname)]
         for key in ['ra','dec']:
             self.summary.set(key,bricks.get(key))
-        # Region to process 
+        # Region to process
         assert(region in REGIONS)
         self.region= region
         self.subset= subset
-    
+
     def heatmaps(self):
         """Function that plots ALL the heatmaps"""
         # Continuous RA for SGC
@@ -118,18 +119,18 @@ class SummaryPlots(object):
         cbar_lims=None
         if self.region in ['eboss_ngc','eboss_sgc']:
             cbar_lims= (0,3000)
-        self.heatmap(self.summary.n_inj / 0.25**2, 
+        self.heatmap(self.summary.n_inj / 0.25**2,
                      cbar_lims=cbar_lims, cbar_label='N / deg2',
                      fn="heatmap_num_dens_inj.png")
 
-        self.heatmap(self.summary.n_rec.astype(float)/self.summary.n_inj, 
+        self.heatmap(self.summary.n_rec.astype(float)/self.summary.n_inj,
                      cbar_lims=(0,1),cbar_label='Fraction Recovered',
                      fn="heatmap_recovered.png")
-   
+
         self.heatmap(self.summary.n_inj_elg_trac_elg_ngc.astype(float)/self.summary.n_inj_elg_ngc,
                      cbar_lims=(0,1),cbar_label='Fraction Recovered (NGC ELGs)',
                      fn="heatmap_recovered_ngc_elgs.png")
-        
+
         self.heatmap(self.summary.n_inj_elg_trac_elg_ngc.astype(float)/self.summary.n_inj_elg_trac_elg_ngc_allmask,
                      cbar_lims=(0,1), cbar_label='Ratio of Anymask to Allmask',
                      fn="heatmap_anymask_allmask_ratio_ngc_elgs.png")
@@ -150,28 +151,28 @@ class SummaryPlots(object):
     def nonheatmaps(self):
         """Function that plots ALL the nonheatmaps, e.g. histograms"""
         self.hist_num_dens_injected()
-    
+
     def heatmap(self,data, cbar_lims=None,
                 cbar_label='N / deg2',fn='heatmap_tmp.png'):
         """Makes and save a single panel heatmap"""
         fig,ax=plt.subplots(figsize= self.heatmap_props['figsize'])
-        
+
         x= self.summary.ra[self.inRegion]
         y= self.summary.dec[self.inRegion]
         color= data[self.inRegion]
-        cax= ax.scatter(x,y,c=color, 
+        cax= ax.scatter(x,y,c=color,
                         edgecolors='none',rasterized=True,
                         marker=self.heatmap_props['m'],
                         s=self.heatmap_props['ms'])
         if cbar_lims:
             cax.set_clim(cbar_lims) # color bar limits
-        cbar = fig.colorbar(cax) 
+        cbar = fig.colorbar(cax)
 
         cbar.set_label(cbar_label)
         ax.set_xlim(self.radec_lims['ra'])
         ax.set_ylim(self.radec_lims['dec'])
         #ax.set_aspect(aspect_num)
-        
+
         xlab=ax.set_xlabel('RA')
         ylab=ax.set_ylabel('Dec')
         fn= fn.replace('.png','_%s.png' % self.heatmap_props['fn_suffix'])
@@ -180,7 +181,7 @@ class SummaryPlots(object):
         print('Wrote %s' % fn)
 
     def hist_num_dens_injected(self,fn='hist_num_dens_injected.png'):
-        # FIX ME: this func only supports eboss region 
+        # FIX ME: this func only supports eboss region
         assert(self.region in ['eboss_ngc','eboss_sgc'])
         isNGC= self.summary.dec > 10
         dens_inj_ngc= self.summary.n_inj[isNGC] / 0.25**2 # n/deg2
@@ -212,7 +213,7 @@ class SummaryPlots(object):
 class CCDsUsed(object):
     def __init__(self,ccds_used_wildcard=None):
         '''plot ra,dec of ccds used (the footprint for this run)
-        
+
         Args:
             ccds_used_wildcard: path to ccds file or path containing an asterisk
         '''
@@ -237,7 +238,7 @@ class CCDsUsed(object):
         if region == 'cosmos':
             assert(subset in [60,64,69])
             ccds= ccds[ccds.subset == subset]
-        
+
         fig,ax= plt.subplots(figsize=figsize)
         #plt.subplots_adjust(hspace=0.2,wspace=0.2)
         # CCDs background
@@ -256,8 +257,8 @@ class CCDsUsed(object):
                       LL=ccds.dec3)
             patches = []
             for i in range(len(ccds)):
-                r= Rectangle((ra['LL'][i],dec['LL'][i]), 
-                             width=ra['LR'][i]-ra['LL'][i], 
+                r= Rectangle((ra['LL'][i],dec['LL'][i]),
+                             width=ra['LR'][i]-ra['LL'][i],
                              height=dec['UL'][i] - dec['LL'][i])
                 patches.append(r)
             kw=dict(color='b',alpha=0.10)
@@ -292,7 +293,7 @@ class BricksQueued(object):
         self.bricks= self.bricks[ np.argsort(self.bricks.brickname)]
         for key in ['ra','dec']:
             self.bricks.set(key,b.get(key))
-    
+
     def plot(self,region=None,savefn='bricksqueued.png'):
         assert(region in REGIONS)
         savefn= savefn.replace('.png','_%s.png' % region)
@@ -315,7 +316,7 @@ class BricksQueued(object):
         plt.close()
         print('Wrote %s' % savefn)
 
-if __name__ == "__main__":    
+if __name__ == "__main__":
     from argparse import ArgumentParser
     parser = ArgumentParser(description='DECaLS simulations.')
     parser.add_argument('--region', default=None,choices=['eboss_ngc','eboss_sgc','cosmos'], required=True)
@@ -350,4 +351,3 @@ if __name__ == "__main__":
     if args.bricks_list_fn:
         bricks= BricksQueued(args.bricks_list_fn,args.survey_bricks)
         bricks.plot(region=args.region)
-    

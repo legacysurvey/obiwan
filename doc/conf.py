@@ -74,7 +74,7 @@ def get_rel_path(name):
            obiwan= '../py/obiwan',
            qa= '../py/obiwan/qa',
            dplearn= '../py/obiwan/dplearn')[name]
-    
+
 def get_rm_modules(name):
     general= ['__init__']
     return dict(tests=[],
@@ -93,12 +93,12 @@ def get_modules(name):
     mods= [(mod.replace('../py/','')
                .replace('../tests/','tests/')
                .replace('.py','')
-               .replace('/','.')) 
+               .replace('/','.'))
            for mod in mods]
     suffix= (get_rel_path(name).replace('../py/','')
                                .replace('../tests/','tests/')
                                .replace('.py','')
-                               .replace('/','.')) 
+                               .replace('/','.'))
     for key in get_rm_modules(name):
         key= suffix + '.' + key
         mods.remove(key)
@@ -175,7 +175,7 @@ def setup(app):
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
-autosummary_generate = True 
+autosummary_generate = True
 
 # The suffix of source filenames.
 source_suffix = '.rst'
@@ -246,30 +246,33 @@ napoleon_include_private_with_doc = True
 # This value contains a list of modules to be mocked up. This is useful when
 # some external dependencies are not met at build time and break the
 # building process.
-autodoc_mock_imports = ['astrometry','tractor','galsim', 
-                        'legacypipe','theValidator',
-                        'legacypipe.runbrick','run_brick',
-                        'legacypipe.decam',
-                        'legacypipe.survey',
-                        'astrometry.libkd.spherematch',
-                        'astrometry.util.ttime',
-                        'tractor.psfex',
-                        'tractor.basics',
-                        'tractor.sfd',
-                        'tractor.brightness',
-                        'theValidator.catalogues',
-                        'Tractor', 'PointSource', 'Image',
-                        'NanoMaggies', 'Catalog', 'RaDecPos',
-                        ]
-
-# http://docs.readthedocs.io/en/latest/faq.html
-from unittest.mock import MagicMock
-class Mock(MagicMock):
-    @classmethod
-    def __getattr__(cls, name):
-            return MagicMock()
-MOCK_MODULES = autodoc_mock_imports
-sys.modules.update((mod_name, Mock()) for mod_name in MOCK_MODULES)
+###########
+# Mockup
+# autodoc_mock_imports = ['astrometry','tractor','galsim',
+#                         'legacypipe','theValidator',
+#                         'legacypipe.runbrick','run_brick',
+#                         'legacypipe.decam',
+#                         'legacypipe.survey',
+#                         'astrometry.libkd.spherematch',
+#                         'astrometry.util.ttime',
+#                         'tractor.psfex',
+#                         'tractor.basics',
+#                         'tractor.sfd',
+#                         'tractor.brightness',
+#                         'theValidator.catalogues',
+#                         'Tractor', 'PointSource', 'Image',
+#                         'NanoMaggies', 'Catalog', 'RaDecPos',
+#                         ]
+#
+# # http://docs.readthedocs.io/en/latest/faq.html
+# from unittest.mock import MagicMock
+# class Mock(MagicMock):
+#     @classmethod
+#     def __getattr__(cls, name):
+#             return MagicMock()
+# MOCK_MODULES = autodoc_mock_imports
+# sys.modules.update((mod_name, Mock()) for mod_name in MOCK_MODULES)
+####################
 
 # -- Options for HTML output ----------------------------------------------
 

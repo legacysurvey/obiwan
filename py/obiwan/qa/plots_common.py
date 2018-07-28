@@ -1,5 +1,6 @@
-import matplotlib
-matplotlib.use('Agg') # display backend
+if __name__ == '__main__':
+    import matplotlib
+    matplotlib.use('Agg') # display backend
 import matplotlib.pyplot as plt
 from matplotlib.patches import Circle
 import matplotlib.image as mpimg
@@ -30,7 +31,7 @@ def bin_up(data_bin_by,data_for_percentile, bin_minmax=(18.,26.),nbins=20):
             vals['q50'][i]= np.percentile(data_for_percentile[keep],q=50)
             vals['q75'][i]= np.percentile(data_for_percentile[keep],q=75)
         else:
-            vals['n'][i]=0 
+            vals['n'][i]=0
     return vals
 
 def myhist2D(ax,x,y,xlim=(),ylim=(),nbins=()):
@@ -41,7 +42,7 @@ def myhist2D(ax,x,y,xlim=(),ylim=(),nbins=()):
     # Create a black and white color map where bad data (NaNs) are white
     cmap = plt.cm.binary
     cmap.set_bad('w', 1.)
-    
+
     H[H == 0] = 1  # prevent warnings in log10
     ax.imshow(np.log10(H).T, origin='lower',
               #extent=[xbins[0], xbins[-1], ybins[0], ybins[-1]],
@@ -109,14 +110,14 @@ def myerrorbar(ax,x,y, yerr=None,xerr=None,color='b',ls='none',m='o',s=10.,mew=1
         ax.errorbar(x,y, xerr=xerr,yerr=yerr,ls=ls,alpha=alpha,label=label,
                     marker=m,ms=s,mfc=color,mec=color,ecolor=color,mew=mew)
 
-def create_confusion_matrix(answer_type,predict_type, 
+def create_confusion_matrix(answer_type,predict_type,
                             poss_ans_types=['PSF','SIMP','EXP','DEV','COMP','REX'],
                             poss_pred_types=['PSF','SIMP','EXP','DEV','COMP','REX']):
     '''compares classifications of matched objects, returns 2D array which is conf matrix and xylabels
     return 5x5 confusion matrix and colum/row names
     answer_type,predict_type -- arrays of same length with reference and prediction types'''
     for typ in set(answer_type): assert(typ in poss_ans_types)
-    for typ in set(predict_type): 
+    for typ in set(predict_type):
         print('typ=',typ)
         assert(typ in poss_pred_types)
     cm=np.zeros((len(poss_ans_types),len(poss_pred_types)))-1
@@ -142,5 +143,3 @@ def eboss_ts(gmag,rz,gr,region='ngc'):
                          (0.637 * gr + 0.399 < rz) &
                          (rz < -0.555 * gr + 1.901)))
     return colorCut[region]
-
-

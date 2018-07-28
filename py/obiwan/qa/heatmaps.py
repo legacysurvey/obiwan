@@ -11,8 +11,9 @@ import numpy as np
 from glob import glob
 from collections import Counter
 
-import matplotlib
-matplotlib.use('Agg')
+if __name__ == '__main__':
+	import matplotlib
+	matplotlib.use('Agg')
 matplotlib.rc('text') #, usetex=True)
 matplotlib.rc('font', family='serif')
 from matplotlib.cm import get_cmap
@@ -96,7 +97,7 @@ def plots(heatmap_table_fn, outdir='./',
     #release = 'MzLS+BASS DR4'
     #release = 'DECaLS DR5'
     release = 'DECaLS DR3'
-    
+
     if decam:
         # DECam
         #ax = [360, 0, -21, 36]
@@ -121,7 +122,7 @@ def plots(heatmap_table_fn, outdir='./',
     print('Number of unique Dec values:', len(udec))
     print('Number of unique Dec values in range', ax[2],ax[3],':',
           np.sum((udec >= ax[2]) * (udec <= ax[3])))
-        
+
     def radec_plot():
         plt.axis(ax)
         plt.xlabel('RA (deg)')
@@ -160,7 +161,7 @@ def plots(heatmap_table_fn, outdir='./',
         plot_broken(map_ra(rr), dd, 'k-', alpha=0.25, lw=1)
         rr,dd = lbtoradec(gl, gb-10)
         plot_broken(map_ra(rr), dd, 'k-', alpha=0.25, lw=1)
-        
+
     plt.figure(1, figsize=(8,5))
     plt.subplots_adjust(left=0.1, right=0.98, top=0.93)
 
@@ -168,7 +169,7 @@ def plots(heatmap_table_fn, outdir='./',
     #plt.subplots_adjust(left=0.06, right=0.98, top=0.98)
     plt.subplots_adjust(left=0.08, right=0.98, top=0.98)
     plt.figure(1)
-    
+
     # Map of the tile centers we want to observe...
     if decam:
         O = fits_table(os.path.join(os.environ['obiwan_code'],
@@ -193,7 +194,7 @@ def plots(heatmap_table_fn, outdir='./',
         segs = desi_map_boundaries.get_segments()
         for seg in segs:
             plt.plot(seg[:,0], seg[:,1], 'b-')
-    
+
     def desi_map():
         # Show the DESI tile map in the background.
         plt.imshow(desimap, origin='lower', interpolation='nearest',
@@ -224,7 +225,7 @@ def plots(heatmap_table_fn, outdir='./',
                    aspect='auto', cmap='Greys', vmin=0, vmax=mx)
     #desi_map_outline()
     radec_plot()
-    cax = colorbar_axes(plt.gca(), frac=0.12)        
+    cax = colorbar_axes(plt.gca(), frac=0.12)
     cbar = plt.colorbar(cax=cax)
     cbar.set_label('Extinction E(B-V)')
     plt.savefig(os.path.join(outdir,'ext-bw.png'))
@@ -235,14 +236,14 @@ def plots(heatmap_table_fn, outdir='./',
                aspect='auto', cmap='Greys', vmin=0, vmax=0.25)
     desi_map_outline()
     radec_plot()
-    cax = colorbar_axes(plt.gca(), frac=0.12)        
+    cax = colorbar_axes(plt.gca(), frac=0.12)
     cbar = plt.colorbar(cax=cax)
     cbar.set_label('Extinction E(B-V)')
     plt.savefig(os.path.join(outdir,'ext-bw-2.png'))
     plt.figure(1)
 
     #sys.exit(0)
-    
+
     plt.clf()
     depthlo,depthhi = 21.5, 25.5
     for band in 'grz':
@@ -368,12 +369,12 @@ def plots(heatmap_table_fn, outdir='./',
                    aspect='auto', cmap=cmap, vmin=mn, vmax=mx)
         desi_map_outline()
         radec_plot()
-        cax = colorbar_axes(plt.gca(), frac=0.12)        
+        cax = colorbar_axes(plt.gca(), frac=0.12)
         cbar = plt.colorbar(cax=cax, ticks=np.arange(20, 26, 0.5)) #ticks=np.arange(np.floor(mn/5.)*5., 0.1+np.ceil(mx/5.)*5, 0.2))
         cbar.set_label('Depth (5-sigma, galaxy profile, AB mag)')
         plt.savefig(os.path.join(outdir,'galdepth-bw-%s.png' % band))
         plt.figure(1)
-        
+
         plt.clf()
         desi_map()
         ext = T.get('ext_%s' % band)
@@ -391,7 +392,7 @@ def plots(heatmap_table_fn, outdir='./',
 
 
     T.ngal = T.nsimp + T.nrex + T.nexp + T.ndev + T.ncomp
-        
+
     for col in ['nobjs', 'npsf', 'nsimp', 'nrex', 'nexp', 'ndev', 'ncomp', 'ngal']:
         if not col in T.get_columns():
             continue
@@ -446,14 +447,14 @@ def plots(heatmap_table_fn, outdir='./',
         desi_map_outline()
         radec_plot()
         #cax = colorbar_axes(plt.gca(), frac=0.08)
-        cax = colorbar_axes(plt.gca(), frac=0.12)        
+        cax = colorbar_axes(plt.gca(), frac=0.12)
         cbar = plt.colorbar(cax=cax,
                             format=matplotlib.ticker.FuncFormatter(lambda x, p: format(int(x), ',')))
         cbar.set_label('Objects per square degree')
         plt.savefig(os.path.join(outdir,'nobjs-bw-%s.png' % col[1:]))
         #plt.savefig(os.path.join(outdir,'nobjs-bw-%s.png' % col[1:]))
         plt.figure(1)
-        
+
     Ntot = T.nobjs
     for col in ['npsf', 'nsimp', 'nrex', 'nexp', 'ndev', 'ncomp', 'ngal']:
         if not col in T.get_columns():
@@ -497,16 +498,16 @@ def plots(heatmap_table_fn, outdir='./',
 
         desi_map_outline()
         radec_plot()
-        cax = colorbar_axes(plt.gca(), frac=0.12)        
+        cax = colorbar_axes(plt.gca(), frac=0.12)
         cbar = plt.colorbar(cax=cax,
                             format=matplotlib.ticker.FuncFormatter(lambda x, p: '%.2g' % x))
         cbar.set_label('Percentage of objects of type %s' % col[1:].upper())
         plt.savefig(os.path.join(outdir,'fobjs-bw-%s.png' % col[1:]))
         #plt.savefig(os.path.join(outdir,'fobjs-bw-%s.png' % col[1:]))
         plt.figure(1)
-        
+
     return 0
-       
+
 
 
 def main():
@@ -516,7 +517,7 @@ def main():
     parser.add_argument('--outdir', default='./', type=str)
     opt = parser.parse_args()
 
-    plots(heatmap_table_fn= opt.heatmap_table, 
+    plots(heatmap_table_fn= opt.heatmap_table,
           outdir=opt.outdir,
           ramin=10,ramax=300,decmin=-10,decmax=28,
           raticks=[10,120,240,300])
