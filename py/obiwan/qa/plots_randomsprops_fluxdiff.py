@@ -1,3 +1,8 @@
+"""The main analysis script, created the majority of my thesis plots Ch 4-5
+
+Philosophy: name of plot is also name of the function
+"""
+
 if __name__ == '__main__':
     import matplotlib
     matplotlib.use('Agg') # display backend
@@ -16,6 +21,7 @@ import obiwan.qa.plots_common as plots
 
 #######################
 if __name__ == "__main__":
+    """Input args here because functions below need these settings"""
     plt.rcParams['axes.labelsize'] = 14
     plt.rcParams['xtick.labelsize'] = 12
     plt.rcParams['ytick.labelsize'] = 12
@@ -27,11 +33,7 @@ if __name__ == "__main__":
 
     dat= fits_table(args.randoms_table)
 
-    #avg_fracin= np.mean(np.array([dat.tractor_fracin_g,
-    #                          dat.tractor_fracin_r,
-    #                          dat.tractor_fracin_z]),axis=0)
-    #keepFracin= avg_fracin >= 0.7
-
+    # used to remove edge-sources from tractor catalogues
     fracin_thresh= 0.2
     types_of_models= ['PSF','EXP','DEV','SIMP','COMP']
     if args.which == 'cosmos':
@@ -40,8 +42,8 @@ if __name__ == "__main__":
     keepFracin= ((dat.tractor_fracin_g > fracin_thresh) &
                  (dat.tractor_fracin_r > fracin_thresh) &
                  (dat.tractor_fracin_z > fracin_thresh))
+    # simulated source is detected and modeled by legacypipe
     isRec= (dat.obiwan_mask == 1)
-    #isRec= (isRec) & (keepFracin)
 
     rz= dat.psql_r - dat.psql_z
     gr= dat.psql_g - dat.psql_r
@@ -99,6 +101,7 @@ def mytext(ax,x,y,text, ha='left',va='center',fontsize=20,rotation=0,
                 transform=ax.transAxes)
 
 class getDepth(object):
+    """limiting AB mag depth"""
     def __init__(self):
         self.desi= dict(g=24.0,
                         r=23.4,

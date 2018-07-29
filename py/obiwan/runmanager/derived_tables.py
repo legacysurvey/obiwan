@@ -1,7 +1,7 @@
 """
-Using obiwan outputs, make a table of 'official' randoms per-brick
-- uniform randoms: random ra,dec + geometry cut
-- obiwan randoms: uniform randoms + recovered by tractor
+Post-processes the obiwan/, tractor/, data products. Joins the psql db,
+input properties, and tractor catalogue measurements for easy anaylsis
+later. Uses mpi4py to parallelize to a full production runs' outputs.
 """
 
 import numpy as np
@@ -19,10 +19,12 @@ from astrometry.libkd.spherematch import match_radec
 #     pass
 
 def derived_field_dir(brick,data_dir,date):
+    """directory to save post-processed tables to"""
     return os.path.join(data_dir,'derived_%s' % date,
                         brick[:3],brick)
 
 def datarelease_dir(drNumber):
+    """the tractor catalogues for this DR are the real galaxy catalogues"""
     assert(drNumber in ['dr3','dr5'])
     proj='/global/project/projectdirs/cosmo/data/legacysurvey'
     return os.path.join(proj,drNumber)
@@ -39,9 +41,11 @@ def is_numeric(obj):
 
 
 def flux2mag(nmgy):
+    """converts nanomaggies to AB mag"""
     return -2.5 * (np.log10(nmgy) - 9)
 
 class Bit(object):
+    """bitmask arithmetic"""
     def set(self,value, bit):
         """change bit to 1, bit is 0-indexed"""
         return value | (1<<bit)
@@ -52,6 +56,7 @@ class Bit(object):
 
 
 class TargetSelection(object):
+    """Applies ELG target selection using either DESI or eBOSS criteria"""
     def elg_by_measurement(self,tractor,name,
                            prefix='',anymask=True):
         """Returns bool array elgs as measured by tractor
@@ -415,6 +420,11 @@ class RandomsTable(object):
         return n
 
 def fraction_recovered(randoms):
+    """Return fraction of randoms detected and measured by Legacypipe
+
+    Args:
+        randoms: ra,dec, and properties of all source added to a bricks
+    """
     return len(randoms[randoms.obiwan_mask == 1]) / float(len(randoms))
 
 def bin_by_mag(randoms, func_to_apply, band=None,bin_minmax=(18.,26.),nbins=20):

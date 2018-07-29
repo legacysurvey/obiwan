@@ -115,295 +115,295 @@ def get_fnsuffix(**kwargs):
     return '-{}-{}.fits'.format(kwargs['objtype'], kwargs['brickname'])
                                    #'rs%d' % kwargs['rowst'])
 
-try:
-    class SimDecals(LegacySurveyData):
-        """Top level object that specifying which data to run through pipeline
+# try:
+class SimDecals(LegacySurveyData):
+    """Top level object that specifying which data to run through pipeline
 
-        Same behavior as legacypipe.runs.Dr3DecalsSurvey which chooses which
-            CCDs to include. But this also stores all the relevant obiwan
-            objects
+    Same behavior as legacypipe.runs.Dr3DecalsSurvey which chooses which
+        CCDs to include. But this also stores all the relevant obiwan
+        objects
 
-        Args:
-            dataset: see definition in
-                https://github.com/legacysurvey/obiwan/blob/master/py/obiwan/test/end_to_end/README.md
-            survey_dir: as used by legacypipe.runbrick.run_brick()
-                Defaults to $LEGACY_SURVEY_DIR environment variable.  Where to look for
-                files including calibration files, tables of CCDs and bricks, image data
-            metacat: fits_table
-                configuration-like params for the simulated sources
-            simcat: fits_table
-                simulated source catalog for a given brick (not CCD).
-            output_dir: legacypipe's outdir
-            add_sim_noise: add Poisson noise from the simulated source to the image
-            seed: for random number generators
-            image_eq_model: referred to as 'testA'
-                wherever add a simulated source, replace both image and invvar of the image
-                with that of the simulated source only
+    Args:
+        dataset: see definition in
+            https://github.com/legacysurvey/obiwan/blob/master/py/obiwan/test/end_to_end/README.md
+        survey_dir: as used by legacypipe.runbrick.run_brick()
+            Defaults to $LEGACY_SURVEY_DIR environment variable.  Where to look for
+            files including calibration files, tables of CCDs and bricks, image data
+        metacat: fits_table
+            configuration-like params for the simulated sources
+        simcat: fits_table
+            simulated source catalog for a given brick (not CCD).
+        output_dir: legacypipe's outdir
+        add_sim_noise: add Poisson noise from the simulated source to the image
+        seed: for random number generators
+        image_eq_model: referred to as 'testA'
+            wherever add a simulated source, replace both image and invvar of the image
+            with that of the simulated source only
 
-        Attributes:
-            DR: see above
-            metacat: fits_table
-                configuration-like params for the simulated sources
-            simcat: fits_table
-                simulated source catalog for a given brick (not CCD).
-            output_dir: legacypipe's outdir
-            add_sim_noise: add Poisson noise from the simulated source to the image
-            image_eq_model: referred to as 'testA'
-                wherever add a simulated source, replace both image and invvar of the image
-                with that of the simulated source only
-        """
+    Attributes:
+        DR: see above
+        metacat: fits_table
+            configuration-like params for the simulated sources
+        simcat: fits_table
+            simulated source catalog for a given brick (not CCD).
+        output_dir: legacypipe's outdir
+        add_sim_noise: add Poisson noise from the simulated source to the image
+        image_eq_model: referred to as 'testA'
+            wherever add a simulated source, replace both image and invvar of the image
+            with that of the simulated source only
+    """
 
-        def __init__(self, dataset=None, survey_dir=None, metacat=None, simcat=None,
-                     output_dir=None,add_sim_noise=False, seed=0,
-                     image_eq_model=False,**kwargs):
-            self.dataset= dataset
+    def __init__(self, dataset=None, survey_dir=None, metacat=None, simcat=None,
+                 output_dir=None,add_sim_noise=False, seed=0,
+                 image_eq_model=False,**kwargs):
+        self.dataset= dataset
 
-            kw= dict(survey_dir=survey_dir,
-                     output_dir=output_dir)
-            if self.dataset == 'cosmos':
-                kw.update(subset=kwargs['subset'])
-            super(SimDecals, self).__init__(**kw)
+        kw= dict(survey_dir=survey_dir,
+                 output_dir=output_dir)
+        if self.dataset == 'cosmos':
+            kw.update(subset=kwargs['subset'])
+        super(SimDecals, self).__init__(**kw)
 
-            self.metacat = metacat
-            self.simcat = simcat
-            # Additional options from command line
-            self.add_sim_noise= add_sim_noise
-            self.seed= seed
-            self.image_eq_model= image_eq_model
-            print('SimDecals: self.image_eq_model=',self.image_eq_model)
+        self.metacat = metacat
+        self.simcat = simcat
+        # Additional options from command line
+        self.add_sim_noise= add_sim_noise
+        self.seed= seed
+        self.image_eq_model= image_eq_model
+        print('SimDecals: self.image_eq_model=',self.image_eq_model)
 
-        def get_image_object(self, t):
-            if self.dataset == 'cosmos':
-                return SimImageCosmos(self, t)
+    def get_image_object(self, t):
+        if self.dataset == 'cosmos':
+            return SimImageCosmos(self, t)
+        else:
+            return SimImage(self, t)
+
+    def filter_ccds_files(self, fns):
+        """see legacypipe/runs.py"""
+        return fns
+
+    def ccds_for_fitting(self, brick, ccds):
+        if self.dataset in ['dr3','dr5']:
+            return np.flatnonzero(ccds.camera == 'decam')
+        elif self.dataset in ['cosmos']:
+            return np.flatnonzero(ccds.camera == 'decam+noise')
+        #elif self.dataset == 'DR4':
+            #   return np.flatnonzero(np.logical_or(ccds.camera == 'mosaic',
+        #                         ccds.camera == '90prime'))
+
+    def filter_ccd_kd_files(self, fns):
+        """see legacypipe/runs.py"""
+        return []
+
+def get_srcimg_invvar(stamp_ivar,img_ivar):
+    """stamp_ivar, img_ivar -- galsim Image objects"""
+    # Use img_ivar when stamp_ivar == 0, both otherwise
+    use_img_ivar= np.ones(img_ivar.array.shape).astype(bool)
+    use_img_ivar[ stamp_ivar.array > 0 ] = False
+    # First compute using both
+    ivar= np.power(stamp_ivar.array.copy(), -1) + np.power(img_ivar.array.copy(), -1)
+    ivar= np.power(ivar,-1)
+    keep= np.ones(ivar.shape).astype(bool)
+    keep[ (stamp_ivar.array > 0)*\
+          (img_ivar.array > 0) ] = False
+    ivar[keep] = 0.
+    # Now use img_ivar only where need to
+    ivar[ use_img_ivar ] = img_ivar.array.copy()[ use_img_ivar ]
+    # return
+    obj_ivar = stamp_ivar.copy()
+    obj_ivar.fill(0.)
+    obj_ivar+= ivar
+    return obj_ivar
+
+def saturation_e(camera):
+    # Saturation limit
+    d=dict(decam=3e4) # e-
+    return d[camera]
+
+def ivar_to_var(ivar,nano2e=None,camera='decam'):
+    assert(nano2e is not None)
+    flag= ivar == 0.
+    var= np.power(ivar, -1)
+    # Set 0 ivar pixels to satuation limit
+    # var * nano2e^2 = e-^2
+    sat= saturation_e(camera) / nano2e**2
+    var[flag]= sat
+    return var
+# except NameError:
+#     pass
+
+# try:
+class SimDecalsCosmos(SimDecals,CosmosSurvey):
+    """Filters the CCDs to just those in the cosmos realizations
+
+    Call just like SimDecals except with additional Argument 'subset'
+
+    Args:
+        **kwargs: SimDecals args + 'subset'
+    """
+
+    def __init__(self, **kwargs):
+        super(SimDecalsCosmos, self).__init__(**kwargs)
+# except NameError:
+#     pass
+
+
+
+# try:
+class SimImage(DecamImage):
+    """Adds simulated sources to a single exposure
+
+    Similar behavior as legacypipe.decam.DecamImage. Instead of
+        loading images specifically from DECam, this  loads images
+        with simulated sources added in
+
+    Args:
+        survey: SimDecals() object
+        t: as used by DecamImage
+            a single row fits_table for a specific CCD
+
+    Attributes:
+        inherits: DecamImage
+        t: as used by DecamImage
+            a single row fits_table for a specific CCD
+    """
+
+    def __init__(self, survey, t):
+        super(SimImage, self).__init__(survey, t)
+        self.t = t
+        if self.survey.dataset in ['dr3']:
+            assert('arawgain' in self.t.get_columns())
+            self.t.rename('arawgain', 'gain')
+        elif self.survey.dataset in ['dr5']:
+            assert 'gain' in self.t.get_columns()
+        # Find image on proj or proja if doesn't exist
+        dirs=dict(proj='/project/projectdirs/cosmo/staging/decam',
+                  proja='/global/projecta/projectdirs/cosmo/staging/decam')
+        if not os.path.exists(self.imgfn):
+            print('doesnt exist: %s, finding new location for file' % self.imgfn)
+            base=os.path.basename(self.imgfn)
+            found= glob('%s/**/%s' % (dirs['proja'],base), recursive=True)
+            if len(found) == 0:
+                found= glob('%s/**/%s' % (dirs['proj'],base), recursive=True)
+            if len(found) == 0:
+                raise OSError('cannot find image on project or projecta: %s' % base)
             else:
-                return SimImage(self, t)
+                self.imgfn= found[0]
+            print('found new location, overwrite self.imgfn with %s' % self.imgfn)
+            self.wtfn= (self.imgfn.replace('_oki_','_oow_')
+                                  .replace('_ooi_','_oow_'))
+            self.dqfn= self.wtfn.replace('_oow_','_ood_')
 
-        def filter_ccds_files(self, fns):
-            """see legacypipe/runs.py"""
-            return fns
-
-        def ccds_for_fitting(self, brick, ccds):
-            if self.dataset in ['dr3','dr5']:
-                return np.flatnonzero(ccds.camera == 'decam')
-            elif self.dataset in ['cosmos']:
-                return np.flatnonzero(ccds.camera == 'decam+noise')
-            #elif self.dataset == 'DR4':
-                #   return np.flatnonzero(np.logical_or(ccds.camera == 'mosaic',
-            #                         ccds.camera == '90prime'))
-
-        def filter_ccd_kd_files(self, fns):
-            """see legacypipe/runs.py"""
-            return []
-
-    def get_srcimg_invvar(stamp_ivar,img_ivar):
-        """stamp_ivar, img_ivar -- galsim Image objects"""
-        # Use img_ivar when stamp_ivar == 0, both otherwise
-        use_img_ivar= np.ones(img_ivar.array.shape).astype(bool)
-        use_img_ivar[ stamp_ivar.array > 0 ] = False
-        # First compute using both
-        ivar= np.power(stamp_ivar.array.copy(), -1) + np.power(img_ivar.array.copy(), -1)
-        ivar= np.power(ivar,-1)
-        keep= np.ones(ivar.shape).astype(bool)
-        keep[ (stamp_ivar.array > 0)*\
-              (img_ivar.array > 0) ] = False
-        ivar[keep] = 0.
-        # Now use img_ivar only where need to
-        ivar[ use_img_ivar ] = img_ivar.array.copy()[ use_img_ivar ]
-        # return
-        obj_ivar = stamp_ivar.copy()
-        obj_ivar.fill(0.)
-        obj_ivar+= ivar
-        return obj_ivar
-
-    def saturation_e(camera):
-        # Saturation limit
-        d=dict(decam=3e4) # e-
-        return d[camera]
-
-    def ivar_to_var(ivar,nano2e=None,camera='decam'):
-        assert(nano2e is not None)
-        flag= ivar == 0.
-        var= np.power(ivar, -1)
-        # Set 0 ivar pixels to satuation limit
-        # var * nano2e^2 = e-^2
-        sat= saturation_e(camera) / nano2e**2
-        var[flag]= sat
-        return var
-except NameError:
-    pass
-
-try:
-    class SimDecalsCosmos(SimDecals,CosmosSurvey):
-        """Filters the CCDs to just those in the cosmos realizations
-
-        Call just like SimDecals except with additional Argument 'subset'
-
-        Args:
-            **kwargs: SimDecals args + 'subset'
-        """
-
-        def __init__(self, **kwargs):
-            super(SimDecalsCosmos, self).__init__(**kwargs)
-except NameError:
-    pass
-
-
-
-try:
-    class SimImage(DecamImage):
-        """Adds simulated sources to a single exposure
-
-        Similar behavior as legacypipe.decam.DecamImage. Instead of
-            loading images specifically from DECam, this  loads images
-            with simulated sources added in
-
-        Args:
-            survey: SimDecals() object
-            t: as used by DecamImage
-                a single row fits_table for a specific CCD
-
-        Attributes:
-            inherits: DecamImage
-            t: as used by DecamImage
-                a single row fits_table for a specific CCD
-        """
-
-        def __init__(self, survey, t):
-            super(SimImage, self).__init__(survey, t)
-            self.t = t
-            if self.survey.dataset in ['dr3']:
-                assert('arawgain' in self.t.get_columns())
-                self.t.rename('arawgain', 'gain')
-            elif self.survey.dataset in ['dr5']:
-                assert 'gain' in self.t.get_columns()
-            # Find image on proj or proja if doesn't exist
-            dirs=dict(proj='/project/projectdirs/cosmo/staging/decam',
-                      proja='/global/projecta/projectdirs/cosmo/staging/decam')
-            if not os.path.exists(self.imgfn):
-                print('doesnt exist: %s, finding new location for file' % self.imgfn)
-                base=os.path.basename(self.imgfn)
-                found= glob('%s/**/%s' % (dirs['proja'],base), recursive=True)
-                if len(found) == 0:
-                    found= glob('%s/**/%s' % (dirs['proj'],base), recursive=True)
-                if len(found) == 0:
-                    raise OSError('cannot find image on project or projecta: %s' % base)
-                else:
-                    self.imgfn= found[0]
-                print('found new location, overwrite self.imgfn with %s' % self.imgfn)
-                self.wtfn= (self.imgfn.replace('_oki_','_oow_')
-                                      .replace('_ooi_','_oow_'))
-                self.dqfn= self.wtfn.replace('_oow_','_ood_')
-
-        def get_tractor_image(self, **kwargs):
-            tim = super(SimImage, self).get_tractor_image(**kwargs)
-            if tim is None: # this can be None when the edge of a CCD overlaps
-                return tim
-
-            # Seed
-            #if 'SEED' in self.survey.metacat.columns:
-            #    seed = self.survey.metacat['SEED']
-            #else:
-            #    seed = None
-
-            objtype = self.survey.metacat.get('objtype')[0]
-            objstamp = BuildStamp(tim, seed=self.survey.seed,
-                                  camera=self.t.camera,
-                                  gain=self.t.gain,exptime=self.t.exptime)
-            # ids make it onto a ccd (geometry cut)
-            tim.ids_added=[]
-
-            # Grab the data and inverse variance images [nanomaggies!]
-            tim_image = galsim.Image(tim.getImage())
-            tim_invvar = galsim.Image(tim.getInvvar())
-            tim_dq = galsim.Image(tim.dq)
-            # Also store galaxy sims and sims invvar
-            sims_image = tim_image.copy()
-            sims_image.fill(0.0)
-            sims_ivar = sims_image.copy()
-
-            # Store simulated galaxy images in tim object
-            # Loop on each object.
-            for ii, obj in enumerate(self.survey.simcat):
-                # Print timing
-                t0= Time()
-                if objtype in ['lrg','elg']:
-                    strin= 'Drawing 1 %s: n=%.2f, rhalf=%.2f, e1=%.2f, e2=%.2f' % \
-                            (objtype.upper(), obj.n,obj.rhalf,obj.e1,obj.e2)
-                    print(strin)
-
-                if objtype == 'star':
-                    stamp = objstamp.star(obj)
-                elif objtype == 'elg':
-                    stamp = objstamp.elg(obj)
-                elif objtype == 'lrg':
-                    stamp = objstamp.lrg(obj)
-                elif objtype == 'qso':
-                    stamp = objstamp.qso(obj)
-                t0= ptime('Finished Drawing %s: id=%d band=%s dbflux=%f addedflux=%f' %
-                    (objtype.upper(), obj.id,objstamp.band,
-                     obj.get(objstamp.band+'flux'),stamp.array.sum()), t0)
-
-                stamp_nonoise= stamp.copy()
-                if self.survey.add_sim_noise:
-                    stamp += noise_for_galaxy(stamp,objstamp.nano2e)
-                ivarstamp= ivar_for_galaxy(stamp,objstamp.nano2e)
-                # Add source if EVEN 1 pix falls on the CCD
-                overlap = stamp.bounds & tim_image.bounds
-                if overlap.area() > 0:
-                    print('Stamp overlaps tim: id=%d band=%s' % (obj.id,objstamp.band))
-                    tim.ids_added.append(obj.id)
-                    stamp = stamp[overlap]
-                    ivarstamp = ivarstamp[overlap]
-                    stamp_nonoise= stamp_nonoise[overlap]
-
-                    # Zero out invvar where bad pixel mask is flagged (> 0)
-                    keep = np.ones(tim_dq[overlap].array.shape)
-                    keep[ tim_dq[overlap].array > 0 ] = 0.
-                    ivarstamp *= keep
-
-                    # Add stamp to image
-                    back= tim_image[overlap].copy()
-                    tim_image[overlap] += stamp #= back.copy() + stamp.copy()
-                    # Add variances
-                    back_ivar= tim_invvar[overlap].copy()
-                    tot_ivar= get_srcimg_invvar(ivarstamp, back_ivar)
-                    tim_invvar[overlap] = tot_ivar.copy()
-
-                    #Extra
-                    sims_image[overlap] += stamp.copy()
-                    sims_ivar[overlap] += ivarstamp.copy()
-
-                    if np.min(sims_ivar.array) < 0:
-                        log.warning('Negative invvar!')
-                        import pdb ; pdb.set_trace()
-            tim.sims_image = sims_image.array
-            tim.sims_inverr = np.sqrt(sims_ivar.array)
-            # Can set image=model, ivar=1/model for testing
-            if self.survey.image_eq_model:
-                tim.data = sims_image.array.copy()
-                tim.inverr = np.zeros(tim.data.shape)
-                tim.inverr[sims_image.array > 0.] = np.sqrt(1./sims_image.array.copy()[sims_image.array > 0.])
-            else:
-                tim.data = tim_image.array
-                tim.inverr = np.sqrt(tim_invvar.array)
+    def get_tractor_image(self, **kwargs):
+        tim = super(SimImage, self).get_tractor_image(**kwargs)
+        if tim is None: # this can be None when the edge of a CCD overlaps
             return tim
-except NameError:
-    pass
 
-try:
-    class SimImageCosmos(SimImage,DecamImagePlusNoise):
-        """Filters the CCDs to just those in the cosmos realizations
+        # Seed
+        #if 'SEED' in self.survey.metacat.columns:
+        #    seed = self.survey.metacat['SEED']
+        #else:
+        #    seed = None
 
-        Call just like SimDecals except with additional Argument 'subset'
+        objtype = self.survey.metacat.get('objtype')[0]
+        objstamp = BuildStamp(tim, seed=self.survey.seed,
+                              camera=self.t.camera,
+                              gain=self.t.gain,exptime=self.t.exptime)
+        # ids make it onto a ccd (geometry cut)
+        tim.ids_added=[]
 
-        Args:
-            **kwargs: SimDecals args + 'subset'
-        """
+        # Grab the data and inverse variance images [nanomaggies!]
+        tim_image = galsim.Image(tim.getImage())
+        tim_invvar = galsim.Image(tim.getInvvar())
+        tim_dq = galsim.Image(tim.dq)
+        # Also store galaxy sims and sims invvar
+        sims_image = tim_image.copy()
+        sims_image.fill(0.0)
+        sims_ivar = sims_image.copy()
 
-        def __init__(self, survey, t):
-            super(SimImageCosmos, self).__init__(survey, t)
-except NameError:
-    pass
+        # Store simulated galaxy images in tim object
+        # Loop on each object.
+        for ii, obj in enumerate(self.survey.simcat):
+            # Print timing
+            t0= Time()
+            if objtype in ['lrg','elg']:
+                strin= 'Drawing 1 %s: n=%.2f, rhalf=%.2f, e1=%.2f, e2=%.2f' % \
+                        (objtype.upper(), obj.n,obj.rhalf,obj.e1,obj.e2)
+                print(strin)
+
+            if objtype == 'star':
+                stamp = objstamp.star(obj)
+            elif objtype == 'elg':
+                stamp = objstamp.elg(obj)
+            elif objtype == 'lrg':
+                stamp = objstamp.lrg(obj)
+            elif objtype == 'qso':
+                stamp = objstamp.qso(obj)
+            t0= ptime('Finished Drawing %s: id=%d band=%s dbflux=%f addedflux=%f' %
+                (objtype.upper(), obj.id,objstamp.band,
+                 obj.get(objstamp.band+'flux'),stamp.array.sum()), t0)
+
+            stamp_nonoise= stamp.copy()
+            if self.survey.add_sim_noise:
+                stamp += noise_for_galaxy(stamp,objstamp.nano2e)
+            ivarstamp= ivar_for_galaxy(stamp,objstamp.nano2e)
+            # Add source if EVEN 1 pix falls on the CCD
+            overlap = stamp.bounds & tim_image.bounds
+            if overlap.area() > 0:
+                print('Stamp overlaps tim: id=%d band=%s' % (obj.id,objstamp.band))
+                tim.ids_added.append(obj.id)
+                stamp = stamp[overlap]
+                ivarstamp = ivarstamp[overlap]
+                stamp_nonoise= stamp_nonoise[overlap]
+
+                # Zero out invvar where bad pixel mask is flagged (> 0)
+                keep = np.ones(tim_dq[overlap].array.shape)
+                keep[ tim_dq[overlap].array > 0 ] = 0.
+                ivarstamp *= keep
+
+                # Add stamp to image
+                back= tim_image[overlap].copy()
+                tim_image[overlap] += stamp #= back.copy() + stamp.copy()
+                # Add variances
+                back_ivar= tim_invvar[overlap].copy()
+                tot_ivar= get_srcimg_invvar(ivarstamp, back_ivar)
+                tim_invvar[overlap] = tot_ivar.copy()
+
+                #Extra
+                sims_image[overlap] += stamp.copy()
+                sims_ivar[overlap] += ivarstamp.copy()
+
+                if np.min(sims_ivar.array) < 0:
+                    log.warning('Negative invvar!')
+                    import pdb ; pdb.set_trace()
+        tim.sims_image = sims_image.array
+        tim.sims_inverr = np.sqrt(sims_ivar.array)
+        # Can set image=model, ivar=1/model for testing
+        if self.survey.image_eq_model:
+            tim.data = sims_image.array.copy()
+            tim.inverr = np.zeros(tim.data.shape)
+            tim.inverr[sims_image.array > 0.] = np.sqrt(1./sims_image.array.copy()[sims_image.array > 0.])
+        else:
+            tim.data = tim_image.array
+            tim.inverr = np.sqrt(tim_invvar.array)
+        return tim
+# except NameError:
+#     pass
+
+# try:
+class SimImageCosmos(SimImage,DecamImagePlusNoise):
+    """Filters the CCDs to just those in the cosmos realizations
+
+    Call just like SimDecals except with additional Argument 'subset'
+
+    Args:
+        **kwargs: SimDecals args + 'subset'
+    """
+
+    def __init__(self, survey, t):
+        super(SimImageCosmos, self).__init__(survey, t)
+# except NameError:
+#     pass
 
 def noise_for_galaxy(gal,nano2e):
     """Returns numpy array of noise in Img count units for gal in image cnt units"""

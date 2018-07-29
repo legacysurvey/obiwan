@@ -1,3 +1,7 @@
+"""Draw box around region of intertest, show where
+injected sources, color code sources by those with obiwa tractor catalogues
+"""
+
 if __name__ == '__main__':
     import matplotlib
     matplotlib.use('Agg') # display backend
@@ -18,6 +22,7 @@ REGIONS= ['eboss_ngc','eboss_sgc','dr5','cosmos']
 
 
 def footprint_outline(region):
+    """region that wish to inject simulated sources into"""
     if region == 'eboss_ngc':
         ramin,ramax,decmin,decmax= 126,165,14,29
         x= [ramin,ramax,ramax,ramin,ramin]
@@ -40,7 +45,7 @@ def footprint_outline(region):
     return x,y
 
 def radec_limits(region):
-    """just region I ran with obiwan"""
+    """region containing bricks that ran with obiwan"""
     if region == 'eboss_ngc':
         return dict(ra=(120,170),
                     dec=(12,32))
@@ -78,6 +83,7 @@ def cut_to_region(table,region):
 
 
 class SummaryPlots(object):
+    """Plots heatmaps of the summary table quantities"""
     def __init__(self,summary_fn,survey_bricks_fn,
                  region=None,subset=None):
         """Add additional info to summary table so can make plots and heatmaps"""

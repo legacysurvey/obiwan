@@ -37,7 +37,9 @@ def dobash(cmd):
 def stack_tables(fn_list,textfile=True,
                  shuffle=None):
     '''concatenates fits tables
-    shuffle: set to an integer to randomly reads up to the first "shuffle" cats only
+
+    Args:
+        shuffle: set to an integer to randomly reads up to the first "shuffle" cats only
     '''
     if shuffle:
         assert( isinstance(shuffle, int))

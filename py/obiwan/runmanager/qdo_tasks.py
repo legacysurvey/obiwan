@@ -1,3 +1,9 @@
+"""Given a ra,dec bounding box of region to inject simulated sources, and
+the number density of simulated sources, these functions write the
+'qdo' task list of each brick to process, repeated for how iterations will
+be needed per brick
+"""
+
 import os
 import numpy as np
 
@@ -27,7 +33,7 @@ class TaskList(object):
     """
 
     def __init__(self,ra1=123.3,ra2=124.3,dec1=24.0,dec2=25.0,
-                 nobj_total=1e6,nobj_per_run=500): 
+                 nobj_total=1e6,nobj_per_run=500):
         self.ra1=ra1
         self.ra2=ra2
         self.dec1=dec1
@@ -54,7 +60,7 @@ class TaskList(object):
         """returns a single QDO task as a string"""
         assert(do_skipids in ['yes','no'])
         assert(do_more in ['yes','no'])
-        return '%s %d %s %s' % (brick,rs,do_skipids,do_more) 
+        return '%s %d %s %s' % (brick,rs,do_skipids,do_more)
 
     def tasklist_skipids(self,bricks=None,do_more='no',minid=None):
         """tasklist for skipids runs
@@ -66,10 +72,10 @@ class TaskList(object):
         do_skipids= 'yes'
         if bricks is None:
             bricks= np.sort(self.bricks.brickname)
-        tasks= [self.task(brick,rs,do_skipid,do_more) 
+        tasks= [self.task(brick,rs,do_skipid,do_more)
                 for brick in bricks
                 for rs in np.arange(0,3*self.nobj_per_run, self.nobj_per_run)]
-        writelist(tasks, 'tasks_skipid_%s_more_%s_minid_%s.txt' % 
+        writelist(tasks, 'tasks_skipid_%s_more_%s_minid_%s.txt' %
                          (do_skipids,do_more,str(minid)))
 
 
@@ -90,7 +96,7 @@ class TaskList(object):
             bricks= np.sort(self.bricks.brickname)
         else:
             bricks= np.sort(bricks)
-        tasks= [self.task(brick,rs,do_skipids,do_more) 
+        tasks= [self.task(brick,rs,do_skipids,do_more)
                 for rs in np.arange(0,estim_nperbrick,self.nobj_per_run)
                 for brick in bricks]
         return tasks
@@ -107,10 +113,10 @@ if __name__ == '__main__':
     from argparse import ArgumentParser
     parser = ArgumentParser()
     parser.add_argument('--obj', type=str,choices=['elg','star'],required=True)
-    parser.add_argument('--radec', nargs='+',type=float, 
+    parser.add_argument('--radec', nargs='+',type=float,
                         help='no quotes, e.g. --radec ra1 ra2 dec1 dec2',required=True)
     parser.add_argument('--nobj_total', type=int, default=10000,required=True)
-    parser.add_argument('--survey_bricks_fn', type=str, 
+    parser.add_argument('--survey_bricks_fn', type=str,
                         help='abs path to survey-bricks.fits.fz',
                         required=True)
     parser.add_argument('--nobj_per_run', type=int, default=300)
@@ -137,7 +143,7 @@ if __name__ == '__main__':
     #                        'Downloads/survey-bricks-dr5.fits.gz')
     #survey_bricks= os.path.join(os.environ['obiwan_data'],
     #                        'legacysurveydir/survey-bricks.fits.gz')
-    
+
     ###
     d=dict(nobj_total=args.nobj_total,
            nobj_per_run=args.nobj_per_run)
@@ -169,5 +175,3 @@ if __name__ == '__main__':
     # Qdo "skip_ids" task list for a given list of bricks
     #brick_list_fn= '/global/cscratch1/sd/kaylanb/obiwan_code/obiwan/bricks_ready_skip.txt'
     #write_qdo_tasks_skipids(brick_list_fn, nobj_per_run=300)
-    
-

@@ -1,7 +1,11 @@
 """
-Using obiwan outputs, make a table of 'official' randoms per-brick
-- uniform randoms: random ra,dec + geometry cut
-- obiwan randoms: uniform randoms + recovered by tractor
+Searches a DataRelase like directory for all legacysurvey*ccd.fits files,
+creates a no-duplicate set of all CCDs included in that DR, and writes
+the list to disk.
+
+Used to create the list of CCDs that DR3 processed. Adn the list that eboss
+processed for DR3-era target selection, which is a superset of the CCDs that
+DR3 processed
 """
 
 import numpy as np
@@ -16,7 +20,7 @@ from astrometry.libkd.spherematch import match_radec
 #     pass
 
 def mpi_expids_per_bri(nproc=1,data_dir='./',outdir='./'):
-    """
+    """Use MPI because there are so many legacysurvey*ccds.fits table in a DR
 
     Args:
         nproc: > 1 for mpi4py

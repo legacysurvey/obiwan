@@ -1,7 +1,7 @@
 """
-Using obiwan outputs, make a table of 'official' randoms per-brick
-- uniform randoms: random ra,dec + geometry cut
-- obiwan randoms: uniform randoms + recovered by tractor
+Choose N (10 in my thesis) random bricks with grz CCDs that have completed
+processing with obiwan. These bricks will be used for scaling tests to get
+the average run time per brick
 """
 
 import numpy as np
@@ -9,10 +9,10 @@ import os
 from glob import glob
 import pandas as pd
 
-try: 
-    from astrometry.util.fits import fits_table, merge_tables
-except ImportError:
-    pass
+# try:
+from astrometry.util.fits import fits_table, merge_tables
+# except ImportError:
+    # pass
 
 def ten_random_bricks(bricks,data_dir,outfn):
     np.random.seed(7)
@@ -49,12 +49,12 @@ def qdo_tasks(bricks,nobj=500):
 if __name__ == '__main__':
     from argparse import ArgumentParser
     parser = ArgumentParser()
-    parser.add_argument('--data_dir', type=str, required=True, 
-                        help='path to obiwan/, tractor/ dirs') 
-    parser.add_argument('--bricks_with_rs3000_tractor', type=str, required=True, 
-                        help='file listing bricks that have tractor cat in the rs3000 dir') 
-    parser.add_argument('--ten_bricks_fn', type=str, default='ten_bricks.txt',required=False, 
-                        help='fn of list of 10 bricks to make qdo tasks for') 
+    parser.add_argument('--data_dir', type=str, required=True,
+                        help='path to obiwan/, tractor/ dirs')
+    parser.add_argument('--bricks_with_rs3000_tractor', type=str, required=True,
+                        help='file listing bricks that have tractor cat in the rs3000 dir')
+    parser.add_argument('--ten_bricks_fn', type=str, default='ten_bricks.txt',required=False,
+                        help='fn of list of 10 bricks to make qdo tasks for')
     args = parser.parse_args()
 
 
@@ -64,5 +64,3 @@ if __name__ == '__main__':
     ten_bricks= np.loadtxt(args.ten_bricks_fn,dtype=str)
     for n in [500,1000,1500]:
         qdo_tasks(ten_bricks,nobj=n)
-
-

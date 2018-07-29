@@ -12,6 +12,7 @@ from astrometry.util.fits import fits_table, merge_tables
 # pass
 
 class PsqlWorker(object):
+    """Connects to and queries psql db"""
     def __init__(self):
         self.conn= psycopg2.connect(host='nerscdb03.nersc.gov', user='desi_admin', database='desi')
         self.cur= self.conn.cursor()

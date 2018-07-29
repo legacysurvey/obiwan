@@ -1,3 +1,5 @@
+"""commonly used code for plotting and analysis"""
+
 if __name__ == '__main__':
     import matplotlib
     matplotlib.use('Agg') # display backend
@@ -8,16 +10,18 @@ import numpy as np
 import pandas as pd
 
 def flux2mag(nmgy):
-    """return ABmag"""
+    """converts nanomaggies to AB mag"""
     return -2.5 * (np.log10(nmgy) - 9)
 
 def mag2flux(ABmag):
-    """return nmgy"""
+    """converts AB mag to nonomaggies"""
     return 10**(-ABmag/2.5 + 9)
 
 def bin_up(data_bin_by,data_for_percentile, bin_minmax=(18.,26.),nbins=20):
-    '''bins "data_for_percentile" into "nbins" using "data_bin_by" to decide how indices are assigned to bins
-    returns bin center,N,q25,50,75 for each bin
+    '''bins "data_for_percentile" into "nbins" based on "data_bin_by"
+
+    Returns:
+        tuple: (bin center,N,q25,50,75) for each bin
     '''
     bin_edges= np.linspace(bin_minmax[0],bin_minmax[1],num= nbins+1)
     vals={}

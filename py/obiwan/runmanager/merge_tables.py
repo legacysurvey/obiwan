@@ -28,6 +28,7 @@ def dir_for_serial(derived_dir):
     return os.path.join(derived_dir,'merged')
 
 class MergeTable(object):
+    """Base class for merging the MPI rank derived filed tables"""
     def __init__(self,derived_dir,savefn,**kwargs):
         self.derived_dir= derived_dir
         self.savefn=savefn
@@ -50,6 +51,8 @@ class MergeTable(object):
                             'name.fits')
 
 class RandomsTable(MergeTable):
+    """Merges the randoms tables (psql db, input, tractor measurements)
+    """
     def __init__(self,derived_dir,savefn):
         super().__init__(derived_dir,savefn)
 
