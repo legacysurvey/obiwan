@@ -2,6 +2,7 @@
 Continuous integration 'end-to-end' tests of the Obiwan pipeline
 """
 from __future__ import print_function
+import unittest
 if __name__ == "__main__":
     import matplotlib
     matplotlib.use('Agg')
@@ -12,18 +13,17 @@ import re
 import sys
 
 import fitsio
-import photutils
 
 from obiwan.qa.visual import plotImage, readImage
 from obiwan.common import get_brickinfo_hack
 
-try:
-    from astrometry.util.fits import fits_table
-    from astrometry.libkd.spherematch import match_radec
-    from legacypipe.survey import LegacySurveyData, wcs_for_brick
-    from obiwan.kenobi import main,get_parser, get_checkpoint_fn
-except ImportError:
-    pass
+# try:
+from astrometry.util.fits import fits_table
+from astrometry.libkd.spherematch import match_radec
+from legacypipe.survey import LegacySurveyData, wcs_for_brick
+from obiwan.kenobi import main,get_parser, get_checkpoint_fn
+# except ImportError:
+    # pass
 
 SURVEYS= ['decals','bassmzls']
 DATASETS= ['dr5','dr3','cosmos','dr6']
@@ -32,8 +32,10 @@ DATASETS= ['dr5','dr3','cosmos','dr6']
 def nanomag2mag(nmgy):
     return -2.5 * (np.log10(nmgy) - 9)
 
-class Testcase(object):
-    """Initialize and run a testcase
+class Run_obiwan_200x200_region(object):
+    """Injects 4 sources into a 200x200 pixel image and runs legacypipe
+
+    Works for either DECaLS or MzLS/BASS. Use Analyze_Testcase() on the result
 
     Args:
         survey: decals or bassmzls
@@ -42,13 +44,13 @@ class Testcase(object):
         obj: elg,star
         add_noise: to add Poisson noise to simulated galaxy profiles
         all_blobs: to fit models to all blobs, not just the blobs containing sims
-        onedge: to add randoms at edge of region, not well within the boundaries
+        on_edge: to add randoms at edge of region, not well within the boundaries
     """
 
     def __init__(self, survey=None, dataset=None,
                  bands='grz', obj='elg',rowstart=0,
                  add_noise=False,all_blobs=False,
-                 onedge=False, early_coadds=False,
+                 on_edge=False, early_coadds=False,
                  checkpoint=False,
                  no_cleanup=False,stage=None,
                  skip_ccd_cuts=False):
@@ -61,7 +63,7 @@ class Testcase(object):
         self.rowstart= rowstart
         self.all_blobs= all_blobs
         self.add_noise= add_noise
-        self.onedge= onedge
+        self.on_edge= on_edge
         self.early_coadds= early_coadds
         self.checkpoint= checkpoint
         self.no_cleanup=no_cleanup
@@ -76,8 +78,8 @@ class Testcase(object):
             self.outname += '_allblobs'
         if self.add_noise:
             self.outname += '_addnoise'
-        if self.onedge:
-            self.outname += '_onedge'
+        if self.on_edge:
+            self.outname += '_on_edge'
         if self.early_coadds:
             self.outname += '_coadds'
         self.outdir= os.path.join(os.path.dirname(__file__),
@@ -99,7 +101,7 @@ class Testcase(object):
         os.environ["LEGACY_SURVEY_DIR"]= self.testcase_dir
 
     def run(self):
-        """run it
+        """Add the sources and run legacypipe
 
         Args:
             no_cleanup: don't run cleanup step
@@ -123,8 +125,8 @@ class Testcase(object):
 
         randoms_fn= os.path.join(os.environ["LEGACY_SURVEY_DIR"],
                                  'randoms_%s.fits' % self.obj)
-        if self.onedge:
-            randoms_fn= randoms_fn.replace('.fits','_onedge.fits')
+        if self.on_edge:
+            randoms_fn= randoms_fn.replace('.fits','_on_edge.fits')
 
 
         cmd_line=['--dataset', self.dataset, '-b', self.brick,
@@ -158,84 +160,83 @@ class Testcase(object):
             assert(os.path.exists(self.logfn))
 
 
+class Tolerances(object):
+    @staticobject
+    def get(survey=None,**kwargs):
+        assert survey in SURVEYS
+        if survey == 'decals':
+            return Tolerances().decals(**kwargs)
+        elif survey == 'mzls_bass':
+            return Tolerances().mzls_bass(**kwargs)
 
 
+    @staticobject
+    def decals(bands=None,obj=None,
+               add_noise=False, on_edge=False):
+        """Returns dict of Tolerances
 
-class AnalyzeTestcase(Testcase):
-    """Automatically loads the relevant outputs for a given testcase_DR_*
-
-    Args:
-        name: like 'testcase_DR5_z_allblobs'
-
-    Attributes:
-        brick:
-        bands:
-        zoom:
-        brickwcs:
-    """
-    def __init__(self, **kwargs):
-        super(AnalyzeTestcase, self).__init__(**kwargs)
-
-        # Tolerances
-        self.tol= self.get_tolerances()
-
-        survey = LegacySurveyData()
-        brickinfo= get_brickinfo_hack(survey,self.brick)
-        self.brickwcs = wcs_for_brick(brickinfo)
-
-        #self.outdir= os.path.join(os.path.dirname(__file__),
-        #                          self.outname)
-        self.rsdir='rs0'
-
-    def get_tolerances(self):
-        if self.survey == 'decals' and self.bands == 'grz':
+        Args:
+            bands: either 'grz' or 'z'
+            obj: either 'elg' or 'star'
+            add_noise: was Poisson noise added to the simulated source profile?
+            on_edge: did the test case inject simulated sources onto CCD edges?
+        """
+        assert(bands in ['grz','z'])
+        if bands == 'grz':
             mw_trans= 2.e-5 # Not 0 b/c ra,dec of model can vary
-            # also amazing agreement
+            # amazing agreement
             return {'rhalf':0.65,
-                    'apflux':0.2,
-                    'skyflux':2.,
                     'modelflux':4.5,
                     'mw_trans':mw_trans}
-        elif self.survey == 'decals' and self.bands == 'z':
+        else:
             mw_trans= 5.e-6 # Not 0 b/c ra,dec of model can vary
-            if self.add_noise:
+            if add_noise:
                 # TODO: tune
                 return {'rhalf':0.11,
-                      'apflux':0.25,
-                      'skyflux':1.1,
                       'modelflux':6.0,
                       'mw_trans':mw_trans}
-            if self.onedge:
+            elif on_edge:
                 return {'rhalf':0.14,
-                      'apflux':0.2,
-                      'skyflux':2.,
                       'modelflux':5.5,
                       'mw_trans':mw_trans}
-            if self.obj == 'star':
+            elif obj == 'star':
                 # simcat-model amazing agreement
-                return {'apflux':0.2,
-                        'skyflux':1.1,
-                        'modelflux':0.6,
+                return {'modelflux':0.6,
                         'mw_trans':mw_trans}
+            else:
+                return {'rhalf':0.11,
+                          'modelflux':6.0,
+                          'mw_trans':mw_trans}
 
+    @staticobject
+    def mzls_bass(bands='grz',obj=None,**kw):
+        """Returns dict of Tolerances
 
-            return {'rhalf':0.11,
-                      'apflux':0.25,
-                      'skyflux':1.1,
-                      'modelflux':6.0,
-                      'mw_trans':mw_trans}
-        elif self.survey == 'bassmzls' and self.bands == 'grz':
-            mw_trans= 2.e-5 # Not 0 b/c ra,dec of model can vary
-            # for injected sources at depth and rhalf= 0.5''
-            return {'rhalf':1,
-                    'apflux':0.1,
-                    'skyflux':0.1,
-                    'modelflux':0.5,
+        Args:
+            bands: 'grz'
+            obj: either 'elg' or 'star'
+        """
+        if bands == 'grz':
+            mw_trans= #
+            return {'rhalf':#,
+                    'modelflux':#,
                     'mw_trans':mw_trans}
+        else:
+            raise ValueError('bands != grz not supported')
 
+
+class set_up_tests(Run_Testcase):
+    def __init__(self,**kw):
+        super(set_up_tests, self).__init__(**kw)
+        self.config_dir= 'testcase_%s_%s' % (kw['survey'],kw['bands'])
+        self.rsdir='rs0'
+        self.tol= Tolerances().get(survey=self.survey,
+                                   bands=self.bands,obj=self.obj,
+                                   add_noise=self.add_noise,
+                                   on_edge=self.on_edge)
 
     def load_outputs(self):
-        """Each output from the testcase becomes an attribute
+        """Loads every output we could possibly need to evaluate a test
 
         Attributes:
             simcat, obitractor:
@@ -275,26 +276,81 @@ class AnalyzeTestcase(Testcase):
                                             dr,'legacysurvey-%s-sims-%s.fits.fz' % \
                                               (self.brick,b)))
 
-    def simcat_xy(self):
-        """x,y of each simulated source in the fits coadd. Just like the
-            bx,by of tractor catalogues
-        """
-        _,x,y=self.brickwcs.radec2pixelxy(self.simcat.ra,self.simcat.dec)
-        self.simcat.set('x',x - self.zoom[0])
-        self.simcat.set('y',y - self.zoom[2])
+class test_flux_shape_measurements(set_up_tests):
+    def __init__(self,**kw):
+        super(test_flux_shape_measurements, self).__init__(**kw)
+        self.load_outputs()
+        self.run_test():
+        print("test_flux_shape_measurements: PASSED")
 
-    def match_simcat_tractor(self):
-        """matches sim and real sources to tractor cat
 
-        Returns:
-            isim,itrac: indices into simcat,tractor
-            ireal: inices into tractor
+    def load_outputs(self):
+        """Each output from the testcase becomes an attribute
+
+        Attributes:
+            simcat, obitractor:
+            jpg_coadds:
+            fits_coadds
         """
-        # sims to tractor
-        rad= 10. * self.brickwcs.pixel_scale() / 3600 #deg
-        isim,itrac,d= match_radec(self.simcat.ra, self.simcat.dec,
-                                  self.obitractor.ra, self.obitractor.dec,
-                                  rad,nearest=True)
+        print('Loading from %s' % self.config_dir)
+        self.randoms= fits_table(os.path.join(self.config_dir,'randoms_elg.fits'))
+        print('Loading from %s' % self.outdir)
+        dr= '%s/%s/%s' % (self.brick[:3],self.brick,self.rsdir)
+        self.obitractor= fits_table(os.path.join(self.outdir,'tractor',
+                                    dr,'tractor-%s.fits' % self.brick))
+        self.simcat= fits_table(os.path.join(self.outdir,'obiwan',
+                                    dr,'simcat-%s-%s.fits' % (self.obj,self.brick)))
+
+    def run_test(self):
+        """Compare input flux and shape parameters to Tractor's"""
+        print(('survey='+self.survey).upper())
+        # AB mag
+        dmag= [self.randoms.get(band) - \
+                nanomag2mag(self.simcat.get(band+'flux')/self.simcat.get('mw_transmission_'+band))
+               for band in 'grz']
+        print('DB mag - Input mag')
+        print('g=',dmag[0],'r=',dmag[1],'z=',dmag[2])
+
+        isim,itrac,d = match_radec(self.simcat.ra,self.simcat.dec,
+                                   self.obitractor.ra,self.obitractor.dec,
+                                   1./3600,nearest=True)
+        dmag= [nanomag2mag(self.simcat.get(band+'flux')[isim]) - nanomag2mag(self.obitractor.get('flux_'+band)[itrac])
+               for band in 'grz']
+        print('Input Mag - Measured Mag')
+        print('g=',dmag[0],'r=',dmag[1],'z=',dmag[2])
+
+        # tractor model flux within 5-6 nanomags of input flux
+        for b in self.bands:
+            diff= self.simcat.get(b+'flux') -\
+                    self.obitractor[itrac].get('flux_'+b)
+            print(b+': Input nanomag - Measured nanomag',diff)
+            assert(np.all(np.abs(diff) < self.tol['modelflux']))
+
+        # Half-light radius
+        if self.obj != 'star':
+            rhalf= np.max((self.obitractor[itrac].shapeexp_r,
+                           self.obitractor[itrac].shapedev_r),axis=0)
+            diff= rhalf - self.simcat.rhalf
+            print('delta_rhalf',diff)
+            assert(np.all(np.abs(diff) < self.tol['rhalf']))
+        # simcat versus tractor's mw_trasmission at location of source
+        for b in self.bands:
+            print('band= %s' % b)
+            diff= self.simcat.get('mw_transmission_%s' % b)[isim] -\
+                  self.obitractor.get('mw_transmission_%s' % b)[itrac]
+            print('delta mw_trans',diff)
+            assert(np.all(np.abs(diff) < self.tol['mw_trans']))
+
+
+class test_detected_simulated_and_real_sources(set_up_tests):
+    def __init__(self,**kw):
+        super(test_detected_simulated_and_real_sources, self).__init__(**kw)
+        self.load_outputs()
+        self.run_test():
+        print("test_detected_simulated_and_real_sources: PASSED")
+
+    def get_index_of_real_galaxy_at_center(self):
+        """There is a real galaxy at center, which tractor cat index is it?"""
         # real galaxy to tractor
         ra_real,dec_real= self.brickwcs.pixelxy2radec(
                                 [self.zoom[0] + 100.],
@@ -302,9 +358,37 @@ class AnalyzeTestcase(Testcase):
         _,ireal,d= match_radec(ra_real, dec_real,
                                self.obitractor.ra, self.obitractor.dec,
                                rad,nearest=True)
-        return isim,itrac,ireal
+        return ireal
 
-    def plots(self):
+    def run_test(self):
+        isim,itrac,d = match_radec(self.simcat.ra,self.simcat.dec,
+                            self.obitractor.ra,self.obitractor.dec,
+                            1./3600,nearest=True)
+        assert((len(isim) == 4) & (len(itrac) == 4))
+
+        ireal= self.get_index_of_real_galaxy_at_center()
+        if self.all_blobs:
+            assert(len(ireal) ==1) # found the real galaxy
+        else:
+            if self.bands == 'grz':
+                assert(len(ireal) == 1) # central galaxy in blob on a sim
+            elif self.bands == 'z':
+                assert(len(ireal) == 0)
+
+
+class test_draw_circles_around_sources_check_by_eye(set_up_tests):
+    def __init__(self,**kw):
+        super(test_draw_circles_around_sources_check_by_eye, self).__init__(**kw)
+        self.load_outputs()
+        # Add x,y pix to simcat table, juts like tractor has bx,by
+        _,x,y=self.brickwcs.radec2pixelxy(self.simcat.ra,self.simcat.dec)
+        self.simcat.set('x',x - self.zoom[0])
+        self.simcat.set('y',y - self.zoom[2])
+        # make the plots
+        self.run_test()
+        print("test_draw_circles_around_sources_check_by_eye: LOOK AT THE PNGs")
+
+    def run_test(self):
         """outdir: where write plots to """
         fig,ax=plt.subplots(2,2,figsize=(6,6))
         plotImage().imshow(self.blobs,ax[0,0],qs=None)
@@ -332,83 +416,46 @@ class AnalyzeTestcase(Testcase):
         print('Wrote %s' % fn)
         plt.close()
 
-    def numeric_tests(self):
-        """T: TestcaseOutputs() object """
-        isim,itrac,ireal= self.match_simcat_tractor()
-        assert((len(isim) == 4) & (len(itrac) == 4))
-        if self.all_blobs:
-            assert(len(ireal) ==1) # found the real galaxy
-        else:
-            if self.bands == 'grz':
-                assert(len(ireal) == 1) # central galaxy in blob on a sim
-            elif self.bands == 'z':
-                assert(len(ireal) == 0)
 
-        if not self.obj == 'star':
-            rhalf= np.max((self.obitractor[itrac].shapeexp_r,
-                           self.obitractor[itrac].shapedev_r),axis=0)
-            diff= rhalf - self.simcat.rhalf
-            print('delta_rhalf',diff)
-            assert(np.all(np.abs(diff) < self.tol['rhalf']))
-        # Tractor apflux is nearly bang on to my apflux for sims coadd
-        # plus my apflux for sky in coadd
-        # However, Tractor model flux is does not agree with fits coadd counts
-        # so its computing on something else and is currently wrong for sim sources
-        apers= photutils.CircularAperture((self.simcat.x,self.simcat.y),
-                                           r=3.5/self.brickwcs.pixel_scale())
+class Analyze_Testcase(Run_Testcase):
+    """Loads the outputs from a Run_Testcase().run() call
 
-        for b in self.bands:
-            print('band= %s' % b)
+    Args:
+        kwargs: the same inputs to Run_Testcase
 
-            diff= self.simcat.get('mw_transmission_%s' % b)[isim] -\
-                  self.obitractor.get('mw_transmission_%s' % b)[itrac]
-            print('delta mw_trans',diff)
-            assert(np.all(np.abs(diff) < self.tol['mw_trans']))
+    Attributes:
+        same as Run_Testcase
+        tol: tolerance dict for flux, rhalf, etc.
+        rsdir: default rs0
+        brickwcs: also useful
+    """
+    def __init__(self, **kwargs):
+        super(Analyze_Testcase, self).__init__(**kwargs)
 
-            apy_table = photutils.aperture_photometry(self.img_fits[b], apers)
-            img_apflux= np.array(apy_table['aperture_sum'])
-            apy_table = photutils.aperture_photometry(self.sims_fits[b], apers)
-            sims_apflux= np.array(apy_table['aperture_sum'])
-            obitractor_apflux= self.obitractor[itrac].get('apflux_'+b)[:,5]
-            # my apflux vs tractor apflux
-            diff= img_apflux - obitractor_apflux
-            print('delta_apflux',diff)
-            assert(np.all(np.abs(diff) < self.tol['apflux']))
-            # sky flux is small
-            diff= img_apflux - sims_apflux
-            print('delta_skyflux',diff)
-            assert(np.all(np.abs(diff) < self.tol['skyflux']))
-            # tractor model flux within 5-6 nanomags of input flux
-            diff= self.simcat.get(b+'flux') -\
-                    self.obitractor[itrac].get('flux_'+b)
-            print('delta_modelflux',diff)
-            assert(np.all(np.abs(diff) < self.tol['modelflux']))
-        print('passed: Numeric Tests')
+        # Tolerances
+        self.tol= self.get_tolerances()
 
-    def qualitative_tests(self):
-        """T: TestcaseOutputs() object """
-        if self.obj == 'elg':
-            if self.dataset == 'dr3':
-                assert('SIMP' in self.obitractor.type)
-            elif self.dataset == 'dr5':
-                assert('REX ' in self.obitractor.type)
+        survey = LegacySurveyData()
+        brickinfo= get_brickinfo_hack(survey,self.brick)
+        self.brickwcs = wcs_for_brick(brickinfo)
 
-        if self.checkpoint:
-            # log file is assumed to exist and it must have
-            # skipped the correct number of blobs
-            assert(self.logfn)
-            assert(os.path.exists(self.logfn))
-            with open(self.logfn,'r') as foo:
-                text= foo.read()
-            foundIt= re.search(r'Skipping\s4\sblobs\sfrom\scheckpoint\sfile', text)
-            assert(foundIt)
-        print('passed: Qualitative Tests')
+        #self.outdir= os.path.join(os.path.dirname(__file__),
+        #                          self.outname)
+        self.rsdir='rs0'
+
+
+
+
+
+
+
+
 
 
 def test_case(survey=None,dataset=None,
                z=True,grz=False, obj='elg',
                add_noise=False,all_blobs=False,
-               onedge=False, early_coadds=False,
+               on_edge=False, early_coadds=False,
                checkpoint=False, skip_ccd_cuts=False):
     """
     Args:
@@ -417,14 +464,14 @@ def test_case(survey=None,dataset=None,
         z, grz: to run the z and/or grz testcases
         all_blobs: to fit models to all blobs, not just the blobs containing sims
         add_noise: to add Poisson noise to simulated galaxy profiles
-        onedge: to add randoms at edge of region, not well within the boundaries
+        on_edge: to add randoms at edge of region, not well within the boundaries
         early_coadds: write coadds before model fitting and stop there
         dataset: no reason to be anything other than DR5 for these tests
     """
     d= dict(survey=survey,dataset=dataset,
             obj=obj,
             add_noise=add_noise,all_blobs=all_blobs,
-            onedge=onedge,early_coadds=early_coadds,
+            on_edge=on_edge,early_coadds=early_coadds,
             checkpoint=checkpoint,
             skip_ccd_cuts=skip_ccd_cuts)
     if z:
@@ -437,18 +484,18 @@ def test_case(survey=None,dataset=None,
         # create checkpoint file
         d.update(no_cleanup=True,stage='fitblobs')
 
-    T= Testcase(**d)
+    T= Run_Testcase(**d)
     T.run()
 
     if checkpoint:
         # restart from checkpoint and finish
         d.update(no_cleanup=False,stage=None)
-        T= Testcase(**d)
+        T= Run_Testcase(**d)
         T.run()
 
 
     if not early_coadds:
-        A= AnalyzeTestcase(**d)
+        A= Analyze_Testcase(**d)
         #if not checkpoint:
         # checkpoint doesn't run cleanup
         A.load_outputs()
@@ -465,7 +512,7 @@ def test_main():
     d=dict(survey='bassmzls',dataset='dr6',
            z=False,grz=True, skip_ccd_cuts=True,
            obj='elg',
-           all_blobs=False,onedge=False,
+           all_blobs=False,on_edge=False,
            early_coadds=False,
            checkpoint=False)
     test_case(**d)
@@ -484,10 +531,10 @@ def test_main():
     d.update(all_blobs=True)
     test_case(**d)
 
-    d.update(all_blobs=False,onedge=True)
+    d.update(all_blobs=False,on_edge=True)
     test_case(**d)
 
-    d.update(obj='star',onedge=False)
+    d.update(obj='star',on_edge=False)
     test_case(**d)
 
     d.update(obj='elg',z=False,grz=True)
@@ -502,7 +549,7 @@ def test_main():
     d.update(dataset='dr3',
              z=True,grz=False,
              obj='elg',
-             all_blobs=False,onedge=False,
+             all_blobs=False,on_edge=False,
              early_coadds=False,
              checkpoint=False)
     test_case(**d)
@@ -543,59 +590,19 @@ class TestcaseCosmos(object):
 
         main(args=args)
 
-class test_flux_truth_vs_measured(AnalyzeTestcase):
-    def __init__(self,**kw):
-        super(AnalyzeTestcase, self).__init__(**kw)
-        self.config_dir= 'testcase_%s_%s' % (kw['survey'],kw['bands'])
-        self.rsdir='rs0'
-        self.load_outputs()
-        self.run_test()
 
-    def load_outputs(self):
-        """Each output from the testcase becomes an attribute
-
-        Attributes:
-            simcat, obitractor:
-            jpg_coadds:
-            fits_coadds
-        """
-        print('Loading from %s' % self.config_dir)
-        self.randoms= fits_table(os.path.join(self.config_dir,'randoms_elg.fits'))
-        print('Loading from %s' % self.outdir)
-        dr= '%s/%s/%s' % (self.brick[:3],self.brick,self.rsdir)
-        self.obitractor= fits_table(os.path.join(self.outdir,'tractor',
-                                    dr,'tractor-%s.fits' % self.brick))
-        self.simcat= fits_table(os.path.join(self.outdir,'obiwan',
-                                    dr,'simcat-%s-%s.fits' % (self.obj,self.brick)))
-
-    def run_test(self):
-        print(('survey='+self.survey).upper())
-        print('DB mag - Input mag')
-        dmag= [self.randoms.get(band) - \
-                nanomag2mag(self.simcat.get(band+'flux')/self.simcat.get('mw_transmission_'+band))
-               for band in 'grz']
-        print('g=',dmag[0],'r=',dmag[1],'z=',dmag[2])
-        print('Input Mag - Measured Mag')
-        I,J,d = match_radec(self.simcat.ra,self.simcat.dec,
-                            self.obitractor.ra,self.obitractor.dec,
-                            1./3600,nearest=True)
-        dmag= [nanomag2mag(self.simcat.get(band+'flux')[I]) - nanomag2mag(self.obitractor.get('flux_'+band)[J])
-               for band in 'grz']
-        print('g=',dmag[0],'r=',dmag[1],'z=',dmag[2])
-        print('DB Mag - Measured Mag')
-        I,J,d = match_radec(self.randoms.ra,self.randoms.dec,
-                            self.obitractor.ra,self.obitractor.dec,
-                            1./3600,nearest=True)
-        dmag= [self.randoms.get(band)[I] - nanomag2mag(self.obitractor.get('flux_'+band)[J]/self.obitractor.get('mw_transmission_'+band)[J])
-               for band in 'grz']
-        print('g=',dmag[0],'r=',dmag[1],'z=',dmag[2])
 
 if __name__ == "__main__":
+    test_flux_shape_measurements
+    test_detected_simulated_and_real_sources
+    test_draw_circles_around_sources_check_by_eye
+
+
     test_main()
     d=dict(survey='decals',dataset='dr5',
            z=True,grz=False,
            obj='elg',
-           all_blobs=False,onedge=False,
+           all_blobs=False,on_edge=False,
            early_coadds=False,
            checkpoint=False,
            skip_ccd_cuts=False)
@@ -624,7 +631,7 @@ if __name__ == "__main__":
         d.update(bands='grz')
         for key in ['grz','z']:
             del d[key]
-        A= AnalyzeTestcase(**d)
+        A= Analyze_Testcase(**d)
         A.load_outputs()
         A.simcat_xy()
         A.plots()
