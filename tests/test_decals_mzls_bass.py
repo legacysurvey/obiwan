@@ -21,7 +21,8 @@ from obiwan.common import get_brickinfo_hack
 from astrometry.util.fits import fits_table
 from astrometry.libkd.spherematch import match_radec
 from legacypipe.survey import LegacySurveyData, wcs_for_brick
-from obiwan.kenobi import main,get_parser, get_checkpoint_fn
+from obiwan.kenobi import get_parser, get_checkpoint_fn
+from obiwan.kenobi import main as main_kenobi
 # except ImportError:
     # pass
 
@@ -32,10 +33,10 @@ DATASETS= ['dr5','dr3','cosmos','dr6']
 def nanomag2mag(nmgy):
     return -2.5 * (np.log10(nmgy) - 9)
 
-class run_obiwan_200x200_region(object):
-    """Injects 4 sources into a 200x200 pixel image and runs legacypipe
+class run_kenobi_main(object):
+    """Runs main() in kenobi.py, which runs legacypipe
 
-    Works for either DECaLS or MzLS/BASS. Use Analyze_Testcase() on the result
+    Works for either DECaLS or MzLS/BASS. Use setup_testcase() on the result
 
     Args:
         survey: decals or bass_mzls
@@ -82,6 +83,8 @@ class run_obiwan_200x200_region(object):
             self.outname += '_on_edge'
         if self.early_coadds:
             self.outname += '_coadds'
+        if self.checkpoint:
+            self.outname += '_ckpt'
         self.outdir= os.path.join(os.path.dirname(__file__),
                                   self.outname)
         self.logfn=os.path.join(self.outdir,'log.txt')
@@ -148,7 +151,7 @@ class run_obiwan_200x200_region(object):
                 pass # already exists
             sys.stdout = open(self.logfn, "w")
 
-        main(args=args)
+        main_kenobi(args=args)
 
         if self.checkpoint:
             # Reset stdout
@@ -159,6 +162,37 @@ class run_obiwan_200x200_region(object):
             assert(os.path.exists(ckpt_fn))
             assert(os.path.exists(self.logfn))
 
+class run_kenobi_main_cosmos(object):
+    """Supports subsets 60-69"""
+    def __init__(self, survey=None,subset=60):
+        self.dataset='cosmos'
+        self.survey=survey
+        self.subset=subset
+        self.rowstart=0
+        self.obj='elg'
+        if self.survey == 'decals':
+            self.brick='1501p020'
+        else:
+            raise ValueError('survey = bass_mzls not supported yet')
+        self.outdir= os.path.join(os.path.dirname(__file__),
+                                  'out_testcase_%s_cosmos_subset%d' % \
+                                  (survey,self.subset))
+        os.environ["LEGACY_SURVEY_DIR"]= os.path.join(os.path.dirname(__file__),
+                                                'testcase_cosmos')
+
+
+    def run(self):
+        randoms_fn= os.path.join(os.environ["LEGACY_SURVEY_DIR"],
+                                 'randoms_%s.fits' % self.obj)
+        cmd_line=['--subset', str(self.subset),
+                  '--dataset', self.dataset, '-b', self.brick,
+                  '-rs',str(self.rowstart), '-n', '4',
+                  '-o', self.obj, '--outdir', self.outdir,
+                  '--randoms_from_fits', randoms_fn]
+        parser= get_parser()
+        args = parser.parse_args(args=cmd_line)
+
+        main_kenobi(args=args)
 
 class Tolerances(object):
     @staticmethod
@@ -181,25 +215,23 @@ class Tolerances(object):
             add_noise: was Poisson noise added to the simulated source profile?
             on_edge: did the test case inject simulated sources onto CCD edges?
         """
+        tol= dict(mw_transmission_input_minus_measured=2.e-5,
+                  mag_psql_minus_input_corrected_for_ext= 1e-14,
+                  mag_input_minus_measured=dict(g=0.12,
+                                                r=0.1,
+                                                z=0.2),
+                  rhalf_input_minus_measured= 0.15)
+        if bands == 'grz':
+            tol.update(rhalf_input_minus_measured=0.35)
         if obj == 'star':
-            mw_trans= 5.e-6
-            modelflux=0.6
-            return {'modelflux':modelflux,
-                    'mw_trans': mw_trans}
-        else:
-            modelflux=6.0
-            if bands == 'z':
-                mw_trans= 5.e-6
-                rhalf= 0.15
-                return {'rhalf':rhalf,
-                        'modelflux':modelflux,
-                        'mw_trans':mw_trans}
-            else:
-                mw_trans= 2.e-5
-                rhalf= 0.65
-                return {'rhalf':rhalf,
-                          'modelflux':modelflux,
-                          'mw_trans':mw_trans}
+            tol.update(mag_input_minus_measured=dict(g=0.02,
+                                                     r=0.02,
+                                                     z=0.02))
+        return tol
+        # if bands == 'z':
+        #     rhalf= 0.15
+        # else:
+        #     rhalf= 0.65
 
     @staticmethod
     def bass_mzls(obj=None,bands=None):
@@ -217,18 +249,18 @@ class Tolerances(object):
                     rhalf_input_minus_measured= 0.1)
 
 
-class setup_tests(run_obiwan_200x200_region):
-    """Loads the outputs from run_obiwan_200x200_region().run() and measurement tolerances
+class analysis_setup(run_kenobi_main):
+    """Loads the outputs from run_kenobi_main().run() and measurement tolerances
 
     Args:
-        kwargs: the same inputs to run_obiwan_200x200_region
+        kwargs: the same inputs to run_kenobi_main
 
     Attributes:
-        same as run_obiwan_200x200_region
+        same as run_kenobi_main
         tol: tolerance dict for flux, rhalf, etc.
     """
     def __init__(self,**kw):
-        super(setup_tests, self).__init__(**kw)
+        super(analysis_setup, self).__init__(**kw)
         # raise ValueError('hey')
         self.tol= Tolerances().get(survey=self.survey,
                                    bands=self.bands,obj=self.obj)
@@ -249,6 +281,8 @@ class setup_tests(run_obiwan_200x200_region):
             jpg_coadds:
             fits_coadds
         """
+        print('Loading from %s' % self.config_dir)
+        self.randoms= fits_table(os.path.join(self.config_dir,'randoms_elg.fits'))
         print('Loading from %s' % self.outdir)
         dr= '%s/%s/%s' % (self.brick[:3],self.brick,self.rsdir)
         if not self.early_coadds:
@@ -291,28 +325,26 @@ def at_most_N_is_false(bool_array,N=1):
         N: the number of false elements allowed"""
     return bool_array.sum() >= len(bool_array)-1
 
-class test_flux_shape_measurements(setup_tests):
+class test_flux_shape_measurements(analysis_setup):
     def __init__(self,**kw):
         super(test_flux_shape_measurements, self).__init__(**kw)
         self.load_outputs()
         self.run_test()
 
-    def load_outputs(self):
-        """Each output from the testcase becomes an attribute
-
-        Attributes:
-            simcat, obitractor:
-            jpg_coadds:
-            fits_coadds
-        """
-        print('Loading from %s' % self.config_dir)
-        self.randoms= fits_table(os.path.join(self.config_dir,'randoms_elg.fits'))
-        print('Loading from %s' % self.outdir)
-        dr= '%s/%s/%s' % (self.brick[:3],self.brick,self.rsdir)
-        self.obitractor= fits_table(os.path.join(self.outdir,'tractor',
-                                    dr,'tractor-%s.fits' % self.brick))
-        self.simcat= fits_table(os.path.join(self.outdir,'obiwan',
-                                    dr,'simcat-%s-%s.fits' % (self.obj,self.brick)))
+    # def load_outputs(self):
+    #     """Each output from the testcase becomes an attribute
+    #
+    #     Attributes:
+    #         simcat, obitractor:
+    #         jpg_coadds:
+    #         fits_coadds
+    #     """
+    #     print('Loading from %s' % self.outdir)
+    #     dr= '%s/%s/%s' % (self.brick[:3],self.brick,self.rsdir)
+    #     self.obitractor= fits_table(os.path.join(self.outdir,'tractor',
+    #                                 dr,'tractor-%s.fits' % self.brick))
+    #     self.simcat= fits_table(os.path.join(self.outdir,'obiwan',
+    #                                 dr,'simcat-%s-%s.fits' % (self.obj,self.brick)))
 
     def run_test(self):
         """Compare input flux and shape parameters to Tractor's"""
@@ -333,7 +365,10 @@ class test_flux_shape_measurements(setup_tests):
             dmag= self.randoms.get(b) - \
                     nanomag2mag(self.simcat.get(b+'flux')/self.simcat.get('mw_transmission_'+b))
             print(b+' :',dmag)
-            assert(np.all(np.abs(dmag) < self.tol['mag_psql_minus_input_corrected_for_ext']))
+            if (self.on_edge) or (self.obj == 'star'):
+                assert(np.all(np.abs(dmag) < 1.e-3))
+            else:
+                assert(np.all(np.abs(dmag) < self.tol['mag_psql_minus_input_corrected_for_ext']))
         print('PASS')
 
         print('mag_input_minus_measured')
@@ -355,7 +390,7 @@ class test_flux_shape_measurements(setup_tests):
         print('PASS')
 
 
-class test_detected_simulated_and_real_sources(setup_tests):
+class test_detected_simulated_and_real_sources(analysis_setup):
     def __init__(self,**kw):
         super(test_detected_simulated_and_real_sources, self).__init__(**kw)
         self.load_outputs()
@@ -392,7 +427,7 @@ class test_detected_simulated_and_real_sources(setup_tests):
         print('PASS')
 
 
-class test_draw_circles_around_sources_check_by_eye(setup_tests):
+class test_draw_circles_around_sources_check_by_eye(analysis_setup):
     def __init__(self,**kw):
         super(test_draw_circles_around_sources_check_by_eye, self).__init__(**kw)
         self.load_outputs()
@@ -404,177 +439,156 @@ class test_draw_circles_around_sources_check_by_eye(setup_tests):
         self.run_test()
 
     def run_test(self):
-        """outdir: where write plots to """
-        fig,ax=plt.subplots(2,2,figsize=(6,6))
-        plotImage().imshow(self.blobs,ax[0,0],qs=None)
-        plotImage().imshow(self.img_jpg,ax[0,1],qs=None)
-        plotImage().imshow(self.model_jpg,ax[1,0],qs=None)
-        plotImage().imshow(self.resid_jpg,ax[1,1],qs=None)
-        fn=os.path.join(self.outdir,'blob_img_mod_res.png')
-        plt.savefig(fn,dpi=150)
-        print('Wrote %s' % fn)
-        plt.close()
+        if not self.early_coadds:
+            fig,ax=plt.subplots(2,2,figsize=(6,6))
+            plotImage().imshow(self.blobs,ax[0,0],qs=None)
+            plotImage().imshow(self.img_jpg,ax[0,1],qs=None)
+            plotImage().imshow(self.model_jpg,ax[1,0],qs=None)
+            plotImage().imshow(self.resid_jpg,ax[1,1],qs=None)
+            fn=os.path.join(self.outdir,'blob_img_mod_res.png')
+            plt.savefig(fn,dpi=150)
+            print('Wrote %s' % fn)
+            plt.close()
 
-        fig,ax=plt.subplots(3,3,figsize=(7,6))
-        for i,b in enumerate(self.bands) :
-            plotImage().imshow(self.img_fits[b],ax[0,i])
-            plotImage().imshow(self.sims_fits[b],ax[1,i],qs=None)
-            plotImage().circles(self.obitractor.bx,self.obitractor.by,ax[1,i],
-                                img_shape=self.sims_fits[b].shape,
-                                r_pixels=5./0.262,color='y')
-            plotImage().circles(self.simcat.x,self.simcat.y,ax[1,i],
-                                img_shape=self.sims_fits[b].shape,
-                                r_pixels=4./0.262,color='m')
-            plotImage().imshow(self.img_fits[b] - self.sims_fits[b],ax[2,i])
-        fn=os.path.join(self.outdir,'fits_coadd_img_sims_res.png')
-        plt.savefig(fn,dpi=150)
-        print('Wrote %s' % fn)
-        plt.close()
-        print("test_draw_circles_around_sources_check_by_eye\nLOOK AT THE PNGs")
-
-
-def test_case(survey=None,dataset=None,
-               z=True,grz=False, obj='elg',
-               add_noise=False,all_blobs=False,
-               on_edge=False, early_coadds=False,
-               checkpoint=False, skip_ccd_cuts=False):
-    """
-    Args:
-        survey: one of SURVEYS
-        dataset: one of DATASETS
-        z, grz: to run the z and/or grz testcases
-        all_blobs: to fit models to all blobs, not just the blobs containing sims
-        add_noise: to add Poisson noise to simulated galaxy profiles
-        on_edge: to add randoms at edge of region, not well within the boundaries
-        early_coadds: write coadds before model fitting and stop there
-        dataset: no reason to be anything other than DR5 for these tests
-    """
-    d= dict(survey=survey,dataset=dataset,
-            obj=obj,
-            add_noise=add_noise,all_blobs=all_blobs,
-            on_edge=on_edge,early_coadds=early_coadds,
-            checkpoint=checkpoint,
-            skip_ccd_cuts=skip_ccd_cuts)
-    if z:
-        bands= 'z'
-    elif grz:
-        bands= 'grz'
-    d.update(bands=bands)
-
-    if checkpoint:
-        # create checkpoint file
-        d.update(no_cleanup=True,stage='fitblobs')
-
-    T= run_obiwan_200x200_region(**d)
-    T.run()
-
-    if checkpoint:
-        # restart from checkpoint and finish
-        d.update(no_cleanup=False,stage=None)
-        T= run_obiwan_200x200_region(**d)
-        T.run()
-
-
-    if not early_coadds:
-        A= Analyze_Testcase(**d)
-        #if not checkpoint:
-        # checkpoint doesn't run cleanup
-        A.load_outputs()
-        A.simcat_xy()
-        A.plots()
-        A.numeric_tests()
-        A.qualitative_tests()
-
-
-def test_main():
-    """This is what travis CI runs"""
-
-    # BASS/MzLS
-    d=dict(survey='bass_mzls',dataset='dr6',
-           z=False,grz=True, skip_ccd_cuts=True,
-           obj='elg',
-           all_blobs=False,on_edge=False,
-           early_coadds=False,
-           checkpoint=False)
-    test_case(**d)
-
-    # DECaLS
-    d.update(survey='decals',dataset='dr5',
-             z=True,grz=False,
-             skip_ccd_cuts=False)
-
-    # dr5
-    d.update(early_coadds=True)
-    test_case(**d)
-
-    d.update(early_coadds=False)
-    test_case(**d)
-    d.update(all_blobs=True)
-    test_case(**d)
-
-    d.update(all_blobs=False,on_edge=True)
-    test_case(**d)
-
-    d.update(obj='star',on_edge=False)
-    test_case(**d)
-
-    d.update(obj='elg',z=False,grz=True)
-    test_case(**d)
-
-    d.update(z=True,grz=False,
-             all_blobs=False,
-             checkpoint=True)
-    test_case(**d)
-
-    # dr3
-    d.update(dataset='dr3',
-             z=True,grz=False,
-             obj='elg',
-             all_blobs=False,on_edge=False,
-             early_coadds=False,
-             checkpoint=False)
-    test_case(**d)
-
-    d.update(grz=True)
-    test_case(**d)
-
-
-class TestcaseCosmos(object):
-    def __init__(self, survey=None,
-                 dataset='cosmos',subset=60):
-        self.survey=survey
-        self.dataset=dataset
-        self.subset=subset
-        self.rowstart=0
-        self.obj='elg'
-        if self.survey == 'decals':
-            self.brick='1501p020'
+            fig,ax=plt.subplots(3,3,figsize=(7,6))
+            for i,b in enumerate(self.bands) :
+                plotImage().imshow(self.img_fits[b],ax[0,i])
+                plotImage().imshow(self.sims_fits[b],ax[1,i],qs=None)
+                plotImage().circles(self.obitractor.bx,self.obitractor.by,ax[1,i],
+                                    img_shape=self.sims_fits[b].shape,
+                                    r_pixels=5./0.262,color='y')
+                plotImage().circles(self.simcat.x,self.simcat.y,ax[1,i],
+                                    img_shape=self.sims_fits[b].shape,
+                                    r_pixels=4./0.262,color='m')
+                plotImage().imshow(self.img_fits[b] - self.sims_fits[b],ax[2,i])
+            fn=os.path.join(self.outdir,'fits_coadd_img_sims_res.png')
+            plt.savefig(fn,dpi=150)
+            print('Wrote %s' % fn)
+            plt.close()
+            print("test_draw_circles_around_sources_check_by_eye\nLOOK AT THE PNGs")
         else:
-            raise ValueError('survey = bass_mzls not supported yet')
-        self.outdir= os.path.join(os.path.dirname(__file__),
-                                  'out_testcase_%s_cosmos_subset%d' % \
-                                  (survey,self.subset))
-        os.environ["LEGACY_SURVEY_DIR"]= os.path.join(os.path.dirname(__file__),
-                                                'testcase_cosmos')
+            for name in ['tractor','metrics']:
+                assert(not os.path.exists(os.path.join(self.outdir,name)))
+            for name in ['obiwan','coadd']:
+                assert(os.path.exists(os.path.join(self.outdir,name)))
+            dr= '%s/%s/%s' % (self.brick[:3],self.brick,self.rsdir)
+            for name in ['model','resid']:
+                assert(not os.path.exists(os.path.join(self.outdir,'coadd',
+                            dr,'legacysurvey-%s-%s.jpg' % (self.brick,name))))
+            for name in ['image']:
+                assert(os.path.exists(os.path.join(self.outdir,'coadd',
+                            dr,'legacysurvey-%s-%s.jpg' % (self.brick,name))))
+            print("test_draw_circles_around_sources_check_by_eye: PASS")
 
+class run_a_test_case(object):
+    def __init__(self, survey=None, dataset=None,
+                 bands='grz', obj='elg',rowstart=0,
+                 add_noise=False,all_blobs=False,
+                 on_edge=False, early_coadds=False,
+                 checkpoint=False, skip_ccd_cuts=False):
+        """
+        Args:
+            survey: one of SURVEYS
+            dataset: one of DATASETS
+            z, grz: to run the z and/or grz testcases
+            all_blobs: to fit models to all blobs, not just the blobs containing sims
+            add_noise: to add Poisson noise to simulated galaxy profiles
+            on_edge: to add randoms at edge of region, not well within the boundaries
+            early_coadds: write coadds before model fitting and stop there
+        """
+        assert(bands in ['z','grz'])
+        d= locals()
+        del d['self']
+        self.params= dict(d)
 
     def run(self):
-        randoms_fn= os.path.join(os.environ["LEGACY_SURVEY_DIR"],
-                                 'randoms_%s.fits' % self.obj)
-        cmd_line=['--subset', str(self.subset),
-                  '--dataset', self.dataset, '-b', self.brick,
-                  '-rs',str(self.rowstart), '-n', '4',
-                  '-o', self.obj, '--outdir', self.outdir,
-                  '--randoms_from_fits', randoms_fn]
-        parser= get_parser()
-        args = parser.parse_args(args=cmd_line)
+        d= dict(self.params)
+        if d['checkpoint']:
+            # create checkpoint file
+            d.update(no_cleanup=True,stage='fitblobs')
 
-        main(args=args)
+        R= run_kenobi_main(**d)
+        R.run()
 
+        if d['checkpoint']:
+            # restart from checkpoint and finish
+            d.update(no_cleanup=False,stage=None)
+            R= run_kenobi_main(**d)
+            R.run()
+
+    def analyze(self):
+        d= dict(self.params)
+        if not d['early_coadds']:
+            test_flux_shape_measurements(**d)
+            test_detected_simulated_and_real_sources(**d)
+        test_draw_circles_around_sources_check_by_eye(**d)
+
+def run_decals_tests():
+    Test= run_a_test_case(survey='decals',
+                          all_blobs=False,on_edge=False,
+                          early_coadds=False,
+                          checkpoint=False,skip_ccd_cuts=False)
+
+    Test.params.update(dataset='dr5',bands='grz')
+    Test.run()
+    Test.analyze()
+
+    Test.params.update(bands='z')
+    Test.run()
+    Test.analyze()
+
+    Test.params.update(early_coadds=True)
+    Test.run()
+    Test.analyze()
+
+    Test.params.update(early_coadds=False,all_blobs=True)
+    Test.run()
+    Test.analyze()
+
+    Test.params.update(all_blobs=False,on_edge=True)
+    Test.run()
+    Test.analyze()
+
+    Test.params.update(on_edge=False,obj='star')
+    Test.run()
+    Test.analyze()
+
+    # Test.params.update(dataset='dr5',obj='elg',checkpoint=True)
+    # Test.run()
+    # Test.analyze()
+
+    Test.params.update(dataset='dr3',bands='grz',obj='elg')
+    Test.run()
+    Test.analyze()
+
+    Test.params.update(bands='z')
+    Test.run()
+    Test.analyze()
+
+def run_bass_mzls_tests():
+    Test= run_a_test_case(survey='bass_mzls',obj='elg',
+                          skip_ccd_cuts=True,
+                          all_blobs=False,on_edge=False,
+                          early_coadds=False,
+                          checkpoint=False)
+
+    Test.params.update(dataset='dr6',bands='grz')
+    Test.run()
+    Test.analyze()
+
+
+def run_cosmos_tests():
+    # runs a 200x200 pixel region but on the full 0.5 GB images
+    t= run_kenobi_main_cosmos(survey='decals',
+                              subset=60)
+    t.run()
 
 
 if __name__ == "__main__":
-    #test_main()
+    #run_decals_tests()
+    #run_bass_mzls_tests()
+    run_cosmos_tests()
+    raise ValueError('done out_testcase')
     d=dict(survey='decals',dataset='dr5',
            z=True,grz=False,
            obj='elg',
@@ -588,10 +602,10 @@ if __name__ == "__main__":
         del d[key]
     #test_flux_truth_vs_measured(**d)
 
-    # test_flux_shape_measurements(**d)
-    # test_detected_simulated_and_real_sources(**d)
-    # test_draw_circles_around_sources_check_by_eye(**d)
-    # raise ValueError('decals done')
+    test_flux_shape_measurements(**d)
+    test_detected_simulated_and_real_sources(**d)
+    test_draw_circles_around_sources_check_by_eye(**d)
+    raise ValueError('decals done')
 
     d.update(survey='bass_mzls',dataset='dr6',
              skip_ccd_cuts=True,
@@ -614,12 +628,6 @@ if __name__ == "__main__":
         d.update(bands='grz')
         for key in ['grz','z']:
             del d[key]
-        A= Analyze_Testcase(**d)
-        A.load_outputs()
-        A.simcat_xy()
-        A.plots()
-        A.numeric_tests()
-        A.qualitative_tests()
-
-    #t= TestcaseCosmos(survey='decals')
-    #t.run()
+        test_flux_shape_measurements(**d)
+        test_detected_simulated_and_real_sources(**d)
+        test_draw_circles_around_sources_check_by_eye(**d)

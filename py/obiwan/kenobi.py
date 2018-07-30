@@ -1079,7 +1079,7 @@ def main(args=None):
     if (os.path.exists(tractor_fn) &
         (not args.overwrite_if_exists)):
        print('Exiting, already finished %s' % tractor_fn)
-       sys.exit(0)
+       return 0 #sys.exit(0)
 
     brickname = args.brick
     objtype = args.objtype
