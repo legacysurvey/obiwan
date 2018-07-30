@@ -25,20 +25,20 @@ from obiwan.kenobi import main,get_parser, get_checkpoint_fn
 # except ImportError:
     # pass
 
-SURVEYS= ['decals','bassmzls']
+SURVEYS= ['decals','bass_mzls']
 DATASETS= ['dr5','dr3','cosmos','dr6']
 
 
 def nanomag2mag(nmgy):
     return -2.5 * (np.log10(nmgy) - 9)
 
-class Run_obiwan_200x200_region(object):
+class run_obiwan_200x200_region(object):
     """Injects 4 sources into a 200x200 pixel image and runs legacypipe
 
     Works for either DECaLS or MzLS/BASS. Use Analyze_Testcase() on the result
 
     Args:
-        survey: decals or bassmzls
+        survey: decals or bass_mzls
         name: testcase name
         dataset: string, 'DR3', 'DR5',
         obj: elg,star
@@ -92,7 +92,7 @@ class Run_obiwan_200x200_region(object):
         elif self.survey == 'decals' and self.bands == 'z':
             self.brick='1741p242'
             self.zoom= [90, 290, 2773, 2973]
-        elif self.survey == 'bassmzls':
+        elif self.survey == 'bass_mzls':
             self.brick='2176p330'
             self.zoom= [2776,2976, 2900,3100]
         else:
@@ -161,18 +161,18 @@ class Run_obiwan_200x200_region(object):
 
 
 class Tolerances(object):
-    @staticobject
-    def get(survey=None,**kwargs):
+    @staticmethod
+    def get(survey=None,obj=None,bands=None):
         assert survey in SURVEYS
-        if survey == 'decals':
-            return Tolerances().decals(**kwargs)
-        elif survey == 'mzls_bass':
-            return Tolerances().mzls_bass(**kwargs)
+        assert(bands in ['grz','z'])
+        assert(obj in ['elg','star'])
+        return getattr(Tolerances(),survey)(obj,bands)
+        #elif survey == 'bass_mzls':
+        #    return Tolerances().bass_mzls(obj,bands)
 
 
-    @staticobject
-    def decals(bands=None,obj=None,
-               add_noise=False, on_edge=False):
+    @staticmethod
+    def decals(obj=None,bands=None):
         """Returns dict of Tolerances
 
         Args:
@@ -181,59 +181,65 @@ class Tolerances(object):
             add_noise: was Poisson noise added to the simulated source profile?
             on_edge: did the test case inject simulated sources onto CCD edges?
         """
-        assert(bands in ['grz','z'])
-        if bands == 'grz':
-            mw_trans= 2.e-5 # Not 0 b/c ra,dec of model can vary
-            # amazing agreement
-            return {'rhalf':0.65,
-                    'modelflux':4.5,
-                    'mw_trans':mw_trans}
+        if obj == 'star':
+            mw_trans= 5.e-6
+            modelflux=0.6
+            return {'modelflux':modelflux,
+                    'mw_trans': mw_trans}
         else:
-            mw_trans= 5.e-6 # Not 0 b/c ra,dec of model can vary
-            if add_noise:
-                # TODO: tune
-                return {'rhalf':0.11,
-                      'modelflux':6.0,
-                      'mw_trans':mw_trans}
-            elif on_edge:
-                return {'rhalf':0.14,
-                      'modelflux':5.5,
-                      'mw_trans':mw_trans}
-            elif obj == 'star':
-                # simcat-model amazing agreement
-                return {'modelflux':0.6,
+            modelflux=6.0
+            if bands == 'z':
+                mw_trans= 5.e-6
+                rhalf= 0.15
+                return {'rhalf':rhalf,
+                        'modelflux':modelflux,
                         'mw_trans':mw_trans}
             else:
-                return {'rhalf':0.11,
-                          'modelflux':6.0,
+                mw_trans= 2.e-5
+                rhalf= 0.65
+                return {'rhalf':rhalf,
+                          'modelflux':modelflux,
                           'mw_trans':mw_trans}
 
-    @staticobject
-    def mzls_bass(bands='grz',obj=None,**kw):
+    @staticmethod
+    def bass_mzls(obj=None,bands=None):
         """Returns dict of Tolerances
 
         Args:
             bands: 'grz'
             obj: either 'elg' or 'star'
         """
-        if bands == 'grz':
-            mw_trans= #
-            return {'rhalf':#,
-                    'modelflux':#,
-                    'mw_trans':mw_trans}
-        else:
-            raise ValueError('bands != grz not supported')
+        return dict(mw_transmission_input_minus_measured=5.e-6,
+                    mag_psql_minus_input_corrected_for_ext= 1e-14,
+                    mag_input_minus_measured=dict(g=2.6,
+                                                  r=2.6,
+                                                  z=0.11),
+                    rhalf_input_minus_measured= 0.1)
 
 
-class set_up_tests(Run_Testcase):
+class setup_tests(run_obiwan_200x200_region):
+    """Loads the outputs from run_obiwan_200x200_region().run() and measurement tolerances
+
+    Args:
+        kwargs: the same inputs to run_obiwan_200x200_region
+
+    Attributes:
+        same as run_obiwan_200x200_region
+        tol: tolerance dict for flux, rhalf, etc.
+    """
     def __init__(self,**kw):
-        super(set_up_tests, self).__init__(**kw)
-        self.config_dir= 'testcase_%s_%s' % (kw['survey'],kw['bands'])
-        self.rsdir='rs0'
+        super(setup_tests, self).__init__(**kw)
+        # raise ValueError('hey')
         self.tol= Tolerances().get(survey=self.survey,
-                                   bands=self.bands,obj=self.obj,
-                                   add_noise=self.add_noise,
-                                   on_edge=self.on_edge)
+                                   bands=self.bands,obj=self.obj)
+        self.config_dir= os.path.join(os.path.dirname(self.outdir),
+                                      'testcase_%s_%s' % \
+                                        (kw['survey'],kw['bands']))
+        self.rsdir='rs0'
+
+        survey = LegacySurveyData()
+        brickinfo= get_brickinfo_hack(survey,self.brick)
+        self.brickwcs = wcs_for_brick(brickinfo)
 
     def load_outputs(self):
         """Loads every output we could possibly need to evaluate a test
@@ -276,13 +282,20 @@ class set_up_tests(Run_Testcase):
                                             dr,'legacysurvey-%s-sims-%s.fits.fz' % \
                                               (self.brick,b)))
 
-class test_flux_shape_measurements(set_up_tests):
+def at_most_N_is_false(bool_array,N=1):
+    """Returns True if bool_array has at most N elements that are False
+
+    Example, all(bool_array) is equivalent to at_most_N_is_false(bool_array,N=0)
+
+    Args:
+        N: the number of false elements allowed"""
+    return bool_array.sum() >= len(bool_array)-1
+
+class test_flux_shape_measurements(setup_tests):
     def __init__(self,**kw):
         super(test_flux_shape_measurements, self).__init__(**kw)
         self.load_outputs()
-        self.run_test():
-        print("test_flux_shape_measurements: PASSED")
-
+        self.run_test()
 
     def load_outputs(self):
         """Each output from the testcase becomes an attribute
@@ -303,51 +316,50 @@ class test_flux_shape_measurements(set_up_tests):
 
     def run_test(self):
         """Compare input flux and shape parameters to Tractor's"""
-        print(('survey='+self.survey).upper())
-        # AB mag
-        dmag= [self.randoms.get(band) - \
-                nanomag2mag(self.simcat.get(band+'flux')/self.simcat.get('mw_transmission_'+band))
-               for band in 'grz']
-        print('DB mag - Input mag')
-        print('g=',dmag[0],'r=',dmag[1],'z=',dmag[2])
-
         isim,itrac,d = match_radec(self.simcat.ra,self.simcat.dec,
                                    self.obitractor.ra,self.obitractor.dec,
                                    1./3600,nearest=True)
-        dmag= [nanomag2mag(self.simcat.get(band+'flux')[isim]) - nanomag2mag(self.obitractor.get('flux_'+band)[itrac])
-               for band in 'grz']
-        print('Input Mag - Measured Mag')
-        print('g=',dmag[0],'r=',dmag[1],'z=',dmag[2])
 
-        # tractor model flux within 5-6 nanomags of input flux
+        print('mw_transmission_input_minus_measured')
         for b in self.bands:
-            diff= self.simcat.get(b+'flux') -\
-                    self.obitractor[itrac].get('flux_'+b)
-            print(b+': Input nanomag - Measured nanomag',diff)
-            assert(np.all(np.abs(diff) < self.tol['modelflux']))
+            diff= self.simcat.get('mw_transmission_%s' % b)[isim] -\
+                  self.obitractor.get('mw_transmission_%s' % b)[itrac]
+            print(b+' :',diff)
+            assert(np.all(np.abs(diff) < self.tol['mw_transmission_input_minus_measured']))
+        print('PASS')
 
-        # Half-light radius
+        print('mag_psql_minus_input_corrected_for_ext')
+        for b in self.bands:
+            dmag= self.randoms.get(b) - \
+                    nanomag2mag(self.simcat.get(b+'flux')/self.simcat.get('mw_transmission_'+b))
+            print(b+' :',dmag)
+            assert(np.all(np.abs(dmag) < self.tol['mag_psql_minus_input_corrected_for_ext']))
+        print('PASS')
+
+        print('mag_input_minus_measured')
+        for b in self.bands:
+            dmag= nanomag2mag(self.simcat.get(b+'flux')[isim]) - \
+                    nanomag2mag(self.obitractor.get('flux_'+b)[itrac])
+            print(b+': ',dmag)
+            assert(np.all(np.abs(dmag) < self.tol['mag_input_minus_measured'][b]))
+        print('PASS')
+
+        print('rhalf_input_minus_measured')
         if self.obj != 'star':
             rhalf= np.max((self.obitractor[itrac].shapeexp_r,
                            self.obitractor[itrac].shapedev_r),axis=0)
-            diff= rhalf - self.simcat.rhalf
-            print('delta_rhalf',diff)
-            assert(np.all(np.abs(diff) < self.tol['rhalf']))
-        # simcat versus tractor's mw_trasmission at location of source
-        for b in self.bands:
-            print('band= %s' % b)
-            diff= self.simcat.get('mw_transmission_%s' % b)[isim] -\
-                  self.obitractor.get('mw_transmission_%s' % b)[itrac]
-            print('delta mw_trans',diff)
-            assert(np.all(np.abs(diff) < self.tol['mw_trans']))
+            diff= self.simcat.rhalf - rhalf
+            print(diff)
+            assert(at_most_N_is_false(np.abs(diff) < self.tol['rhalf_input_minus_measured'],
+                                      N=1))
+        print('PASS')
 
 
-class test_detected_simulated_and_real_sources(set_up_tests):
+class test_detected_simulated_and_real_sources(setup_tests):
     def __init__(self,**kw):
         super(test_detected_simulated_and_real_sources, self).__init__(**kw)
         self.load_outputs()
-        self.run_test():
-        print("test_detected_simulated_and_real_sources: PASSED")
+        self.run_test()
 
     def get_index_of_real_galaxy_at_center(self):
         """There is a real galaxy at center, which tractor cat index is it?"""
@@ -357,16 +369,19 @@ class test_detected_simulated_and_real_sources(set_up_tests):
                                 [self.zoom[2] + 100.])
         _,ireal,d= match_radec(ra_real, dec_real,
                                self.obitractor.ra, self.obitractor.dec,
-                               rad,nearest=True)
+                               10./3600,nearest=True)
         return ireal
 
     def run_test(self):
         isim,itrac,d = match_radec(self.simcat.ra,self.simcat.dec,
                             self.obitractor.ra,self.obitractor.dec,
                             1./3600,nearest=True)
+        print('all_input_sources_recovered_by_tractor')
         assert((len(isim) == 4) & (len(itrac) == 4))
+        print('PASS')
 
         ireal= self.get_index_of_real_galaxy_at_center()
+        print('real_galaxy_at_center_recovered_by_tractor')
         if self.all_blobs:
             assert(len(ireal) ==1) # found the real galaxy
         else:
@@ -374,9 +389,10 @@ class test_detected_simulated_and_real_sources(set_up_tests):
                 assert(len(ireal) == 1) # central galaxy in blob on a sim
             elif self.bands == 'z':
                 assert(len(ireal) == 0)
+        print('PASS')
 
 
-class test_draw_circles_around_sources_check_by_eye(set_up_tests):
+class test_draw_circles_around_sources_check_by_eye(setup_tests):
     def __init__(self,**kw):
         super(test_draw_circles_around_sources_check_by_eye, self).__init__(**kw)
         self.load_outputs()
@@ -386,7 +402,6 @@ class test_draw_circles_around_sources_check_by_eye(set_up_tests):
         self.simcat.set('y',y - self.zoom[2])
         # make the plots
         self.run_test()
-        print("test_draw_circles_around_sources_check_by_eye: LOOK AT THE PNGs")
 
     def run_test(self):
         """outdir: where write plots to """
@@ -415,41 +430,7 @@ class test_draw_circles_around_sources_check_by_eye(set_up_tests):
         plt.savefig(fn,dpi=150)
         print('Wrote %s' % fn)
         plt.close()
-
-
-class Analyze_Testcase(Run_Testcase):
-    """Loads the outputs from a Run_Testcase().run() call
-
-    Args:
-        kwargs: the same inputs to Run_Testcase
-
-    Attributes:
-        same as Run_Testcase
-        tol: tolerance dict for flux, rhalf, etc.
-        rsdir: default rs0
-        brickwcs: also useful
-    """
-    def __init__(self, **kwargs):
-        super(Analyze_Testcase, self).__init__(**kwargs)
-
-        # Tolerances
-        self.tol= self.get_tolerances()
-
-        survey = LegacySurveyData()
-        brickinfo= get_brickinfo_hack(survey,self.brick)
-        self.brickwcs = wcs_for_brick(brickinfo)
-
-        #self.outdir= os.path.join(os.path.dirname(__file__),
-        #                          self.outname)
-        self.rsdir='rs0'
-
-
-
-
-
-
-
-
+        print("test_draw_circles_around_sources_check_by_eye\nLOOK AT THE PNGs")
 
 
 def test_case(survey=None,dataset=None,
@@ -484,13 +465,13 @@ def test_case(survey=None,dataset=None,
         # create checkpoint file
         d.update(no_cleanup=True,stage='fitblobs')
 
-    T= Run_Testcase(**d)
+    T= run_obiwan_200x200_region(**d)
     T.run()
 
     if checkpoint:
         # restart from checkpoint and finish
         d.update(no_cleanup=False,stage=None)
-        T= Run_Testcase(**d)
+        T= run_obiwan_200x200_region(**d)
         T.run()
 
 
@@ -509,7 +490,7 @@ def test_main():
     """This is what travis CI runs"""
 
     # BASS/MzLS
-    d=dict(survey='bassmzls',dataset='dr6',
+    d=dict(survey='bass_mzls',dataset='dr6',
            z=False,grz=True, skip_ccd_cuts=True,
            obj='elg',
            all_blobs=False,on_edge=False,
@@ -569,7 +550,7 @@ class TestcaseCosmos(object):
         if self.survey == 'decals':
             self.brick='1501p020'
         else:
-            raise ValueError('survey = bassmzls not supported yet')
+            raise ValueError('survey = bass_mzls not supported yet')
         self.outdir= os.path.join(os.path.dirname(__file__),
                                   'out_testcase_%s_cosmos_subset%d' % \
                                   (survey,self.subset))
@@ -593,12 +574,7 @@ class TestcaseCosmos(object):
 
 
 if __name__ == "__main__":
-    test_flux_shape_measurements
-    test_detected_simulated_and_real_sources
-    test_draw_circles_around_sources_check_by_eye
-
-
-    test_main()
+    #test_main()
     d=dict(survey='decals',dataset='dr5',
            z=True,grz=False,
            obj='elg',
@@ -610,10 +586,14 @@ if __name__ == "__main__":
     d.update(bands='grz')
     for key in ['grz','z']:
         del d[key]
-    test_flux_truth_vs_measured(**d)
+    #test_flux_truth_vs_measured(**d)
 
+    # test_flux_shape_measurements(**d)
+    # test_detected_simulated_and_real_sources(**d)
+    # test_draw_circles_around_sources_check_by_eye(**d)
+    # raise ValueError('decals done')
 
-    d.update(survey='bassmzls',dataset='dr6',
+    d.update(survey='bass_mzls',dataset='dr6',
              skip_ccd_cuts=True,
              z=False,grz=True)
     #test_case(**d)
@@ -621,9 +601,12 @@ if __name__ == "__main__":
     d.update(bands='grz')
     for key in ['grz','z']:
         del d[key]
-    test_flux_truth_vs_measured(**d)
 
-    raise ValueError('good')
+    test_flux_shape_measurements(**d)
+    test_detected_simulated_and_real_sources(**d)
+    test_draw_circles_around_sources_check_by_eye(**d)
+    raise ValueError('bass_mzls done')
+    #test_flux_truth_vs_measured(**d)
 
 
 
