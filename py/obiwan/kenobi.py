@@ -277,7 +277,7 @@ class SimImage(DecamImage):
         elif self.survey.dataset in ['dr5']:
             assert 'gain' in self.t.get_columns()
         # Find image on proj or proja if doesn't exist
-        dirs=dict(proj='/project/projectdirs/cosmo/staging/decam',
+        dirs=dict(proj='/global/project/projectdirs/cosmo/staging/decam',
                   proja='/global/projecta/projectdirs/cosmo/staging/decam')
         if not os.path.exists(self.imgfn):
             print('doesnt exist: %s, finding new location for file' % self.imgfn)
