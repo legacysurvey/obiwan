@@ -1,8 +1,11 @@
 """
-Continuous integration 'end-to-end' tests of the Obiwan pipeline
+Similar to legacypipe/py/test/runbrick_test.py, this runs and analyzes the
+output of legacypipe running on 200x200 pixels regions that obiwan
+has injected simulated sources intoself.
+
+See 'test_200x200_pixel_regions.py' for how to use this file
 """
 from __future__ import print_function
-import unittest
 if __name__ == "__main__":
     import matplotlib
     matplotlib.use('Agg')
@@ -58,7 +61,7 @@ class run_kenobi_main(object):
                  bands='grz', obj='elg',rowstart=0,
                  add_noise=False,all_blobs=False,
                  on_edge=False, early_coadds=False,
-                 checkpoint=False,
+                 checkpoint=False,skip_ccd_cuts=False,
                  no_cleanup=False,stage=None):
         assert(survey in SURVEYS)
         assert(dataset in DATASETS)
@@ -197,7 +200,7 @@ class run_kenobi_main_cosmos(object):
             print('wget http://portal.nersc.gov/project/desi/users/kburleigh/obiwan/testcase_cosmos.tar.gz')
             print('tar -xzvf testcase_cosmos.tar.gz')
             print("testcase_cosmos is also on kaylanb's hpss at nersc")
-            sys.exit(0) # exit for success
+            return 0 #sys.exit(0) # exit for success
         randoms_fn= os.path.join(os.environ["LEGACY_SURVEY_DIR"],
                                  'randoms_%s.fits' % self.obj)
         cmd_line=['--subset', str(self.subset),
@@ -495,113 +498,3 @@ class test_draw_circles_around_sources_check_by_eye(analysis_setup):
                 assert(os.path.exists(os.path.join(self.outdir,'coadd',
                             dr,'legacysurvey-%s-%s.jpg' % (self.brick,name))))
             print("test_draw_circles_around_sources_check_by_eye: PASS")
-
-class run_a_test_case(object):
-    def __init__(self, survey=None, dataset=None,
-                 bands='grz', obj='elg',rowstart=0,
-                 add_noise=False,all_blobs=False,
-                 on_edge=False, early_coadds=False,
-                 checkpoint=False, skip_ccd_cuts=False):
-        """
-        Args:
-            survey: one of SURVEYS
-            dataset: one of DATASETS
-            z, grz: to run the z and/or grz testcases
-            all_blobs: to fit models to all blobs, not just the blobs containing sims
-            add_noise: to add Poisson noise to simulated galaxy profiles
-            on_edge: to add randoms at edge of region, not well within the boundaries
-            early_coadds: write coadds before model fitting and stop there
-        """
-        assert(bands in ['z','grz'])
-        d= locals()
-        del d['self']
-        self.params= dict(d)
-
-    def run(self):
-        d= dict(self.params)
-        if d['checkpoint']:
-            # create checkpoint file
-            d.update(no_cleanup=True,stage='fitblobs')
-
-        R= run_kenobi_main(**d)
-        R.run()
-
-        if d['checkpoint']:
-            # restart from checkpoint and finish
-            d.update(no_cleanup=False,stage=None)
-            R= run_kenobi_main(**d)
-            R.run()
-
-    def analyze(self):
-        d= dict(self.params)
-        if not d['early_coadds']:
-            test_flux_shape_measurements(**d)
-            test_detected_simulated_and_real_sources(**d)
-        test_draw_circles_around_sources_check_by_eye(**d)
-
-def run_decals_tests():
-    Test= run_a_test_case(survey='decals',
-                          all_blobs=False,on_edge=False,
-                          early_coadds=False,
-                          checkpoint=False,skip_ccd_cuts=False)
-
-    Test.params.update(dataset='dr5',bands='grz')
-    Test.run()
-    Test.analyze()
-
-    Test.params.update(bands='z')
-    Test.run()
-    Test.analyze()
-
-    Test.params.update(early_coadds=True)
-    Test.run()
-    Test.analyze()
-
-    Test.params.update(early_coadds=False,all_blobs=True)
-    Test.run()
-    Test.analyze()
-
-    Test.params.update(all_blobs=False,on_edge=True)
-    Test.run()
-    Test.analyze()
-
-    Test.params.update(on_edge=False,obj='star')
-    Test.run()
-    Test.analyze()
-
-    # Test.params.update(dataset='dr5',obj='elg',checkpoint=True)
-    # Test.run()
-    # Test.analyze()
-
-    Test.params.update(dataset='dr3',bands='grz',obj='elg')
-    Test.run()
-    Test.analyze()
-
-    Test.params.update(bands='z')
-    Test.run()
-    Test.analyze()
-
-def run_bass_mzls_tests():
-    Test= run_a_test_case(survey='bass_mzls',obj='elg',
-                          skip_ccd_cuts=True,
-                          all_blobs=False,on_edge=False,
-                          early_coadds=False,
-                          checkpoint=False)
-
-    Test.params.update(dataset='dr6',bands='grz')
-    Test.run()
-    Test.analyze()
-
-
-def run_cosmos_tests():
-    # runs a 200x200 pixel region but on the full 0.5 GB images
-    t= run_kenobi_main_cosmos(survey='decals')
-    t.run()
-    print('WARNING: no analyze method exists for testcase_cosmos')
-    print('adapt run_a_test_case().anlayze()')
-
-
-if __name__ == "__main__":
-    run_decals_tests()
-    run_bass_mzls_tests()
-    run_cosmos_tests()

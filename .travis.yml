@@ -98,8 +98,8 @@ before_script:
     - cd $HOME && python -c "import astrometry; print(astrometry.__file__)"
     - sudo rm -rf $HOME/tractor
     - if [ ! -d "$HOME/tractor" ]; then (cd $HOME && curl -SL https://github.com/dstndstn/tractor/archive/dr5.2.tar.gz -o tractor.tar.gz && tar -xzf tractor.tar.gz && mv tractor-dr5.2 tractor); fi
-    - cd $HOME/tractor 
-    - make 
+    - cd $HOME/tractor
+    - make
     - python setup.py install --prefix=$MYCODE/tractor
     - export PYTHONPATH=$MYCODE/tractor/lib/python2.7/site-packages:$PYTHONPATH
     - cd $HOME && python -c "import tractor; print(tractor.__file__)"
@@ -110,13 +110,13 @@ before_script:
     - cd $HOME
     - sudo rm -rf $HOME/tmv-0.73
     - if ! test -d tmv-0.73 || ! test -f tmv-0.73/Sconstruct; then wget https://github.com/rmjarvis/tmv/archive/v0.73.tar.gz && tar -xf v0.73.tar.gz ; else echo Using cached TMV; fi
-    - cd $HOME/tmv-0.73 
+    - cd $HOME/tmv-0.73
     - sudo scons DEBUG=True FLAGS="-O0"
-    - sudo scons install 
-    - sudo rm -rf $HOME/GalSim 
+    - sudo scons install
+    - sudo rm -rf $HOME/GalSim
     - if [ ! -d "$HOME/GalSim" ]; then (cd $HOME && wget https://github.com/GalSim-developers/GalSim/archive/v1.4.2.tar.gz -O GalSim.tar.gz && tar -xzf GalSim.tar.gz && mv GalSim-1.4.2 GalSim); fi
     - cd $HOME/GalSim
-    - sudo scons PYTHON=/home/travis/virtualenv/python2.7.13/bin/python 
+    - sudo scons PYTHON=/home/travis/virtualenv/python2.7.13/bin/python
     - sudo scons install
     - cd $HOME && git clone https://github.com/legacysurvey/legacypipe.git
     - cd legacypipe && git checkout f4fc46ea0b
@@ -127,21 +127,14 @@ before_script:
     - export PYTHONPATH=$HOME/obiwan/py:$PYTHONPATH
 
 script:
-  #- cd $HOME/obiwan
-  #- pytest --cov --ignore py/obiwan/test/end_to_end
-  cd $HOME/obiwan/
-  pytest -v --cov=tests/ --cov-config=tests/.coveragerc --ignore=tests/end_to_end tests/
-  pytest -v tests/end_to_end/test_datasets.py::test_main
-  # pytest -p no:warnings
+  #cd $HOME/obiwan/
+  cd $HOME
+  python obiwan/tests/test_200x200_pixel_regions.py
+  #pytest -v --cov=tests/ --cov-config=tests/.coveragerc --ignore=tests/end_to_end tests/
+  #pytest -v tests/end_to_end/test_datasets.py::test_main
   #- coverage run obiwan/test/print_test.py test
 
 after_success:
   - coveralls
 #- (cd py && coveralls debug)
 #    - (cd py && coveralls)
-
-
-
-
-
-
