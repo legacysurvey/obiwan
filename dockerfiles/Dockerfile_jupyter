@@ -1,4 +1,5 @@
-FROM kaylanb/obiwan_new
+#FROM kaylanb/obiwan_new
+FROM kaylanb/rtd_new
 
 COPY requirements_jupyter.txt /tmp/
 RUN source /srv/py3_venv/bin/activate && \
