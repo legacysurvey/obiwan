@@ -27,7 +27,7 @@ from obiwan.kenobi import main as main_kenobi
     # pass
 
 SURVEYS= ['decals','bass_mzls']
-DATASETS= ['dr5','dr3','cosmos','dr6']
+DATASETS= ['dr3','dr5','dr6','cosmos']
 
 
 def nanomag2mag(nmgy):
@@ -40,12 +40,18 @@ class run_kenobi_main(object):
 
     Args:
         survey: decals or bass_mzls
-        name: testcase name
         dataset: string, 'DR3', 'DR5',
-        obj: elg,star
+        bands: 'grz','z'
+        obj: 'elg','star'
+        rowstart: default is 0 because reads randoms table from 1st row
         add_noise: to add Poisson noise to simulated galaxy profiles
         all_blobs: to fit models to all blobs, not just the blobs containing sims
         on_edge: to add randoms at edge of region, not well within the boundaries
+        early_coadds: creates coadds and stops. useful for ML training/test samples
+        checkpoint: whether to save model fitting (fitblobs) checkpoints
+        skip_ccd_cuts= True to use all ccds in the survey-ccds fits tables
+        no_cleanup: at the end of running, obiwan reorganzes outputs, True means don't do this
+        stage: runbrick.py stages, default is None which runs everything
     """
 
     def __init__(self, survey=None, dataset=None,
@@ -53,8 +59,7 @@ class run_kenobi_main(object):
                  add_noise=False,all_blobs=False,
                  on_edge=False, early_coadds=False,
                  checkpoint=False,
-                 no_cleanup=False,stage=None,
-                 skip_ccd_cuts=False):
+                 no_cleanup=False,stage=None):
         assert(survey in SURVEYS)
         assert(dataset in DATASETS)
         self.survey= survey
@@ -164,24 +169,35 @@ class run_kenobi_main(object):
 
 class run_kenobi_main_cosmos(object):
     """Supports subsets 60-69"""
-    def __init__(self, survey=None,subset=60):
+    def __init__(self, survey=None):
         self.dataset='cosmos'
         self.survey=survey
-        self.subset=subset
         self.rowstart=0
         self.obj='elg'
         if self.survey == 'decals':
             self.brick='1501p020'
         else:
             raise ValueError('survey = bass_mzls not supported yet')
-        self.outdir= os.path.join(os.path.dirname(__file__),
-                                  'out_testcase_%s_cosmos_subset%d' % \
-                                  (survey,self.subset))
         os.environ["LEGACY_SURVEY_DIR"]= os.path.join(os.path.dirname(__file__),
                                                 'testcase_cosmos')
 
 
     def run(self):
+        self.subset=60
+        print('WARNING: testcase_cosmos runs subset 60, only, for simplicity')
+        print('but obiwan works for subsets 60-69 when running on a full dataset')
+        self.outdir= os.path.join(os.path.dirname(__file__),
+                                  'out_testcase_%s_cosmos_subset%d' % \
+                                  (self.survey,self.subset))
+
+        # download data
+        if not os.path.exists(os.environ["LEGACY_SURVEY_DIR"]):
+            print('Do the following to download the testcase, they are 500 MB')
+            print('cd %s' % os.path.dirname(__file__))
+            print('wget http://portal.nersc.gov/project/desi/users/kburleigh/obiwan/testcase_cosmos.tar.gz')
+            print('tar -xzvf testcase_cosmos.tar.gz')
+            print("testcase_cosmos is also on kaylanb's hpss at nersc")
+            sys.exit(0) # exit for success
         randoms_fn= os.path.join(os.environ["LEGACY_SURVEY_DIR"],
                                  'randoms_%s.fits' % self.obj)
         cmd_line=['--subset', str(self.subset),
@@ -579,55 +595,13 @@ def run_bass_mzls_tests():
 
 def run_cosmos_tests():
     # runs a 200x200 pixel region but on the full 0.5 GB images
-    t= run_kenobi_main_cosmos(survey='decals',
-                              subset=60)
+    t= run_kenobi_main_cosmos(survey='decals')
     t.run()
+    print('WARNING: no analyze method exists for testcase_cosmos')
+    print('adapt run_a_test_case().anlayze()')
 
 
 if __name__ == "__main__":
-    #run_decals_tests()
-    #run_bass_mzls_tests()
+    run_decals_tests()
+    run_bass_mzls_tests()
     run_cosmos_tests()
-    raise ValueError('done out_testcase')
-    d=dict(survey='decals',dataset='dr5',
-           z=True,grz=False,
-           obj='elg',
-           all_blobs=False,on_edge=False,
-           early_coadds=False,
-           checkpoint=False,
-           skip_ccd_cuts=False)
-
-    d.update(bands='grz')
-    for key in ['grz','z']:
-        del d[key]
-    #test_flux_truth_vs_measured(**d)
-
-    test_flux_shape_measurements(**d)
-    test_detected_simulated_and_real_sources(**d)
-    test_draw_circles_around_sources_check_by_eye(**d)
-    raise ValueError('decals done')
-
-    d.update(survey='bass_mzls',dataset='dr6',
-             skip_ccd_cuts=True,
-             z=False,grz=True)
-    #test_case(**d)
-
-    d.update(bands='grz')
-    for key in ['grz','z']:
-        del d[key]
-
-    test_flux_shape_measurements(**d)
-    test_detected_simulated_and_real_sources(**d)
-    test_draw_circles_around_sources_check_by_eye(**d)
-    raise ValueError('bass_mzls done')
-    #test_flux_truth_vs_measured(**d)
-
-
-
-    if False:
-        d.update(bands='grz')
-        for key in ['grz','z']:
-            del d[key]
-        test_flux_shape_measurements(**d)
-        test_detected_simulated_and_real_sources(**d)
-        test_draw_circles_around_sources_check_by_eye(**d)
