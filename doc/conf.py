@@ -71,7 +71,7 @@ intersphinx_mapping = {
 from glob import glob
 def get_rel_path(name):
     d=dict(obiwan='../py/obiwan',
-           tests='../tests/end_to_end')
+           tests='../tests/')
     for key in ['runmanager','qa','scaling','dplearn']:
         d[key]= '../py/obiwan/'+key
     return d[name]
@@ -100,9 +100,12 @@ def get_modules(name):
                                .replace('../tests/','tests/')
                                .replace('.py','')
                                .replace('/','.'))
+    print('name=%s, suffix=%s' % (name,suffix))
     for key in get_rm_modules(name):
         key= suffix + '.' + key
-        mods.remove(key)
+        print('key=%s' % (key,))
+        if not key == 'tests..__init__':
+            mods.remove(key)
     return mods
 
 

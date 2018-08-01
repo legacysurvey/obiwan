@@ -1,5 +1,5 @@
 """
-tests.end_to_end
+tests
 ================
 
 Travis continuous integration tests of the entire pipeline

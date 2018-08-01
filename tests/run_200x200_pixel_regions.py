@@ -214,6 +214,18 @@ class run_kenobi_main_cosmos(object):
         main_kenobi(args=args)
 
 class Tolerances(object):
+    """Tolerances on Tractor measured mags and test_flux_shape_measurements
+
+    Args:
+        survey: decals, bass_mzls
+        obj: star,elg
+        bands: grz, z
+        tolerance dict:
+            mw_transmission_input_minus_measured: obiwan looks up mw_trans before injecting, it should agree with tractor's at that ra,dec
+            mag_psql_minus_input_corrected_for_ext: in AB mag, ext added when inject, so compare what have in db to what injected w/out ext
+            mag_input_minus_measured: in AB mag
+            rhalf_input_minus_measured: arcsec that rhalf measurement can be off by
+    """
     @staticmethod
     def get(survey=None,obj=None,bands=None):
         assert survey in SURVEYS
@@ -231,8 +243,6 @@ class Tolerances(object):
         Args:
             bands: either 'grz' or 'z'
             obj: either 'elg' or 'star'
-            add_noise: was Poisson noise added to the simulated source profile?
-            on_edge: did the test case inject simulated sources onto CCD edges?
         """
         tol= dict(mw_transmission_input_minus_measured=2.e-5,
                   mag_psql_minus_input_corrected_for_ext= 1e-14,

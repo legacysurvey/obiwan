@@ -21,7 +21,12 @@ import obiwan.qa.plots_common as plots
 
 #######################
 if __name__ == "__main__":
-    """Input args here because functions below need these settings"""
+    """Input args here because functions below need these settings
+
+    Args:
+        randoms_table: created by runmanager/derived_tables.py
+        which: eboss, desi are DR3-era runs, cosmos is cosmos subsets runs
+    """
     plt.rcParams['axes.labelsize'] = 14
     plt.rcParams['xtick.labelsize'] = 12
     plt.rcParams['ytick.labelsize'] = 12
@@ -1486,19 +1491,20 @@ def rec_lost_contam_delta_by_type(dat,fn='rec_lost_contam_delta_by_type.png',
 
 ################
 if __name__ == '__main__':
+    # Set limits for plots, grz mag histogram ranges, etcself.
     if args.which == 'cosmos':
         pad=0.2
         kw_lims= dict(glim=(22-pad,24.5+pad),
                       rlim=(21.4-pad,23.9+pad),
                       zlim=(20.5-pad,23+pad))
         delta_lims=(-10,10)
-        simp_or_rex='REX'
+        simp_or_rex='REX' # DR5 and newer uses REX
     elif args.which in ['eboss','desi']:
         kw_lims= dict(glim=(21.5,23.25),
                       rlim=(20.5,23.),
                       zlim=(19.5,22.5))
         delta_lims=(-10,10)
-        simp_or_rex='SIMP'
+        simp_or_rex='SIMP' # DR4 and older uses SIMP
 
     # Plots made in same order as presented in obiwan eboss paper
     # Input properties
