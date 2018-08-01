@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>obiwan.runmanager.qdo_tasks &#8212; obiwan 1.2.0 documentation</title>
+    <link rel="stylesheet" href="../../../_static/bootstrap-sphinx.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script type="text/javascript" src="../../../_static/js/jquery-1.11.0.min.js"></script>
+    <script type="text/javascript" src="../../../_static/js/jquery-fix.js"></script>
+    <script type="text/javascript" src="../../../_static/bootstrap-3.3.7/js/bootstrap.min.js"></script>
+    <script type="text/javascript" src="../../../_static/bootstrap-sphinx.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+<meta charset='utf-8'>
+<meta http-equiv='X-UA-Compatible' content='IE=edge,chrome=1'>
+<meta name='viewport' content='width=device-width, initial-scale=1.0, maximum-scale=1'>
+<meta name="apple-mobile-web-app-capable" content="yes">
+
+  </head><body>
+
+  <div id="navbar" class="navbar navbar-default ">
+    <div class="container">
+      <div class="navbar-header">
+        <!-- .btn-navbar is used as the toggle for collapsed navbar content -->
+        <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".nav-collapse">
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+        </button>
+        <a class="navbar-brand" href="../../../index.html">
+          Obiwan</a>
+        <span class="navbar-text navbar-version pull-left"><b>1.2.0</b></span>
+      </div>
+
+        <div class="collapse navbar-collapse nav-collapse">
+          <ul class="nav navbar-nav">
+            
+                <li><a href="../../../api.html">API</a></li>
+                <li><a href="../../../tutorials.html">Tutorials</a></li>
+                <li><a href="../../../deeplearning.html">Deep Learning</a></li>
+            
+            
+              <li class="dropdown globaltoc-container">
+  <a role="button"
+     id="dLabelGlobalToc"
+     data-toggle="dropdown"
+     data-target="#"
+     href="../../../index.html">Pages <b class="caret"></b></a>
+  <ul class="dropdown-menu globaltoc"
+      role="menu"
+      aria-labelledby="dLabelGlobalToc"></ul>
+</li>
+              
+                <li class="dropdown">
+  <a role="button"
+     id="dLabelLocalToc"
+     data-toggle="dropdown"
+     data-target="#"
+     href="#">This Page <b class="caret"></b></a>
+  <ul class="dropdown-menu localtoc"
+      role="menu"
+      aria-labelledby="dLabelLocalToc"></ul>
+</li>
+              
+            
+            
+              
+                
+              
+            
+            
+            
+            
+          </ul>
+
+          
+            
+<form class="navbar-form navbar-right" action="../../../search.html" method="get">
+ <div class="form-group">
+  <input type="text" name="q" class="form-control" placeholder="Search" />
+ </div>
+  <input type="hidden" name="check_keywords" value="yes" />
+  <input type="hidden" name="area" value="default" />
+</form>
+          
+        </div>
+    </div>
+  </div>
+
+<div class="container">
+  <div class="row">
+    <div class="col-md-12 content">
+      
+  <h1>Source code for obiwan.runmanager.qdo_tasks</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;Given a ra,dec bounding box of region to inject simulated sources, and</span>
+<span class="sd">the number density of simulated sources, these functions write the</span>
+<span class="sd">&#39;qdo&#39; task list of each brick to process, repeated for how iterations will</span>
+<span class="sd">be needed per brick</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+
+<span class="kn">from</span> <span class="nn">astrometry.util.fits</span> <span class="k">import</span> <span class="n">fits_table</span>
+
+<span class="kn">from</span> <span class="nn">obiwan.common</span> <span class="k">import</span> <span class="n">writelist</span>
+
+
+<span class="k">class</span> <span class="nc">Bricks</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">survey_bricks_fn</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">bricks</span><span class="o">=</span> <span class="n">fits_table</span><span class="p">(</span><span class="n">survey_bricks_fn</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">overlapBox</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">ra</span><span class="o">=</span><span class="p">[</span><span class="mi">100</span><span class="p">,</span><span class="mi">101</span><span class="p">],</span><span class="n">dec</span><span class="o">=</span><span class="p">[</span><span class="mi">20</span><span class="p">,</span><span class="mi">21</span><span class="p">]):</span>
+        <span class="sd">&quot;&quot;&quot;ra,dec: corners of box injected randoms into&quot;&quot;&quot;</span>
+        <span class="n">hw</span><span class="o">=</span><span class="mf">0.25</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">bricks</span><span class="p">[((</span><span class="n">ra</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">-</span><span class="n">hw</span> <span class="o">&lt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">bricks</span><span class="o">.</span><span class="n">ra</span><span class="p">)</span> <span class="o">&amp;</span>
+                            <span class="p">(</span><span class="n">ra</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span><span class="n">hw</span> <span class="o">&gt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">bricks</span><span class="o">.</span><span class="n">ra</span><span class="p">)</span> <span class="o">&amp;</span>
+                            <span class="p">(</span><span class="n">dec</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">-</span><span class="n">hw</span> <span class="o">&lt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">bricks</span><span class="o">.</span><span class="n">dec</span><span class="p">)</span> <span class="o">&amp;</span>
+                            <span class="p">(</span><span class="n">dec</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span><span class="n">hw</span> <span class="o">&gt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">bricks</span><span class="o">.</span><span class="n">dec</span><span class="p">))]</span>
+
+<div class="viewcode-block" id="TaskList"><a class="viewcode-back" href="../../../_autosummary/obiwan.runmanager.qdo_tasks.html#obiwan.runmanager.qdo_tasks.TaskList">[docs]</a><span class="k">class</span> <span class="nc">TaskList</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Creates QDO tasks lists for default,do_skipids, and/or do_more</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        ra1,ra2,dec1,dec2: floats, corners of ra dec box</span>
+<span class="sd">        nobj_per_run: number of simulated sources to inject per obiwan run</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">ra1</span><span class="o">=</span><span class="mf">123.3</span><span class="p">,</span><span class="n">ra2</span><span class="o">=</span><span class="mf">124.3</span><span class="p">,</span><span class="n">dec1</span><span class="o">=</span><span class="mf">24.0</span><span class="p">,</span><span class="n">dec2</span><span class="o">=</span><span class="mf">25.0</span><span class="p">,</span>
+                 <span class="n">nobj_total</span><span class="o">=</span><span class="mf">1e6</span><span class="p">,</span><span class="n">nobj_per_run</span><span class="o">=</span><span class="mi">500</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ra1</span><span class="o">=</span><span class="n">ra1</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ra2</span><span class="o">=</span><span class="n">ra2</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dec1</span><span class="o">=</span><span class="n">dec1</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dec2</span><span class="o">=</span><span class="n">dec2</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">nobj_total</span><span class="o">=</span><span class="n">nobj_total</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">nobj_per_run</span><span class="o">=</span><span class="n">nobj_per_run</span>
+
+<div class="viewcode-block" id="TaskList.bricks_in_region"><a class="viewcode-back" href="../../../_autosummary/obiwan.runmanager.qdo_tasks.html#obiwan.runmanager.qdo_tasks.TaskList.bricks_in_region">[docs]</a>    <span class="k">def</span> <span class="nf">bricks_in_region</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">survey_bricks_fn</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Returns bricks in ra,dec region&quot;&quot;&quot;</span>
+        <span class="n">b</span><span class="o">=</span> <span class="n">Bricks</span><span class="p">(</span><span class="n">survey_bricks_fn</span><span class="o">=</span><span class="n">survey_bricks_fn</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">bricks</span><span class="o">=</span> <span class="n">b</span><span class="o">.</span><span class="n">overlapBox</span><span class="p">(</span><span class="n">ra</span><span class="o">=</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">ra1</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">ra2</span><span class="p">],</span> <span class="n">dec</span><span class="o">=</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">dec1</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">dec2</span><span class="p">])</span></div>
+        <span class="c1">#writelist(np.sort(self.bricks.brickname), &#39;bricks_inregion.txt&#39;)</span>
+
+    <span class="k">def</span> <span class="nf">bricks_from_file</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">fn</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">bricks</span><span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">loadtxt</span><span class="p">(</span><span class="n">fn</span><span class="p">,</span><span class="n">dtype</span><span class="o">=</span><span class="nb">str</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">estim_nperbrick</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">p</span><span class="o">=</span> <span class="mf">1.</span><span class="o">/</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">bricks</span><span class="p">)</span>
+        <span class="n">Ex</span><span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">nobj_total</span> <span class="o">*</span> <span class="n">p</span>
+        <span class="n">SE</span><span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">nobj_total</span> <span class="o">*</span> <span class="n">p</span> <span class="o">*</span> <span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">p</span><span class="p">))</span>
+        <span class="k">return</span> <span class="n">Ex</span> <span class="o">+</span> <span class="mi">2</span><span class="o">*</span><span class="n">SE</span>
+
+<div class="viewcode-block" id="TaskList.task"><a class="viewcode-back" href="../../../_autosummary/obiwan.runmanager.qdo_tasks.html#obiwan.runmanager.qdo_tasks.TaskList.task">[docs]</a>    <span class="k">def</span> <span class="nf">task</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">brick</span><span class="p">,</span><span class="n">rs</span><span class="p">,</span><span class="n">do_skipids</span><span class="p">,</span><span class="n">do_more</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;returns a single QDO task as a string&quot;&quot;&quot;</span>
+        <span class="k">assert</span><span class="p">(</span><span class="n">do_skipids</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;yes&#39;</span><span class="p">,</span><span class="s1">&#39;no&#39;</span><span class="p">])</span>
+        <span class="k">assert</span><span class="p">(</span><span class="n">do_more</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;yes&#39;</span><span class="p">,</span><span class="s1">&#39;no&#39;</span><span class="p">])</span>
+        <span class="k">return</span> <span class="s1">&#39;</span><span class="si">%s</span><span class="s1"> </span><span class="si">%d</span><span class="s1"> </span><span class="si">%s</span><span class="s1"> </span><span class="si">%s</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">brick</span><span class="p">,</span><span class="n">rs</span><span class="p">,</span><span class="n">do_skipids</span><span class="p">,</span><span class="n">do_more</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="TaskList.tasklist_skipids"><a class="viewcode-back" href="../../../_autosummary/obiwan.runmanager.qdo_tasks.html#obiwan.runmanager.qdo_tasks.TaskList.tasklist_skipids">[docs]</a>    <span class="k">def</span> <span class="nf">tasklist_skipids</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">bricks</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span><span class="n">do_more</span><span class="o">=</span><span class="s1">&#39;no&#39;</span><span class="p">,</span><span class="n">minid</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;tasklist for skipids runs</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            do_more: yes or no, yes if running more randoms b/c TS returns too few target</span>
+<span class="sd">            minid: if do_more == yes, this must be an integer for the randoms id to start from</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">do_skipids</span><span class="o">=</span> <span class="s1">&#39;yes&#39;</span>
+        <span class="k">if</span> <span class="n">bricks</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">bricks</span><span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">bricks</span><span class="o">.</span><span class="n">brickname</span><span class="p">)</span>
+        <span class="n">tasks</span><span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">task</span><span class="p">(</span><span class="n">brick</span><span class="p">,</span><span class="n">rs</span><span class="p">,</span><span class="n">do_skipid</span><span class="p">,</span><span class="n">do_more</span><span class="p">)</span>
+                <span class="k">for</span> <span class="n">brick</span> <span class="ow">in</span> <span class="n">bricks</span>
+                <span class="k">for</span> <span class="n">rs</span> <span class="ow">in</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">3</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">nobj_per_run</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">nobj_per_run</span><span class="p">)]</span>
+        <span class="n">writelist</span><span class="p">(</span><span class="n">tasks</span><span class="p">,</span> <span class="s1">&#39;tasks_skipid_</span><span class="si">%s</span><span class="s1">_more_</span><span class="si">%s</span><span class="s1">_minid_</span><span class="si">%s</span><span class="s1">.txt&#39;</span> <span class="o">%</span>
+                         <span class="p">(</span><span class="n">do_skipids</span><span class="p">,</span><span class="n">do_more</span><span class="p">,</span><span class="nb">str</span><span class="p">(</span><span class="n">minid</span><span class="p">)))</span></div>
+
+
+<div class="viewcode-block" id="TaskList.get_tasklist"><a class="viewcode-back" href="../../../_autosummary/obiwan.runmanager.qdo_tasks.html#obiwan.runmanager.qdo_tasks.TaskList.get_tasklist">[docs]</a>    <span class="k">def</span> <span class="nf">get_tasklist</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">bricks</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span><span class="n">objtype</span><span class="o">=</span><span class="s1">&#39;elg&#39;</span><span class="p">,</span>
+                     <span class="n">do_more</span><span class="o">=</span><span class="s1">&#39;no&#39;</span><span class="p">,</span><span class="n">minid</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+                     <span class="n">estim_nperbrick</span><span class="o">=</span><span class="mf">2e3</span><span class="p">,</span>
+                     <span class="n">cosmos</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;It is too slow to find the example number of randoms in each brick, so find all bricks</span>
+<span class="sd">            with at least one source and put in the expected number of randoms + 2 StdErros worth</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            objtype: elg,lrg</span>
+<span class="sd">            minid: None, unless do_more == yes then it is an integer for the randoms id to start from</span>
+<span class="sd">            bricks: array like list of bricks to get qdo tasks for, if None all bricks found</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1">#tasks=[]</span>
+        <span class="k">if</span> <span class="n">bricks</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">bricks</span><span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">bricks</span><span class="o">.</span><span class="n">brickname</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">bricks</span><span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span><span class="n">bricks</span><span class="p">)</span>
+        <span class="n">tasks</span><span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">task</span><span class="p">(</span><span class="n">brick</span><span class="p">,</span><span class="n">rs</span><span class="p">,</span><span class="n">do_skipids</span><span class="p">,</span><span class="n">do_more</span><span class="p">)</span>
+                <span class="k">for</span> <span class="n">rs</span> <span class="ow">in</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="n">estim_nperbrick</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">nobj_per_run</span><span class="p">)</span>
+                <span class="k">for</span> <span class="n">brick</span> <span class="ow">in</span> <span class="n">bricks</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">tasks</span></div>
+
+<div class="viewcode-block" id="TaskList.writetasks"><a class="viewcode-back" href="../../../_autosummary/obiwan.runmanager.qdo_tasks.html#obiwan.runmanager.qdo_tasks.TaskList.writetasks">[docs]</a>    <span class="k">def</span> <span class="nf">writetasks</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">tasks</span><span class="p">,</span>
+                   <span class="n">do_more</span><span class="o">=</span><span class="s1">&#39;no&#39;</span><span class="p">,</span><span class="n">minid</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span><span class="n">do_skipids</span><span class="o">=</span><span class="s1">&#39;no&#39;</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Write task list to file&quot;&quot;&quot;</span>
+        <span class="n">fn</span><span class="o">=</span> <span class="s1">&#39;tasks_skipid_</span><span class="si">%s</span><span class="s1">_more_</span><span class="si">%s</span><span class="s1">_minid_</span><span class="si">%s</span><span class="s1">.txt&#39;</span> <span class="o">%</span> \
+                <span class="p">(</span><span class="n">do_skipids</span><span class="p">,</span><span class="n">do_more</span><span class="p">,</span><span class="nb">str</span><span class="p">(</span><span class="n">minid</span><span class="p">))</span>
+        <span class="n">writelist</span><span class="p">(</span><span class="n">tasks</span><span class="p">,</span> <span class="n">fn</span><span class="p">)</span></div></div>
+
+
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s1">&#39;__main__&#39;</span><span class="p">:</span>
+    <span class="kn">from</span> <span class="nn">argparse</span> <span class="k">import</span> <span class="n">ArgumentParser</span>
+    <span class="n">parser</span> <span class="o">=</span> <span class="n">ArgumentParser</span><span class="p">()</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;--obj&#39;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">str</span><span class="p">,</span><span class="n">choices</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;elg&#39;</span><span class="p">,</span><span class="s1">&#39;star&#39;</span><span class="p">],</span><span class="n">required</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;--radec&#39;</span><span class="p">,</span> <span class="n">nargs</span><span class="o">=</span><span class="s1">&#39;+&#39;</span><span class="p">,</span><span class="nb">type</span><span class="o">=</span><span class="nb">float</span><span class="p">,</span>
+                        <span class="n">help</span><span class="o">=</span><span class="s1">&#39;no quotes, e.g. --radec ra1 ra2 dec1 dec2&#39;</span><span class="p">,</span><span class="n">required</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;--nobj_total&#39;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mi">10000</span><span class="p">,</span><span class="n">required</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;--survey_bricks_fn&#39;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">str</span><span class="p">,</span>
+                        <span class="n">help</span><span class="o">=</span><span class="s1">&#39;abs path to survey-bricks.fits.fz&#39;</span><span class="p">,</span>
+                        <span class="n">required</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;--nobj_per_run&#39;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mi">300</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;--bricks_fn&#39;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">str</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                        <span class="n">help</span><span class="o">=</span><span class="s1">&#39;abs path to list of bricks for the tasklist&#39;</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;--do_skipids&#39;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">str</span><span class="p">,</span> <span class="n">choices</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;yes&#39;</span><span class="p">,</span><span class="s1">&#39;no&#39;</span><span class="p">],</span>
+                        <span class="n">default</span><span class="o">=</span><span class="s1">&#39;no&#39;</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;--do_more&#39;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">str</span><span class="p">,</span> <span class="n">choices</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;yes&#39;</span><span class="p">,</span><span class="s1">&#39;no&#39;</span><span class="p">],</span>
+                        <span class="n">default</span><span class="o">=</span><span class="s1">&#39;no&#39;</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;--minid&#39;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;--use_bricklist_given&#39;</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="s1">&#39;store_true&#39;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;--cosmos&#39;</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="s1">&#39;store_true&#39;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                        <span class="n">help</span><span class="o">=</span><span class="s1">&#39;set to add the cosmos subset number to the tasks&#39;</span><span class="p">)</span>
+    <span class="n">args</span> <span class="o">=</span> <span class="n">parser</span><span class="o">.</span><span class="n">parse_args</span><span class="p">()</span>
+
+    <span class="k">assert</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">radec</span><span class="p">)</span> <span class="o">==</span> <span class="mi">4</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">do_more</span> <span class="o">==</span> <span class="s1">&#39;yes&#39;</span><span class="p">:</span>
+        <span class="k">assert</span><span class="p">(</span><span class="ow">not</span> <span class="n">args</span><span class="o">.</span><span class="n">minid</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">)</span>
+    <span class="n">do_skipids</span><span class="o">=</span><span class="s1">&#39;no&#39;</span>
+    <span class="n">do_more</span><span class="o">=</span><span class="s1">&#39;no&#39;</span>
+    <span class="c1">#survey_bricks=os.path.join(os.environ[&#39;HOME&#39;],</span>
+    <span class="c1">#                        &#39;mydata/survey-bricks.fits.gz&#39;)</span>
+    <span class="c1">#survey_bricks=os.path.join(os.environ[&#39;HOME&#39;],</span>
+    <span class="c1">#                        &#39;Downloads/survey-bricks-dr5.fits.gz&#39;)</span>
+    <span class="c1">#survey_bricks= os.path.join(os.environ[&#39;obiwan_data&#39;],</span>
+    <span class="c1">#                        &#39;legacysurveydir/survey-bricks.fits.gz&#39;)</span>
+
+    <span class="c1">###</span>
+    <span class="n">d</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span><span class="n">nobj_total</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">nobj_total</span><span class="p">,</span>
+           <span class="n">nobj_per_run</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">nobj_per_run</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">args</span><span class="o">.</span><span class="n">use_bricklist_given</span><span class="p">:</span>
+        <span class="n">d</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">ra1</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">radec</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="n">ra2</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">radec</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span>
+                 <span class="n">dec1</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">radec</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span><span class="n">dec2</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">radec</span><span class="p">[</span><span class="mi">3</span><span class="p">])</span>
+    <span class="c1"># Initialize</span>
+    <span class="n">T</span><span class="o">=</span> <span class="n">TaskList</span><span class="p">(</span><span class="o">**</span><span class="n">d</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">use_bricklist_given</span><span class="p">:</span>
+        <span class="n">T</span><span class="o">.</span><span class="n">bricks_from_file</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">bricks_fn</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">T</span><span class="o">.</span><span class="n">bricks_in_region</span><span class="p">(</span><span class="n">survey_bricks_fn</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">survey_bricks_fn</span><span class="p">)</span>
+    <span class="n">num</span><span class="o">=</span> <span class="n">T</span><span class="o">.</span><span class="n">estim_nperbrick</span><span class="p">()</span>
+    <span class="c1"># Write tasks</span>
+    <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">do_skipids</span> <span class="o">==</span> <span class="s1">&#39;no&#39;</span><span class="p">:</span>
+        <span class="n">tasks</span><span class="o">=</span> <span class="n">T</span><span class="o">.</span><span class="n">get_tasklist</span><span class="p">(</span><span class="n">T</span><span class="o">.</span><span class="n">bricks</span><span class="p">,</span><span class="n">args</span><span class="o">.</span><span class="n">obj</span><span class="p">,</span>
+                              <span class="n">args</span><span class="o">.</span><span class="n">do_more</span><span class="p">,</span><span class="n">args</span><span class="o">.</span><span class="n">minid</span><span class="p">,</span>
+                              <span class="n">estim_nperbrick</span><span class="o">=</span><span class="n">num</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">T</span><span class="o">.</span><span class="n">tasklist_skipids</span><span class="p">(</span><span class="n">T</span><span class="o">.</span><span class="n">bricks</span><span class="p">,</span>
+                           <span class="n">do_more</span><span class="o">=</span><span class="n">do_more</span><span class="p">,</span><span class="n">minid</span><span class="o">=</span><span class="n">minid</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">cosmos</span><span class="p">:</span>
+        <span class="n">tasks</span><span class="o">=</span> <span class="p">[</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2"> </span><span class="si">%d</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">task</span><span class="p">,</span><span class="n">subset</span><span class="p">)</span>
+                <span class="k">for</span> <span class="n">task</span> <span class="ow">in</span> <span class="n">tasks</span>
+                <span class="k">for</span> <span class="n">subset</span> <span class="ow">in</span> <span class="p">[</span><span class="mi">60</span><span class="p">,</span><span class="mi">64</span><span class="p">,</span><span class="mi">69</span><span class="p">]]</span>
+    <span class="n">T</span><span class="o">.</span><span class="n">writetasks</span><span class="p">(</span><span class="n">tasks</span><span class="p">,</span>
+                 <span class="n">do_more</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">do_more</span><span class="p">,</span><span class="n">minid</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">minid</span><span class="p">,</span>
+                 <span class="n">do_skipids</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">do_skipids</span><span class="p">)</span>
+    <span class="c1"># Qdo &quot;skip_ids&quot; task list for a given list of bricks</span>
+    <span class="c1">#brick_list_fn= &#39;/global/cscratch1/sd/kaylanb/obiwan_code/obiwan/bricks_ready_skip.txt&#39;</span>
+    <span class="c1">#write_qdo_tasks_skipids(brick_list_fn, nobj_per_run=300)</span>
+</pre></div>
+
+    </div>
+      
+  </div>
+</div>
+<footer class="footer">
+  <div class="container">
+    <p class="pull-right">
+      <a href="#">Back to top</a>
+      
+    </p>
+    <p>
+        &copy; Copyright 2014-2018, Kaylan Burleigh, John Moustakas.<br/>
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.7.6.<br/>
+    </p>
+  </div>
+</footer>
+  </body>
+</html>

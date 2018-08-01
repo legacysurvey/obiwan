@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>obiwan.qa.plots_randomsprops_fluxdiff &#8212; obiwan 1.2.0 documentation</title>
+    <link rel="stylesheet" href="../_static/bootstrap-sphinx.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script type="text/javascript" src="../_static/js/jquery-1.11.0.min.js"></script>
+    <script type="text/javascript" src="../_static/js/jquery-fix.js"></script>
+    <script type="text/javascript" src="../_static/bootstrap-3.3.7/js/bootstrap.min.js"></script>
+    <script type="text/javascript" src="../_static/bootstrap-sphinx.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+<meta charset='utf-8'>
+<meta http-equiv='X-UA-Compatible' content='IE=edge,chrome=1'>
+<meta name='viewport' content='width=device-width, initial-scale=1.0, maximum-scale=1'>
+<meta name="apple-mobile-web-app-capable" content="yes">
+
+  </head><body>
+
+  <div id="navbar" class="navbar navbar-default ">
+    <div class="container">
+      <div class="navbar-header">
+        <!-- .btn-navbar is used as the toggle for collapsed navbar content -->
+        <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".nav-collapse">
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+        </button>
+        <a class="navbar-brand" href="../index.html">
+          Obiwan</a>
+        <span class="navbar-text navbar-version pull-left"><b>1.2.0</b></span>
+      </div>
+
+        <div class="collapse navbar-collapse nav-collapse">
+          <ul class="nav navbar-nav">
+            
+                <li><a href="../api.html">API</a></li>
+                <li><a href="../tutorials.html">Tutorials</a></li>
+                <li><a href="../deeplearning.html">Deep Learning</a></li>
+            
+            
+              <li class="dropdown globaltoc-container">
+  <a role="button"
+     id="dLabelGlobalToc"
+     data-toggle="dropdown"
+     data-target="#"
+     href="../index.html">Pages <b class="caret"></b></a>
+  <ul class="dropdown-menu globaltoc"
+      role="menu"
+      aria-labelledby="dLabelGlobalToc"></ul>
+</li>
+              
+                <li class="dropdown">
+  <a role="button"
+     id="dLabelLocalToc"
+     data-toggle="dropdown"
+     data-target="#"
+     href="#">This Page <b class="caret"></b></a>
+  <ul class="dropdown-menu localtoc"
+      role="menu"
+      aria-labelledby="dLabelLocalToc"><ul>
+<li><a class="reference internal" href="#">obiwan.qa.plots_randomsprops_fluxdiff</a></li>
+</ul>
+</ul>
+</li>
+              
+            
+            
+              
+                
+              
+            
+            
+            
+            
+          </ul>
+
+          
+            
+<form class="navbar-form navbar-right" action="../search.html" method="get">
+ <div class="form-group">
+  <input type="text" name="q" class="form-control" placeholder="Search" />
+ </div>
+  <input type="hidden" name="check_keywords" value="yes" />
+  <input type="hidden" name="area" value="default" />
+</form>
+          
+        </div>
+    </div>
+  </div>
+
+<div class="container">
+  <div class="row">
+    <div class="col-md-12 content">
+      
+  <div class="section" id="module-obiwan.qa.plots_randomsprops_fluxdiff">
+<span id="obiwan-qa-plots-randomsprops-fluxdiff"></span><h1>obiwan.qa.plots_randomsprops_fluxdiff<a class="headerlink" href="#module-obiwan.qa.plots_randomsprops_fluxdiff" title="Permalink to this headline">¶</a></h1>
+<p>The main analysis script, created the majority of my thesis plots Ch 4-5</p>
+<p>Philosophy: name of plot is also name of the function</p>
+<p class="rubric">Classes</p>
+<table border="1" class="longtable docutils">
+<colgroup>
+<col width="10%" />
+<col width="90%" />
+</colgroup>
+<tbody valign="top">
+<tr class="row-odd"><td><a class="reference internal" href="#obiwan.qa.plots_randomsprops_fluxdiff.getDepth" title="obiwan.qa.plots_randomsprops_fluxdiff.getDepth"><code class="xref py py-obj docutils literal notranslate"><span class="pre">getDepth</span></code></a>()</td>
+<td>limiting AB mag depth</td>
+</tr>
+</tbody>
+</table>
+<p class="rubric">Functions</p>
+<table border="1" class="longtable docutils">
+<colgroup>
+<col width="10%" />
+<col width="90%" />
+</colgroup>
+<tbody valign="top">
+<tr class="row-odd"><td><code class="xref py py-obj docutils literal notranslate"><span class="pre">confusion_matrix_by_type</span></code>(dat[,&nbsp;fn])</td>
+<td></td>
+</tr>
+<tr class="row-even"><td><code class="xref py py-obj docutils literal notranslate"><span class="pre">delta_dec_vs_delta_ra</span></code>(dat[,&nbsp;fn,&nbsp;xlim,&nbsp;ylim,&nbsp;…])</td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><code class="xref py py-obj docutils literal notranslate"><span class="pre">delta_vs_grzmag</span></code>(dat[,&nbsp;fn,&nbsp;delta,&nbsp;…])</td>
+<td></td>
+</tr>
+<tr class="row-even"><td><code class="xref py py-obj docutils literal notranslate"><span class="pre">e1_e2</span></code>(dat[,&nbsp;fn,&nbsp;nbins,&nbsp;recovered])</td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><code class="xref py py-obj docutils literal notranslate"><span class="pre">e1_e2_separate_panels</span></code>(dat[,&nbsp;fn,&nbsp;nbins,&nbsp;…])</td>
+<td></td>
+</tr>
+<tr class="row-even"><td><code class="xref py py-obj docutils literal notranslate"><span class="pre">fix_for_delta_flux</span></code>(dat[,&nbsp;fn,&nbsp;band])</td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><code class="xref py py-obj docutils literal notranslate"><span class="pre">fracin_vs_numstddev_2dhist</span></code>(dat[,&nbsp;fn,&nbsp;…])</td>
+<td></td>
+</tr>
+<tr class="row-even"><td><code class="xref py py-obj docutils literal notranslate"><span class="pre">fraction_recovered</span></code>(dat[,&nbsp;fn,&nbsp;…])</td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><code class="xref py py-obj docutils literal notranslate"><span class="pre">fraction_recovered_vs_rhalf</span></code>(dat[,&nbsp;fn])</td>
+<td></td>
+</tr>
+<tr class="row-even"><td><code class="xref py py-obj docutils literal notranslate"><span class="pre">gauss_model</span></code>(p,&nbsp;x)</td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><code class="xref py py-obj docutils literal notranslate"><span class="pre">grz_hist_by_type</span></code>(dat[,&nbsp;fn,&nbsp;x_ivar,&nbsp;glim,&nbsp;…])</td>
+<td></td>
+</tr>
+<tr class="row-even"><td><code class="xref py py-obj docutils literal notranslate"><span class="pre">grz_hist_elg_notelg</span></code>(dat[,&nbsp;fn,&nbsp;glim,&nbsp;rlim,&nbsp;zlim])</td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><code class="xref py py-obj docutils literal notranslate"><span class="pre">grz_hist_input_ext</span></code>(dat[,&nbsp;fn,&nbsp;glim,&nbsp;rlim,&nbsp;zlim])</td>
+<td></td>
+</tr>
+<tr class="row-even"><td><code class="xref py py-obj docutils literal notranslate"><span class="pre">grz_hist_input_ext_separate_panels</span></code>(dat[,&nbsp;…])</td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><code class="xref py py-obj docutils literal notranslate"><span class="pre">grz_hist_input_noise_ext</span></code>(dat[,&nbsp;fn,&nbsp;glim,&nbsp;…])</td>
+<td></td>
+</tr>
+<tr class="row-even"><td><code class="xref py py-obj docutils literal notranslate"><span class="pre">grz_hist_input_rec</span></code>(dat[,&nbsp;fn,&nbsp;glim,&nbsp;rlim,&nbsp;zlim])</td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><code class="xref py py-obj docutils literal notranslate"><span class="pre">hist_all_quantities_fracin_cut</span></code>(dat[,&nbsp;fn,&nbsp;…])</td>
+<td></td>
+</tr>
+<tr class="row-even"><td><code class="xref py py-obj docutils literal notranslate"><span class="pre">hist_true_rhalf_by_type</span></code>(dat[,&nbsp;fn])</td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><code class="xref py py-obj docutils literal notranslate"><span class="pre">hist_true_rhalf_input</span></code>(dat[,&nbsp;fn,&nbsp;ylims])</td>
+<td></td>
+</tr>
+<tr class="row-even"><td><a class="reference internal" href="#obiwan.qa.plots_randomsprops_fluxdiff.my_step" title="obiwan.qa.plots_randomsprops_fluxdiff.my_step"><code class="xref py py-obj docutils literal notranslate"><span class="pre">my_step</span></code></a>(ax,&nbsp;bins,&nbsp;height[,&nbsp;lw,&nbsp;color,&nbsp;ls,&nbsp;label])</td>
+<td>if plt.hist returns tuple (height,bins) then this reproces that plot.</td>
+</tr>
+<tr class="row-odd"><td><code class="xref py py-obj docutils literal notranslate"><span class="pre">myhist</span></code>(ax,&nbsp;data[,&nbsp;bins,&nbsp;color,&nbsp;normed,&nbsp;lw,&nbsp;…])</td>
+<td></td>
+</tr>
+<tr class="row-even"><td><a class="reference internal" href="#obiwan.qa.plots_randomsprops_fluxdiff.mytext" title="obiwan.qa.plots_randomsprops_fluxdiff.mytext"><code class="xref py py-obj docutils literal notranslate"><span class="pre">mytext</span></code></a>(ax,&nbsp;x,&nbsp;y,&nbsp;text[,&nbsp;ha,&nbsp;va,&nbsp;fontsize,&nbsp;…])</td>
+<td>adds text in x,y units of fraction axis</td>
+</tr>
+<tr class="row-odd"><td><code class="xref py py-obj docutils literal notranslate"><span class="pre">num_std_dev_gaussfit_e1_e2</span></code>(dat[,&nbsp;fn,&nbsp;…])</td>
+<td></td>
+</tr>
+<tr class="row-even"><td><code class="xref py py-obj docutils literal notranslate"><span class="pre">num_std_dev_gaussfit_flux</span></code>(dat[,&nbsp;fn,&nbsp;…])</td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><code class="xref py py-obj docutils literal notranslate"><span class="pre">num_std_dev_gaussfit_flux_separate_panels</span></code>(dat)</td>
+<td></td>
+</tr>
+<tr class="row-even"><td><code class="xref py py-obj docutils literal notranslate"><span class="pre">num_std_dev_gaussfit_rhalf</span></code>(dat[,&nbsp;fn,&nbsp;…])</td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><a class="reference internal" href="#obiwan.qa.plots_randomsprops_fluxdiff.number_per_type_input_rec_meas" title="obiwan.qa.plots_randomsprops_fluxdiff.number_per_type_input_rec_meas"><code class="xref py py-obj docutils literal notranslate"><span class="pre">number_per_type_input_rec_meas</span></code></a>(dat[,&nbsp;fn])</td>
+<td>Horizontal Barplot</td>
+</tr>
+<tr class="row-even"><td><code class="xref py py-obj docutils literal notranslate"><span class="pre">rec_lost_contam_delta_by_type</span></code>(dat[,&nbsp;fn,&nbsp;…])</td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><code class="xref py py-obj docutils literal notranslate"><span class="pre">rec_lost_contam_gr_rz</span></code>(dat[,&nbsp;fn])</td>
+<td></td>
+</tr>
+<tr class="row-even"><td><code class="xref py py-obj docutils literal notranslate"><span class="pre">rec_lost_contam_grz</span></code>(dat[,&nbsp;fn,&nbsp;x_ivar])</td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><code class="xref py py-obj docutils literal notranslate"><span class="pre">redshifts_recovered</span></code>(dat[,&nbsp;fn])</td>
+<td></td>
+</tr>
+<tr class="row-even"><td><a class="reference internal" href="#obiwan.qa.plots_randomsprops_fluxdiff.residual_gaussfit_rhalf" title="obiwan.qa.plots_randomsprops_fluxdiff.residual_gaussfit_rhalf"><code class="xref py py-obj docutils literal notranslate"><span class="pre">residual_gaussfit_rhalf</span></code></a>(dat[,&nbsp;fn,&nbsp;…])</td>
+<td>created for typ PSF b/c there is no psfsize_grz_ivar, so cannot compute num_std_dev</td>
+</tr>
+<tr class="row-odd"><td><code class="xref py py-obj docutils literal notranslate"><span class="pre">sum_of_noise_added</span></code>(dat[,&nbsp;fn])</td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<dl class="class">
+<dt id="obiwan.qa.plots_randomsprops_fluxdiff.getDepth">
+<em class="property">class </em><code class="descclassname">obiwan.qa.plots_randomsprops_fluxdiff.</code><code class="descname">getDepth</code><a class="reference internal" href="../_modules/obiwan/qa/plots_randomsprops_fluxdiff.html#getDepth"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obiwan.qa.plots_randomsprops_fluxdiff.getDepth" title="Permalink to this definition">¶</a></dt>
+<dd><p>limiting AB mag depth</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="obiwan.qa.plots_randomsprops_fluxdiff.my_step">
+<code class="descclassname">obiwan.qa.plots_randomsprops_fluxdiff.</code><code class="descname">my_step</code><span class="sig-paren">(</span><em>ax</em>, <em>bins</em>, <em>height</em>, <em>lw=2</em>, <em>color='b'</em>, <em>ls='solid'</em>, <em>label=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/obiwan/qa/plots_randomsprops_fluxdiff.html#my_step"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obiwan.qa.plots_randomsprops_fluxdiff.my_step" title="Permalink to this definition">¶</a></dt>
+<dd><p>if plt.hist returns tuple (height,bins) then this reproces that plot.</p>
+<p>e.g. bin centers and horizontal lines at the right place…</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="obiwan.qa.plots_randomsprops_fluxdiff.mytext">
+<code class="descclassname">obiwan.qa.plots_randomsprops_fluxdiff.</code><code class="descname">mytext</code><span class="sig-paren">(</span><em>ax</em>, <em>x</em>, <em>y</em>, <em>text</em>, <em>ha='left'</em>, <em>va='center'</em>, <em>fontsize=20</em>, <em>rotation=0</em>, <em>color='k'</em>, <em>dataCoords=False</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/obiwan/qa/plots_randomsprops_fluxdiff.html#mytext"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obiwan.qa.plots_randomsprops_fluxdiff.mytext" title="Permalink to this definition">¶</a></dt>
+<dd><p>adds text in x,y units of fraction axis</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="obiwan.qa.plots_randomsprops_fluxdiff.number_per_type_input_rec_meas">
+<code class="descclassname">obiwan.qa.plots_randomsprops_fluxdiff.</code><code class="descname">number_per_type_input_rec_meas</code><span class="sig-paren">(</span><em>dat</em>, <em>fn='number_per_type_input_rec_meas.png'</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/obiwan/qa/plots_randomsprops_fluxdiff.html#number_per_type_input_rec_meas"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obiwan.qa.plots_randomsprops_fluxdiff.number_per_type_input_rec_meas" title="Permalink to this definition">¶</a></dt>
+<dd><p>Horizontal Barplot</p>
+<p>Only count by typ injected b/c confusion matrix is the right tool if
+onsidering tractor type</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="obiwan.qa.plots_randomsprops_fluxdiff.residual_gaussfit_rhalf">
+<code class="descclassname">obiwan.qa.plots_randomsprops_fluxdiff.</code><code class="descname">residual_gaussfit_rhalf</code><span class="sig-paren">(</span><em>dat</em>, <em>fn='residual_gaussfit_rhalf.png'</em>, <em>delta_lims=(-6</em>, <em>6)</em>, <em>typ=None</em>, <em>sub_mean=False</em>, <em>sub_bin_at_max=False</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/obiwan/qa/plots_randomsprops_fluxdiff.html#residual_gaussfit_rhalf"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obiwan.qa.plots_randomsprops_fluxdiff.residual_gaussfit_rhalf" title="Permalink to this definition">¶</a></dt>
+<dd><p>created for typ PSF b/c there is no psfsize_grz_ivar, so cannot compute num_std_dev</p>
+</dd></dl>
+
+</div>
+
+
+    </div>
+      
+  </div>
+</div>
+<footer class="footer">
+  <div class="container">
+    <p class="pull-right">
+      <a href="#">Back to top</a>
+      
+    </p>
+    <p>
+        &copy; Copyright 2014-2018, Kaylan Burleigh, John Moustakas.<br/>
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.7.6.<br/>
+    </p>
+  </div>
+</footer>
+  </body>
+</html>

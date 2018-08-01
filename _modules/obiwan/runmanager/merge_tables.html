@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>obiwan.runmanager.merge_tables &#8212; obiwan 1.2.0 documentation</title>
+    <link rel="stylesheet" href="../../../_static/bootstrap-sphinx.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script type="text/javascript" src="../../../_static/js/jquery-1.11.0.min.js"></script>
+    <script type="text/javascript" src="../../../_static/js/jquery-fix.js"></script>
+    <script type="text/javascript" src="../../../_static/bootstrap-3.3.7/js/bootstrap.min.js"></script>
+    <script type="text/javascript" src="../../../_static/bootstrap-sphinx.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+<meta charset='utf-8'>
+<meta http-equiv='X-UA-Compatible' content='IE=edge,chrome=1'>
+<meta name='viewport' content='width=device-width, initial-scale=1.0, maximum-scale=1'>
+<meta name="apple-mobile-web-app-capable" content="yes">
+
+  </head><body>
+
+  <div id="navbar" class="navbar navbar-default ">
+    <div class="container">
+      <div class="navbar-header">
+        <!-- .btn-navbar is used as the toggle for collapsed navbar content -->
+        <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".nav-collapse">
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+        </button>
+        <a class="navbar-brand" href="../../../index.html">
+          Obiwan</a>
+        <span class="navbar-text navbar-version pull-left"><b>1.2.0</b></span>
+      </div>
+
+        <div class="collapse navbar-collapse nav-collapse">
+          <ul class="nav navbar-nav">
+            
+                <li><a href="../../../api.html">API</a></li>
+                <li><a href="../../../tutorials.html">Tutorials</a></li>
+                <li><a href="../../../deeplearning.html">Deep Learning</a></li>
+            
+            
+              <li class="dropdown globaltoc-container">
+  <a role="button"
+     id="dLabelGlobalToc"
+     data-toggle="dropdown"
+     data-target="#"
+     href="../../../index.html">Pages <b class="caret"></b></a>
+  <ul class="dropdown-menu globaltoc"
+      role="menu"
+      aria-labelledby="dLabelGlobalToc"></ul>
+</li>
+              
+                <li class="dropdown">
+  <a role="button"
+     id="dLabelLocalToc"
+     data-toggle="dropdown"
+     data-target="#"
+     href="#">This Page <b class="caret"></b></a>
+  <ul class="dropdown-menu localtoc"
+      role="menu"
+      aria-labelledby="dLabelLocalToc"></ul>
+</li>
+              
+            
+            
+              
+                
+              
+            
+            
+            
+            
+          </ul>
+
+          
+            
+<form class="navbar-form navbar-right" action="../../../search.html" method="get">
+ <div class="form-group">
+  <input type="text" name="q" class="form-control" placeholder="Search" />
+ </div>
+  <input type="hidden" name="check_keywords" value="yes" />
+  <input type="hidden" name="area" value="default" />
+</form>
+          
+        </div>
+    </div>
+  </div>
+
+<div class="container">
+  <div class="row">
+    <div class="col-md-12 content">
+      
+  <h1>Source code for obiwan.runmanager.merge_tables</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;Reads 1000s per brick tables and merges them</span>
+
+<span class="sd">mpi4py cannot &#39;gather&#39; lists of fits_tables, so each rank must write out</span>
+<span class="sd">its own fits_table, then a later serial job must be used to merge the</span>
+<span class="sd">tables from each rank</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="kn">from</span> <span class="nn">glob</span> <span class="k">import</span> <span class="n">glob</span>
+<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="kn">from</span> <span class="nn">collections</span> <span class="k">import</span> <span class="n">defaultdict</span>
+
+
+<span class="kn">from</span> <span class="nn">obiwan.runmanager.derived_tables</span> <span class="k">import</span> <span class="n">TargetSelection</span>
+<span class="c1"># try:</span>
+<span class="kn">from</span> <span class="nn">astrometry.util.fits</span> <span class="k">import</span> <span class="n">fits_table</span><span class="p">,</span> <span class="n">merge_tables</span>
+<span class="c1"># except ImportError:</span>
+<span class="c1">#     pass</span>
+
+<span class="n">DATASETS</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;dr3&#39;</span><span class="p">,</span><span class="s1">&#39;dr5&#39;</span><span class="p">]</span>
+
+<span class="k">def</span> <span class="nf">dir_for_mpi</span><span class="p">(</span><span class="n">derived_dir</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">derived_dir</span><span class="p">,</span><span class="s1">&#39;merged_tmp&#39;</span><span class="p">)</span>
+
+<span class="k">def</span> <span class="nf">dir_for_serial</span><span class="p">(</span><span class="n">derived_dir</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">derived_dir</span><span class="p">,</span><span class="s1">&#39;merged&#39;</span><span class="p">)</span>
+
+<div class="viewcode-block" id="MergeTable"><a class="viewcode-back" href="../../../_autosummary/obiwan.runmanager.merge_tables.html#obiwan.runmanager.merge_tables.MergeTable">[docs]</a><span class="k">class</span> <span class="nc">MergeTable</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Base class for merging the MPI rank derived filed tables&quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">derived_dir</span><span class="p">,</span><span class="n">savefn</span><span class="p">,</span><span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">derived_dir</span><span class="o">=</span> <span class="n">derived_dir</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">savefn</span><span class="o">=</span><span class="n">savefn</span>
+
+    <span class="k">def</span> <span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">bricks_to_merge</span><span class="p">):</span>
+        <span class="n">Tlist</span><span class="o">=</span><span class="p">[]</span>
+        <span class="k">for</span> <span class="n">brick</span> <span class="ow">in</span> <span class="n">bricks_to_merge</span><span class="p">:</span>
+            <span class="n">fn</span><span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">table_fn</span><span class="p">(</span><span class="n">brick</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">fn</span><span class="p">):</span>
+                <span class="n">tab</span><span class="o">=</span> <span class="n">fits_table</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">table_fn</span><span class="p">(</span><span class="n">brick</span><span class="p">))</span>
+                <span class="n">Tlist</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">tab</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Skipping brick </span><span class="si">%s</span><span class="s1"> b/c randoms table doesnt exist&#39;</span> <span class="o">%</span> <span class="n">fn</span><span class="p">)</span>
+        <span class="n">T</span><span class="o">=</span> <span class="n">merge_tables</span><span class="p">(</span><span class="n">Tlist</span><span class="p">,</span><span class="n">columns</span><span class="o">=</span><span class="s1">&#39;fillzero&#39;</span><span class="p">)</span>
+        <span class="n">T</span><span class="o">.</span><span class="n">writeto</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">savefn</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Wrote </span><span class="si">%s</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">savefn</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">table_fn</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">brick</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">derived_dir</span><span class="p">,</span><span class="n">brick</span><span class="p">[:</span><span class="mi">3</span><span class="p">],</span><span class="n">brick</span><span class="p">,</span>
+                            <span class="s1">&#39;name.fits&#39;</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="RandomsTable"><a class="viewcode-back" href="../../../_autosummary/obiwan.runmanager.merge_tables.html#obiwan.runmanager.merge_tables.RandomsTable">[docs]</a><span class="k">class</span> <span class="nc">RandomsTable</span><span class="p">(</span><span class="n">MergeTable</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Merges the randoms tables (psql db, input, tractor measurements)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">derived_dir</span><span class="p">,</span><span class="n">savefn</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">derived_dir</span><span class="p">,</span><span class="n">savefn</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">table_fn</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">brick</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">derived_dir</span><span class="p">,</span><span class="n">brick</span><span class="p">[:</span><span class="mi">3</span><span class="p">],</span><span class="n">brick</span><span class="p">,</span>
+                            <span class="s1">&#39;randoms.fits&#39;</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="SummaryTable"><a class="viewcode-back" href="../../../_autosummary/obiwan.runmanager.merge_tables.html#obiwan.runmanager.merge_tables.SummaryTable">[docs]</a><span class="k">class</span> <span class="nc">SummaryTable</span><span class="p">(</span><span class="n">MergeTable</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;In addition to merging over brick tables, compute avg quantities per brick</span>
+
+<span class="sd">    derived table &quot;randoms.fits&quot; must exist. Joins the brick summary</span>
+<span class="sd">    quantities from a data release with a similar set from the</span>
+<span class="sd">    randoms.fits table. Each brick&#39;s table has one</span>
+<span class="sd">    row and all tables get merged to make the eatmap plots</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">derived_dir</span><span class="p">,</span><span class="n">savefn</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Args:</span>
+<span class="sd">            rank: mpi rank</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">derived_dir</span><span class="p">,</span><span class="n">savefn</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">table_fn</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">brick</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">derived_dir</span><span class="p">,</span><span class="n">brick</span><span class="p">[:</span><span class="mi">3</span><span class="p">],</span><span class="n">brick</span><span class="p">,</span>
+                            <span class="s1">&#39;randoms.fits&#39;</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">bricks_to_merge</span><span class="p">):</span>
+        <span class="n">d</span><span class="o">=</span><span class="n">defaultdict</span><span class="p">(</span><span class="nb">list</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">brick</span> <span class="ow">in</span> <span class="n">bricks_to_merge</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span> <span class="bp">self</span><span class="o">.</span><span class="n">table_fn</span><span class="p">(</span><span class="n">brick</span><span class="p">)):</span>
+                <span class="n">d</span><span class="p">[</span><span class="s1">&#39;brickname&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">brick</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">add_obiwan_summary</span><span class="p">(</span><span class="n">d</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">table_fn</span><span class="p">(</span><span class="n">brick</span><span class="p">),</span>
+                                        <span class="n">prefix</span><span class="o">=</span><span class="s1">&#39;tractor_&#39;</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Skipping brick </span><span class="si">%s</span><span class="s1"> b/c randoms table doesnt exist&#39;</span><span class="p">)</span>
+        <span class="c1"># Save</span>
+        <span class="n">T</span><span class="o">=</span><span class="n">fits_table</span><span class="p">()</span>
+        <span class="n">T</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="s1">&#39;brickname&#39;</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">d</span><span class="p">[</span><span class="s1">&#39;brickname&#39;</span><span class="p">])</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">string_</span><span class="p">))</span>
+        <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;n_inj&#39;</span><span class="p">,</span><span class="s1">&#39;n_inj_elg_ngc&#39;</span><span class="p">,</span><span class="s1">&#39;n_inj_elg_sgc&#39;</span><span class="p">,</span>
+                    <span class="s1">&#39;n_rec&#39;</span><span class="p">,</span>
+                    <span class="s1">&#39;n_inj_elg_trac_elg_ngc&#39;</span><span class="p">,</span><span class="s1">&#39;n_inj_elg_trac_elg_sgc&#39;</span><span class="p">,</span>
+                    <span class="s1">&#39;n_inj_elg_trac_elg_ngc_allmask&#39;</span><span class="p">,</span>
+                    <span class="s1">&#39;n_inj_elg_trac_elg_sgc_allmask&#39;</span><span class="p">]:</span>
+            <span class="n">T</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">d</span><span class="p">[</span><span class="n">key</span><span class="p">])</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">int32</span><span class="p">))</span>
+        <span class="n">T</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="s1">&#39;brick_area&#39;</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">d</span><span class="p">[</span><span class="s1">&#39;brick_area&#39;</span><span class="p">])</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">))</span>
+        <span class="k">for</span> <span class="n">b</span> <span class="ow">in</span> <span class="s1">&#39;grz&#39;</span><span class="p">:</span>
+            <span class="n">T</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="s1">&#39;galdepth_&#39;</span><span class="o">+</span><span class="n">b</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">d</span><span class="p">[</span><span class="s1">&#39;galdepth_&#39;</span><span class="o">+</span><span class="n">b</span><span class="p">])</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">write_table</span><span class="p">(</span><span class="n">T</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">savefn</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">add_obiwan_summary</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">summary_dict</span><span class="p">,</span><span class="n">randoms_fn</span><span class="p">,</span><span class="n">prefix</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">):</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">T</span> <span class="o">=</span> <span class="n">fits_table</span><span class="p">(</span><span class="n">randoms_fn</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">OSError</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">OSError</span><span class="p">(</span><span class="s1">&#39;could not open </span><span class="si">%s</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="n">randoms_fn</span><span class="p">)</span>
+
+        <span class="n">TS</span><span class="o">=</span> <span class="n">TargetSelection</span><span class="p">()</span>
+        <span class="n">kw</span><span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">ra</span><span class="o">=</span><span class="n">T</span><span class="o">.</span><span class="n">ra</span><span class="p">,</span><span class="n">dec</span><span class="o">=</span><span class="n">T</span><span class="o">.</span><span class="n">dec</span><span class="p">,</span>
+                 <span class="n">gmag</span><span class="o">=</span><span class="n">T</span><span class="o">.</span><span class="n">psql_g</span><span class="p">,</span> <span class="n">rmag</span><span class="o">=</span><span class="n">T</span><span class="o">.</span><span class="n">psql_r</span><span class="p">,</span> <span class="n">zmag</span><span class="o">=</span><span class="n">T</span><span class="o">.</span><span class="n">psql_z</span><span class="p">)</span>
+        <span class="n">true_elg_ngc</span><span class="o">=</span> <span class="n">TS</span><span class="o">.</span><span class="n">_eboss_elg</span><span class="p">(</span><span class="s1">&#39;ngc&#39;</span><span class="p">,</span><span class="o">**</span><span class="n">kw</span><span class="p">)</span>
+        <span class="n">true_elg_sgc</span><span class="o">=</span> <span class="n">TS</span><span class="o">.</span><span class="n">_eboss_elg</span><span class="p">(</span><span class="s1">&#39;sgc&#39;</span><span class="p">,</span><span class="o">**</span><span class="n">kw</span><span class="p">)</span>
+
+        <span class="n">kw</span><span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">prefix</span><span class="o">=</span><span class="s1">&#39;tractor_&#39;</span><span class="p">,</span><span class="n">anymask</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="n">tractor_elg_ngc</span><span class="o">=</span> <span class="n">TS</span><span class="o">.</span><span class="n">elg_by_measurement</span><span class="p">(</span><span class="n">T</span><span class="p">,</span><span class="s1">&#39;eboss_ngc&#39;</span><span class="p">,</span><span class="o">**</span><span class="n">kw</span><span class="p">)</span>
+        <span class="n">tractor_elg_sgc</span><span class="o">=</span> <span class="n">TS</span><span class="o">.</span><span class="n">elg_by_measurement</span><span class="p">(</span><span class="n">T</span><span class="p">,</span><span class="s1">&#39;eboss_sgc&#39;</span><span class="p">,</span><span class="o">**</span><span class="n">kw</span><span class="p">)</span>
+        <span class="n">kw</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">anymask</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span> <span class="c1"># uses allmask</span>
+        <span class="n">tractor_elg_ngc_allmask</span><span class="o">=</span> <span class="n">TS</span><span class="o">.</span><span class="n">elg_by_measurement</span><span class="p">(</span><span class="n">T</span><span class="p">,</span><span class="s1">&#39;eboss_ngc&#39;</span><span class="p">,</span><span class="o">**</span><span class="n">kw</span><span class="p">)</span>
+        <span class="n">tractor_elg_sgc_allmask</span><span class="o">=</span> <span class="n">TS</span><span class="o">.</span><span class="n">elg_by_measurement</span><span class="p">(</span><span class="n">T</span><span class="p">,</span><span class="s1">&#39;eboss_sgc&#39;</span><span class="p">,</span><span class="o">**</span><span class="n">kw</span><span class="p">)</span>
+
+        <span class="c1"># Truth</span>
+        <span class="n">summary_dict</span><span class="p">[</span><span class="s1">&#39;n_inj&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span> <span class="nb">len</span><span class="p">(</span><span class="n">T</span><span class="p">))</span>
+        <span class="n">summary_dict</span><span class="p">[</span><span class="s1">&#39;n_inj_elg_ngc&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span> <span class="nb">len</span><span class="p">(</span><span class="n">T</span><span class="p">[</span><span class="n">true_elg_ngc</span><span class="p">])</span> <span class="p">)</span>
+        <span class="n">summary_dict</span><span class="p">[</span><span class="s1">&#39;n_inj_elg_sgc&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span> <span class="nb">len</span><span class="p">(</span><span class="n">T</span><span class="p">[</span><span class="n">true_elg_sgc</span><span class="p">])</span> <span class="p">)</span>
+        <span class="c1"># Measured</span>
+        <span class="n">isRec</span><span class="o">=</span> <span class="n">T</span><span class="o">.</span><span class="n">obiwan_mask</span> <span class="o">==</span> <span class="mi">1</span>
+        <span class="n">summary_dict</span><span class="p">[</span><span class="s1">&#39;n_rec&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span> <span class="nb">len</span><span class="p">(</span><span class="n">T</span><span class="p">[</span><span class="n">isRec</span><span class="p">])</span> <span class="p">)</span>
+        <span class="n">summary_dict</span><span class="p">[</span><span class="s1">&#39;n_inj_elg_trac_elg_ngc&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span> <span class="nb">len</span><span class="p">(</span><span class="n">T</span><span class="p">[(</span><span class="n">true_elg_ngc</span><span class="p">)</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">isRec</span><span class="p">)</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">tractor_elg_ngc</span><span class="p">)])</span> <span class="p">)</span>
+        <span class="n">summary_dict</span><span class="p">[</span><span class="s1">&#39;n_inj_elg_trac_elg_sgc&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span> <span class="nb">len</span><span class="p">(</span><span class="n">T</span><span class="p">[(</span><span class="n">true_elg_sgc</span><span class="p">)</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">isRec</span><span class="p">)</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">tractor_elg_sgc</span><span class="p">)])</span> <span class="p">)</span>
+        <span class="n">summary_dict</span><span class="p">[</span><span class="s1">&#39;n_inj_elg_trac_elg_ngc_allmask&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span> <span class="nb">len</span><span class="p">(</span><span class="n">T</span><span class="p">[(</span><span class="n">true_elg_ngc</span><span class="p">)</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">isRec</span><span class="p">)</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">tractor_elg_ngc_allmask</span><span class="p">)])</span> <span class="p">)</span>
+        <span class="n">summary_dict</span><span class="p">[</span><span class="s1">&#39;n_inj_elg_trac_elg_sgc_allmask&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span> <span class="nb">len</span><span class="p">(</span><span class="n">T</span><span class="p">[(</span><span class="n">true_elg_sgc</span><span class="p">)</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">isRec</span><span class="p">)</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">tractor_elg_sgc_allmask</span><span class="p">)])</span> <span class="p">)</span>
+
+        <span class="c1"># FIXME: depends on the brick</span>
+        <span class="n">summary_dict</span><span class="p">[</span><span class="s1">&#39;brick_area&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span> <span class="mf">0.25</span><span class="o">**</span><span class="mi">2</span> <span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">band</span> <span class="ow">in</span> <span class="s1">&#39;grz&#39;</span><span class="p">:</span>
+            <span class="n">keep</span><span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">T</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">prefix</span><span class="o">+</span><span class="s1">&#39;galdepth_&#39;</span><span class="o">+</span><span class="n">band</span><span class="p">))</span>
+            <span class="n">depth</span><span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">median</span><span class="p">(</span><span class="n">T</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">prefix</span><span class="o">+</span><span class="s1">&#39;galdepth_&#39;</span><span class="o">+</span><span class="n">band</span><span class="p">)[</span><span class="n">keep</span><span class="p">])</span>
+            <span class="n">summary_dict</span><span class="p">[</span><span class="s1">&#39;galdepth_&#39;</span><span class="o">+</span><span class="n">band</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span> <span class="n">depth</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">write_table</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">tab</span><span class="p">,</span><span class="n">fn</span><span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">fn</span><span class="p">):</span>
+            <span class="n">tab</span><span class="o">.</span><span class="n">writeto</span><span class="p">(</span><span class="n">fn</span><span class="p">)</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Wrote </span><span class="si">%s</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="n">fn</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="main_mpi"><a class="viewcode-back" href="../../../_autosummary/obiwan.runmanager.merge_tables.html#obiwan.runmanager.merge_tables.main_mpi">[docs]</a><span class="k">def</span> <span class="nf">main_mpi</span><span class="p">(</span><span class="n">doWhat</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span><span class="n">bricks</span><span class="o">=</span><span class="p">[],</span><span class="n">nproc</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+             <span class="n">derived_dir</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Args:</span>
+<span class="sd">        nproc: &gt; 1 for mpi4py</span>
+<span class="sd">        bricks: list of bricks</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">nproc</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="kn">from</span> <span class="nn">mpi4py.MPI</span> <span class="k">import</span> <span class="n">COMM_WORLD</span> <span class="k">as</span> <span class="n">comm</span>
+        <span class="n">bricks</span><span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array_split</span><span class="p">(</span><span class="n">bricks</span><span class="p">,</span> <span class="n">comm</span><span class="o">.</span><span class="n">size</span><span class="p">)[</span><span class="n">comm</span><span class="o">.</span><span class="n">rank</span><span class="p">]</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">class</span> <span class="nc">MyComm</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+            <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">rank</span><span class="o">=</span><span class="mi">0</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">size</span><span class="o">=</span><span class="mi">1</span>
+        <span class="n">comm</span><span class="o">=</span> <span class="n">MyComm</span><span class="p">()</span>
+
+    <span class="n">tmpDir</span><span class="o">=</span> <span class="n">dir_for_mpi</span><span class="p">(</span><span class="n">derived_dir</span><span class="p">)</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="n">tmpDir</span><span class="p">)</span>
+    <span class="k">except</span> <span class="ne">OSError</span><span class="p">:</span>
+        <span class="k">pass</span>
+
+    <span class="k">if</span> <span class="n">doWhat</span> <span class="o">==</span> <span class="s1">&#39;randoms&#39;</span><span class="p">:</span>
+        <span class="n">savefn</span><span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">tmpDir</span><span class="p">,</span><span class="s1">&#39;randoms_rank</span><span class="si">%d</span><span class="s1">.fits&#39;</span> <span class="o">%</span> <span class="n">comm</span><span class="o">.</span><span class="n">rank</span><span class="p">)</span>
+        <span class="n">tabMerger</span><span class="o">=</span> <span class="n">RandomsTable</span><span class="p">(</span><span class="n">derived_dir</span><span class="p">,</span><span class="n">savefn</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="n">doWhat</span> <span class="o">==</span> <span class="s1">&#39;summary&#39;</span><span class="p">:</span>
+        <span class="n">savefn</span><span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">tmpDir</span><span class="p">,</span><span class="s1">&#39;summary_rank</span><span class="si">%d</span><span class="s1">.fits&#39;</span> <span class="o">%</span> <span class="n">comm</span><span class="o">.</span><span class="n">rank</span><span class="p">)</span>
+        <span class="n">tabMerger</span><span class="o">=</span> <span class="n">SummaryTable</span><span class="p">(</span><span class="n">derived_dir</span><span class="p">,</span><span class="n">savefn</span><span class="p">)</span>
+    <span class="n">tab</span><span class="o">=</span> <span class="n">tabMerger</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">bricks</span><span class="p">)</span></div>
+
+<span class="k">def</span> <span class="nf">fits_table_cols</span><span class="p">(</span><span class="n">randoms_fn</span><span class="p">):</span>
+    <span class="n">columns</span><span class="o">=</span> <span class="p">[</span><span class="s1">&#39;unique_id&#39;</span><span class="p">,</span><span class="s1">&#39;ra&#39;</span><span class="p">,</span><span class="s1">&#39;dec&#39;</span><span class="p">,</span><span class="s1">&#39;obiwan_mask&#39;</span><span class="p">,</span>
+              <span class="s1">&#39;tractor_anymask_g&#39;</span><span class="p">,</span><span class="s1">&#39;tractor_anymask_r&#39;</span><span class="p">,</span><span class="s1">&#39;tractor_anymask_z&#39;</span><span class="p">,</span>
+              <span class="s1">&#39;tractor_flux_g&#39;</span><span class="p">,</span><span class="s1">&#39;tractor_flux_r&#39;</span><span class="p">,</span><span class="s1">&#39;tractor_flux_z&#39;</span><span class="p">,</span>
+              <span class="s1">&#39;tractor_mw_transmission_g&#39;</span><span class="p">,</span><span class="s1">&#39;tractor_mw_transmission_r&#39;</span><span class="p">,</span><span class="s1">&#39;tractor_mw_transmission_z&#39;</span><span class="p">,</span>
+              <span class="s1">&#39;tractor_psfdepth_g&#39;</span><span class="p">,</span><span class="s1">&#39;tractor_psfdepth_r&#39;</span><span class="p">,</span><span class="s1">&#39;tractor_psfdepth_z&#39;</span><span class="p">]</span>
+    <span class="n">T</span><span class="o">=</span> <span class="n">fits_table</span><span class="p">(</span><span class="n">randoms_fn</span><span class="p">,</span> <span class="n">columns</span><span class="o">=</span><span class="n">columns</span><span class="p">)</span>
+    <span class="n">T</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="s1">&#39;brickname&#39;</span><span class="p">,(</span><span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">(</span><span class="n">T</span><span class="o">.</span><span class="n">unique_id</span><span class="p">)</span><span class="o">.</span><span class="n">str</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;_&#39;</span><span class="p">)</span>
+                                             <span class="o">.</span><span class="n">str</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">values</span>
+                                             <span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">str</span><span class="p">)))</span>
+    <span class="k">return</span> <span class="n">T</span>
+
+<div class="viewcode-block" id="main_serial"><a class="viewcode-back" href="../../../_autosummary/obiwan.runmanager.merge_tables.html#obiwan.runmanager.merge_tables.main_serial">[docs]</a><span class="k">def</span> <span class="nf">main_serial</span><span class="p">(</span><span class="n">doWhat</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span><span class="n">derived_dir</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                <span class="n">randoms_subset</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;merges the rank tables that are stored in merge_tmp/&quot;&quot;&quot;</span>
+    <span class="n">saveDir</span><span class="o">=</span> <span class="n">dir_for_serial</span><span class="p">(</span><span class="n">derived_dir</span><span class="p">)</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="n">saveDir</span><span class="p">)</span>
+    <span class="k">except</span> <span class="ne">OSError</span><span class="p">:</span>
+        <span class="k">pass</span>
+
+    <span class="k">if</span> <span class="n">doWhat</span> <span class="o">==</span> <span class="s1">&#39;randoms&#39;</span><span class="p">:</span>
+        <span class="n">wild</span><span class="o">=</span> <span class="s2">&quot;randoms_rank*.fits&quot;</span>
+        <span class="k">if</span> <span class="n">randoms_subset</span><span class="p">:</span>
+            <span class="n">outfn</span><span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">saveDir</span><span class="p">,</span><span class="s1">&#39;randoms_subset.fits&#39;</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">outfn</span><span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">saveDir</span><span class="p">,</span><span class="s1">&#39;randoms.fits&#39;</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="n">doWhat</span> <span class="o">==</span> <span class="s1">&#39;summary&#39;</span><span class="p">:</span>
+        <span class="n">wild</span><span class="o">=</span> <span class="s2">&quot;summary_rank*.fits&quot;</span>
+        <span class="n">outfn</span><span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">saveDir</span><span class="p">,</span><span class="s2">&quot;summary.fits&quot;</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">outfn</span><span class="p">):</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Merged table already exists </span><span class="si">%s</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="n">outfn</span><span class="p">)</span>
+        <span class="k">return</span>
+
+    <span class="n">search</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">dir_for_mpi</span><span class="p">(</span><span class="n">derived_dir</span><span class="p">),</span>
+                        <span class="n">wild</span><span class="p">)</span>
+    <span class="n">tab_fns</span><span class="o">=</span> <span class="n">glob</span><span class="p">(</span><span class="n">search</span><span class="p">)</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">tab_fns</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;found nothing with search: </span><span class="si">%s</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="n">search</span><span class="p">)</span>
+    <span class="n">tabs</span><span class="o">=</span><span class="p">[]</span>
+    <span class="k">for</span> <span class="n">fn</span> <span class="ow">in</span> <span class="n">tab_fns</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">randoms_subset</span><span class="p">:</span>
+            <span class="n">T</span><span class="o">=</span> <span class="n">fits_table_cols</span><span class="p">(</span><span class="n">fn</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">T</span><span class="o">=</span> <span class="n">fits_table</span><span class="p">(</span><span class="n">fn</span><span class="p">)</span>
+        <span class="n">tabs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">T</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Merging </span><span class="si">%d</span><span class="s1"> tables&#39;</span> <span class="o">%</span> <span class="nb">len</span><span class="p">(</span><span class="n">tabs</span><span class="p">))</span>
+    <span class="n">tab</span><span class="o">=</span> <span class="n">merge_tables</span><span class="p">(</span><span class="n">tabs</span><span class="p">,</span><span class="n">columns</span><span class="o">=</span><span class="s1">&#39;fillzero&#39;</span><span class="p">)</span>
+    <span class="n">tab</span><span class="o">.</span><span class="n">writeto</span><span class="p">(</span><span class="n">outfn</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Wrote </span><span class="si">%s</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="n">outfn</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;has </span><span class="si">%d</span><span class="s1"> rows&#39;</span> <span class="o">%</span> <span class="nb">len</span><span class="p">(</span><span class="n">tab</span><span class="p">))</span></div>
+
+<div class="viewcode-block" id="randoms_subset_count_rsdirs_per_brick"><a class="viewcode-back" href="../../../_autosummary/obiwan.runmanager.merge_tables.html#obiwan.runmanager.merge_tables.randoms_subset_count_rsdirs_per_brick">[docs]</a><span class="k">def</span> <span class="nf">randoms_subset_count_rsdirs_per_brick</span><span class="p">(</span><span class="n">rand_subset_fn</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;for Hui, count number of rsdirs per brick to get which of the randoms subsets bricks are done/&quot;&quot;&quot;</span>
+    <span class="n">a</span><span class="o">=</span><span class="n">fits_table</span><span class="p">(</span><span class="n">rand_subset_fn</span><span class="p">)</span>
+    <span class="n">df</span><span class="o">=</span><span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="nb">dict</span><span class="p">(</span><span class="n">brick</span><span class="o">=</span><span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">(</span><span class="n">a</span><span class="o">.</span><span class="n">unique_id</span><span class="p">)</span><span class="o">.</span><span class="n">str</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;_&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">str</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span>
+                         <span class="n">rsdir</span><span class="o">=</span><span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">(</span><span class="n">a</span><span class="o">.</span><span class="n">unique_id</span><span class="p">)</span><span class="o">.</span><span class="n">str</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;_&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">str</span><span class="p">[</span><span class="mi">2</span><span class="p">]))</span>
+    <span class="n">num_rsdirs</span><span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">groupby</span><span class="p">([</span><span class="s1">&#39;brick&#39;</span><span class="p">])</span><span class="o">.</span><span class="n">agg</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">x</span><span class="p">)))</span>
+    <span class="n">num_rsdirs</span><span class="o">=</span> <span class="n">num_rsdirs</span><span class="o">.</span><span class="n">reset_index</span><span class="p">()</span><span class="o">.</span><span class="n">sort_values</span><span class="p">(</span><span class="n">by</span><span class="o">=</span><span class="s1">&#39;rsdir&#39;</span><span class="p">,</span><span class="n">ascending</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+    <span class="n">fn</span><span class="o">=</span> <span class="n">rand_subset_fn</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;.fits&#39;</span><span class="p">,</span><span class="s1">&#39;_count_rsdirs_per_brick.csv&#39;</span><span class="p">)</span>
+    <span class="n">num_rsdirs</span><span class="o">.</span><span class="n">to_csv</span><span class="p">(</span><span class="n">fn</span><span class="p">,</span><span class="n">index</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Wrote </span><span class="si">%s</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="n">fn</span><span class="p">)</span></div>
+
+
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s1">&#39;__main__&#39;</span><span class="p">:</span>
+    <span class="kn">from</span> <span class="nn">argparse</span> <span class="k">import</span> <span class="n">ArgumentParser</span>
+    <span class="n">parser</span> <span class="o">=</span> <span class="n">ArgumentParser</span><span class="p">()</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;--doWhat&#39;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">str</span><span class="p">,</span> <span class="n">choices</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;randoms&#39;</span><span class="p">,</span><span class="s1">&#39;summary&#39;</span><span class="p">],</span><span class="n">required</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;--derived_dir&#39;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">str</span><span class="p">,</span> <span class="n">required</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;--nproc&#39;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s1">&#39;set to &gt; 1 to run mpi4py&#39;</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;--bricks_fn&#39;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">str</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                        <span class="n">help</span><span class="o">=</span><span class="s1">&#39;specify a fn listing bricks to run, or a single default brick will be ran&#39;</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;--merge_rank_tables&#39;</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="s2">&quot;store_true&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span><span class="n">help</span><span class="o">=</span><span class="s2">&quot;set to merge the rank tables in the merge_tmp/ dir&quot;</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;--randoms_subset&#39;</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="s2">&quot;store_true&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span><span class="n">help</span><span class="o">=</span><span class="s2">&quot;make a merged table that is a subset of the randoms columns&quot;</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;--count_rsdirs_per_brick&#39;</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="s2">&quot;store_true&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span><span class="n">help</span><span class="o">=</span><span class="s2">&quot;read existing randoms_subset table&quot;</span><span class="p">)</span>
+    <span class="n">args</span> <span class="o">=</span> <span class="n">parser</span><span class="o">.</span><span class="n">parse_args</span><span class="p">()</span>
+
+    <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">merge_rank_tables</span><span class="p">:</span>
+        <span class="n">kwargs</span><span class="o">=</span> <span class="nb">vars</span><span class="p">(</span><span class="n">args</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;merge_rank_tables&#39;</span><span class="p">,</span><span class="s1">&#39;nproc&#39;</span><span class="p">,</span><span class="s1">&#39;bricks_fn&#39;</span><span class="p">,</span>
+                    <span class="s1">&#39;count_rsdirs_per_brick&#39;</span><span class="p">]:</span>
+            <span class="k">del</span> <span class="n">kwargs</span><span class="p">[</span><span class="n">key</span><span class="p">]</span>
+        <span class="n">main_serial</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">count_rsdirs_per_brick</span><span class="p">:</span>
+        <span class="n">fn</span><span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">derived_dir</span><span class="p">,</span><span class="s1">&#39;merged&#39;</span><span class="p">,</span><span class="s1">&#39;randoms_subset.fits&#39;</span><span class="p">)</span>
+        <span class="c1">#fn= &#39;/Users/kaylan1/Downloads/obiwan_plots/randoms_subset_10k.fits&#39;</span>
+        <span class="n">randoms_subset_count_rsdirs_per_brick</span><span class="p">(</span><span class="n">fn</span><span class="p">)</span>
+        <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+
+    <span class="c1"># Bricks to run</span>
+    <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">bricks_fn</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">bricks</span><span class="o">=</span> <span class="p">[</span><span class="s1">&#39;1266p292&#39;</span><span class="p">]</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">bricks</span><span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">loadtxt</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">bricks_fn</span><span class="p">,</span><span class="n">dtype</span><span class="o">=</span><span class="nb">str</span><span class="p">)</span>
+
+    <span class="n">kwargs</span><span class="o">=</span> <span class="nb">vars</span><span class="p">(</span><span class="n">args</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">dropCol</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;bricks_fn&#39;</span><span class="p">,</span><span class="s1">&#39;merge_rank_tables&#39;</span><span class="p">,</span>
+                    <span class="s1">&#39;randoms_subset&#39;</span><span class="p">,</span><span class="s1">&#39;count_rsdirs_per_brick&#39;</span><span class="p">]:</span>
+        <span class="k">del</span> <span class="n">kwargs</span><span class="p">[</span><span class="n">dropCol</span><span class="p">]</span>
+    <span class="n">kwargs</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">bricks</span><span class="o">=</span><span class="n">bricks</span><span class="p">)</span>
+
+    <span class="n">main_mpi</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+</pre></div>
+
+    </div>
+      
+  </div>
+</div>
+<footer class="footer">
+  <div class="container">
+    <p class="pull-right">
+      <a href="#">Back to top</a>
+      
+    </p>
+    <p>
+        &copy; Copyright 2014-2018, Kaylan Burleigh, John Moustakas.<br/>
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.7.6.<br/>
+    </p>
+  </div>
+</footer>
+  </body>
+</html>

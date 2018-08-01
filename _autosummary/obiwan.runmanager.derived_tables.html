@@ -1,0 +1,520 @@
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>obiwan.runmanager.derived_tables &#8212; obiwan 1.2.0 documentation</title>
+    <link rel="stylesheet" href="../_static/bootstrap-sphinx.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script type="text/javascript" src="../_static/js/jquery-1.11.0.min.js"></script>
+    <script type="text/javascript" src="../_static/js/jquery-fix.js"></script>
+    <script type="text/javascript" src="../_static/bootstrap-3.3.7/js/bootstrap.min.js"></script>
+    <script type="text/javascript" src="../_static/bootstrap-sphinx.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+<meta charset='utf-8'>
+<meta http-equiv='X-UA-Compatible' content='IE=edge,chrome=1'>
+<meta name='viewport' content='width=device-width, initial-scale=1.0, maximum-scale=1'>
+<meta name="apple-mobile-web-app-capable" content="yes">
+
+  </head><body>
+
+  <div id="navbar" class="navbar navbar-default ">
+    <div class="container">
+      <div class="navbar-header">
+        <!-- .btn-navbar is used as the toggle for collapsed navbar content -->
+        <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".nav-collapse">
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+        </button>
+        <a class="navbar-brand" href="../index.html">
+          Obiwan</a>
+        <span class="navbar-text navbar-version pull-left"><b>1.2.0</b></span>
+      </div>
+
+        <div class="collapse navbar-collapse nav-collapse">
+          <ul class="nav navbar-nav">
+            
+                <li><a href="../api.html">API</a></li>
+                <li><a href="../tutorials.html">Tutorials</a></li>
+                <li><a href="../deeplearning.html">Deep Learning</a></li>
+            
+            
+              <li class="dropdown globaltoc-container">
+  <a role="button"
+     id="dLabelGlobalToc"
+     data-toggle="dropdown"
+     data-target="#"
+     href="../index.html">Pages <b class="caret"></b></a>
+  <ul class="dropdown-menu globaltoc"
+      role="menu"
+      aria-labelledby="dLabelGlobalToc"></ul>
+</li>
+              
+                <li class="dropdown">
+  <a role="button"
+     id="dLabelLocalToc"
+     data-toggle="dropdown"
+     data-target="#"
+     href="#">This Page <b class="caret"></b></a>
+  <ul class="dropdown-menu localtoc"
+      role="menu"
+      aria-labelledby="dLabelLocalToc"><ul>
+<li><a class="reference internal" href="#">obiwan.runmanager.derived_tables</a></li>
+</ul>
+</ul>
+</li>
+              
+            
+            
+              
+                
+              
+            
+            
+            
+            
+          </ul>
+
+          
+            
+<form class="navbar-form navbar-right" action="../search.html" method="get">
+ <div class="form-group">
+  <input type="text" name="q" class="form-control" placeholder="Search" />
+ </div>
+  <input type="hidden" name="check_keywords" value="yes" />
+  <input type="hidden" name="area" value="default" />
+</form>
+          
+        </div>
+    </div>
+  </div>
+
+<div class="container">
+  <div class="row">
+    <div class="col-md-12 content">
+      
+  <div class="section" id="module-obiwan.runmanager.derived_tables">
+<span id="obiwan-runmanager-derived-tables"></span><h1>obiwan.runmanager.derived_tables<a class="headerlink" href="#module-obiwan.runmanager.derived_tables" title="Permalink to this headline">¶</a></h1>
+<p>Post-processes the obiwan/, tractor/, data products. Joins the psql db,
+input properties, and tractor catalogue measurements for easy anaylsis
+later. Uses mpi4py to parallelize to a full production runs’ outputs.</p>
+<p class="rubric">Classes</p>
+<table border="1" class="longtable docutils">
+<colgroup>
+<col width="10%" />
+<col width="90%" />
+</colgroup>
+<tbody valign="top">
+<tr class="row-odd"><td><a class="reference internal" href="#obiwan.runmanager.derived_tables.Bit" title="obiwan.runmanager.derived_tables.Bit"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Bit</span></code></a></td>
+<td>bitmask arithmetic</td>
+</tr>
+<tr class="row-even"><td><a class="reference internal" href="#obiwan.runmanager.derived_tables.RandomsTable" title="obiwan.runmanager.derived_tables.RandomsTable"><code class="xref py py-obj docutils literal notranslate"><span class="pre">RandomsTable</span></code></a>(data_dir,&nbsp;dr3_or_dr5,&nbsp;…[,&nbsp;date])</td>
+<td>Creates the uniform,obiwan_a,obiwan_b randoms tables for a single brick</td>
+</tr>
+<tr class="row-odd"><td><a class="reference internal" href="#obiwan.runmanager.derived_tables.SummaryTable" title="obiwan.runmanager.derived_tables.SummaryTable"><code class="xref py py-obj docutils literal notranslate"><span class="pre">SummaryTable</span></code></a>(data_dir,&nbsp;dr3_or_dr5[,&nbsp;date])</td>
+<td>Writes one table per brick, with brick averaged quantities</td>
+</tr>
+<tr class="row-even"><td><a class="reference internal" href="#obiwan.runmanager.derived_tables.TargetSelection" title="obiwan.runmanager.derived_tables.TargetSelection"><code class="xref py py-obj docutils literal notranslate"><span class="pre">TargetSelection</span></code></a></td>
+<td>Applies ELG target selection using either DESI or eBOSS criteria</td>
+</tr>
+</tbody>
+</table>
+<p class="rubric">Functions</p>
+<table border="1" class="longtable docutils">
+<colgroup>
+<col width="10%" />
+<col width="90%" />
+</colgroup>
+<tbody valign="top">
+<tr class="row-odd"><td><a class="reference internal" href="#obiwan.runmanager.derived_tables.bin_by_mag" title="obiwan.runmanager.derived_tables.bin_by_mag"><code class="xref py py-obj docutils literal notranslate"><span class="pre">bin_by_mag</span></code></a>(randoms,&nbsp;func_to_apply[,&nbsp;band,&nbsp;…])</td>
+<td>bins data and result of func_to_apply(randoms) into the bucket</td>
+</tr>
+<tr class="row-even"><td><a class="reference internal" href="#obiwan.runmanager.derived_tables.datarelease_dir" title="obiwan.runmanager.derived_tables.datarelease_dir"><code class="xref py py-obj docutils literal notranslate"><span class="pre">datarelease_dir</span></code></a>(drNumber)</td>
+<td>the tractor catalogues for this DR are the real galaxy catalogues</td>
+</tr>
+<tr class="row-odd"><td><a class="reference internal" href="#obiwan.runmanager.derived_tables.depth_at_half_recovered" title="obiwan.runmanager.derived_tables.depth_at_half_recovered"><code class="xref py py-obj docutils literal notranslate"><span class="pre">depth_at_half_recovered</span></code></a>(randoms,&nbsp;band)</td>
+<td>bin by mag in given mag, return bin center where frac recovered first drops below 50%</td>
+</tr>
+<tr class="row-even"><td><a class="reference internal" href="#obiwan.runmanager.derived_tables.derived_field_dir" title="obiwan.runmanager.derived_tables.derived_field_dir"><code class="xref py py-obj docutils literal notranslate"><span class="pre">derived_field_dir</span></code></a>(brick,&nbsp;data_dir,&nbsp;date)</td>
+<td>directory to save post-processed tables to</td>
+</tr>
+<tr class="row-odd"><td><a class="reference internal" href="#obiwan.runmanager.derived_tables.flux2mag" title="obiwan.runmanager.derived_tables.flux2mag"><code class="xref py py-obj docutils literal notranslate"><span class="pre">flux2mag</span></code></a>(nmgy)</td>
+<td>converts nanomaggies to AB mag</td>
+</tr>
+<tr class="row-even"><td><a class="reference internal" href="#obiwan.runmanager.derived_tables.fraction_recovered" title="obiwan.runmanager.derived_tables.fraction_recovered"><code class="xref py py-obj docutils literal notranslate"><span class="pre">fraction_recovered</span></code></a>(randoms)</td>
+<td>Return fraction of randoms detected and measured by Legacypipe</td>
+</tr>
+<tr class="row-odd"><td><code class="xref py py-obj docutils literal notranslate"><span class="pre">is_bool</span></code>(obj)</td>
+<td></td>
+</tr>
+<tr class="row-even"><td><code class="xref py py-obj docutils literal notranslate"><span class="pre">is_numeric</span></code>(obj)</td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><a class="reference internal" href="#obiwan.runmanager.derived_tables.main_mpi" title="obiwan.runmanager.derived_tables.main_mpi"><code class="xref py py-obj docutils literal notranslate"><span class="pre">main_mpi</span></code></a>([bricks,&nbsp;doWhat,&nbsp;dr3_or_dr5,&nbsp;…])</td>
+<td><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">param nproc:</th><td class="field-body">&gt; 1 for mpi4py</td>
+</tr>
+</tbody>
+</table>
+</td>
+</tr>
+</tbody>
+</table>
+<dl class="class">
+<dt id="obiwan.runmanager.derived_tables.Bit">
+<em class="property">class </em><code class="descclassname">obiwan.runmanager.derived_tables.</code><code class="descname">Bit</code><a class="reference internal" href="../_modules/obiwan/runmanager/derived_tables.html#Bit"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obiwan.runmanager.derived_tables.Bit" title="Permalink to this definition">¶</a></dt>
+<dd><p>bitmask arithmetic</p>
+<dl class="method">
+<dt id="obiwan.runmanager.derived_tables.Bit.clear">
+<code class="descname">clear</code><span class="sig-paren">(</span><em>value</em>, <em>bit</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/obiwan/runmanager/derived_tables.html#Bit.clear"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obiwan.runmanager.derived_tables.Bit.clear" title="Permalink to this definition">¶</a></dt>
+<dd><p>change bit to 0, bit is 0-indexed</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="obiwan.runmanager.derived_tables.Bit.set">
+<code class="descname">set</code><span class="sig-paren">(</span><em>value</em>, <em>bit</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/obiwan/runmanager/derived_tables.html#Bit.set"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obiwan.runmanager.derived_tables.Bit.set" title="Permalink to this definition">¶</a></dt>
+<dd><p>change bit to 1, bit is 0-indexed</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="obiwan.runmanager.derived_tables.RandomsTable">
+<em class="property">class </em><code class="descclassname">obiwan.runmanager.derived_tables.</code><code class="descname">RandomsTable</code><span class="sig-paren">(</span><em>data_dir</em>, <em>dr3_or_dr5</em>, <em>db_randoms_table</em>, <em>date='mm-dd-yyyy'</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/obiwan/runmanager/derived_tables.html#RandomsTable"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obiwan.runmanager.derived_tables.RandomsTable" title="Permalink to this definition">¶</a></dt>
+<dd><p>Creates the uniform,obiwan_a,obiwan_b randoms tables for a single brick</p>
+<dl class="docutils">
+<dt>Final table has same number rows as uniform table, and the obiwan</dt>
+<dd>rows are filled in wherever there is a matching unique_id
+between uniform and obiwan. A bitmask column ‘obiwan_mask’ which says
+whether the random was recovered by Tractor or not, and whether
+the random is near a previously existing real source in a DR
+catalogue, like DR3 or DR5</dd>
+</dl>
+<dl class="method">
+<dt id="obiwan.runmanager.derived_tables.RandomsTable.add_flag_for_realsources">
+<code class="descname">add_flag_for_realsources</code><span class="sig-paren">(</span><em>tab</em>, <em>brick</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/obiwan/runmanager/derived_tables.html#RandomsTable.add_flag_for_realsources"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obiwan.runmanager.derived_tables.RandomsTable.add_flag_for_realsources" title="Permalink to this definition">¶</a></dt>
+<dd><p>Flag sources also in DR3, DR5</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>tab</strong> – table returned by merged_randoms_table()</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="obiwan.runmanager.derived_tables.RandomsTable.add_psql_to_uniform_table">
+<code class="descname">add_psql_to_uniform_table</code><span class="sig-paren">(</span><em>uniform</em>, <em>db_randoms_table</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/obiwan/runmanager/derived_tables.html#RandomsTable.add_psql_to_uniform_table"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obiwan.runmanager.derived_tables.RandomsTable.add_psql_to_uniform_table" title="Permalink to this definition">¶</a></dt>
+<dd><p>Add randoms db columns from psql to the uniform randoms table</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>uniform</strong> – fits table</li>
+<li><strong>db_randoms_table</strong> – name of the psql db table</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="obiwan.runmanager.derived_tables.RandomsTable.get_rsdirs">
+<code class="descname">get_rsdirs</code><span class="sig-paren">(</span><em>brick</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/obiwan/runmanager/derived_tables.html#RandomsTable.get_rsdirs"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obiwan.runmanager.derived_tables.RandomsTable.get_rsdirs" title="Permalink to this definition">¶</a></dt>
+<dd><p>get list of rsdirs for a given brick</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">tuple of rsdirs list and whether the brick is finished or not</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="obiwan.runmanager.derived_tables.RandomsTable.merge_randoms_tables">
+<code class="descname">merge_randoms_tables</code><span class="sig-paren">(</span><em>brick</em>, <em>rsdirs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/obiwan/runmanager/derived_tables.html#RandomsTable.merge_randoms_tables"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obiwan.runmanager.derived_tables.RandomsTable.merge_randoms_tables" title="Permalink to this definition">¶</a></dt>
+<dd><p>Computes final joined randoms tables</p>
+<dl class="docutils">
+<dt>Includes uniform randoms, info from psql db, which of these were recovered</dt>
+<dd>by Tractor, and the associated tractor info for those</dd>
+</dl>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>brick</strong> – brickname</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">joined randoms table</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="obiwan.runmanager.derived_tables.RandomsTable.unique_id">
+<code class="descname">unique_id</code><span class="sig-paren">(</span><em>id_array</em>, <em>brick</em>, <em>rs_dir</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/obiwan/runmanager/derived_tables.html#RandomsTable.unique_id"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obiwan.runmanager.derived_tables.RandomsTable.unique_id" title="Permalink to this definition">¶</a></dt>
+<dd><p>For a given random injected into a brick during a given iteration</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>id_array</strong> – randoms ids</li>
+<li><strong>brick</strong> – brick</li>
+<li><strong>rs_dir</strong> – like rs0 or rs300</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="obiwan.runmanager.derived_tables.RandomsTable.write_table">
+<code class="descname">write_table</code><span class="sig-paren">(</span><em>tab</em>, <em>fn</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/obiwan/runmanager/derived_tables.html#RandomsTable.write_table"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obiwan.runmanager.derived_tables.RandomsTable.write_table" title="Permalink to this definition">¶</a></dt>
+<dd><p>Write the merged randoms table is doesn’t already exist</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="obiwan.runmanager.derived_tables.SummaryTable">
+<em class="property">class </em><code class="descclassname">obiwan.runmanager.derived_tables.</code><code class="descname">SummaryTable</code><span class="sig-paren">(</span><em>data_dir</em>, <em>dr3_or_dr5</em>, <em>date='mm-dd-yyyy'</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/obiwan/runmanager/derived_tables.html#SummaryTable"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obiwan.runmanager.derived_tables.SummaryTable" title="Permalink to this definition">¶</a></dt>
+<dd><p>Writes one table per brick, with brick averaged quantities</p>
+<p>derived table “randoms.fits” must exist. Joins the brick summary
+quantities from a data release with a similar set from the
+randoms.fits table. Each brick’s table has one
+row and all tables get merged to make the eatmap plots</p>
+<dl class="method">
+<dt id="obiwan.runmanager.derived_tables.SummaryTable.add_obiwan_to_DR_table">
+<code class="descname">add_obiwan_to_DR_table</code><span class="sig-paren">(</span><em>summary_DR</em>, <em>summary_obi</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/obiwan/runmanager/derived_tables.html#SummaryTable.add_obiwan_to_DR_table"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obiwan.runmanager.derived_tables.SummaryTable.add_obiwan_to_DR_table" title="Permalink to this definition">¶</a></dt>
+<dd><p>adds the summary_obi columsn to the summary_DR table</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>summary_DR</strong> – brick summary for the data release bricks</li>
+<li><strong>summary_obiwan</strong> – brick summary for the obiwan bricks</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="obiwan.runmanager.derived_tables.SummaryTable.brick_summary">
+<code class="descname">brick_summary</code><span class="sig-paren">(</span><em>bricklist=[]</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/obiwan/runmanager/derived_tables.html#SummaryTable.brick_summary"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obiwan.runmanager.derived_tables.SummaryTable.brick_summary" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>bricklist</strong> – Give a single brick as a list of length 1, e.g. [brick]</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="obiwan.runmanager.derived_tables.SummaryTable.brick_summary_obiwan">
+<code class="descname">brick_summary_obiwan</code><span class="sig-paren">(</span><em>brick</em>, <em>prefix=''</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/obiwan/runmanager/derived_tables.html#SummaryTable.brick_summary_obiwan"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obiwan.runmanager.derived_tables.SummaryTable.brick_summary_obiwan" title="Permalink to this definition">¶</a></dt>
+<dd><p>brick summary for obiwan</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>prefix</strong> – prefix for obiwan tractor columns, e.g. <a href="#id1"><span class="problematic" id="id2">tractor_</span></a></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="obiwan.runmanager.derived_tables.SummaryTable.brick_summary_obiwan_brief">
+<code class="descname">brick_summary_obiwan_brief</code><span class="sig-paren">(</span><em>brick</em>, <em>prefix=''</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/obiwan/runmanager/derived_tables.html#SummaryTable.brick_summary_obiwan_brief"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obiwan.runmanager.derived_tables.SummaryTable.brick_summary_obiwan_brief" title="Permalink to this definition">¶</a></dt>
+<dd><p>brick_summary_obiwan but only 3-4 quantities</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="obiwan.runmanager.derived_tables.TargetSelection">
+<em class="property">class </em><code class="descclassname">obiwan.runmanager.derived_tables.</code><code class="descname">TargetSelection</code><a class="reference internal" href="../_modules/obiwan/runmanager/derived_tables.html#TargetSelection"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obiwan.runmanager.derived_tables.TargetSelection" title="Permalink to this definition">¶</a></dt>
+<dd><p>Applies ELG target selection using either DESI or eBOSS criteria</p>
+<dl class="method">
+<dt id="obiwan.runmanager.derived_tables.TargetSelection._desi_elg">
+<code class="descname">_desi_elg</code><span class="sig-paren">(</span><em>gflux=None</em>, <em>rflux=None</em>, <em>zflux=None</em>, <em>primary=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/obiwan/runmanager/derived_tables.html#TargetSelection._desi_elg"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obiwan.runmanager.derived_tables.TargetSelection._desi_elg" title="Permalink to this definition">¶</a></dt>
+<dd><p>VERBATIM from
+<a class="reference external" href="https://github.com/desihub/desitarget/blob/master/py/desitarget/cuts.py">https://github.com/desihub/desitarget/blob/master/py/desitarget/cuts.py</a></p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>rflux</strong><strong>, </strong><strong>zflux</strong><strong>, </strong><strong>w1flux</strong><strong>, </strong><strong>w2flux</strong> (<em>gflux</em><em>,</em>) – array_like
+The flux in nano-maggies of g, r, z, w1, and w2 bands.</li>
+<li><strong>primary</strong> – array_like or None
+If given, the BRICK_PRIMARY column of the catalogue.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first"><dl class="docutils">
+<dt>array_like. True if and only the object is an ELG</dt>
+<dd><p class="first last">target.</p>
+</dd>
+</dl>
+</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">mask</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="obiwan.runmanager.derived_tables.TargetSelection._eboss_elg">
+<code class="descname">_eboss_elg</code><span class="sig-paren">(</span><em>ngc_or_sgc</em>, <em>primary=None</em>, <em>ra=None</em>, <em>dec=None</em>, <em>gmag=None</em>, <em>rmag=None</em>, <em>zmag=None</em>, <em>anymask_g=None</em>, <em>anymask_r=None</em>, <em>anymask_z=None</em>, <em>allmask_g=None</em>, <em>allmask_r=None</em>, <em>allmask_z=None</em>, <em>psfdepth_g=None</em>, <em>psfdepth_r=None</em>, <em>psfdepth_z=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/obiwan/runmanager/derived_tables.html#TargetSelection._eboss_elg"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obiwan.runmanager.derived_tables.TargetSelection._eboss_elg" title="Permalink to this definition">¶</a></dt>
+<dd><p>Johan’s target selection</p>
+<dl class="docutils">
+<dt>Does NOT do:</dt>
+<dd>tycho2inblob == False
+SDSS bright object mask &amp; 0 &lt; V &lt; 11.5 mag Tycho2 stars mask
+custom mask for eboss23</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="obiwan.runmanager.derived_tables.TargetSelection.elg_by_measurement">
+<code class="descname">elg_by_measurement</code><span class="sig-paren">(</span><em>tractor</em>, <em>name</em>, <em>prefix=''</em>, <em>anymask=True</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/obiwan/runmanager/derived_tables.html#TargetSelection.elg_by_measurement"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obiwan.runmanager.derived_tables.TargetSelection.elg_by_measurement" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns bool array elgs as measured by tractor</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>prefix</strong> – ‘<a href="#id3"><span class="problematic" id="id4">tractor_</span></a>’ for randoms table, ‘’ for tractor table</li>
+<li><strong>anymask</strong> – True to apply anymask cut, False for allmask</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="function">
+<dt id="obiwan.runmanager.derived_tables.bin_by_mag">
+<code class="descclassname">obiwan.runmanager.derived_tables.</code><code class="descname">bin_by_mag</code><span class="sig-paren">(</span><em>randoms</em>, <em>func_to_apply</em>, <em>band=None</em>, <em>bin_minmax=(18.0</em>, <em>26.0)</em>, <em>nbins=20</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/obiwan/runmanager/derived_tables.html#bin_by_mag"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obiwan.runmanager.derived_tables.bin_by_mag" title="Permalink to this definition">¶</a></dt>
+<dd><p>bins data and result of func_to_apply(randoms) into the bucket</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>randoms</strong> – randoms.fits table</li>
+<li><strong>func_to_apply</strong> – operates on a randoms table, return val to store in bucket</li>
+<li><strong>band</strong> – bin by mag in this band</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="obiwan.runmanager.derived_tables.datarelease_dir">
+<code class="descclassname">obiwan.runmanager.derived_tables.</code><code class="descname">datarelease_dir</code><span class="sig-paren">(</span><em>drNumber</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/obiwan/runmanager/derived_tables.html#datarelease_dir"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obiwan.runmanager.derived_tables.datarelease_dir" title="Permalink to this definition">¶</a></dt>
+<dd><p>the tractor catalogues for this DR are the real galaxy catalogues</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="obiwan.runmanager.derived_tables.depth_at_half_recovered">
+<code class="descclassname">obiwan.runmanager.derived_tables.</code><code class="descname">depth_at_half_recovered</code><span class="sig-paren">(</span><em>randoms</em>, <em>band</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/obiwan/runmanager/derived_tables.html#depth_at_half_recovered"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obiwan.runmanager.derived_tables.depth_at_half_recovered" title="Permalink to this definition">¶</a></dt>
+<dd><p>bin by mag in given mag, return bin center where frac recovered first drops below 50%</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="obiwan.runmanager.derived_tables.derived_field_dir">
+<code class="descclassname">obiwan.runmanager.derived_tables.</code><code class="descname">derived_field_dir</code><span class="sig-paren">(</span><em>brick</em>, <em>data_dir</em>, <em>date</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/obiwan/runmanager/derived_tables.html#derived_field_dir"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obiwan.runmanager.derived_tables.derived_field_dir" title="Permalink to this definition">¶</a></dt>
+<dd><p>directory to save post-processed tables to</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="obiwan.runmanager.derived_tables.flux2mag">
+<code class="descclassname">obiwan.runmanager.derived_tables.</code><code class="descname">flux2mag</code><span class="sig-paren">(</span><em>nmgy</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/obiwan/runmanager/derived_tables.html#flux2mag"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obiwan.runmanager.derived_tables.flux2mag" title="Permalink to this definition">¶</a></dt>
+<dd><p>converts nanomaggies to AB mag</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="obiwan.runmanager.derived_tables.fraction_recovered">
+<code class="descclassname">obiwan.runmanager.derived_tables.</code><code class="descname">fraction_recovered</code><span class="sig-paren">(</span><em>randoms</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/obiwan/runmanager/derived_tables.html#fraction_recovered"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obiwan.runmanager.derived_tables.fraction_recovered" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return fraction of randoms detected and measured by Legacypipe</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>randoms</strong> – ra,dec, and properties of all source added to a bricks</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="obiwan.runmanager.derived_tables.main_mpi">
+<code class="descclassname">obiwan.runmanager.derived_tables.</code><code class="descname">main_mpi</code><span class="sig-paren">(</span><em>bricks=[]</em>, <em>doWhat=None</em>, <em>dr3_or_dr5=None</em>, <em>db_randoms_table=None</em>, <em>nproc=1</em>, <em>data_dir='./'</em>, <em>date='mm-dd-yyyy'</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/obiwan/runmanager/derived_tables.html#main_mpi"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obiwan.runmanager.derived_tables.main_mpi" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>nproc</strong> – &gt; 1 for mpi4py</li>
+<li><strong>bricks</strong> – list of bricks</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</div>
+
+
+    </div>
+      
+  </div>
+</div>
+<footer class="footer">
+  <div class="container">
+    <p class="pull-right">
+      <a href="#">Back to top</a>
+      
+    </p>
+    <p>
+        &copy; Copyright 2014-2018, Kaylan Burleigh, John Moustakas.<br/>
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.7.6.<br/>
+    </p>
+  </div>
+</footer>
+  </body>
+</html>

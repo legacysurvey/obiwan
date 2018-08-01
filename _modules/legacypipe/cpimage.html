@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>legacypipe.cpimage &#8212; obiwan 1.2.0 documentation</title>
+    <link rel="stylesheet" href="../../_static/bootstrap-sphinx.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script type="text/javascript" src="../../_static/js/jquery-1.11.0.min.js"></script>
+    <script type="text/javascript" src="../../_static/js/jquery-fix.js"></script>
+    <script type="text/javascript" src="../../_static/bootstrap-3.3.7/js/bootstrap.min.js"></script>
+    <script type="text/javascript" src="../../_static/bootstrap-sphinx.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+<meta charset='utf-8'>
+<meta http-equiv='X-UA-Compatible' content='IE=edge,chrome=1'>
+<meta name='viewport' content='width=device-width, initial-scale=1.0, maximum-scale=1'>
+<meta name="apple-mobile-web-app-capable" content="yes">
+
+  </head><body>
+
+  <div id="navbar" class="navbar navbar-default ">
+    <div class="container">
+      <div class="navbar-header">
+        <!-- .btn-navbar is used as the toggle for collapsed navbar content -->
+        <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".nav-collapse">
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+        </button>
+        <a class="navbar-brand" href="../../index.html">
+          Obiwan</a>
+        <span class="navbar-text navbar-version pull-left"><b>1.2.0</b></span>
+      </div>
+
+        <div class="collapse navbar-collapse nav-collapse">
+          <ul class="nav navbar-nav">
+            
+                <li><a href="../../api.html">API</a></li>
+                <li><a href="../../tutorials.html">Tutorials</a></li>
+                <li><a href="../../deeplearning.html">Deep Learning</a></li>
+            
+            
+              <li class="dropdown globaltoc-container">
+  <a role="button"
+     id="dLabelGlobalToc"
+     data-toggle="dropdown"
+     data-target="#"
+     href="../../index.html">Pages <b class="caret"></b></a>
+  <ul class="dropdown-menu globaltoc"
+      role="menu"
+      aria-labelledby="dLabelGlobalToc"></ul>
+</li>
+              
+                <li class="dropdown">
+  <a role="button"
+     id="dLabelLocalToc"
+     data-toggle="dropdown"
+     data-target="#"
+     href="#">This Page <b class="caret"></b></a>
+  <ul class="dropdown-menu localtoc"
+      role="menu"
+      aria-labelledby="dLabelLocalToc"></ul>
+</li>
+              
+            
+            
+              
+                
+              
+            
+            
+            
+            
+          </ul>
+
+          
+            
+<form class="navbar-form navbar-right" action="../../search.html" method="get">
+ <div class="form-group">
+  <input type="text" name="q" class="form-control" placeholder="Search" />
+ </div>
+  <input type="hidden" name="check_keywords" value="yes" />
+  <input type="hidden" name="area" value="default" />
+</form>
+          
+        </div>
+    </div>
+  </div>
+
+<div class="container">
+  <div class="row">
+    <div class="col-md-12 content">
+      
+  <h1>Source code for legacypipe.cpimage</h1><div class="highlight"><pre>
+<span></span><span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">print_function</span>
+
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">fitsio</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+
+<span class="kn">from</span> <span class="nn">legacypipe.image</span> <span class="k">import</span> <span class="n">LegacySurveyImage</span>
+<span class="kn">from</span> <span class="nn">legacypipe.survey</span> <span class="k">import</span> <span class="n">LegacySurveyData</span>
+
+<span class="c1"># From: http://www.noao.edu/noao/staff/fvaldes/CPDocPrelim/PL201_3.html</span>
+<span class="c1"># 1   -- detector bad pixel           InstCal</span>
+<span class="c1"># 1   -- detector bad pixel/no data   Resampled</span>
+<span class="c1"># 1   -- No data                      Stacked</span>
+<span class="c1"># 2   -- saturated                    InstCal/Resampled</span>
+<span class="c1"># 4   -- interpolated                 InstCal/Resampled</span>
+<span class="c1"># 16  -- single exposure cosmic ray   InstCal/Resampled</span>
+<span class="c1"># 64  -- bleed trail                  InstCal/Resampled</span>
+<span class="c1"># 128 -- multi-exposure transient     InstCal/Resampled </span>
+<span class="n">CP_DQ_BITS</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">badpix</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">satur</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">interp</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="n">cr</span><span class="o">=</span><span class="mi">16</span><span class="p">,</span> <span class="n">bleed</span><span class="o">=</span><span class="mi">64</span><span class="p">,</span>
+                  <span class="n">trans</span><span class="o">=</span><span class="mi">128</span><span class="p">,</span>
+                  <span class="n">edge</span> <span class="o">=</span> <span class="mi">256</span><span class="p">,</span>
+                  <span class="n">edge2</span> <span class="o">=</span> <span class="mi">512</span><span class="p">,</span>
+                  <span class="c1">## masked by stage_mask_junk</span>
+                  <span class="n">longthin</span> <span class="o">=</span> <span class="mi">1024</span><span class="p">,</span>
+                  <span class="p">)</span>
+
+<span class="k">class</span> <span class="nc">CPImage</span><span class="p">(</span><span class="n">LegacySurveyImage</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    A mix-in class for common code between NOAO Community Pipeline-processed</span>
+<span class="sd">    data from DECam and Mosaic3.</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">CPImage</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Note, this assumes the &quot;self.imgfn&quot; parameter has been set; this can</span>
+<span class="sd">        require the inheritance order and order of calling super.__init__()</span>
+<span class="sd">        to be just right.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dqfn</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">imgfn</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;_ooi_&#39;</span><span class="p">,</span> <span class="s1">&#39;_ood_&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span>
+            <span class="s1">&#39;_oki_&#39;</span><span class="p">,</span><span class="s1">&#39;_ood_&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">wtfn</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">imgfn</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;_ooi_&#39;</span><span class="p">,</span> <span class="s1">&#39;_oow_&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span>
+            <span class="s1">&#39;_oki_&#39;</span><span class="p">,</span><span class="s1">&#39;_oow_&#39;</span><span class="p">)</span>
+        <span class="k">assert</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dqfn</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">imgfn</span><span class="p">)</span>
+        <span class="k">assert</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">wtfn</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">imgfn</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">attr</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;imgfn&#39;</span><span class="p">,</span> <span class="s1">&#39;dqfn&#39;</span><span class="p">,</span> <span class="s1">&#39;wtfn&#39;</span><span class="p">]:</span>
+            <span class="n">fn</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">attr</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">fn</span><span class="p">):</span>
+                <span class="k">continue</span>
+            <span class="k">if</span> <span class="n">fn</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s1">&#39;.fz&#39;</span><span class="p">):</span>
+                <span class="n">fun</span> <span class="o">=</span> <span class="n">fn</span><span class="p">[:</span><span class="o">-</span><span class="mi">3</span><span class="p">]</span>
+                <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">fun</span><span class="p">):</span>
+                    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Using      &#39;</span><span class="p">,</span> <span class="n">fun</span><span class="p">)</span>
+                    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;rather than&#39;</span><span class="p">,</span> <span class="n">fn</span><span class="p">)</span>
+                    <span class="nb">setattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">attr</span><span class="p">,</span> <span class="n">fun</span><span class="p">)</span>
+                    <span class="n">fn</span> <span class="o">=</span> <span class="n">fun</span>
+            <span class="c1"># Workaround: exposure numbers 330667 through 330890 at least have some of the</span>
+            <span class="c1"># files named &quot;v1&quot; and some named &quot;v2&quot;.  Try both.</span>
+            <span class="k">if</span> <span class="s1">&#39;v1&#39;</span> <span class="ow">in</span> <span class="n">fn</span><span class="p">:</span>
+                <span class="n">fnother</span> <span class="o">=</span> <span class="n">fn</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;v1&#39;</span><span class="p">,</span> <span class="s1">&#39;v2&#39;</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">fnother</span><span class="p">):</span>
+                    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Using&#39;</span><span class="p">,</span> <span class="n">fnother</span><span class="p">,</span> <span class="s1">&#39;rather than&#39;</span><span class="p">,</span> <span class="n">fn</span><span class="p">)</span>
+                    <span class="nb">setattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">attr</span><span class="p">,</span> <span class="n">fnother</span><span class="p">)</span>
+                    <span class="n">fn</span> <span class="o">=</span> <span class="n">fnother</span>
+            <span class="k">elif</span> <span class="s1">&#39;v2&#39;</span> <span class="ow">in</span> <span class="n">fn</span><span class="p">:</span>
+                <span class="n">fnother</span> <span class="o">=</span> <span class="n">fn</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;v2&#39;</span><span class="p">,</span> <span class="s1">&#39;v1&#39;</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">fnother</span><span class="p">):</span>
+                    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Using&#39;</span><span class="p">,</span> <span class="n">fnother</span><span class="p">,</span> <span class="s1">&#39;rather than&#39;</span><span class="p">,</span> <span class="n">fn</span><span class="p">)</span>
+                    <span class="nb">setattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">attr</span><span class="p">,</span> <span class="n">fnother</span><span class="p">)</span>
+                    <span class="n">fn</span> <span class="o">=</span> <span class="n">fnother</span>
+
+        <span class="n">expstr</span> <span class="o">=</span> <span class="s1">&#39;</span><span class="si">%08i</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">expnum</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">calname</span> <span class="o">=</span> <span class="s1">&#39;</span><span class="si">%s</span><span class="s1">/</span><span class="si">%s</span><span class="s1">/</span><span class="si">%s</span><span class="s1">-</span><span class="si">%s</span><span class="s1">-</span><span class="si">%s</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">expstr</span><span class="p">[:</span><span class="mi">5</span><span class="p">],</span> <span class="n">expstr</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">camera</span><span class="p">,</span>
+                                           <span class="n">expstr</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">ccdname</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="s1">&#39;</span><span class="si">%s</span><span class="s1">-</span><span class="si">%s</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">expstr</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">ccdname</span><span class="p">)</span>
+
+        <span class="n">calibdir</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">survey</span><span class="o">.</span><span class="n">get_calib_dir</span><span class="p">(),</span> <span class="bp">self</span><span class="o">.</span><span class="n">camera</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sefn</span>  <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">calibdir</span><span class="p">,</span> <span class="s1">&#39;se&#39;</span><span class="p">,</span>    <span class="bp">self</span><span class="o">.</span><span class="n">calname</span> <span class="o">+</span> <span class="s1">&#39;.fits&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">psffn</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">calibdir</span><span class="p">,</span> <span class="s1">&#39;psfex&#39;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">calname</span> <span class="o">+</span> <span class="s1">&#39;.fits&#39;</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">merged_psffn</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">calibdir</span><span class="p">,</span> <span class="s1">&#39;psfex-merged&#39;</span><span class="p">,</span> <span class="n">expstr</span><span class="p">[:</span><span class="mi">5</span><span class="p">],</span>
+                                         <span class="s1">&#39;</span><span class="si">%s</span><span class="s1">-</span><span class="si">%s</span><span class="s1">.fits&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">camera</span><span class="p">,</span> <span class="n">expstr</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">merged_splineskyfn</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">calibdir</span><span class="p">,</span> <span class="s1">&#39;splinesky-merged&#39;</span><span class="p">,</span> <span class="n">expstr</span><span class="p">[:</span><span class="mi">5</span><span class="p">],</span>
+                                         <span class="s1">&#39;</span><span class="si">%s</span><span class="s1">-</span><span class="si">%s</span><span class="s1">.fits&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">camera</span><span class="p">,</span> <span class="n">expstr</span><span class="p">))</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">skyfn</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">calibdir</span><span class="p">,</span> <span class="s1">&#39;sky&#39;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">calname</span> <span class="o">+</span> <span class="s1">&#39;.fits&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">splineskyfn</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">calibdir</span><span class="p">,</span> <span class="s1">&#39;splinesky&#39;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">calname</span> <span class="o">+</span> <span class="s1">&#39;.fits&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dq_saturation_bits</span> <span class="o">=</span> <span class="n">CP_DQ_BITS</span><span class="p">[</span><span class="s1">&#39;satur&#39;</span><span class="p">]</span>
+
+    <span class="k">def</span> <span class="nf">get_cacheable_filename_variables</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        These are names of self.X variables that are filenames that</span>
+<span class="sd">        could be cached.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="n">keys</span> <span class="o">=</span> <span class="nb">super</span><span class="p">(</span><span class="n">CPImage</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">get_cacheable_filename_variables</span><span class="p">()</span>
+        <span class="n">keys</span><span class="o">.</span><span class="n">extend</span><span class="p">([</span><span class="s1">&#39;dqfn&#39;</span><span class="p">,</span> <span class="s1">&#39;wtfn&#39;</span><span class="p">,</span> <span class="s1">&#39;psffn&#39;</span><span class="p">,</span> <span class="s1">&#39;merged_psffn&#39;</span><span class="p">,</span>
+                     <span class="s1">&#39;merged_splineskyfn&#39;</span><span class="p">,</span> <span class="s1">&#39;splineskyfn&#39;</span><span class="p">,</span> <span class="s1">&#39;skyfn&#39;</span><span class="p">,])</span>
+        <span class="k">return</span> <span class="n">keys</span>
+
+    <span class="k">def</span> <span class="nf">check_image_header</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">imghdr</span><span class="p">):</span>
+        <span class="c1"># check consistency... something of a DR1 hangover</span>
+        <span class="n">e</span> <span class="o">=</span> <span class="n">imghdr</span><span class="p">[</span><span class="s1">&#39;EXTNAME&#39;</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">e</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ccdname</span><span class="o">.</span><span class="n">strip</span><span class="p">():</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;WARNING: Expected header EXTNAME=&quot;</span><span class="si">%s</span><span class="s1">&quot; to match self.ccdname=&quot;</span><span class="si">%s</span><span class="s1">&quot;, self.imgfn=</span><span class="si">%s</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">e</span><span class="o">.</span><span class="n">strip</span><span class="p">(),</span> <span class="bp">self</span><span class="o">.</span><span class="n">ccdname</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">imgfn</span><span class="p">))</span>
+        <span class="c1"># try:</span>
+        <span class="c1">#     assert(e.strip() == self.ccdname.strip())</span>
+        <span class="c1"># except AssertionError:</span>
+        <span class="c1">#     raise ValueError(&#39;Expected header EXTNAME=&quot;%s&quot; to match self.ccdname=&quot;%s&quot;, self.imgfn=%s&#39; % (e.strip(), self.ccdname,self.imgfn))</span>
+
+    <span class="k">def</span> <span class="nf">get_wcs</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">hdr</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="kn">from</span> <span class="nn">astrometry.util.util</span> <span class="k">import</span> <span class="n">wcs_pv2sip_hdr</span>
+        <span class="c1"># Make sure the PV-to-SIP converter samples enough points for small</span>
+        <span class="c1"># images</span>
+        <span class="n">stepsize</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">if</span> <span class="nb">min</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">width</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">height</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">600</span><span class="p">:</span>
+            <span class="n">stepsize</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">width</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">height</span><span class="p">)</span> <span class="o">/</span> <span class="mf">10.</span><span class="p">;</span>
+        <span class="k">if</span> <span class="n">hdr</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">hdr</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">read_image_header</span><span class="p">()</span>
+        <span class="n">wcs</span> <span class="o">=</span> <span class="n">wcs_pv2sip_hdr</span><span class="p">(</span><span class="n">hdr</span><span class="p">,</span> <span class="n">stepsize</span><span class="o">=</span><span class="n">stepsize</span><span class="p">)</span>
+        <span class="c1"># Correction: ccd,ccdraoff, decoff from zeropoints file</span>
+        <span class="n">dra</span><span class="p">,</span><span class="n">ddec</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">dradec</span>
+        <span class="c1"># print(&#39;Applying astrometric zeropoint:&#39;, (dra,ddec))</span>
+        <span class="n">r</span><span class="p">,</span><span class="n">d</span> <span class="o">=</span> <span class="n">wcs</span><span class="o">.</span><span class="n">get_crval</span><span class="p">()</span>
+        <span class="n">wcs</span><span class="o">.</span><span class="n">set_crval</span><span class="p">((</span><span class="n">r</span> <span class="o">+</span> <span class="n">dra</span><span class="p">,</span> <span class="n">d</span> <span class="o">+</span> <span class="n">ddec</span><span class="p">))</span>
+        <span class="n">wcs</span><span class="o">.</span><span class="n">version</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span>
+        <span class="n">phdr</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">read_image_primary_header</span><span class="p">()</span>
+        <span class="n">wcs</span><span class="o">.</span><span class="n">plver</span> <span class="o">=</span> <span class="n">phdr</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;PLVER&#39;</span><span class="p">,</span> <span class="s1">&#39;&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">wcs</span>
+
+    <span class="k">def</span> <span class="nf">remap_dq_codes</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dq</span><span class="p">):</span>
+        <span class="c1"># Integer codes, not bit masks.</span>
+        <span class="n">dqbits</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">dq</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">int16</span><span class="p">)</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        1 = bad</span>
+<span class="sd">        2 = no value (for remapped and stacked data)</span>
+<span class="sd">        3 = saturated</span>
+<span class="sd">        4 = bleed mask</span>
+<span class="sd">        5 = cosmic ray</span>
+<span class="sd">        6 = low weight</span>
+<span class="sd">        7 = diff detect (multi-exposure difference detection from median)</span>
+<span class="sd">        8 = long streak (e.g. satellite trail)</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="n">dqbits</span><span class="p">[</span><span class="n">dq</span> <span class="o">==</span> <span class="mi">1</span><span class="p">]</span> <span class="o">|=</span> <span class="n">CP_DQ_BITS</span><span class="p">[</span><span class="s1">&#39;badpix&#39;</span><span class="p">]</span>
+        <span class="n">dqbits</span><span class="p">[</span><span class="n">dq</span> <span class="o">==</span> <span class="mi">2</span><span class="p">]</span> <span class="o">|=</span> <span class="n">CP_DQ_BITS</span><span class="p">[</span><span class="s1">&#39;badpix&#39;</span><span class="p">]</span>
+        <span class="n">dqbits</span><span class="p">[</span><span class="n">dq</span> <span class="o">==</span> <span class="mi">3</span><span class="p">]</span> <span class="o">|=</span> <span class="n">CP_DQ_BITS</span><span class="p">[</span><span class="s1">&#39;satur&#39;</span><span class="p">]</span>
+        <span class="n">dqbits</span><span class="p">[</span><span class="n">dq</span> <span class="o">==</span> <span class="mi">4</span><span class="p">]</span> <span class="o">|=</span> <span class="n">CP_DQ_BITS</span><span class="p">[</span><span class="s1">&#39;bleed&#39;</span><span class="p">]</span>
+        <span class="n">dqbits</span><span class="p">[</span><span class="n">dq</span> <span class="o">==</span> <span class="mi">5</span><span class="p">]</span> <span class="o">|=</span> <span class="n">CP_DQ_BITS</span><span class="p">[</span><span class="s1">&#39;cr&#39;</span><span class="p">]</span>
+        <span class="n">dqbits</span><span class="p">[</span><span class="n">dq</span> <span class="o">==</span> <span class="mi">6</span><span class="p">]</span> <span class="o">|=</span> <span class="n">CP_DQ_BITS</span><span class="p">[</span><span class="s1">&#39;badpix&#39;</span><span class="p">]</span>
+        <span class="n">dqbits</span><span class="p">[</span><span class="n">dq</span> <span class="o">==</span> <span class="mi">7</span><span class="p">]</span> <span class="o">|=</span> <span class="n">CP_DQ_BITS</span><span class="p">[</span><span class="s1">&#39;trans&#39;</span><span class="p">]</span>
+        <span class="n">dqbits</span><span class="p">[</span><span class="n">dq</span> <span class="o">==</span> <span class="mi">8</span><span class="p">]</span> <span class="o">|=</span> <span class="n">CP_DQ_BITS</span><span class="p">[</span><span class="s1">&#39;trans&#39;</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">dqbits</span>
+
+    <span class="c1"># A function that can be called by a subclasser&#39;s remap_invvar() method</span>
+    <span class="k">def</span> <span class="nf">remap_invvar_shotnoise</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">invvar</span><span class="p">,</span> <span class="n">primhdr</span><span class="p">,</span> <span class="n">img</span><span class="p">,</span> <span class="n">dq</span><span class="p">):</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Remapping weight map for&#39;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+        <span class="n">const_sky</span> <span class="o">=</span> <span class="n">primhdr</span><span class="p">[</span><span class="s1">&#39;SKYADU&#39;</span><span class="p">]</span> <span class="c1"># e/s, Recommended sky level keyword from Frank </span>
+        <span class="n">expt</span> <span class="o">=</span> <span class="n">primhdr</span><span class="p">[</span><span class="s1">&#39;EXPTIME&#39;</span><span class="p">]</span> <span class="c1"># s</span>
+        <span class="k">with</span> <span class="n">np</span><span class="o">.</span><span class="n">errstate</span><span class="p">(</span><span class="n">divide</span><span class="o">=</span><span class="s1">&#39;ignore&#39;</span><span class="p">):</span>
+            <span class="n">var_SR</span> <span class="o">=</span> <span class="mf">1.</span><span class="o">/</span><span class="n">invvar</span> <span class="c1"># e/s </span>
+        <span class="n">var_Astro</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">img</span> <span class="o">-</span> <span class="n">const_sky</span><span class="p">)</span> <span class="o">/</span> <span class="n">expt</span> <span class="c1"># e/s </span>
+        <span class="n">wt</span> <span class="o">=</span> <span class="mf">1.</span><span class="o">/</span><span class="p">(</span><span class="n">var_SR</span> <span class="o">+</span> <span class="n">var_Astro</span><span class="p">)</span> <span class="c1"># s/e</span>
+
+        <span class="c1"># Zero out NaNs and masked pixels </span>
+        <span class="n">wt</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">wt</span><span class="p">)</span> <span class="o">==</span> <span class="kc">False</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.</span>
+        <span class="n">wt</span><span class="p">[</span><span class="n">dq</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.</span>
+
+        <span class="k">return</span> <span class="n">wt</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">ccd_cuts</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">survey</span><span class="p">,</span> <span class="n">ccds</span><span class="p">):</span>
+        <span class="n">ccdcuts</span> <span class="o">=</span> <span class="nb">super</span><span class="p">(</span><span class="n">CPImage</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">ccd_cuts</span><span class="p">(</span><span class="n">survey</span><span class="p">,</span> <span class="n">ccds</span><span class="p">)</span>
+        <span class="n">bits</span> <span class="o">=</span> <span class="n">LegacySurveyData</span><span class="o">.</span><span class="n">ccd_cut_bits</span>
+
+        <span class="n">I</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">bad_exposures</span><span class="p">(</span><span class="n">survey</span><span class="p">,</span> <span class="n">ccds</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">I</span><span class="p">),</span> <span class="s1">&#39;CCDs have BAD_EXPID&#39;</span><span class="p">)</span>
+        <span class="n">ccdcuts</span><span class="p">[</span><span class="n">I</span><span class="p">]</span> <span class="o">+=</span> <span class="n">bits</span><span class="p">[</span><span class="s1">&#39;BAD_EXPID&#39;</span><span class="p">]</span>
+
+        <span class="n">I</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ccdname_hdu_mismatch</span><span class="p">(</span><span class="n">survey</span><span class="p">,</span> <span class="n">ccds</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">I</span><span class="p">),</span> <span class="s1">&#39;CCDs have CCDNAME_HDU mismatch&#39;</span><span class="p">)</span>
+        <span class="n">ccdcuts</span><span class="p">[</span><span class="n">I</span><span class="p">]</span> <span class="o">+=</span> <span class="n">bits</span><span class="p">[</span><span class="s1">&#39;CCDNAME_HDU_MISMATCH&#39;</span><span class="p">]</span>
+
+        <span class="n">I</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">bad_astrometry</span><span class="p">(</span><span class="n">survey</span><span class="p">,</span> <span class="n">ccds</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">I</span><span class="p">),</span> <span class="s1">&#39;CCDs have bad astrometry&#39;</span><span class="p">)</span>
+        <span class="n">ccdcuts</span><span class="p">[</span><span class="n">I</span><span class="p">]</span> <span class="o">+=</span> <span class="n">bits</span><span class="p">[</span><span class="s1">&#39;BAD_ASTROMETRY&#39;</span><span class="p">]</span>
+        
+        <span class="k">return</span> <span class="n">ccdcuts</span>
+    
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">bad_exposures</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">survey</span><span class="p">,</span> <span class="n">ccds</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Returns an index array for the members of the table &#39;ccds&#39;</span>
+<span class="sd">        that are good exposures (NOT flagged) in the bad_expid file.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="c1"># Exposure number, leading zeros removed</span>
+        <span class="n">badccds</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">ccds</span><span class="p">),</span> <span class="nb">bool</span><span class="p">)</span>
+
+        <span class="n">bad</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_bad_expids</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">expnum</span> <span class="ow">in</span> <span class="n">bad</span><span class="p">:</span>
+            <span class="n">badccds</span><span class="p">[</span><span class="n">ccds</span><span class="o">.</span><span class="n">expnum</span> <span class="o">==</span> <span class="n">expnum</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="k">return</span> <span class="n">badccds</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">ccdname_hdu_mismatch</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">survey</span><span class="p">,</span> <span class="n">ccds</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Mosaic + Bok, ccdname and hdu number must match. If not, IDL</span>
+<span class="sd">        zeropoints files has duplicated zeropoint info from one of the</span>
+<span class="sd">        other four ccds.</span>
+
+<span class="sd">        Returns a boolean array, True for CCDs with this problem.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="n">ccdnum</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">char</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="n">ccds</span><span class="o">.</span><span class="n">ccdname</span><span class="p">,</span><span class="s1">&#39;ccd&#39;</span><span class="p">,</span><span class="s1">&#39;&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">ccds</span><span class="o">.</span><span class="n">image_hdu</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">ccds</span><span class="o">.</span><span class="n">image_hdu</span> <span class="o">!=</span> <span class="n">ccdnum</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">bad_astrometry</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">survey</span><span class="p">,</span> <span class="n">ccds</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39; </span>
+<span class="sd">        IDL zeropoints have large rarms,decrms,phrms for some CP images that look fine. Legacy</span>
+<span class="sd">        zeropoints is okay for majority of these cases. False alarm? Bug in IDL zeropoints? Doing</span>
+<span class="sd">        the most conservative thing and dropping these ccds.</span>
+<span class="sd">        see email: &quot;3/30/2017: [decam-chatter 5155] Clue to zero-point errors in dr4&quot;</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="n">bad</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">logical_or</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">hypot</span><span class="p">(</span><span class="n">ccds</span><span class="o">.</span><span class="n">ccdrarms</span><span class="p">,</span> <span class="n">ccds</span><span class="o">.</span><span class="n">ccddecrms</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mf">0.1</span><span class="p">,</span>
+                            <span class="n">ccds</span><span class="o">.</span><span class="n">ccdphrms</span> <span class="o">&gt;</span> <span class="mf">0.2</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">bad</span>
+    
+</pre></div>
+
+    </div>
+      
+  </div>
+</div>
+<footer class="footer">
+  <div class="container">
+    <p class="pull-right">
+      <a href="#">Back to top</a>
+      
+    </p>
+    <p>
+        &copy; Copyright 2014-2018, Kaylan Burleigh, John Moustakas.<br/>
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.7.6.<br/>
+    </p>
+  </div>
+</footer>
+  </body>
+</html>

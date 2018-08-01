@@ -114,6 +114,18 @@
 <tr class="row-odd"><td><a class="reference internal" href="#obiwan.kenobi.BuildStamp" title="obiwan.kenobi.BuildStamp"><code class="xref py py-obj docutils literal notranslate"><span class="pre">BuildStamp</span></code></a>(tim[,&nbsp;seed,&nbsp;camera,&nbsp;gain,&nbsp;exptime])</td>
 <td>Does the drawing of simulated sources on a single exposure</td>
 </tr>
+<tr class="row-even"><td><a class="reference internal" href="#obiwan.kenobi.SimDecals" title="obiwan.kenobi.SimDecals"><code class="xref py py-obj docutils literal notranslate"><span class="pre">SimDecals</span></code></a>([dataset,&nbsp;survey_dir,&nbsp;metacat,&nbsp;…])</td>
+<td>Top level object that specifying which data to run through pipeline</td>
+</tr>
+<tr class="row-odd"><td><a class="reference internal" href="#obiwan.kenobi.SimDecalsCosmos" title="obiwan.kenobi.SimDecalsCosmos"><code class="xref py py-obj docutils literal notranslate"><span class="pre">SimDecalsCosmos</span></code></a>(**kwargs)</td>
+<td>Filters the CCDs to just those in the cosmos realizations</td>
+</tr>
+<tr class="row-even"><td><a class="reference internal" href="#obiwan.kenobi.SimImage" title="obiwan.kenobi.SimImage"><code class="xref py py-obj docutils literal notranslate"><span class="pre">SimImage</span></code></a>(survey,&nbsp;t)</td>
+<td>Adds simulated sources to a single exposure</td>
+</tr>
+<tr class="row-odd"><td><a class="reference internal" href="#obiwan.kenobi.SimImageCosmos" title="obiwan.kenobi.SimImageCosmos"><code class="xref py py-obj docutils literal notranslate"><span class="pre">SimImageCosmos</span></code></a>(survey,&nbsp;t)</td>
+<td>Filters the CCDs to just those in the cosmos realizations</td>
+</tr>
 </tbody>
 </table>
 <p class="rubric">Functions</p>
@@ -308,6 +320,1009 @@ are ADU/sec for DECam and e/sec for Bass,MzLS</p>
 <dt id="obiwan.kenobi.BuildStamp.star">
 <code class="descname">star</code><span class="sig-paren">(</span><em>obj</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/obiwan/kenobi.html#BuildStamp.star"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obiwan.kenobi.BuildStamp.star" title="Permalink to this definition">¶</a></dt>
 <dd><p>Render a star (PSF).</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="obiwan.kenobi.SimDecals">
+<em class="property">class </em><code class="descclassname">obiwan.kenobi.</code><code class="descname">SimDecals</code><span class="sig-paren">(</span><em>dataset=None</em>, <em>survey_dir=None</em>, <em>metacat=None</em>, <em>simcat=None</em>, <em>output_dir=None</em>, <em>add_sim_noise=False</em>, <em>seed=0</em>, <em>image_eq_model=False</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/obiwan/kenobi.html#SimDecals"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obiwan.kenobi.SimDecals" title="Permalink to this definition">¶</a></dt>
+<dd><p>Top level object that specifying which data to run through pipeline</p>
+<dl class="docutils">
+<dt>Same behavior as legacypipe.runs.Dr3DecalsSurvey which chooses which</dt>
+<dd>CCDs to include. But this also stores all the relevant obiwan
+objects</dd>
+</dl>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>dataset</strong> – see definition in
+<a class="reference external" href="https://github.com/legacysurvey/obiwan/blob/master/py/obiwan/test/end_to_end/README.md">https://github.com/legacysurvey/obiwan/blob/master/py/obiwan/test/end_to_end/README.md</a></li>
+<li><strong>survey_dir</strong> – as used by legacypipe.runbrick.run_brick()
+Defaults to $LEGACY_SURVEY_DIR environment variable.  Where to look for
+files including calibration files, tables of CCDs and bricks, image data</li>
+<li><strong>metacat</strong> – fits_table
+configuration-like params for the simulated sources</li>
+<li><strong>simcat</strong> – fits_table
+simulated source catalog for a given brick (not CCD).</li>
+<li><strong>output_dir</strong> – legacypipe’s outdir</li>
+<li><strong>add_sim_noise</strong> – add Poisson noise from the simulated source to the image</li>
+<li><strong>seed</strong> – for random number generators</li>
+<li><strong>image_eq_model</strong> – referred to as ‘testA’
+wherever add a simulated source, replace both image and invvar of the image
+with that of the simulated source only</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<dl class="attribute">
+<dt id="obiwan.kenobi.SimDecals.DR">
+<code class="descname">DR</code><a class="headerlink" href="#obiwan.kenobi.SimDecals.DR" title="Permalink to this definition">¶</a></dt>
+<dd><p>see above</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="obiwan.kenobi.SimDecals.metacat">
+<code class="descname">metacat</code><a class="headerlink" href="#obiwan.kenobi.SimDecals.metacat" title="Permalink to this definition">¶</a></dt>
+<dd><p>fits_table
+configuration-like params for the simulated sources</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="obiwan.kenobi.SimDecals.simcat">
+<code class="descname">simcat</code><a class="headerlink" href="#obiwan.kenobi.SimDecals.simcat" title="Permalink to this definition">¶</a></dt>
+<dd><p>fits_table
+simulated source catalog for a given brick (not CCD).</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="obiwan.kenobi.SimDecals.output_dir">
+<code class="descname">output_dir</code><a class="headerlink" href="#obiwan.kenobi.SimDecals.output_dir" title="Permalink to this definition">¶</a></dt>
+<dd><p>legacypipe’s outdir</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="obiwan.kenobi.SimDecals.add_sim_noise">
+<code class="descname">add_sim_noise</code><a class="headerlink" href="#obiwan.kenobi.SimDecals.add_sim_noise" title="Permalink to this definition">¶</a></dt>
+<dd><p>add Poisson noise from the simulated source to the image</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="obiwan.kenobi.SimDecals.image_eq_model">
+<code class="descname">image_eq_model</code><a class="headerlink" href="#obiwan.kenobi.SimDecals.image_eq_model" title="Permalink to this definition">¶</a></dt>
+<dd><p>referred to as ‘testA’
+wherever add a simulated source, replace both image and invvar of the image
+with that of the simulated source only</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="obiwan.kenobi.SimDecals.add_hashcode">
+<code class="descname">add_hashcode</code><span class="sig-paren">(</span><em>fn</em>, <em>hashcode</em><span class="sig-paren">)</span><a class="headerlink" href="#obiwan.kenobi.SimDecals.add_hashcode" title="Permalink to this definition">¶</a></dt>
+<dd><p>Callback to be called in the <em>write_output</em> routine.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="obiwan.kenobi.SimDecals.bricks_touching_radec_box">
+<code class="descname">bricks_touching_radec_box</code><span class="sig-paren">(</span><em>bricks</em>, <em>ralo</em>, <em>rahi</em>, <em>declo</em>, <em>dechi</em><span class="sig-paren">)</span><a class="headerlink" href="#obiwan.kenobi.SimDecals.bricks_touching_radec_box" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns an index vector of the bricks that touch the given RA,Dec box.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="obiwan.kenobi.SimDecals.ccd_cuts">
+<code class="descname">ccd_cuts</code><span class="sig-paren">(</span><em>ccds</em><span class="sig-paren">)</span><a class="headerlink" href="#obiwan.kenobi.SimDecals.ccd_cuts" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a bitmask of reasons the given <em>ccds</em> would be cut
+(excluded from legacypipe processing).  These bits are defined
+in LegacySurveyData.ccd_cut_bits.</p>
+<p>This just delegates to the LegacySurveyImage subclasses based
+on camera.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="obiwan.kenobi.SimDecals.ccds_touching_wcs">
+<code class="descname">ccds_touching_wcs</code><span class="sig-paren">(</span><em>wcs</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#obiwan.kenobi.SimDecals.ccds_touching_wcs" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a table of the CCDs touching the given <em>wcs</em> region.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="obiwan.kenobi.SimDecals.drop_cache">
+<code class="descname">drop_cache</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#obiwan.kenobi.SimDecals.drop_cache" title="Permalink to this definition">¶</a></dt>
+<dd><p>Clears all cached data contained in this object.  Useful for
+pickling / multiprocessing.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="obiwan.kenobi.SimDecals.filter_ccd_kd_files">
+<code class="descname">filter_ccd_kd_files</code><span class="sig-paren">(</span><em>fns</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/obiwan/kenobi.html#SimDecals.filter_ccd_kd_files"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obiwan.kenobi.SimDecals.filter_ccd_kd_files" title="Permalink to this definition">¶</a></dt>
+<dd><p>see legacypipe/runs.py</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="obiwan.kenobi.SimDecals.filter_ccds_files">
+<code class="descname">filter_ccds_files</code><span class="sig-paren">(</span><em>fns</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/obiwan/kenobi.html#SimDecals.filter_ccds_files"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obiwan.kenobi.SimDecals.filter_ccds_files" title="Permalink to this definition">¶</a></dt>
+<dd><p>see legacypipe/runs.py</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="obiwan.kenobi.SimDecals.find_ccds">
+<code class="descname">find_ccds</code><span class="sig-paren">(</span><em>expnum=None</em>, <em>ccdname=None</em>, <em>camera=None</em><span class="sig-paren">)</span><a class="headerlink" href="#obiwan.kenobi.SimDecals.find_ccds" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a table of CCDs matching the given <em>expnum</em> (exposure
+number, integer), <em>ccdname</em> (string), and <em>camera</em> (string),
+if given.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="obiwan.kenobi.SimDecals.find_file">
+<code class="descname">find_file</code><span class="sig-paren">(</span><em>filetype</em>, <em>brick=None</em>, <em>brickpre=None</em>, <em>band='%(band)s'</em>, <em>output=False</em><span class="sig-paren">)</span><a class="headerlink" href="#obiwan.kenobi.SimDecals.find_file" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the filename of a Legacy Survey file.</p>
+<dl class="docutils">
+<dt><em>filetype</em> <span class="classifier-delimiter">:</span> <span class="classifier">string, type of file to find, including:</span></dt>
+<dd>“tractor” – Tractor catalogs
+“depth”   – PSF depth maps
+“galdepth” – Canonical galaxy depth maps
+“nexp” – number-of-exposure maps</dd>
+</dl>
+<p><em>brick</em> : string, brick name such as “0001p000”</p>
+<p><em>output</em>: True if we are about to write this file; will use self.outdir as
+the base directory rather than self.survey_dir.</p>
+<p>Returns: path to the specified file (whether or not it exists).</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="obiwan.kenobi.SimDecals.get_annotated_ccds">
+<code class="descname">get_annotated_ccds</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#obiwan.kenobi.SimDecals.get_annotated_ccds" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the annotated table of CCDs.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="obiwan.kenobi.SimDecals.get_brick">
+<code class="descname">get_brick</code><span class="sig-paren">(</span><em>brickid</em><span class="sig-paren">)</span><a class="headerlink" href="#obiwan.kenobi.SimDecals.get_brick" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a brick (as one row in a table) by <em>brickid</em> (integer).</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="obiwan.kenobi.SimDecals.get_brick_by_name">
+<code class="descname">get_brick_by_name</code><span class="sig-paren">(</span><em>brickname</em><span class="sig-paren">)</span><a class="headerlink" href="#obiwan.kenobi.SimDecals.get_brick_by_name" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a brick (as one row in a table) by name (string).</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="obiwan.kenobi.SimDecals.get_bricks">
+<code class="descname">get_bricks</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#obiwan.kenobi.SimDecals.get_bricks" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a table of bricks.  The caller owns the table.</p>
+<p>For read-only purposes, see <em>get_bricks_readonly()</em>, which
+uses a cached version.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="obiwan.kenobi.SimDecals.get_bricks_readonly">
+<code class="descname">get_bricks_readonly</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#obiwan.kenobi.SimDecals.get_bricks_readonly" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a read-only (shared) copy of the table of bricks.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="obiwan.kenobi.SimDecals.get_calib_dir">
+<code class="descname">get_calib_dir</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#obiwan.kenobi.SimDecals.get_calib_dir" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the directory containing calibration data.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="obiwan.kenobi.SimDecals.get_ccds">
+<code class="descname">get_ccds</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#obiwan.kenobi.SimDecals.get_ccds" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the table of CCDs.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="obiwan.kenobi.SimDecals.get_ccds_readonly">
+<code class="descname">get_ccds_readonly</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#obiwan.kenobi.SimDecals.get_ccds_readonly" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a shared copy of the table of CCDs.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="obiwan.kenobi.SimDecals.get_image_dir">
+<code class="descname">get_image_dir</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#obiwan.kenobi.SimDecals.get_image_dir" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the directory containing image data.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="obiwan.kenobi.SimDecals.get_image_object">
+<code class="descname">get_image_object</code><span class="sig-paren">(</span><em>t</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/obiwan/kenobi.html#SimDecals.get_image_object"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obiwan.kenobi.SimDecals.get_image_object" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a DecamImage or similar object for one row of the CCDs table.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="obiwan.kenobi.SimDecals.get_se_dir">
+<code class="descname">get_se_dir</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#obiwan.kenobi.SimDecals.get_se_dir" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the directory containing SourceExtractor config files,
+used during calibration.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="obiwan.kenobi.SimDecals.get_survey_dir">
+<code class="descname">get_survey_dir</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#obiwan.kenobi.SimDecals.get_survey_dir" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the base LEGACY_SURVEY_DIR directory.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="obiwan.kenobi.SimDecals.photometric_ccds">
+<code class="descname">photometric_ccds</code><span class="sig-paren">(</span><em>ccds</em><span class="sig-paren">)</span><a class="headerlink" href="#obiwan.kenobi.SimDecals.photometric_ccds" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns an index array for the members of the table “ccds” that
+are photometric.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="obiwan.kenobi.SimDecals.read_intermediate_catalog">
+<code class="descname">read_intermediate_catalog</code><span class="sig-paren">(</span><em>brick</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#obiwan.kenobi.SimDecals.read_intermediate_catalog" title="Permalink to this definition">¶</a></dt>
+<dd><p>Reads the intermediate tractor catalog for the given brickname.</p>
+<p><em>kwargs</em>: passed to self.find_file()</p>
+<p>Returns (T, hdr, primhdr)</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="obiwan.kenobi.SimDecals.tims_touching_wcs">
+<code class="descname">tims_touching_wcs</code><span class="sig-paren">(</span><em>targetwcs</em>, <em>mp</em>, <em>bands=None</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#obiwan.kenobi.SimDecals.tims_touching_wcs" title="Permalink to this definition">¶</a></dt>
+<dd><p>Creates tractor.Image objects for CCDs touching the given
+<em>targetwcs</em> region.</p>
+<p>mp: multiprocessing object</p>
+<p>kwargs are passed to LegacySurveyImage.get_tractor_image() and
+may include:</p>
+<ul class="simple">
+<li>gaussPsf</li>
+<li>pixPsf</li>
+</ul>
+</dd></dl>
+
+<dl class="method">
+<dt id="obiwan.kenobi.SimDecals.write_output">
+<code class="descname">write_output</code><span class="sig-paren">(</span><em>filetype</em>, <em>hashsum=True</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#obiwan.kenobi.SimDecals.write_output" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a context manager for writing an output file; use like:</p>
+<dl class="docutils">
+<dt>with survey.write_output(‘ccds’, brick=brickname) as out:</dt>
+<dd>ccds.writeto(out.fn, primheader=primhdr)</dd>
+</dl>
+<p>For FITS output, out.fits is a fitsio.FITS object.  The file
+contents will actually be written in memory, and then a
+sha256sum computed before the file contents are written out to
+the real disk file.  The ‘out.fn’ member variable is NOT set.</p>
+<dl class="docutils">
+<dt>with survey.write_fits_output(‘ccds’, brick=brickname) as out:</dt>
+<dd>ccds.writeto(None, fits_object=out.fits, primheader=primhdr)</dd>
+</dl>
+<p>Does the following on entry:
+- calls self.find_file() to determine which filename to write to
+- ensures the output directory exists
+- appends a “.tmp” to the filename</p>
+<p>Does the following on exit:
+- moves the “.tmp” to the final filename (to make it atomic)
+- computes the sha256sum</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="obiwan.kenobi.SimDecalsCosmos">
+<em class="property">class </em><code class="descclassname">obiwan.kenobi.</code><code class="descname">SimDecalsCosmos</code><span class="sig-paren">(</span><em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/obiwan/kenobi.html#SimDecalsCosmos"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obiwan.kenobi.SimDecalsCosmos" title="Permalink to this definition">¶</a></dt>
+<dd><p>Filters the CCDs to just those in the cosmos realizations</p>
+<p>Call just like SimDecals except with additional Argument ‘subset’</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>**kwargs</strong> – SimDecals args + ‘subset’</td>
+</tr>
+</tbody>
+</table>
+<dl class="method">
+<dt id="obiwan.kenobi.SimDecalsCosmos.add_hashcode">
+<code class="descname">add_hashcode</code><span class="sig-paren">(</span><em>fn</em>, <em>hashcode</em><span class="sig-paren">)</span><a class="headerlink" href="#obiwan.kenobi.SimDecalsCosmos.add_hashcode" title="Permalink to this definition">¶</a></dt>
+<dd><p>Callback to be called in the <em>write_output</em> routine.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="obiwan.kenobi.SimDecalsCosmos.bricks_touching_radec_box">
+<code class="descname">bricks_touching_radec_box</code><span class="sig-paren">(</span><em>bricks</em>, <em>ralo</em>, <em>rahi</em>, <em>declo</em>, <em>dechi</em><span class="sig-paren">)</span><a class="headerlink" href="#obiwan.kenobi.SimDecalsCosmos.bricks_touching_radec_box" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns an index vector of the bricks that touch the given RA,Dec box.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="obiwan.kenobi.SimDecalsCosmos.ccd_cuts">
+<code class="descname">ccd_cuts</code><span class="sig-paren">(</span><em>ccds</em><span class="sig-paren">)</span><a class="headerlink" href="#obiwan.kenobi.SimDecalsCosmos.ccd_cuts" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a bitmask of reasons the given <em>ccds</em> would be cut
+(excluded from legacypipe processing).  These bits are defined
+in LegacySurveyData.ccd_cut_bits.</p>
+<p>This just delegates to the LegacySurveyImage subclasses based
+on camera.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="obiwan.kenobi.SimDecalsCosmos.ccds_touching_wcs">
+<code class="descname">ccds_touching_wcs</code><span class="sig-paren">(</span><em>wcs</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#obiwan.kenobi.SimDecalsCosmos.ccds_touching_wcs" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a table of the CCDs touching the given <em>wcs</em> region.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="obiwan.kenobi.SimDecalsCosmos.drop_cache">
+<code class="descname">drop_cache</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#obiwan.kenobi.SimDecalsCosmos.drop_cache" title="Permalink to this definition">¶</a></dt>
+<dd><p>Clears all cached data contained in this object.  Useful for
+pickling / multiprocessing.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="obiwan.kenobi.SimDecalsCosmos.filter_ccd_kd_files">
+<code class="descname">filter_ccd_kd_files</code><span class="sig-paren">(</span><em>fns</em><span class="sig-paren">)</span><a class="headerlink" href="#obiwan.kenobi.SimDecalsCosmos.filter_ccd_kd_files" title="Permalink to this definition">¶</a></dt>
+<dd><p>see legacypipe/runs.py</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="obiwan.kenobi.SimDecalsCosmos.filter_ccds_files">
+<code class="descname">filter_ccds_files</code><span class="sig-paren">(</span><em>fns</em><span class="sig-paren">)</span><a class="headerlink" href="#obiwan.kenobi.SimDecalsCosmos.filter_ccds_files" title="Permalink to this definition">¶</a></dt>
+<dd><p>see legacypipe/runs.py</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="obiwan.kenobi.SimDecalsCosmos.find_ccds">
+<code class="descname">find_ccds</code><span class="sig-paren">(</span><em>expnum=None</em>, <em>ccdname=None</em>, <em>camera=None</em><span class="sig-paren">)</span><a class="headerlink" href="#obiwan.kenobi.SimDecalsCosmos.find_ccds" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a table of CCDs matching the given <em>expnum</em> (exposure
+number, integer), <em>ccdname</em> (string), and <em>camera</em> (string),
+if given.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="obiwan.kenobi.SimDecalsCosmos.find_file">
+<code class="descname">find_file</code><span class="sig-paren">(</span><em>filetype</em>, <em>brick=None</em>, <em>brickpre=None</em>, <em>band='%(band)s'</em>, <em>output=False</em><span class="sig-paren">)</span><a class="headerlink" href="#obiwan.kenobi.SimDecalsCosmos.find_file" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the filename of a Legacy Survey file.</p>
+<dl class="docutils">
+<dt><em>filetype</em> <span class="classifier-delimiter">:</span> <span class="classifier">string, type of file to find, including:</span></dt>
+<dd>“tractor” – Tractor catalogs
+“depth”   – PSF depth maps
+“galdepth” – Canonical galaxy depth maps
+“nexp” – number-of-exposure maps</dd>
+</dl>
+<p><em>brick</em> : string, brick name such as “0001p000”</p>
+<p><em>output</em>: True if we are about to write this file; will use self.outdir as
+the base directory rather than self.survey_dir.</p>
+<p>Returns: path to the specified file (whether or not it exists).</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="obiwan.kenobi.SimDecalsCosmos.get_annotated_ccds">
+<code class="descname">get_annotated_ccds</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#obiwan.kenobi.SimDecalsCosmos.get_annotated_ccds" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the annotated table of CCDs.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="obiwan.kenobi.SimDecalsCosmos.get_brick">
+<code class="descname">get_brick</code><span class="sig-paren">(</span><em>brickid</em><span class="sig-paren">)</span><a class="headerlink" href="#obiwan.kenobi.SimDecalsCosmos.get_brick" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a brick (as one row in a table) by <em>brickid</em> (integer).</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="obiwan.kenobi.SimDecalsCosmos.get_brick_by_name">
+<code class="descname">get_brick_by_name</code><span class="sig-paren">(</span><em>brickname</em><span class="sig-paren">)</span><a class="headerlink" href="#obiwan.kenobi.SimDecalsCosmos.get_brick_by_name" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a brick (as one row in a table) by name (string).</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="obiwan.kenobi.SimDecalsCosmos.get_bricks">
+<code class="descname">get_bricks</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#obiwan.kenobi.SimDecalsCosmos.get_bricks" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a table of bricks.  The caller owns the table.</p>
+<p>For read-only purposes, see <em>get_bricks_readonly()</em>, which
+uses a cached version.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="obiwan.kenobi.SimDecalsCosmos.get_bricks_readonly">
+<code class="descname">get_bricks_readonly</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#obiwan.kenobi.SimDecalsCosmos.get_bricks_readonly" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a read-only (shared) copy of the table of bricks.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="obiwan.kenobi.SimDecalsCosmos.get_calib_dir">
+<code class="descname">get_calib_dir</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#obiwan.kenobi.SimDecalsCosmos.get_calib_dir" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the directory containing calibration data.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="obiwan.kenobi.SimDecalsCosmos.get_ccds">
+<code class="descname">get_ccds</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#obiwan.kenobi.SimDecalsCosmos.get_ccds" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the table of CCDs.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="obiwan.kenobi.SimDecalsCosmos.get_ccds_readonly">
+<code class="descname">get_ccds_readonly</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#obiwan.kenobi.SimDecalsCosmos.get_ccds_readonly" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a shared copy of the table of CCDs.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="obiwan.kenobi.SimDecalsCosmos.get_image_dir">
+<code class="descname">get_image_dir</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#obiwan.kenobi.SimDecalsCosmos.get_image_dir" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the directory containing image data.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="obiwan.kenobi.SimDecalsCosmos.get_image_object">
+<code class="descname">get_image_object</code><span class="sig-paren">(</span><em>t</em><span class="sig-paren">)</span><a class="headerlink" href="#obiwan.kenobi.SimDecalsCosmos.get_image_object" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a DecamImage or similar object for one row of the CCDs table.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="obiwan.kenobi.SimDecalsCosmos.get_se_dir">
+<code class="descname">get_se_dir</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#obiwan.kenobi.SimDecalsCosmos.get_se_dir" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the directory containing SourceExtractor config files,
+used during calibration.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="obiwan.kenobi.SimDecalsCosmos.get_survey_dir">
+<code class="descname">get_survey_dir</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#obiwan.kenobi.SimDecalsCosmos.get_survey_dir" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the base LEGACY_SURVEY_DIR directory.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="obiwan.kenobi.SimDecalsCosmos.photometric_ccds">
+<code class="descname">photometric_ccds</code><span class="sig-paren">(</span><em>ccds</em><span class="sig-paren">)</span><a class="headerlink" href="#obiwan.kenobi.SimDecalsCosmos.photometric_ccds" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns an index array for the members of the table “ccds” that
+are photometric.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="obiwan.kenobi.SimDecalsCosmos.read_intermediate_catalog">
+<code class="descname">read_intermediate_catalog</code><span class="sig-paren">(</span><em>brick</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#obiwan.kenobi.SimDecalsCosmos.read_intermediate_catalog" title="Permalink to this definition">¶</a></dt>
+<dd><p>Reads the intermediate tractor catalog for the given brickname.</p>
+<p><em>kwargs</em>: passed to self.find_file()</p>
+<p>Returns (T, hdr, primhdr)</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="obiwan.kenobi.SimDecalsCosmos.tims_touching_wcs">
+<code class="descname">tims_touching_wcs</code><span class="sig-paren">(</span><em>targetwcs</em>, <em>mp</em>, <em>bands=None</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#obiwan.kenobi.SimDecalsCosmos.tims_touching_wcs" title="Permalink to this definition">¶</a></dt>
+<dd><p>Creates tractor.Image objects for CCDs touching the given
+<em>targetwcs</em> region.</p>
+<p>mp: multiprocessing object</p>
+<p>kwargs are passed to LegacySurveyImage.get_tractor_image() and
+may include:</p>
+<ul class="simple">
+<li>gaussPsf</li>
+<li>pixPsf</li>
+</ul>
+</dd></dl>
+
+<dl class="method">
+<dt id="obiwan.kenobi.SimDecalsCosmos.write_output">
+<code class="descname">write_output</code><span class="sig-paren">(</span><em>filetype</em>, <em>hashsum=True</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#obiwan.kenobi.SimDecalsCosmos.write_output" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a context manager for writing an output file; use like:</p>
+<dl class="docutils">
+<dt>with survey.write_output(‘ccds’, brick=brickname) as out:</dt>
+<dd>ccds.writeto(out.fn, primheader=primhdr)</dd>
+</dl>
+<p>For FITS output, out.fits is a fitsio.FITS object.  The file
+contents will actually be written in memory, and then a
+sha256sum computed before the file contents are written out to
+the real disk file.  The ‘out.fn’ member variable is NOT set.</p>
+<dl class="docutils">
+<dt>with survey.write_fits_output(‘ccds’, brick=brickname) as out:</dt>
+<dd>ccds.writeto(None, fits_object=out.fits, primheader=primhdr)</dd>
+</dl>
+<p>Does the following on entry:
+- calls self.find_file() to determine which filename to write to
+- ensures the output directory exists
+- appends a “.tmp” to the filename</p>
+<p>Does the following on exit:
+- moves the “.tmp” to the final filename (to make it atomic)
+- computes the sha256sum</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="obiwan.kenobi.SimImage">
+<em class="property">class </em><code class="descclassname">obiwan.kenobi.</code><code class="descname">SimImage</code><span class="sig-paren">(</span><em>survey</em>, <em>t</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/obiwan/kenobi.html#SimImage"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obiwan.kenobi.SimImage" title="Permalink to this definition">¶</a></dt>
+<dd><p>Adds simulated sources to a single exposure</p>
+<dl class="docutils">
+<dt>Similar behavior as legacypipe.decam.DecamImage. Instead of</dt>
+<dd>loading images specifically from DECam, this  loads images
+with simulated sources added in</dd>
+</dl>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>survey</strong> – SimDecals() object</li>
+<li><strong>t</strong> – as used by DecamImage
+a single row fits_table for a specific CCD</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<dl class="attribute">
+<dt id="obiwan.kenobi.SimImage.inherits">
+<code class="descname">inherits</code><a class="headerlink" href="#obiwan.kenobi.SimImage.inherits" title="Permalink to this definition">¶</a></dt>
+<dd><p>DecamImage</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="obiwan.kenobi.SimImage.t">
+<code class="descname">t</code><a class="headerlink" href="#obiwan.kenobi.SimImage.t" title="Permalink to this definition">¶</a></dt>
+<dd><p>as used by DecamImage
+a single row fits_table for a specific CCD</p>
+</dd></dl>
+
+<dl class="classmethod">
+<dt id="obiwan.kenobi.SimImage.bad_astrometry">
+<em class="property">classmethod </em><code class="descname">bad_astrometry</code><span class="sig-paren">(</span><em>survey</em>, <em>ccds</em><span class="sig-paren">)</span><a class="headerlink" href="#obiwan.kenobi.SimImage.bad_astrometry" title="Permalink to this definition">¶</a></dt>
+<dd><p>IDL zeropoints have large rarms,decrms,phrms for some CP images that look fine. Legacy
+zeropoints is okay for majority of these cases. False alarm? Bug in IDL zeropoints? Doing
+the most conservative thing and dropping these ccds.
+see email: “3/30/2017: [decam-chatter 5155] Clue to zero-point errors in dr4”</p>
+</dd></dl>
+
+<dl class="classmethod">
+<dt id="obiwan.kenobi.SimImage.bad_exposures">
+<em class="property">classmethod </em><code class="descname">bad_exposures</code><span class="sig-paren">(</span><em>survey</em>, <em>ccds</em><span class="sig-paren">)</span><a class="headerlink" href="#obiwan.kenobi.SimImage.bad_exposures" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns an index array for the members of the table ‘ccds’
+that are good exposures (NOT flagged) in the bad_expid file.</p>
+</dd></dl>
+
+<dl class="classmethod">
+<dt id="obiwan.kenobi.SimImage.ccdname_hdu_mismatch">
+<em class="property">classmethod </em><code class="descname">ccdname_hdu_mismatch</code><span class="sig-paren">(</span><em>survey</em>, <em>ccds</em><span class="sig-paren">)</span><a class="headerlink" href="#obiwan.kenobi.SimImage.ccdname_hdu_mismatch" title="Permalink to this definition">¶</a></dt>
+<dd><p>Mosaic + Bok, ccdname and hdu number must match. If not, IDL
+zeropoints files has duplicated zeropoint info from one of the
+other four ccds.</p>
+<p>Returns a boolean array, True for CCDs with this problem.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="obiwan.kenobi.SimImage.check_psf">
+<code class="descname">check_psf</code><span class="sig-paren">(</span><em>psffn</em><span class="sig-paren">)</span><a class="headerlink" href="#obiwan.kenobi.SimImage.check_psf" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns True if the PsfEx file is ok.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="obiwan.kenobi.SimImage.get_cacheable_filename_variables">
+<code class="descname">get_cacheable_filename_variables</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#obiwan.kenobi.SimImage.get_cacheable_filename_variables" title="Permalink to this definition">¶</a></dt>
+<dd><p>These are names of self.X variables that are filenames that
+could be cached.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="obiwan.kenobi.SimImage.get_good_image_slice">
+<code class="descname">get_good_image_slice</code><span class="sig-paren">(</span><em>extent</em>, <em>get_extent=False</em><span class="sig-paren">)</span><a class="headerlink" href="#obiwan.kenobi.SimImage.get_good_image_slice" title="Permalink to this definition">¶</a></dt>
+<dd><p>extent = None or extent = [x0,x1,y0,y1]</p>
+<p>If <em>get_extent</em> = True, returns the new [x0,x1,y0,y1] extent.</p>
+<p>Returns a new pair of slices, or <em>extent</em> if the whole image is good.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="obiwan.kenobi.SimImage.get_good_image_subregion">
+<code class="descname">get_good_image_subregion</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#obiwan.kenobi.SimImage.get_good_image_subregion" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns x0,x1,y0,y1 of the good region of this chip,
+or None if no cut should be applied to that edge; returns
+(None,None,None,None) if the whole chip is good.</p>
+<p>This cut is applied in addition to any masking in the mask or
+invvar map.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="obiwan.kenobi.SimImage.get_image_extent">
+<code class="descname">get_image_extent</code><span class="sig-paren">(</span><em>wcs=None</em>, <em>slc=None</em>, <em>radecpoly=None</em><span class="sig-paren">)</span><a class="headerlink" href="#obiwan.kenobi.SimImage.get_image_extent" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns x0,x1,y0,y1,slc</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="obiwan.kenobi.SimImage.get_image_shape">
+<code class="descname">get_image_shape</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#obiwan.kenobi.SimImage.get_image_shape" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns image shape H,W.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="obiwan.kenobi.SimImage.get_sky_sig1">
+<code class="descname">get_sky_sig1</code><span class="sig-paren">(</span><em>splinesky=False</em><span class="sig-paren">)</span><a class="headerlink" href="#obiwan.kenobi.SimImage.get_sky_sig1" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the per-pixel noise estimate, which (for historical
+reasons) is stored in the sky model.  NOTE that this is in
+image pixel counts, NOT calibrated nanomaggies.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="obiwan.kenobi.SimImage.get_tractor_image">
+<code class="descname">get_tractor_image</code><span class="sig-paren">(</span><em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/obiwan/kenobi.html#SimImage.get_tractor_image"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obiwan.kenobi.SimImage.get_tractor_image" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a tractor.Image (“tim”) object for this image.</p>
+<p>Options describing a subimage to return:</p>
+<ul class="simple">
+<li><em>slc</em>: y,x slice objects</li>
+<li><dl class="first docutils">
+<dt><em>radecpoly</em>: numpy array, shape (N,2), RA,Dec polygon describing</dt>
+<dd>bounding box to select.</dd>
+</dl>
+</li>
+</ul>
+<p>Options determining the PSF model to use:</p>
+<ul class="simple">
+<li><em>gaussPsf</em>: single circular Gaussian PSF based on header FWHM value.</li>
+<li><em>pixPsf</em>: pixelized PsfEx model.</li>
+<li><em>hybridPsf</em>: combo pixelized PsfEx + Gaussian approx.</li>
+</ul>
+<p>Options determining the sky model to use:</p>
+<ul class="simple">
+<li><em>splinesky</em>: median filter chunks of the image, then spline those.</li>
+</ul>
+<p>Options determining the units of the image:</p>
+<ul class="simple">
+<li><em>nanomaggies</em>: convert the image to be in units of NanoMaggies;
+<em>tim.zpscale</em> contains the scale value the image was divided by.</li>
+<li><em>subsky</em>: instantiate and subtract the initial sky model,
+leaving a constant zero sky model?</li>
+</ul>
+</dd></dl>
+
+<dl class="classmethod">
+<dt id="obiwan.kenobi.SimImage.photometric_ccds">
+<em class="property">classmethod </em><code class="descname">photometric_ccds</code><span class="sig-paren">(</span><em>survey</em>, <em>ccds</em><span class="sig-paren">)</span><a class="headerlink" href="#obiwan.kenobi.SimImage.photometric_ccds" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns an index array for the members of the table ‘ccds’ that are
+photometric.</p>
+<p>Slightly revised recipe by DJS in Re: [decam-data 828] 2015-07-31:</p>
+<ul class="simple">
+<li>CCDNMATCH &gt;= 20 (At least 20 stars to determine zero-pt)</li>
+<li>abs(ZPT - CCDZPT) &lt; 0.10  (Loose agreement with full-frame zero-pt)</li>
+<li>ZPT within [25.08-0.50, 25.08+0.25] for g-band</li>
+<li>ZPT within [25.29-0.50, 25.29+0.25] for r-band</li>
+<li>ZPT within [24.92-0.50, 24.92+0.25] for z-band</li>
+<li>DEC &gt; -20 (in DESI footprint)</li>
+<li>EXPTIME &gt;= 30</li>
+<li>CCDNUM = 31 (S7) should mask outside the region [1:1023,1:4094]</li>
+</ul>
+</dd></dl>
+
+<dl class="method">
+<dt id="obiwan.kenobi.SimImage.read_dq">
+<code class="descname">read_dq</code><span class="sig-paren">(</span><em>header=False</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#obiwan.kenobi.SimImage.read_dq" title="Permalink to this definition">¶</a></dt>
+<dd><p>Reads the Data Quality (DQ) mask image.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="obiwan.kenobi.SimImage.read_image">
+<code class="descname">read_image</code><span class="sig-paren">(</span><em>**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#obiwan.kenobi.SimImage.read_image" title="Permalink to this definition">¶</a></dt>
+<dd><p>Reads the image file from disk.</p>
+<p>The image is read from FITS file self.imgfn HDU self.hdu.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>slice</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#slice" title="(in Python v3.7)"><em>slice</em></a><em>, </em><em>optional</em>) – 2-dimensional slice of the subimage to read.</li>
+<li><strong>header</strong> (<em>boolean</em><em>, </em><em>optional</em>) – Return the image header also, as tuple (image, header) ?</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last"><ul class="simple">
+<li><strong>image</strong> (<em>numpy array</em>) – The image pixels.</li>
+<li><strong>(image, header)</strong> (<em>(numpy array, fitsio header)</em>) – If <cite>header = True</cite>.</li>
+</ul>
+</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="obiwan.kenobi.SimImage.read_image_header">
+<code class="descname">read_image_header</code><span class="sig-paren">(</span><em>**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#obiwan.kenobi.SimImage.read_image_header" title="Permalink to this definition">¶</a></dt>
+<dd><p>Reads the FITS image header from self.imgfn HDU self.hdu.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"><strong>header</strong> – The FITS header</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body">fitsio header</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="obiwan.kenobi.SimImage.read_image_primary_header">
+<code class="descname">read_image_primary_header</code><span class="sig-paren">(</span><em>**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#obiwan.kenobi.SimImage.read_image_primary_header" title="Permalink to this definition">¶</a></dt>
+<dd><p>Reads the FITS primary (HDU 0) header from self.imgfn.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"><strong>primary_header</strong> – The FITS header</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body">fitsio header</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="obiwan.kenobi.SimImage.read_invvar">
+<code class="descname">read_invvar</code><span class="sig-paren">(</span><em>clip=True</em>, <em>clipThresh=0.2</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#obiwan.kenobi.SimImage.read_invvar" title="Permalink to this definition">¶</a></dt>
+<dd><p>Reads the inverse-variance (weight) map image.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="obiwan.kenobi.SimImage.read_primary_header">
+<code class="descname">read_primary_header</code><span class="sig-paren">(</span><em>fn</em><span class="sig-paren">)</span><a class="headerlink" href="#obiwan.kenobi.SimImage.read_primary_header" title="Permalink to this definition">¶</a></dt>
+<dd><p>Reads the FITS primary header (HDU 0) from the given filename.
+This is just a faster version of fitsio.read_header(fn).</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="obiwan.kenobi.SimImage.read_sky_model">
+<code class="descname">read_sky_model</code><span class="sig-paren">(</span><em>splinesky=False</em>, <em>slc=None</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#obiwan.kenobi.SimImage.read_sky_model" title="Permalink to this definition">¶</a></dt>
+<dd><p>Reads the sky model, returning a Tractor Sky object.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="obiwan.kenobi.SimImage.run_calibs">
+<code class="descname">run_calibs</code><span class="sig-paren">(</span><em>psfex=True</em>, <em>sky=True</em>, <em>se=False</em>, <em>funpack=False</em>, <em>fcopy=False</em>, <em>use_mask=True</em>, <em>force=False</em>, <em>just_check=False</em>, <em>git_version=None</em>, <em>splinesky=False</em><span class="sig-paren">)</span><a class="headerlink" href="#obiwan.kenobi.SimImage.run_calibs" title="Permalink to this definition">¶</a></dt>
+<dd><p>Run calibration pre-processing steps.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>just_check</strong> (<em>boolean</em>) – If True, returns True if calibs need to be run.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="obiwan.kenobi.SimImage.shape">
+<code class="descname">shape</code><a class="headerlink" href="#obiwan.kenobi.SimImage.shape" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the full shape of the image, (H,W).</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="obiwan.kenobi.SimImageCosmos">
+<em class="property">class </em><code class="descclassname">obiwan.kenobi.</code><code class="descname">SimImageCosmos</code><span class="sig-paren">(</span><em>survey</em>, <em>t</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/obiwan/kenobi.html#SimImageCosmos"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obiwan.kenobi.SimImageCosmos" title="Permalink to this definition">¶</a></dt>
+<dd><p>Filters the CCDs to just those in the cosmos realizations</p>
+<p>Call just like SimDecals except with additional Argument ‘subset’</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>**kwargs</strong> – SimDecals args + ‘subset’</td>
+</tr>
+</tbody>
+</table>
+<dl class="classmethod">
+<dt id="obiwan.kenobi.SimImageCosmos.bad_astrometry">
+<em class="property">classmethod </em><code class="descname">bad_astrometry</code><span class="sig-paren">(</span><em>survey</em>, <em>ccds</em><span class="sig-paren">)</span><a class="headerlink" href="#obiwan.kenobi.SimImageCosmos.bad_astrometry" title="Permalink to this definition">¶</a></dt>
+<dd><p>IDL zeropoints have large rarms,decrms,phrms for some CP images that look fine. Legacy
+zeropoints is okay for majority of these cases. False alarm? Bug in IDL zeropoints? Doing
+the most conservative thing and dropping these ccds.
+see email: “3/30/2017: [decam-chatter 5155] Clue to zero-point errors in dr4”</p>
+</dd></dl>
+
+<dl class="classmethod">
+<dt id="obiwan.kenobi.SimImageCosmos.bad_exposures">
+<em class="property">classmethod </em><code class="descname">bad_exposures</code><span class="sig-paren">(</span><em>survey</em>, <em>ccds</em><span class="sig-paren">)</span><a class="headerlink" href="#obiwan.kenobi.SimImageCosmos.bad_exposures" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns an index array for the members of the table ‘ccds’
+that are good exposures (NOT flagged) in the bad_expid file.</p>
+</dd></dl>
+
+<dl class="classmethod">
+<dt id="obiwan.kenobi.SimImageCosmos.ccdname_hdu_mismatch">
+<em class="property">classmethod </em><code class="descname">ccdname_hdu_mismatch</code><span class="sig-paren">(</span><em>survey</em>, <em>ccds</em><span class="sig-paren">)</span><a class="headerlink" href="#obiwan.kenobi.SimImageCosmos.ccdname_hdu_mismatch" title="Permalink to this definition">¶</a></dt>
+<dd><p>Mosaic + Bok, ccdname and hdu number must match. If not, IDL
+zeropoints files has duplicated zeropoint info from one of the
+other four ccds.</p>
+<p>Returns a boolean array, True for CCDs with this problem.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="obiwan.kenobi.SimImageCosmos.check_psf">
+<code class="descname">check_psf</code><span class="sig-paren">(</span><em>psffn</em><span class="sig-paren">)</span><a class="headerlink" href="#obiwan.kenobi.SimImageCosmos.check_psf" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns True if the PsfEx file is ok.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="obiwan.kenobi.SimImageCosmos.get_cacheable_filename_variables">
+<code class="descname">get_cacheable_filename_variables</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#obiwan.kenobi.SimImageCosmos.get_cacheable_filename_variables" title="Permalink to this definition">¶</a></dt>
+<dd><p>These are names of self.X variables that are filenames that
+could be cached.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="obiwan.kenobi.SimImageCosmos.get_good_image_slice">
+<code class="descname">get_good_image_slice</code><span class="sig-paren">(</span><em>extent</em>, <em>get_extent=False</em><span class="sig-paren">)</span><a class="headerlink" href="#obiwan.kenobi.SimImageCosmos.get_good_image_slice" title="Permalink to this definition">¶</a></dt>
+<dd><p>extent = None or extent = [x0,x1,y0,y1]</p>
+<p>If <em>get_extent</em> = True, returns the new [x0,x1,y0,y1] extent.</p>
+<p>Returns a new pair of slices, or <em>extent</em> if the whole image is good.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="obiwan.kenobi.SimImageCosmos.get_good_image_subregion">
+<code class="descname">get_good_image_subregion</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#obiwan.kenobi.SimImageCosmos.get_good_image_subregion" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns x0,x1,y0,y1 of the good region of this chip,
+or None if no cut should be applied to that edge; returns
+(None,None,None,None) if the whole chip is good.</p>
+<p>This cut is applied in addition to any masking in the mask or
+invvar map.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="obiwan.kenobi.SimImageCosmos.get_image_extent">
+<code class="descname">get_image_extent</code><span class="sig-paren">(</span><em>wcs=None</em>, <em>slc=None</em>, <em>radecpoly=None</em><span class="sig-paren">)</span><a class="headerlink" href="#obiwan.kenobi.SimImageCosmos.get_image_extent" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns x0,x1,y0,y1,slc</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="obiwan.kenobi.SimImageCosmos.get_image_shape">
+<code class="descname">get_image_shape</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#obiwan.kenobi.SimImageCosmos.get_image_shape" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns image shape H,W.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="obiwan.kenobi.SimImageCosmos.get_sky_sig1">
+<code class="descname">get_sky_sig1</code><span class="sig-paren">(</span><em>splinesky=False</em><span class="sig-paren">)</span><a class="headerlink" href="#obiwan.kenobi.SimImageCosmos.get_sky_sig1" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the per-pixel noise estimate, which (for historical
+reasons) is stored in the sky model.  NOTE that this is in
+image pixel counts, NOT calibrated nanomaggies.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="obiwan.kenobi.SimImageCosmos.get_tractor_image">
+<code class="descname">get_tractor_image</code><span class="sig-paren">(</span><em>**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#obiwan.kenobi.SimImageCosmos.get_tractor_image" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a tractor.Image (“tim”) object for this image.</p>
+<p>Options describing a subimage to return:</p>
+<ul class="simple">
+<li><em>slc</em>: y,x slice objects</li>
+<li><dl class="first docutils">
+<dt><em>radecpoly</em>: numpy array, shape (N,2), RA,Dec polygon describing</dt>
+<dd>bounding box to select.</dd>
+</dl>
+</li>
+</ul>
+<p>Options determining the PSF model to use:</p>
+<ul class="simple">
+<li><em>gaussPsf</em>: single circular Gaussian PSF based on header FWHM value.</li>
+<li><em>pixPsf</em>: pixelized PsfEx model.</li>
+<li><em>hybridPsf</em>: combo pixelized PsfEx + Gaussian approx.</li>
+</ul>
+<p>Options determining the sky model to use:</p>
+<ul class="simple">
+<li><em>splinesky</em>: median filter chunks of the image, then spline those.</li>
+</ul>
+<p>Options determining the units of the image:</p>
+<ul class="simple">
+<li><em>nanomaggies</em>: convert the image to be in units of NanoMaggies;
+<em>tim.zpscale</em> contains the scale value the image was divided by.</li>
+<li><em>subsky</em>: instantiate and subtract the initial sky model,
+leaving a constant zero sky model?</li>
+</ul>
+</dd></dl>
+
+<dl class="classmethod">
+<dt id="obiwan.kenobi.SimImageCosmos.photometric_ccds">
+<em class="property">classmethod </em><code class="descname">photometric_ccds</code><span class="sig-paren">(</span><em>survey</em>, <em>ccds</em><span class="sig-paren">)</span><a class="headerlink" href="#obiwan.kenobi.SimImageCosmos.photometric_ccds" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns an index array for the members of the table ‘ccds’ that are
+photometric.</p>
+<p>Slightly revised recipe by DJS in Re: [decam-data 828] 2015-07-31:</p>
+<ul class="simple">
+<li>CCDNMATCH &gt;= 20 (At least 20 stars to determine zero-pt)</li>
+<li>abs(ZPT - CCDZPT) &lt; 0.10  (Loose agreement with full-frame zero-pt)</li>
+<li>ZPT within [25.08-0.50, 25.08+0.25] for g-band</li>
+<li>ZPT within [25.29-0.50, 25.29+0.25] for r-band</li>
+<li>ZPT within [24.92-0.50, 24.92+0.25] for z-band</li>
+<li>DEC &gt; -20 (in DESI footprint)</li>
+<li>EXPTIME &gt;= 30</li>
+<li>CCDNUM = 31 (S7) should mask outside the region [1:1023,1:4094]</li>
+</ul>
+</dd></dl>
+
+<dl class="method">
+<dt id="obiwan.kenobi.SimImageCosmos.read_dq">
+<code class="descname">read_dq</code><span class="sig-paren">(</span><em>header=False</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#obiwan.kenobi.SimImageCosmos.read_dq" title="Permalink to this definition">¶</a></dt>
+<dd><p>Reads the Data Quality (DQ) mask image.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="obiwan.kenobi.SimImageCosmos.read_image">
+<code class="descname">read_image</code><span class="sig-paren">(</span><em>**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#obiwan.kenobi.SimImageCosmos.read_image" title="Permalink to this definition">¶</a></dt>
+<dd><p>Reads the image file from disk.</p>
+<p>The image is read from FITS file self.imgfn HDU self.hdu.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>slice</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#slice" title="(in Python v3.7)"><em>slice</em></a><em>, </em><em>optional</em>) – 2-dimensional slice of the subimage to read.</li>
+<li><strong>header</strong> (<em>boolean</em><em>, </em><em>optional</em>) – Return the image header also, as tuple (image, header) ?</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last"><ul class="simple">
+<li><strong>image</strong> (<em>numpy array</em>) – The image pixels.</li>
+<li><strong>(image, header)</strong> (<em>(numpy array, fitsio header)</em>) – If <cite>header = True</cite>.</li>
+</ul>
+</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="obiwan.kenobi.SimImageCosmos.read_image_header">
+<code class="descname">read_image_header</code><span class="sig-paren">(</span><em>**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#obiwan.kenobi.SimImageCosmos.read_image_header" title="Permalink to this definition">¶</a></dt>
+<dd><p>Reads the FITS image header from self.imgfn HDU self.hdu.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"><strong>header</strong> – The FITS header</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body">fitsio header</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="obiwan.kenobi.SimImageCosmos.read_image_primary_header">
+<code class="descname">read_image_primary_header</code><span class="sig-paren">(</span><em>**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#obiwan.kenobi.SimImageCosmos.read_image_primary_header" title="Permalink to this definition">¶</a></dt>
+<dd><p>Reads the FITS primary (HDU 0) header from self.imgfn.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"><strong>primary_header</strong> – The FITS header</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body">fitsio header</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="obiwan.kenobi.SimImageCosmos.read_invvar">
+<code class="descname">read_invvar</code><span class="sig-paren">(</span><em>clip=True</em>, <em>clipThresh=0.2</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#obiwan.kenobi.SimImageCosmos.read_invvar" title="Permalink to this definition">¶</a></dt>
+<dd><p>Reads the inverse-variance (weight) map image.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="obiwan.kenobi.SimImageCosmos.read_primary_header">
+<code class="descname">read_primary_header</code><span class="sig-paren">(</span><em>fn</em><span class="sig-paren">)</span><a class="headerlink" href="#obiwan.kenobi.SimImageCosmos.read_primary_header" title="Permalink to this definition">¶</a></dt>
+<dd><p>Reads the FITS primary header (HDU 0) from the given filename.
+This is just a faster version of fitsio.read_header(fn).</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="obiwan.kenobi.SimImageCosmos.read_sky_model">
+<code class="descname">read_sky_model</code><span class="sig-paren">(</span><em>splinesky=False</em>, <em>slc=None</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#obiwan.kenobi.SimImageCosmos.read_sky_model" title="Permalink to this definition">¶</a></dt>
+<dd><p>Reads the sky model, returning a Tractor Sky object.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="obiwan.kenobi.SimImageCosmos.run_calibs">
+<code class="descname">run_calibs</code><span class="sig-paren">(</span><em>psfex=True</em>, <em>sky=True</em>, <em>se=False</em>, <em>funpack=False</em>, <em>fcopy=False</em>, <em>use_mask=True</em>, <em>force=False</em>, <em>just_check=False</em>, <em>git_version=None</em>, <em>splinesky=False</em><span class="sig-paren">)</span><a class="headerlink" href="#obiwan.kenobi.SimImageCosmos.run_calibs" title="Permalink to this definition">¶</a></dt>
+<dd><p>Run calibration pre-processing steps.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>just_check</strong> (<em>boolean</em>) – If True, returns True if calibs need to be run.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="obiwan.kenobi.SimImageCosmos.shape">
+<code class="descname">shape</code><a class="headerlink" href="#obiwan.kenobi.SimImageCosmos.shape" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the full shape of the image, (H,W).</p>
 </dd></dl>
 
 </dd></dl>

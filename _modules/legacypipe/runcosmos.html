@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>legacypipe.runcosmos &#8212; obiwan 1.2.0 documentation</title>
+    <link rel="stylesheet" href="../../_static/bootstrap-sphinx.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script type="text/javascript" src="../../_static/js/jquery-1.11.0.min.js"></script>
+    <script type="text/javascript" src="../../_static/js/jquery-fix.js"></script>
+    <script type="text/javascript" src="../../_static/bootstrap-3.3.7/js/bootstrap.min.js"></script>
+    <script type="text/javascript" src="../../_static/bootstrap-sphinx.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+<meta charset='utf-8'>
+<meta http-equiv='X-UA-Compatible' content='IE=edge,chrome=1'>
+<meta name='viewport' content='width=device-width, initial-scale=1.0, maximum-scale=1'>
+<meta name="apple-mobile-web-app-capable" content="yes">
+
+  </head><body>
+
+  <div id="navbar" class="navbar navbar-default ">
+    <div class="container">
+      <div class="navbar-header">
+        <!-- .btn-navbar is used as the toggle for collapsed navbar content -->
+        <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".nav-collapse">
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+        </button>
+        <a class="navbar-brand" href="../../index.html">
+          Obiwan</a>
+        <span class="navbar-text navbar-version pull-left"><b>1.2.0</b></span>
+      </div>
+
+        <div class="collapse navbar-collapse nav-collapse">
+          <ul class="nav navbar-nav">
+            
+                <li><a href="../../api.html">API</a></li>
+                <li><a href="../../tutorials.html">Tutorials</a></li>
+                <li><a href="../../deeplearning.html">Deep Learning</a></li>
+            
+            
+              <li class="dropdown globaltoc-container">
+  <a role="button"
+     id="dLabelGlobalToc"
+     data-toggle="dropdown"
+     data-target="#"
+     href="../../index.html">Pages <b class="caret"></b></a>
+  <ul class="dropdown-menu globaltoc"
+      role="menu"
+      aria-labelledby="dLabelGlobalToc"></ul>
+</li>
+              
+                <li class="dropdown">
+  <a role="button"
+     id="dLabelLocalToc"
+     data-toggle="dropdown"
+     data-target="#"
+     href="#">This Page <b class="caret"></b></a>
+  <ul class="dropdown-menu localtoc"
+      role="menu"
+      aria-labelledby="dLabelLocalToc"></ul>
+</li>
+              
+            
+            
+              
+                
+              
+            
+            
+            
+            
+          </ul>
+
+          
+            
+<form class="navbar-form navbar-right" action="../../search.html" method="get">
+ <div class="form-group">
+  <input type="text" name="q" class="form-control" placeholder="Search" />
+ </div>
+  <input type="hidden" name="check_keywords" value="yes" />
+  <input type="hidden" name="area" value="default" />
+</form>
+          
+        </div>
+    </div>
+  </div>
+
+<div class="container">
+  <div class="row">
+    <div class="col-md-12 content">
+      
+  <h1>Source code for legacypipe.runcosmos</h1><div class="highlight"><pre>
+<span></span><span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">print_function</span>
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+
+<span class="kn">from</span> <span class="nn">legacypipe.decam</span> <span class="k">import</span> <span class="n">DecamImage</span>
+<span class="kn">from</span> <span class="nn">legacypipe.survey</span> <span class="k">import</span> <span class="o">*</span>
+
+<span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">Testing code for adding noise to deeper images to simulate DECaLS depth data.</span>
+<span class="sd">&#39;&#39;&#39;</span>
+
+<span class="k">class</span> <span class="nc">DecamImagePlusNoise</span><span class="p">(</span><span class="n">DecamImage</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    A DecamImage subclass to add noise to DECam images upon read.</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">survey</span><span class="p">,</span> <span class="n">t</span><span class="p">):</span>
+        <span class="n">t</span><span class="o">.</span><span class="n">camera</span> <span class="o">=</span> <span class="s1">&#39;decam&#39;</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">DecamImagePlusNoise</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">survey</span><span class="p">,</span> <span class="n">t</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">addnoise</span> <span class="o">=</span> <span class="n">t</span><span class="o">.</span><span class="n">addnoise</span>
+
+    <span class="k">def</span> <span class="nf">get_tractor_image</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="k">assert</span><span class="p">(</span><span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;nanomaggies&#39;</span><span class="p">,</span> <span class="kc">True</span><span class="p">))</span>
+        <span class="n">tim</span> <span class="o">=</span> <span class="nb">super</span><span class="p">(</span><span class="n">DecamImagePlusNoise</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">get_tractor_image</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">tim</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">None</span>
+        <span class="k">with</span> <span class="n">np</span><span class="o">.</span><span class="n">errstate</span><span class="p">(</span><span class="n">divide</span><span class="o">=</span><span class="s1">&#39;ignore&#39;</span><span class="p">):</span>
+            <span class="n">ie</span> <span class="o">=</span> <span class="mf">1.</span> <span class="o">/</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">hypot</span><span class="p">(</span><span class="mf">1.</span> <span class="o">/</span> <span class="n">tim</span><span class="o">.</span><span class="n">inverr</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">addnoise</span><span class="p">))</span>
+        <span class="n">ie</span><span class="p">[</span><span class="n">tim</span><span class="o">.</span><span class="n">inverr</span> <span class="o">==</span> <span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.</span>
+        <span class="n">tim</span><span class="o">.</span><span class="n">inverr</span> <span class="o">=</span> <span class="n">ie</span>
+        <span class="n">tim</span><span class="o">.</span><span class="n">data</span> <span class="o">+=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">normal</span><span class="p">(</span><span class="n">size</span><span class="o">=</span><span class="n">tim</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">addnoise</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Adding noise: sig1 was&#39;</span><span class="p">,</span> <span class="n">tim</span><span class="o">.</span><span class="n">sig1</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Adding&#39;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">addnoise</span><span class="p">)</span>
+        <span class="n">sig1</span> <span class="o">=</span> <span class="mf">1.</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">median</span><span class="p">(</span><span class="n">ie</span><span class="p">[</span><span class="n">ie</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">])</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;New sig1 is&#39;</span><span class="p">,</span> <span class="n">sig1</span><span class="p">)</span>
+        <span class="n">tim</span><span class="o">.</span><span class="n">sig1</span> <span class="o">=</span> <span class="n">sig1</span>
+        <span class="c1">#tim.zr = [-3. * sig1, 10. * sig1]</span>
+        <span class="c1">#tim.ima.update(vmin=tim.zr[0], vmax=tim.zr[1])</span>
+        <span class="k">return</span> <span class="n">tim</span>
+
+<span class="k">class</span> <span class="nc">CosmosSurvey</span><span class="p">(</span><span class="n">LegacySurveyData</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">subset</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">CosmosSurvey</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">subset</span> <span class="o">=</span> <span class="n">subset</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">image_typemap</span><span class="o">.</span><span class="n">update</span><span class="p">({</span><span class="s1">&#39;decam+noise&#39;</span> <span class="p">:</span> <span class="n">DecamImagePlusNoise</span><span class="p">})</span>
+        
+    <span class="k">def</span> <span class="nf">get_ccds</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">CCDs</span> <span class="o">=</span> <span class="nb">super</span><span class="p">(</span><span class="n">CosmosSurvey</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">get_ccds</span><span class="p">()</span>
+        <span class="n">CCDs</span><span class="o">.</span><span class="n">cut</span><span class="p">(</span><span class="n">CCDs</span><span class="o">.</span><span class="n">subset</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">subset</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">CCDs</span>
+    
+<span class="k">def</span> <span class="nf">main</span><span class="p">():</span>
+    <span class="kn">from</span> <span class="nn">runbrick</span> <span class="k">import</span> <span class="n">run_brick</span><span class="p">,</span> <span class="n">get_parser</span><span class="p">,</span> <span class="n">get_runbrick_kwargs</span>
+    
+    <span class="n">parser</span> <span class="o">=</span> <span class="n">get_parser</span><span class="p">()</span>
+    <span class="c1"># subset number</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;--subset&#39;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s1">&#39;COSMOS subset number [0 to 4, 10 to 12]&#39;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+    <span class="n">opt</span> <span class="o">=</span> <span class="n">parser</span><span class="o">.</span><span class="n">parse_args</span><span class="p">()</span>
+    <span class="k">if</span> <span class="n">opt</span><span class="o">.</span><span class="n">brick</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">opt</span><span class="o">.</span><span class="n">radec</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">parser</span><span class="o">.</span><span class="n">print_help</span><span class="p">()</span>
+        <span class="k">return</span> <span class="o">-</span><span class="mi">1</span>
+
+    <span class="n">survey</span><span class="p">,</span> <span class="n">kwargs</span> <span class="o">=</span> <span class="n">get_runbrick_kwargs</span><span class="p">(</span><span class="n">opt</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">kwargs</span> <span class="ow">in</span> <span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="mi">0</span><span class="p">]:</span>
+        <span class="k">return</span> <span class="n">kwargs</span>
+
+    <span class="n">survey</span> <span class="o">=</span> <span class="n">CosmosSurvey</span><span class="p">(</span><span class="n">survey_dir</span><span class="o">=</span><span class="n">opt</span><span class="o">.</span><span class="n">survey_dir</span><span class="p">,</span> <span class="n">subset</span><span class="o">=</span><span class="n">opt</span><span class="o">.</span><span class="n">subset</span><span class="p">,</span>
+                          <span class="n">output_dir</span><span class="o">=</span><span class="n">opt</span><span class="o">.</span><span class="n">outdir</span><span class="p">)</span>
+
+    <span class="n">run_brick</span><span class="p">(</span><span class="n">opt</span><span class="o">.</span><span class="n">brick</span><span class="p">,</span> <span class="n">survey</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+    <span class="k">return</span> <span class="mi">0</span>
+    
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s1">&#39;__main__&#39;</span><span class="p">:</span>
+    <span class="kn">import</span> <span class="nn">sys</span>
+    <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="n">main</span><span class="p">())</span>
+</pre></div>
+
+    </div>
+      
+  </div>
+</div>
+<footer class="footer">
+  <div class="container">
+    <p class="pull-right">
+      <a href="#">Back to top</a>
+      
+    </p>
+    <p>
+        &copy; Copyright 2014-2018, Kaylan Burleigh, John Moustakas.<br/>
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.7.6.<br/>
+    </p>
+  </div>
+</footer>
+  </body>
+</html>

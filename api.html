@@ -69,8 +69,10 @@
       aria-labelledby="dLabelLocalToc"><ul>
 <li><a class="reference internal" href="#">API Documentation</a><ul>
 <li><a class="reference internal" href="#modules">Modules</a></li>
+<li><a class="reference internal" href="#post-processing">Post-Processing</a></li>
+<li><a class="reference internal" href="#analysis-plotting">Analysis &amp; Plotting</a></li>
+<li><a class="reference internal" href="#scaling-tests">Scaling Tests</a></li>
 <li><a class="reference internal" href="#tests">Tests</a></li>
-<li><a class="reference internal" href="#compute-jobs">Compute Jobs</a></li>
 <li><a class="reference internal" href="#deep-learning">Deep Learning</a></li>
 </ul>
 </li>
@@ -120,8 +122,14 @@
 <tr class="row-odd"><td><a class="reference internal" href="_autosummary/obiwan.fetch.html#module-obiwan.fetch" title="obiwan.fetch"><code class="xref py py-obj docutils literal notranslate"><span class="pre">obiwan.fetch</span></code></a></td>
 <td>Download and unpack tarballs</td>
 </tr>
-<tr class="row-even"><td><a class="reference internal" href="_autosummary/obiwan.db_tools.html#module-obiwan.db_tools" title="obiwan.db_tools"><code class="xref py py-obj docutils literal notranslate"><span class="pre">obiwan.db_tools</span></code></a></td>
+<tr class="row-even"><td><a class="reference internal" href="_autosummary/obiwan.mk_fits_image.html#module-obiwan.mk_fits_image" title="obiwan.mk_fits_image"><code class="xref py py-obj docutils literal notranslate"><span class="pre">obiwan.mk_fits_image</span></code></a></td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><a class="reference internal" href="_autosummary/obiwan.db_tools.html#module-obiwan.db_tools" title="obiwan.db_tools"><code class="xref py py-obj docutils literal notranslate"><span class="pre">obiwan.db_tools</span></code></a></td>
 <td>Query our PostgreSQL Databases at NERSC</td>
+</tr>
+<tr class="row-even"><td><a class="reference internal" href="_autosummary/obiwan._version.html#module-obiwan._version" title="obiwan._version"><code class="xref py py-obj docutils literal notranslate"><span class="pre">obiwan._version</span></code></a></td>
+<td></td>
 </tr>
 <tr class="row-odd"><td><a class="reference internal" href="_autosummary/obiwan.draw_radec_color_z.html#module-obiwan.draw_radec_color_z" title="obiwan.draw_radec_color_z"><code class="xref py py-obj docutils literal notranslate"><span class="pre">obiwan.draw_radec_color_z</span></code></a></td>
 <td>Draw random location and galaxy properties from Gaussian Mixtures</td>
@@ -132,43 +140,43 @@
 <tr class="row-odd"><td><a class="reference internal" href="_autosummary/obiwan.common.html#module-obiwan.common" title="obiwan.common"><code class="xref py py-obj docutils literal notranslate"><span class="pre">obiwan.common</span></code></a></td>
 <td>Commonly used functions</td>
 </tr>
+<tr class="row-even"><td><a class="reference internal" href="_autosummary/obiwan.runs.html#module-obiwan.runs" title="obiwan.runs"><code class="xref py py-obj docutils literal notranslate"><span class="pre">obiwan.runs</span></code></a></td>
+<td>Grabs, configures, and otherwise sets up a production run on eBOSS DR3 data or DR5 data</td>
+</tr>
+<tr class="row-odd"><td><a class="reference internal" href="_autosummary/obiwan.time_per_brick.html#module-obiwan.time_per_brick" title="obiwan.time_per_brick"><code class="xref py py-obj docutils literal notranslate"><span class="pre">obiwan.time_per_brick</span></code></a></td>
+<td></td>
+</tr>
 </tbody>
 </table>
 </div>
-<div class="section" id="tests">
-<h2>Tests<a class="headerlink" href="#tests" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="post-processing">
+<h2>Post-Processing<a class="headerlink" href="#post-processing" title="Permalink to this headline">¶</a></h2>
 <table border="1" class="longtable docutils">
 <colgroup>
 <col width="10%" />
 <col width="90%" />
 </colgroup>
 <tbody valign="top">
-<tr class="row-odd"><td><a class="reference internal" href="_autosummary/tests.end_to_end.test_datasets.html#module-tests.end_to_end.test_datasets" title="tests.end_to_end.test_datasets"><code class="xref py py-obj docutils literal notranslate"><span class="pre">tests.end_to_end.test_datasets</span></code></a></td>
-<td>Continuous integration ‘end-to-end’ tests of the Obiwan pipeline</td>
+<tr class="row-odd"><td><a class="reference internal" href="_autosummary/obiwan.runmanager.merge_tables.html#module-obiwan.runmanager.merge_tables" title="obiwan.runmanager.merge_tables"><code class="xref py py-obj docutils literal notranslate"><span class="pre">obiwan.runmanager.merge_tables</span></code></a></td>
+<td>Reads 1000s per brick tables and merges them</td>
+</tr>
+<tr class="row-even"><td><a class="reference internal" href="_autosummary/obiwan.runmanager.derived_tables.html#module-obiwan.runmanager.derived_tables" title="obiwan.runmanager.derived_tables"><code class="xref py py-obj docutils literal notranslate"><span class="pre">obiwan.runmanager.derived_tables</span></code></a></td>
+<td>Post-processes the obiwan/, tractor/, data products.</td>
+</tr>
+<tr class="row-odd"><td><a class="reference internal" href="_autosummary/obiwan.runmanager.qdo_tasks.html#module-obiwan.runmanager.qdo_tasks" title="obiwan.runmanager.qdo_tasks"><code class="xref py py-obj docutils literal notranslate"><span class="pre">obiwan.runmanager.qdo_tasks</span></code></a></td>
+<td>Given a ra,dec bounding box of region to inject simulated sources, and the number density of simulated sources, these functions write the ‘qdo’ task list of each brick to process, repeated for how iterations will be needed per brick</td>
+</tr>
+<tr class="row-even"><td><a class="reference internal" href="_autosummary/obiwan.runmanager.update_imagefn_if_doesnt_exist.html#module-obiwan.runmanager.update_imagefn_if_doesnt_exist" title="obiwan.runmanager.update_imagefn_if_doesnt_exist"><code class="xref py py-obj docutils literal notranslate"><span class="pre">obiwan.runmanager.update_imagefn_if_doesnt_exist</span></code></a></td>
+<td>Images used in DR3 are now in different location on project/staging.</td>
+</tr>
+<tr class="row-odd"><td><a class="reference internal" href="_autosummary/obiwan.runmanager.status.html#module-obiwan.runmanager.status" title="obiwan.runmanager.status"><code class="xref py py-obj docutils literal notranslate"><span class="pre">obiwan.runmanager.status</span></code></a></td>
+<td>Monitors an obiwan production run using qdo</td>
 </tr>
 </tbody>
 </table>
 </div>
-<div class="section" id="compute-jobs">
-<h2>Compute Jobs<a class="headerlink" href="#compute-jobs" title="Permalink to this headline">¶</a></h2>
-<div class="system-message">
-<p class="system-message-title">System Message: WARNING/2 (<tt class="docutils">/srv/repos_for_docker/obiwan/doc/api.rst</tt>, line 28)</p>
-failed to import obiwan.qa.heatmaps</div>
-<div class="system-message">
-<p class="system-message-title">System Message: WARNING/2 (<tt class="docutils">/srv/repos_for_docker/obiwan/doc/api.rst</tt>, line 28)</p>
-failed to import obiwan.qa.plots_footprint</div>
-<div class="system-message">
-<p class="system-message-title">System Message: WARNING/2 (<tt class="docutils">/srv/repos_for_docker/obiwan/doc/api.rst</tt>, line 28)</p>
-failed to import obiwan.qa.plots_randomsprops_fluxdiff</div>
-<div class="system-message">
-<p class="system-message-title">System Message: WARNING/2 (<tt class="docutils">/srv/repos_for_docker/obiwan/doc/api.rst</tt>, line 28)</p>
-toctree references unknown document ‘_autosummary/obiwan.qa.heatmaps’</div>
-<div class="system-message">
-<p class="system-message-title">System Message: WARNING/2 (<tt class="docutils">/srv/repos_for_docker/obiwan/doc/api.rst</tt>, line 28)</p>
-toctree references unknown document ‘_autosummary/obiwan.qa.plots_footprint’</div>
-<div class="system-message">
-<p class="system-message-title">System Message: WARNING/2 (<tt class="docutils">/srv/repos_for_docker/obiwan/doc/api.rst</tt>, line 28)</p>
-toctree references unknown document ‘_autosummary/obiwan.qa.plots_randomsprops_fluxdiff’</div>
+<div class="section" id="analysis-plotting">
+<h2>Analysis &amp; Plotting<a class="headerlink" href="#analysis-plotting" title="Permalink to this headline">¶</a></h2>
 <table border="1" class="longtable docutils">
 <colgroup>
 <col width="10%" />
@@ -176,27 +184,73 @@ toctree references unknown document ‘_autosummary/obiwan.qa.plots_randomsprops
 </colgroup>
 <tbody valign="top">
 <tr class="row-odd"><td><a class="reference internal" href="_autosummary/obiwan.qa.plots_common.html#module-obiwan.qa.plots_common" title="obiwan.qa.plots_common"><code class="xref py py-obj docutils literal notranslate"><span class="pre">obiwan.qa.plots_common</span></code></a></td>
+<td>commonly used code for plotting and analysis</td>
+</tr>
+<tr class="row-even"><td><a class="reference internal" href="_autosummary/obiwan.qa.tally.html#module-obiwan.qa.tally" title="obiwan.qa.tally"><code class="xref py py-obj docutils literal notranslate"><span class="pre">obiwan.qa.tally</span></code></a></td>
 <td></td>
 </tr>
-<tr class="row-even"><td><a class="reference internal" href="_autosummary/obiwan.qa.number_finished_by_slurm.html#module-obiwan.qa.number_finished_by_slurm" title="obiwan.qa.number_finished_by_slurm"><code class="xref py py-obj docutils literal notranslate"><span class="pre">obiwan.qa.number_finished_by_slurm</span></code></a></td>
-<td>Reports the number of completed jobs (tractor.fits files) for a SLURM stdout file</td>
+<tr class="row-odd"><td><a class="reference internal" href="_autosummary/obiwan.qa.number_finished_by_slurm.html#module-obiwan.qa.number_finished_by_slurm" title="obiwan.qa.number_finished_by_slurm"><code class="xref py py-obj docutils literal notranslate"><span class="pre">obiwan.qa.number_finished_by_slurm</span></code></a></td>
+<td>Given a qdo slurm log file, this computes the fraction of launched bricks that resulted in a tractor table to the total number of launched bricksself.</td>
 </tr>
-<tr class="row-odd"><td><a class="reference internal" href="_autosummary/obiwan.qa.unique_ccds_dr3.html#module-obiwan.qa.unique_ccds_dr3" title="obiwan.qa.unique_ccds_dr3"><code class="xref py py-obj docutils literal notranslate"><span class="pre">obiwan.qa.unique_ccds_dr3</span></code></a></td>
-<td>Using obiwan outputs, make a table of ‘official’ randoms per-brick - uniform randoms: random ra,dec + geometry cut - obiwan randoms: uniform randoms + recovered by tractor</td>
+<tr class="row-even"><td><a class="reference internal" href="_autosummary/obiwan.qa.unique_ccds_dr3.html#module-obiwan.qa.unique_ccds_dr3" title="obiwan.qa.unique_ccds_dr3"><code class="xref py py-obj docutils literal notranslate"><span class="pre">obiwan.qa.unique_ccds_dr3</span></code></a></td>
+<td>Searches a DataRelase like directory for all legacysurvey*ccd.fits files, creates a no-duplicate set of all CCDs included in that DR, and writes the list to disk.</td>
 </tr>
-<tr class="row-even"><td><a class="reference internal" href="_autosummary/obiwan.qa.cpu_hours.html#module-obiwan.qa.cpu_hours" title="obiwan.qa.cpu_hours"><code class="xref py py-obj docutils literal notranslate"><span class="pre">obiwan.qa.cpu_hours</span></code></a></td>
-<td>Computes the number of CPU hours burned using SLURM sacct</td>
+<tr class="row-odd"><td><a class="reference internal" href="_autosummary/obiwan.qa.cpu_hours.html#module-obiwan.qa.cpu_hours" title="obiwan.qa.cpu_hours"><code class="xref py py-obj docutils literal notranslate"><span class="pre">obiwan.qa.cpu_hours</span></code></a></td>
+<td>Uses ‘SLURM sacct’ to compute the number of CPU and MPP hours</td>
 </tr>
-<tr class="row-odd"><td><a class="reference internal" href="_autosummary/obiwan.qa.visual.html#module-obiwan.qa.visual" title="obiwan.qa.visual"><code class="xref py py-obj docutils literal notranslate"><span class="pre">obiwan.qa.visual</span></code></a></td>
-<td>Functions for visualizing the imaging data</td>
+<tr class="row-even"><td><a class="reference internal" href="_autosummary/obiwan.qa.visual.html#module-obiwan.qa.visual" title="obiwan.qa.visual"><code class="xref py py-obj docutils literal notranslate"><span class="pre">obiwan.qa.visual</span></code></a></td>
+<td>Helper functions for plotting fits and numpy 2D arrays as images</td>
 </tr>
-<tr class="row-even"><td><code class="xref py py-obj docutils literal notranslate"><span class="pre">obiwan.qa.heatmaps</span></code></td>
-<td></td>
+<tr class="row-odd"><td><a class="reference internal" href="_autosummary/obiwan.qa.aaron_healpix.html#module-obiwan.qa.aaron_healpix" title="obiwan.qa.aaron_healpix"><code class="xref py py-obj docutils literal notranslate"><span class="pre">obiwan.qa.aaron_healpix</span></code></a></td>
+<td>Work with healpix data</td>
 </tr>
-<tr class="row-odd"><td><code class="xref py py-obj docutils literal notranslate"><span class="pre">obiwan.qa.plots_footprint</span></code></td>
-<td></td>
+<tr class="row-even"><td><a class="reference internal" href="_autosummary/obiwan.qa.plots_footprint.html#module-obiwan.qa.plots_footprint" title="obiwan.qa.plots_footprint"><code class="xref py py-obj docutils literal notranslate"><span class="pre">obiwan.qa.plots_footprint</span></code></a></td>
+<td>Draw box around region of intertest, show where injected sources, color code sources by those with obiwa tractor catalogues</td>
 </tr>
-<tr class="row-even"><td><code class="xref py py-obj docutils literal notranslate"><span class="pre">obiwan.qa.plots_randomsprops_fluxdiff</span></code></td>
+<tr class="row-odd"><td><a class="reference internal" href="_autosummary/obiwan.qa.plots_randomsprops_fluxdiff.html#module-obiwan.qa.plots_randomsprops_fluxdiff" title="obiwan.qa.plots_randomsprops_fluxdiff"><code class="xref py py-obj docutils literal notranslate"><span class="pre">obiwan.qa.plots_randomsprops_fluxdiff</span></code></a></td>
+<td>The main analysis script, created the majority of my thesis plots Ch 4-5</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="scaling-tests">
+<h2>Scaling Tests<a class="headerlink" href="#scaling-tests" title="Permalink to this headline">¶</a></h2>
+<table border="1" class="longtable docutils">
+<colgroup>
+<col width="10%" />
+<col width="90%" />
+</colgroup>
+<tbody valign="top">
+<tr class="row-odd"><td><a class="reference internal" href="_autosummary/obiwan.scaling.select_bricks.html#module-obiwan.scaling.select_bricks" title="obiwan.scaling.select_bricks"><code class="xref py py-obj docutils literal notranslate"><span class="pre">obiwan.scaling.select_bricks</span></code></a></td>
+<td>Choose N (10 in my thesis) random bricks with grz CCDs that have completed processing with obiwan.</td>
+</tr>
+<tr class="row-even"><td><a class="reference internal" href="_autosummary/obiwan.scaling.timing.html#module-obiwan.scaling.timing" title="obiwan.scaling.timing"><code class="xref py py-obj docutils literal notranslate"><span class="pre">obiwan.scaling.timing</span></code></a></td>
+<td>Script to make the obiwan scaling plots in my thesis</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="tests">
+<h2>Tests<a class="headerlink" href="#tests" title="Permalink to this headline">¶</a></h2>
+<div class="system-message">
+<p class="system-message-title">System Message: WARNING/2 (<tt class="docutils">/srv/repos_for_docker/obiwan/doc/api.rst</tt>, line 61)</p>
+failed to import tests.test_200x200_pixel_regions</div>
+<div class="system-message">
+<p class="system-message-title">System Message: WARNING/2 (<tt class="docutils">/srv/repos_for_docker/obiwan/doc/api.rst</tt>, line 61)</p>
+toctree references unknown document ‘_autosummary/tests.test_200x200_pixel_regions’</div>
+<table border="1" class="longtable docutils">
+<colgroup>
+<col width="10%" />
+<col width="90%" />
+</colgroup>
+<tbody valign="top">
+<tr class="row-odd"><td><a class="reference internal" href="_autosummary/tests.run_200x200_pixel_regions.html#module-tests.run_200x200_pixel_regions" title="tests.run_200x200_pixel_regions"><code class="xref py py-obj docutils literal notranslate"><span class="pre">tests.run_200x200_pixel_regions</span></code></a></td>
+<td>Similar to legacypipe/py/test/runbrick_test.py, this runs and analyzes the output of legacypipe running on 200x200 pixels regions that obiwan has injected simulated sources intoself.</td>
+</tr>
+<tr class="row-even"><td><a class="reference internal" href="_autosummary/tests.__init__.html#module-tests.__init__" title="tests.__init__"><code class="xref py py-obj docutils literal notranslate"><span class="pre">tests.__init__</span></code></a></td>
+<td>Initialize self.</td>
+</tr>
+<tr class="row-odd"><td><code class="xref py py-obj docutils literal notranslate"><span class="pre">tests.test_200x200_pixel_regions</span></code></td>
 <td></td>
 </tr>
 </tbody>
@@ -204,40 +258,19 @@ toctree references unknown document ‘_autosummary/obiwan.qa.plots_randomsprops
 </div>
 <div class="section" id="deep-learning">
 <h2>Deep Learning<a class="headerlink" href="#deep-learning" title="Permalink to this headline">¶</a></h2>
-<div class="system-message">
-<p class="system-message-title">System Message: WARNING/2 (<tt class="docutils">/srv/repos_for_docker/obiwan/doc/api.rst</tt>, line 43)</p>
-failed to import obiwan.dplearn.cnn</div>
-<div class="system-message">
-<p class="system-message-title">System Message: WARNING/2 (<tt class="docutils">/srv/repos_for_docker/obiwan/doc/api.rst</tt>, line 43)</p>
-failed to import obiwan.dplearn.cnn_working_version</div>
-<div class="system-message">
-<p class="system-message-title">System Message: WARNING/2 (<tt class="docutils">/srv/repos_for_docker/obiwan/doc/api.rst</tt>, line 43)</p>
-failed to import obiwan.dplearn.create_training</div>
-<div class="system-message">
-<p class="system-message-title">System Message: WARNING/2 (<tt class="docutils">/srv/repos_for_docker/obiwan/doc/api.rst</tt>, line 43)</p>
-toctree references unknown document ‘_autosummary/obiwan.dplearn.cnn’</div>
-<div class="system-message">
-<p class="system-message-title">System Message: WARNING/2 (<tt class="docutils">/srv/repos_for_docker/obiwan/doc/api.rst</tt>, line 43)</p>
-toctree references unknown document ‘_autosummary/obiwan.dplearn.cnn_working_version’</div>
-<div class="system-message">
-<p class="system-message-title">System Message: WARNING/2 (<tt class="docutils">/srv/repos_for_docker/obiwan/doc/api.rst</tt>, line 43)</p>
-toctree references unknown document ‘_autosummary/obiwan.dplearn.create_training’</div>
 <table border="1" class="longtable docutils">
 <colgroup>
 <col width="10%" />
 <col width="90%" />
 </colgroup>
 <tbody valign="top">
-<tr class="row-odd"><td><code class="xref py py-obj docutils literal notranslate"><span class="pre">obiwan.dplearn.cnn</span></code></td>
-<td></td>
+<tr class="row-odd"><td><a class="reference internal" href="_autosummary/obiwan.dplearn.cnn.html#module-obiwan.dplearn.cnn" title="obiwan.dplearn.cnn"><code class="xref py py-obj docutils literal notranslate"><span class="pre">obiwan.dplearn.cnn</span></code></a></td>
+<td>Trains a CNN on fake and real galaxy images using TensorFlow.</td>
 </tr>
-<tr class="row-even"><td><code class="xref py py-obj docutils literal notranslate"><span class="pre">obiwan.dplearn.cnn_working_version</span></code></td>
-<td></td>
+<tr class="row-even"><td><a class="reference internal" href="_autosummary/obiwan.dplearn.create_training.html#module-obiwan.dplearn.create_training" title="obiwan.dplearn.create_training"><code class="xref py py-obj docutils literal notranslate"><span class="pre">obiwan.dplearn.create_training</span></code></a></td>
+<td>saves 64x64 pixel cutouts of each source in a Data Release as HDF5 files</td>
 </tr>
-<tr class="row-odd"><td><code class="xref py py-obj docutils literal notranslate"><span class="pre">obiwan.dplearn.create_training</span></code></td>
-<td></td>
-</tr>
-<tr class="row-even"><td><a class="reference internal" href="_autosummary/obiwan.dplearn.split_testtrain.html#module-obiwan.dplearn.split_testtrain" title="obiwan.dplearn.split_testtrain"><code class="xref py py-obj docutils literal notranslate"><span class="pre">obiwan.dplearn.split_testtrain</span></code></a></td>
+<tr class="row-odd"><td><a class="reference internal" href="_autosummary/obiwan.dplearn.split_testtrain.html#module-obiwan.dplearn.split_testtrain" title="obiwan.dplearn.split_testtrain"><code class="xref py py-obj docutils literal notranslate"><span class="pre">obiwan.dplearn.split_testtrain</span></code></a></td>
 <td></td>
 </tr>
 </tbody>

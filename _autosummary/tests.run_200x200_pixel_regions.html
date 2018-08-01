@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>tests.run_200x200_pixel_regions &#8212; obiwan 1.2.0 documentation</title>
+    <link rel="stylesheet" href="../_static/bootstrap-sphinx.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script type="text/javascript" src="../_static/js/jquery-1.11.0.min.js"></script>
+    <script type="text/javascript" src="../_static/js/jquery-fix.js"></script>
+    <script type="text/javascript" src="../_static/bootstrap-3.3.7/js/bootstrap.min.js"></script>
+    <script type="text/javascript" src="../_static/bootstrap-sphinx.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+<meta charset='utf-8'>
+<meta http-equiv='X-UA-Compatible' content='IE=edge,chrome=1'>
+<meta name='viewport' content='width=device-width, initial-scale=1.0, maximum-scale=1'>
+<meta name="apple-mobile-web-app-capable" content="yes">
+
+  </head><body>
+
+  <div id="navbar" class="navbar navbar-default ">
+    <div class="container">
+      <div class="navbar-header">
+        <!-- .btn-navbar is used as the toggle for collapsed navbar content -->
+        <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".nav-collapse">
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+        </button>
+        <a class="navbar-brand" href="../index.html">
+          Obiwan</a>
+        <span class="navbar-text navbar-version pull-left"><b>1.2.0</b></span>
+      </div>
+
+        <div class="collapse navbar-collapse nav-collapse">
+          <ul class="nav navbar-nav">
+            
+                <li><a href="../api.html">API</a></li>
+                <li><a href="../tutorials.html">Tutorials</a></li>
+                <li><a href="../deeplearning.html">Deep Learning</a></li>
+            
+            
+              <li class="dropdown globaltoc-container">
+  <a role="button"
+     id="dLabelGlobalToc"
+     data-toggle="dropdown"
+     data-target="#"
+     href="../index.html">Pages <b class="caret"></b></a>
+  <ul class="dropdown-menu globaltoc"
+      role="menu"
+      aria-labelledby="dLabelGlobalToc"></ul>
+</li>
+              
+                <li class="dropdown">
+  <a role="button"
+     id="dLabelLocalToc"
+     data-toggle="dropdown"
+     data-target="#"
+     href="#">This Page <b class="caret"></b></a>
+  <ul class="dropdown-menu localtoc"
+      role="menu"
+      aria-labelledby="dLabelLocalToc"><ul>
+<li><a class="reference internal" href="#">tests.run_200x200_pixel_regions</a></li>
+</ul>
+</ul>
+</li>
+              
+            
+            
+              
+                
+              
+            
+            
+            
+            
+          </ul>
+
+          
+            
+<form class="navbar-form navbar-right" action="../search.html" method="get">
+ <div class="form-group">
+  <input type="text" name="q" class="form-control" placeholder="Search" />
+ </div>
+  <input type="hidden" name="check_keywords" value="yes" />
+  <input type="hidden" name="area" value="default" />
+</form>
+          
+        </div>
+    </div>
+  </div>
+
+<div class="container">
+  <div class="row">
+    <div class="col-md-12 content">
+      
+  <div class="section" id="module-tests.run_200x200_pixel_regions">
+<span id="tests-run-200x200-pixel-regions"></span><h1>tests.run_200x200_pixel_regions<a class="headerlink" href="#module-tests.run_200x200_pixel_regions" title="Permalink to this headline">¶</a></h1>
+<p>Similar to legacypipe/py/test/runbrick_test.py, this runs and analyzes the
+output of legacypipe running on 200x200 pixels regions that obiwan
+has injected simulated sources intoself.</p>
+<p>See ‘test_200x200_pixel_regions.py’ for how to use this file</p>
+<p class="rubric">Classes</p>
+<table border="1" class="longtable docutils">
+<colgroup>
+<col width="10%" />
+<col width="90%" />
+</colgroup>
+<tbody valign="top">
+<tr class="row-odd"><td><a class="reference internal" href="#tests.run_200x200_pixel_regions.Tolerances" title="tests.run_200x200_pixel_regions.Tolerances"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Tolerances</span></code></a></td>
+<td>Tolerances on Tractor measured mags and test_flux_shape_measurements</td>
+</tr>
+<tr class="row-even"><td><a class="reference internal" href="#tests.run_200x200_pixel_regions.analysis_setup" title="tests.run_200x200_pixel_regions.analysis_setup"><code class="xref py py-obj docutils literal notranslate"><span class="pre">analysis_setup</span></code></a>(**kw)</td>
+<td>Loads the outputs from run_kenobi_main().run() and measurement tolerances</td>
+</tr>
+<tr class="row-odd"><td><a class="reference internal" href="#tests.run_200x200_pixel_regions.run_kenobi_main" title="tests.run_200x200_pixel_regions.run_kenobi_main"><code class="xref py py-obj docutils literal notranslate"><span class="pre">run_kenobi_main</span></code></a>([survey,&nbsp;dataset,&nbsp;bands,&nbsp;…])</td>
+<td>Runs main() in kenobi.py, which runs legacypipe</td>
+</tr>
+<tr class="row-even"><td><a class="reference internal" href="#tests.run_200x200_pixel_regions.run_kenobi_main_cosmos" title="tests.run_200x200_pixel_regions.run_kenobi_main_cosmos"><code class="xref py py-obj docutils literal notranslate"><span class="pre">run_kenobi_main_cosmos</span></code></a>([survey])</td>
+<td>Supports subsets 60-69</td>
+</tr>
+<tr class="row-odd"><td><a class="reference internal" href="#tests.run_200x200_pixel_regions.test_detected_simulated_and_real_sources" title="tests.run_200x200_pixel_regions.test_detected_simulated_and_real_sources"><code class="xref py py-obj docutils literal notranslate"><span class="pre">test_detected_simulated_and_real_sources</span></code></a>(**kw)</td>
+<td></td>
+</tr>
+<tr class="row-even"><td><a class="reference internal" href="#tests.run_200x200_pixel_regions.test_draw_circles_around_sources_check_by_eye" title="tests.run_200x200_pixel_regions.test_draw_circles_around_sources_check_by_eye"><code class="xref py py-obj docutils literal notranslate"><span class="pre">test_draw_circles_around_sources_check_by_eye</span></code></a>(**kw)</td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><a class="reference internal" href="#tests.run_200x200_pixel_regions.test_flux_shape_measurements" title="tests.run_200x200_pixel_regions.test_flux_shape_measurements"><code class="xref py py-obj docutils literal notranslate"><span class="pre">test_flux_shape_measurements</span></code></a>(**kw)</td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<p class="rubric">Functions</p>
+<table border="1" class="longtable docutils">
+<colgroup>
+<col width="10%" />
+<col width="90%" />
+</colgroup>
+<tbody valign="top">
+<tr class="row-odd"><td><a class="reference internal" href="#tests.run_200x200_pixel_regions.at_most_N_is_false" title="tests.run_200x200_pixel_regions.at_most_N_is_false"><code class="xref py py-obj docutils literal notranslate"><span class="pre">at_most_N_is_false</span></code></a>(bool_array[,&nbsp;N])</td>
+<td>Returns True if bool_array has at most N elements that are False</td>
+</tr>
+<tr class="row-even"><td><code class="xref py py-obj docutils literal notranslate"><span class="pre">nanomag2mag</span></code>(nmgy)</td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<dl class="class">
+<dt id="tests.run_200x200_pixel_regions.Tolerances">
+<em class="property">class </em><code class="descclassname">tests.run_200x200_pixel_regions.</code><code class="descname">Tolerances</code><a class="reference internal" href="../_modules/tests/run_200x200_pixel_regions.html#Tolerances"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#tests.run_200x200_pixel_regions.Tolerances" title="Permalink to this definition">¶</a></dt>
+<dd><p>Tolerances on Tractor measured mags and test_flux_shape_measurements</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>survey</strong> – decals, bass_mzls</li>
+<li><strong>obj</strong> – star,elg</li>
+<li><strong>bands</strong> – grz, z</li>
+<li><strong>dict</strong> (<em>tolerance</em>) – mw_transmission_input_minus_measured: obiwan looks up mw_trans before injecting, it should agree with tractor’s at that ra,dec
+mag_psql_minus_input_corrected_for_ext: in AB mag, ext added when inject, so compare what have in db to what injected w/out ext
+mag_input_minus_measured: in AB mag
+rhalf_input_minus_measured: arcsec that rhalf measurement can be off by</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<dl class="staticmethod">
+<dt id="tests.run_200x200_pixel_regions.Tolerances.bass_mzls">
+<em class="property">static </em><code class="descname">bass_mzls</code><span class="sig-paren">(</span><em>obj=None</em>, <em>bands=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tests/run_200x200_pixel_regions.html#Tolerances.bass_mzls"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#tests.run_200x200_pixel_regions.Tolerances.bass_mzls" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns dict of Tolerances</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>bands</strong> – ‘grz’</li>
+<li><strong>obj</strong> – either ‘elg’ or ‘star’</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="staticmethod">
+<dt id="tests.run_200x200_pixel_regions.Tolerances.decals">
+<em class="property">static </em><code class="descname">decals</code><span class="sig-paren">(</span><em>obj=None</em>, <em>bands=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tests/run_200x200_pixel_regions.html#Tolerances.decals"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#tests.run_200x200_pixel_regions.Tolerances.decals" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns dict of Tolerances</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>bands</strong> – either ‘grz’ or ‘z’</li>
+<li><strong>obj</strong> – either ‘elg’ or ‘star’</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="tests.run_200x200_pixel_regions.analysis_setup">
+<em class="property">class </em><code class="descclassname">tests.run_200x200_pixel_regions.</code><code class="descname">analysis_setup</code><span class="sig-paren">(</span><em>**kw</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tests/run_200x200_pixel_regions.html#analysis_setup"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#tests.run_200x200_pixel_regions.analysis_setup" title="Permalink to this definition">¶</a></dt>
+<dd><p>Loads the outputs from run_kenobi_main().run() and measurement tolerances</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>kwargs</strong> – the same inputs to run_kenobi_main</td>
+</tr>
+</tbody>
+</table>
+<dl class="attribute">
+<dt>
+<code class="descname">same as run_kenobi_main</code></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="tests.run_200x200_pixel_regions.analysis_setup.tol">
+<code class="descname">tol</code><a class="headerlink" href="#tests.run_200x200_pixel_regions.analysis_setup.tol" title="Permalink to this definition">¶</a></dt>
+<dd><p>tolerance dict for flux, rhalf, etc.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="tests.run_200x200_pixel_regions.analysis_setup.load_outputs">
+<code class="descname">load_outputs</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tests/run_200x200_pixel_regions.html#analysis_setup.load_outputs"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#tests.run_200x200_pixel_regions.analysis_setup.load_outputs" title="Permalink to this definition">¶</a></dt>
+<dd><p>Loads every output we could possibly need to evaluate a test</p>
+<dl class="attribute">
+<dt>
+<code class="descname">simcat, obitractor</code></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="tests.run_200x200_pixel_regions.analysis_setup.jpg_coadds">
+<code class="descname">jpg_coadds</code><a class="headerlink" href="#tests.run_200x200_pixel_regions.analysis_setup.jpg_coadds" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="tests.run_200x200_pixel_regions.analysis_setup.fits_coadds">
+<code class="descname">fits_coadds</code><a class="headerlink" href="#tests.run_200x200_pixel_regions.analysis_setup.fits_coadds" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="method">
+<dt id="tests.run_200x200_pixel_regions.analysis_setup.run">
+<code class="descname">run</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#tests.run_200x200_pixel_regions.analysis_setup.run" title="Permalink to this definition">¶</a></dt>
+<dd><p>Add the sources and run legacypipe</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>no_cleanup</strong> – don’t run cleanup step</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="function">
+<dt id="tests.run_200x200_pixel_regions.at_most_N_is_false">
+<code class="descclassname">tests.run_200x200_pixel_regions.</code><code class="descname">at_most_N_is_false</code><span class="sig-paren">(</span><em>bool_array</em>, <em>N=1</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tests/run_200x200_pixel_regions.html#at_most_N_is_false"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#tests.run_200x200_pixel_regions.at_most_N_is_false" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns True if bool_array has at most N elements that are False</p>
+<p>Example, all(bool_array) is equivalent to at_most_N_is_false(bool_array,N=0)</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>N</strong> – the number of false elements allowed</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="class">
+<dt id="tests.run_200x200_pixel_regions.run_kenobi_main">
+<em class="property">class </em><code class="descclassname">tests.run_200x200_pixel_regions.</code><code class="descname">run_kenobi_main</code><span class="sig-paren">(</span><em>survey=None</em>, <em>dataset=None</em>, <em>bands='grz'</em>, <em>obj='elg'</em>, <em>rowstart=0</em>, <em>add_noise=False</em>, <em>all_blobs=False</em>, <em>on_edge=False</em>, <em>early_coadds=False</em>, <em>checkpoint=False</em>, <em>skip_ccd_cuts=False</em>, <em>no_cleanup=False</em>, <em>stage=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tests/run_200x200_pixel_regions.html#run_kenobi_main"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#tests.run_200x200_pixel_regions.run_kenobi_main" title="Permalink to this definition">¶</a></dt>
+<dd><p>Runs main() in kenobi.py, which runs legacypipe</p>
+<p>Works for either DECaLS or MzLS/BASS. Use setup_testcase() on the result</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>survey</strong> – decals or bass_mzls</li>
+<li><strong>dataset</strong> – string, ‘DR3’, ‘DR5’,</li>
+<li><strong>bands</strong> – ‘grz’,’z’</li>
+<li><strong>obj</strong> – ‘elg’,’star’</li>
+<li><strong>rowstart</strong> – default is 0 because reads randoms table from 1st row</li>
+<li><strong>add_noise</strong> – to add Poisson noise to simulated galaxy profiles</li>
+<li><strong>all_blobs</strong> – to fit models to all blobs, not just the blobs containing sims</li>
+<li><strong>on_edge</strong> – to add randoms at edge of region, not well within the boundaries</li>
+<li><strong>early_coadds</strong> – creates coadds and stops. useful for ML training/test samples</li>
+<li><strong>checkpoint</strong> – whether to save model fitting (fitblobs) checkpoints</li>
+<li><strong>True to use all ccds in the survey-ccds fits tables</strong> (<em>skip_ccd_cuts=</em>) – </li>
+<li><strong>no_cleanup</strong> – at the end of running, obiwan reorganzes outputs, True means don’t do this</li>
+<li><strong>stage</strong> – runbrick.py stages, default is None which runs everything</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<dl class="method">
+<dt id="tests.run_200x200_pixel_regions.run_kenobi_main.run">
+<code class="descname">run</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tests/run_200x200_pixel_regions.html#run_kenobi_main.run"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#tests.run_200x200_pixel_regions.run_kenobi_main.run" title="Permalink to this definition">¶</a></dt>
+<dd><p>Add the sources and run legacypipe</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>no_cleanup</strong> – don’t run cleanup step</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="tests.run_200x200_pixel_regions.run_kenobi_main_cosmos">
+<em class="property">class </em><code class="descclassname">tests.run_200x200_pixel_regions.</code><code class="descname">run_kenobi_main_cosmos</code><span class="sig-paren">(</span><em>survey=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tests/run_200x200_pixel_regions.html#run_kenobi_main_cosmos"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#tests.run_200x200_pixel_regions.run_kenobi_main_cosmos" title="Permalink to this definition">¶</a></dt>
+<dd><p>Supports subsets 60-69</p>
+</dd></dl>
+
+<dl class="class">
+<dt id="tests.run_200x200_pixel_regions.test_detected_simulated_and_real_sources">
+<em class="property">class </em><code class="descclassname">tests.run_200x200_pixel_regions.</code><code class="descname">test_detected_simulated_and_real_sources</code><span class="sig-paren">(</span><em>**kw</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tests/run_200x200_pixel_regions.html#test_detected_simulated_and_real_sources"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#tests.run_200x200_pixel_regions.test_detected_simulated_and_real_sources" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="method">
+<dt id="tests.run_200x200_pixel_regions.test_detected_simulated_and_real_sources.get_index_of_real_galaxy_at_center">
+<code class="descname">get_index_of_real_galaxy_at_center</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tests/run_200x200_pixel_regions.html#test_detected_simulated_and_real_sources.get_index_of_real_galaxy_at_center"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#tests.run_200x200_pixel_regions.test_detected_simulated_and_real_sources.get_index_of_real_galaxy_at_center" title="Permalink to this definition">¶</a></dt>
+<dd><p>There is a real galaxy at center, which tractor cat index is it?</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="tests.run_200x200_pixel_regions.test_detected_simulated_and_real_sources.load_outputs">
+<code class="descname">load_outputs</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#tests.run_200x200_pixel_regions.test_detected_simulated_and_real_sources.load_outputs" title="Permalink to this definition">¶</a></dt>
+<dd><p>Loads every output we could possibly need to evaluate a test</p>
+<dl class="attribute">
+<dt>
+<code class="descname">simcat, obitractor</code></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="tests.run_200x200_pixel_regions.test_detected_simulated_and_real_sources.jpg_coadds">
+<code class="descname">jpg_coadds</code><a class="headerlink" href="#tests.run_200x200_pixel_regions.test_detected_simulated_and_real_sources.jpg_coadds" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="tests.run_200x200_pixel_regions.test_detected_simulated_and_real_sources.fits_coadds">
+<code class="descname">fits_coadds</code><a class="headerlink" href="#tests.run_200x200_pixel_regions.test_detected_simulated_and_real_sources.fits_coadds" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="method">
+<dt id="tests.run_200x200_pixel_regions.test_detected_simulated_and_real_sources.run">
+<code class="descname">run</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#tests.run_200x200_pixel_regions.test_detected_simulated_and_real_sources.run" title="Permalink to this definition">¶</a></dt>
+<dd><p>Add the sources and run legacypipe</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>no_cleanup</strong> – don’t run cleanup step</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="tests.run_200x200_pixel_regions.test_draw_circles_around_sources_check_by_eye">
+<em class="property">class </em><code class="descclassname">tests.run_200x200_pixel_regions.</code><code class="descname">test_draw_circles_around_sources_check_by_eye</code><span class="sig-paren">(</span><em>**kw</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tests/run_200x200_pixel_regions.html#test_draw_circles_around_sources_check_by_eye"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#tests.run_200x200_pixel_regions.test_draw_circles_around_sources_check_by_eye" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="method">
+<dt id="tests.run_200x200_pixel_regions.test_draw_circles_around_sources_check_by_eye.load_outputs">
+<code class="descname">load_outputs</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#tests.run_200x200_pixel_regions.test_draw_circles_around_sources_check_by_eye.load_outputs" title="Permalink to this definition">¶</a></dt>
+<dd><p>Loads every output we could possibly need to evaluate a test</p>
+<dl class="attribute">
+<dt>
+<code class="descname">simcat, obitractor</code></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="tests.run_200x200_pixel_regions.test_draw_circles_around_sources_check_by_eye.jpg_coadds">
+<code class="descname">jpg_coadds</code><a class="headerlink" href="#tests.run_200x200_pixel_regions.test_draw_circles_around_sources_check_by_eye.jpg_coadds" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="tests.run_200x200_pixel_regions.test_draw_circles_around_sources_check_by_eye.fits_coadds">
+<code class="descname">fits_coadds</code><a class="headerlink" href="#tests.run_200x200_pixel_regions.test_draw_circles_around_sources_check_by_eye.fits_coadds" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="method">
+<dt id="tests.run_200x200_pixel_regions.test_draw_circles_around_sources_check_by_eye.run">
+<code class="descname">run</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#tests.run_200x200_pixel_regions.test_draw_circles_around_sources_check_by_eye.run" title="Permalink to this definition">¶</a></dt>
+<dd><p>Add the sources and run legacypipe</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>no_cleanup</strong> – don’t run cleanup step</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="tests.run_200x200_pixel_regions.test_flux_shape_measurements">
+<em class="property">class </em><code class="descclassname">tests.run_200x200_pixel_regions.</code><code class="descname">test_flux_shape_measurements</code><span class="sig-paren">(</span><em>**kw</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tests/run_200x200_pixel_regions.html#test_flux_shape_measurements"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#tests.run_200x200_pixel_regions.test_flux_shape_measurements" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="method">
+<dt id="tests.run_200x200_pixel_regions.test_flux_shape_measurements.load_outputs">
+<code class="descname">load_outputs</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#tests.run_200x200_pixel_regions.test_flux_shape_measurements.load_outputs" title="Permalink to this definition">¶</a></dt>
+<dd><p>Loads every output we could possibly need to evaluate a test</p>
+<dl class="attribute">
+<dt>
+<code class="descname">simcat, obitractor</code></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="tests.run_200x200_pixel_regions.test_flux_shape_measurements.jpg_coadds">
+<code class="descname">jpg_coadds</code><a class="headerlink" href="#tests.run_200x200_pixel_regions.test_flux_shape_measurements.jpg_coadds" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="tests.run_200x200_pixel_regions.test_flux_shape_measurements.fits_coadds">
+<code class="descname">fits_coadds</code><a class="headerlink" href="#tests.run_200x200_pixel_regions.test_flux_shape_measurements.fits_coadds" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="method">
+<dt id="tests.run_200x200_pixel_regions.test_flux_shape_measurements.run">
+<code class="descname">run</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#tests.run_200x200_pixel_regions.test_flux_shape_measurements.run" title="Permalink to this definition">¶</a></dt>
+<dd><p>Add the sources and run legacypipe</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>no_cleanup</strong> – don’t run cleanup step</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="tests.run_200x200_pixel_regions.test_flux_shape_measurements.run_test">
+<code class="descname">run_test</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tests/run_200x200_pixel_regions.html#test_flux_shape_measurements.run_test"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#tests.run_200x200_pixel_regions.test_flux_shape_measurements.run_test" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compare input flux and shape parameters to Tractor’s</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+
+
+    </div>
+      
+  </div>
+</div>
+<footer class="footer">
+  <div class="container">
+    <p class="pull-right">
+      <a href="#">Back to top</a>
+      
+    </p>
+    <p>
+        &copy; Copyright 2014-2018, Kaylan Burleigh, John Moustakas.<br/>
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.7.6.<br/>
+    </p>
+  </div>
+</footer>
+  </body>
+</html>

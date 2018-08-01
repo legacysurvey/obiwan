@@ -68,9 +68,15 @@
       role="menu"
       aria-labelledby="dLabelLocalToc"><ul>
 <li><a class="reference internal" href="#">Why the name <em>obiwan</em>?</a></li>
-<li><a class="reference internal" href="#how-to-run-the-code">How to run the code</a></li>
-<li><a class="reference internal" href="#continuous-integration-tests">Continuous Integration Tests</a></li>
-<li><a class="reference internal" href="#viewer">Viewer</a></li>
+<li><a class="reference internal" href="#install">Install</a></li>
+<li><a class="reference internal" href="#tests">Tests</a></li>
+<li><a class="reference internal" href="#developers">Developers</a></li>
+<li><a class="reference internal" href="#run-on-1000-deg2-of-sky">Run on 1000 deg2 of sky</a><ul>
+<li><a class="reference internal" href="#post-processing">Post Processing</a></li>
+<li><a class="reference internal" href="#visualizing-the-millions-of-simulated-sources-you-injected-into-the-images">Visualizing the millions of simulated sources you injected into the images</a></li>
+<li><a class="reference internal" href="#finishing-the-eboss-elg-runs">Finishing the eBOSS ELG runs</a></li>
+</ul>
+</li>
 <li><a class="reference internal" href="#questions">Questions?</a></li>
 <li><a class="reference internal" href="#acknowledgements">Acknowledgements</a></li>
 <li><a class="reference internal" href="#changelog">Changelog</a></li>
@@ -126,26 +132,69 @@
 <p>Just as Obi-Wan Kenobi was the <em>only hope</em> in Star Wars: Episode IV - A New Hope (<a class="reference external" href="https://www.youtube.com/watch?v=0RDIJfoBhFU">youtube</a>); <strong>obiwan</strong>, by virtue of its Monte Carlo method, is one of the only hopes for removing all systematics in the sample of galaxies we select from the imaging data.</p>
 <p>These are commonly referred to as “imaging systematics” since they are related to image quality, the telescope, and the bias and variance of of the Legacypipe pipeline itself. The Sloan Digital Sky Survey (SDSS), showed that these “imaging systematics” could be removed by measuring correlations between the number of galaxies and image quality (namely, stellar density, seeing, galactic extinction, sky background, and photometric offsets). The situation is more complicated for the Legacy Surveys because our images come from three telescopes, and we take exposures of the same part of the sky, in multiple bands, over timescales of years. In addition, both the cosmological signal we are looking and the cameras on the telescopes we use, have physical size of about half a degree on the night sky (this is about the size of the moon seen from Earth).</p>
 </div>
-<div class="section" id="how-to-run-the-code">
-<h1>How to run the code<a class="headerlink" href="#how-to-run-the-code" title="Permalink to this headline">¶</a></h1>
-<p>See below for how to run <strong>obiwan</strong> using the National Energy Research Scientific Computing Center (NERSC) supercomputers.</p>
+<div class="section" id="install">
+<h1>Install<a class="headerlink" href="#install" title="Permalink to this headline">¶</a></h1>
+<p>The software stack is rather complicated. <code class="docutils literal notranslate"><span class="pre">obiwan</span></code> is a wrapper around <code class="docutils literal notranslate"><span class="pre">legacypipe</span></code>, which has many dependences. So there are two methods for installing everything.</p>
+<p><strong>1. Docker</strong></p>
+<p>Docker is the preferred method, especially for <cite>obiwan developers</cite> as you can run from your laptop and NERSC using the same Docker image. You can also run Jupyter notebooks, build the docs, etc. For using <cite>obiwan</cite> with docker see:</p>
 <ul class="simple">
-<li><a class="reference internal" href="howto/PRODUCTION_RUN.html"><span class="doc">How to Run a Data Release</span></a></li>
-<li><a class="reference internal" href="howto/OUTPUTS.html"><span class="doc">Description of the outputs</span></a></li>
-<li><a class="reference internal" href="deeplearning.html#deep-learn-instructions"><span class="std std-ref">How to Train a CNN</span></a></li>
+<li><a class="reference internal" href="howto/obiwan_with_docker.html"><span class="doc">obiwan with Docker</span></a></li>
+</ul>
+<p><strong>2. desiconda</strong></p>
+<p><a class="reference external" href="https://github.com/desihub/desiconda">desiconda</a>, maintained by Ted Kisner and monthly releases provided by Stephen Bailey, installs the DESI imaging and spectroscopic software using the Python package manager <cite>conda</cite>. The software is compiled specifically with the NERSC Cori and Edison supercomputers in mind. There is no simple way to install it on your laptop. For using <cite>obiwan</cite> with desiconda see:</p>
+<ul class="simple">
+<li><a class="reference internal" href="howto/obiwan_with_desiconda.html"><span class="doc">obiwan with Desiconda</span></a></li>
 </ul>
 </div>
-<div class="section" id="continuous-integration-tests">
-<h1>Continuous Integration Tests<a class="headerlink" href="#continuous-integration-tests" title="Permalink to this headline">¶</a></h1>
-<p>We use <a class="reference external" href="https://travis-ci.org/legacysurvey/obiwan">Travis</a> to run <cite>end-to-end</cite> tests of obiwan. We add fake galaxies to small 200x200 pixel multi-color images, run the pipeline, then assert that the measured properties of the injected galaxies are within strict tolerances of what was added.</p>
-<p>See the Tutorials <cite>here &lt;end-to-end-tests&gt;</cite> for more info.</p>
+<div class="section" id="tests">
+<h1>Tests<a class="headerlink" href="#tests" title="Permalink to this headline">¶</a></h1>
+<p>We use Travis CI to run continuation integration tests for every <cite>git push</cite>. Because the DESI imaging pipeline has many steps it was immediately more rewarding to build “end to end tests” as opposed to unit tests. To run them do,:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">python</span> <span class="n">obiwan</span><span class="o">/</span><span class="n">tests</span><span class="o">/</span><span class="n">test_200x200_pixel_regions</span><span class="o">.</span><span class="n">py</span>
+</pre></div>
 </div>
-<div class="section" id="viewer">
-<h1>Viewer<a class="headerlink" href="#viewer" title="Permalink to this headline">¶</a></h1>
-<p>Our lead developer, <a class="reference external" href="https://github.com/dstndstn">Dustin Lang</a>, made this amazing tool for looking at our imaging data:</p>
+<p>This adds four simulated galaxies and/or stars to 200x200 pixel multi-color DECaLS, MzLS, and BASS images, runs <cite>legacypipe</cite>, and asserts that the measured brightness and shapes of the sources are reasonably close to the truth value.</p>
+</div>
+<div class="section" id="developers">
+<h1>Developers<a class="headerlink" href="#developers" title="Permalink to this headline">¶</a></h1>
 <ul class="simple">
-<li><a class="reference external" href="http://legacysurvey.org/viewer">legacysurvey.org/viewer</a></li>
+<li><a class="reference internal" href="howto/obiwan_with_docker.html#docs-with-docker"><span class="std std-ref">Building Documentation</span></a>: Documentation is build using the Docker image</li>
+<li><a class="reference internal" href="howto/obiwan_with_docker.html#jupyter-with-docker"><span class="std std-ref">Jupyter Notebooks</span></a>: Jupyter notebooks can be used from your laptops browser, again using the Docker image</li>
+<li><a class="reference internal" href="howto/obiwan_with_docker.html#run-a-brick-with-docker"><span class="std std-ref">Run a Brick</span></a>: Run a brick at NERSC</li>
 </ul>
+</div>
+<div class="section" id="run-on-1000-deg2-of-sky">
+<span id="id2"></span><h1>Run on 1000 deg2 of sky<a class="headerlink" href="#run-on-1000-deg2-of-sky" title="Permalink to this headline">¶</a></h1>
+<p>The recommended way for carrying out a many square degree of sky “production run” is by launching MPI jobs using <a class="reference external" href="https://bitbucket.org/berkeleylab/qdo">qdo</a> and using obiwan’s <code class="docutils literal notranslate"><span class="pre">runmanager</span></code> scripts. You do the same things whether your running with Docker images or with desiconda. See</p>
+<ul class="simple">
+<li><a class="reference internal" href="howto/run_on_1000_deg2_of_sky.html"><span class="doc">Run on 1000 deg2 of sky</span></a></li>
+</ul>
+<p>The outputs from running <cite>obiwan</cite> can be terrabytes in size, consisting of thousands of small to medium size files. To post-process and analyze these outputs see the following.</p>
+<div class="section" id="post-processing">
+<h2>Post Processing<a class="headerlink" href="#post-processing" title="Permalink to this headline">¶</a></h2>
+<p>The “data model” (the files obiwan outputs, what they contain, and the output directory structure) is described here:</p>
+<ul class="simple">
+<li><a class="reference internal" href="howto/data_model.html"><span class="doc">Data Model</span></a></li>
+</ul>
+<p>The “post-processing”, that enables later analysis and plotting, assumes the above data model and is described here:</p>
+<ul class="simple">
+<li><a class="reference internal" href="howto/post_processing.html"><span class="doc">Post Processing</span></a></li>
+</ul>
+<p>The post-processing is an mpi4py script that combines all of the obiwan outputs into a few tables that make analysis and plotting a breeze.</p>
+</div>
+<div class="section" id="visualizing-the-millions-of-simulated-sources-you-injected-into-the-images">
+<h2>Visualizing the millions of simulated sources you injected into the images<a class="headerlink" href="#visualizing-the-millions-of-simulated-sources-you-injected-into-the-images" title="Permalink to this headline">¶</a></h2>
+<p>When running obiwan you can specify <code class="docutils literal notranslate"><span class="pre">--stage</span> <span class="pre">early_coadds</span></code> which will write coadded and simulated images, on per grz-band. Doing this for all bricks is very quick because no model fitting happens. You then run some MPI scripts that go to the location of each injected source and a 64x64 pixel cutout is extracted. This whole process only takes a few hours running on a 100 nodes and you end up with literally millions of equal-size grz cutouts of the sources you injected (and, if desired, real galaxies from positions in the data release tractor catalogues). These scripts are located in <code class="docutils literal notranslate"><span class="pre">obiwan</span></code>’s deep learning module because this is how I built the training/test sets for my CNN. For how to do all this, see</p>
+<ul class="simple">
+<li><a class="reference internal" href="deeplearning.html#deep-learn-instructions"><span class="std std-ref">Make cutouts of each simulated source</span></a></li>
+</ul>
+</div>
+<div class="section" id="finishing-the-eboss-elg-runs">
+<h2>Finishing the eBOSS ELG runs<a class="headerlink" href="#finishing-the-eboss-elg-runs" title="Permalink to this headline">¶</a></h2>
+<p>People may be interested in finishing the eBOSS ELG runs presented in Ch 5 of my thesis. The instructions for <a class="reference internal" href="#run-on-1000-deg2-of-sky"><span class="std std-ref">running on a 1000 deg2 of sky</span></a> should guide you on how to do this, but here are some additional things you should know, such as where to find the eBOSS ELG outputs I created that are now saved to the NERSC tape archive. See:</p>
+<ul class="simple">
+<li><a class="reference internal" href="howto/finishing_the_eboss_elg_runs.html"><span class="doc">Additional Info for finishing the eBOSS ELG runs</span></a></li>
+</ul>
+</div>
 </div>
 <div class="section" id="questions">
 <h1>Questions?<a class="headerlink" href="#questions" title="Permalink to this headline">¶</a></h1>

@@ -103,7 +103,10 @@
       
   <div class="section" id="module-obiwan.qa.number_finished_by_slurm">
 <span id="obiwan-qa-number-finished-by-slurm"></span><h1>obiwan.qa.number_finished_by_slurm<a class="headerlink" href="#module-obiwan.qa.number_finished_by_slurm" title="Permalink to this headline">¶</a></h1>
-<p>Reports the number of completed jobs (tractor.fits files) for a SLURM stdout file</p>
+<p>Given a qdo slurm log file, this computes the fraction of launched bricks
+that resulted in a tractor table to the total number of launched bricksself.</p>
+<p>This is a useful test of scaling. More nodes with more time should create
+more tractor catalogues than less nodes with less time.</p>
 <p class="rubric">Functions</p>
 <table border="1" class="longtable docutils">
 <colgroup>
@@ -114,11 +117,18 @@
 <tr class="row-odd"><td><code class="xref py py-obj docutils literal notranslate"><span class="pre">add_fits</span></code>(text)</td>
 <td></td>
 </tr>
-<tr class="row-even"><td><code class="xref py py-obj docutils literal notranslate"><span class="pre">trac_fns</span></code>(slurm_fn)</td>
-<td></td>
+<tr class="row-even"><td><a class="reference internal" href="#obiwan.qa.number_finished_by_slurm.trac_fns" title="obiwan.qa.number_finished_by_slurm.trac_fns"><code class="xref py py-obj docutils literal notranslate"><span class="pre">trac_fns</span></code></a>(slurm_fn)</td>
+<td>Map the string ‘logging to’ to the tractor catalogue name that Should be created for that job</td>
 </tr>
 </tbody>
 </table>
+<dl class="function">
+<dt id="obiwan.qa.number_finished_by_slurm.trac_fns">
+<code class="descclassname">obiwan.qa.number_finished_by_slurm.</code><code class="descname">trac_fns</code><span class="sig-paren">(</span><em>slurm_fn</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/obiwan/qa/number_finished_by_slurm.html#trac_fns"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obiwan.qa.number_finished_by_slurm.trac_fns" title="Permalink to this definition">¶</a></dt>
+<dd><p>Map the string ‘logging to’ to the tractor catalogue name that Should
+be created for that job</p>
+</dd></dl>
+
 </div>
 
 

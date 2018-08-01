@@ -1,0 +1,25 @@
+obiwan.qa.tally
+===============
+
+.. automodule:: obiwan.qa.tally
+   :members:
+   :inherited-members:
+
+   
+   
+   
+
+   
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      bricksFromLogs
+      bricksInDR5
+   
+   
+
+   
+   
+   

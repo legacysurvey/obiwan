@@ -107,24 +107,25 @@
 <span class="kn">import</span> <span class="nn">os</span>
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 
-<span class="k">try</span><span class="p">:</span>
-    <span class="kn">from</span> <span class="nn">astrometry.util.fits</span> <span class="k">import</span> <span class="n">fits_table</span><span class="p">,</span> <span class="n">merge_tables</span>
-<span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
-    <span class="k">pass</span>
+<span class="c1"># try:</span>
+<span class="kn">from</span> <span class="nn">astrometry.util.fits</span> <span class="k">import</span> <span class="n">fits_table</span><span class="p">,</span> <span class="n">merge_tables</span>
+<span class="c1"># except ImportError:</span>
+<span class="c1"># pass</span>
 
-<span class="k">class</span> <span class="nc">PsqlWorker</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+<div class="viewcode-block" id="PsqlWorker"><a class="viewcode-back" href="../../_autosummary/obiwan.db_tools.html#obiwan.db_tools.PsqlWorker">[docs]</a><span class="k">class</span> <span class="nc">PsqlWorker</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Connects to and queries psql db&quot;&quot;&quot;</span>
     <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">conn</span><span class="o">=</span> <span class="n">psycopg2</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="n">host</span><span class="o">=</span><span class="s1">&#39;nerscdb03.nersc.gov&#39;</span><span class="p">,</span> <span class="n">user</span><span class="o">=</span><span class="s1">&#39;desi_admin&#39;</span><span class="p">,</span> <span class="n">database</span><span class="o">=</span><span class="s1">&#39;desi&#39;</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">cur</span><span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">conn</span><span class="o">.</span><span class="n">cursor</span><span class="p">()</span>
 
     <span class="k">def</span> <span class="nf">close</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">cur</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">conn</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">conn</span><span class="o">.</span><span class="n">close</span><span class="p">()</span></div>
 
 <div class="viewcode-block" id="getSrcsInBrick"><a class="viewcode-back" href="../../_autosummary/obiwan.db_tools.html#obiwan.db_tools.getSrcsInBrick">[docs]</a><span class="k">def</span> <span class="nf">getSrcsInBrick</span><span class="p">(</span><span class="n">brickname</span><span class="p">,</span><span class="n">objtype</span><span class="p">,</span> <span class="n">db_table</span><span class="o">=</span><span class="s1">&#39;obiwan_elg&#39;</span><span class="p">,</span>
                    <span class="n">skipped_ids</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Returns tuple: fits table, seed</span>
-<span class="sd">    </span>
+
 <span class="sd">    Args:</span>
 <span class="sd">        skipped_ids: array or list of strings of ids if not None, the db ids</span>
 <span class="sd">    &quot;&quot;&quot;</span>
@@ -183,7 +184,7 @@
 <span class="sd">    Args:</span>
 <span class="sd">        ids: list or array, ids generally come from obiwan &#39;simcat*.fits&#39; table, for example</span>
 <span class="sd">        db_table: table name in psql db &#39;desi&#39; hosted at &#39;scidb2.nersc.gov&#39;</span>
-<span class="sd">        try_with_join: to use equivalent sql select that uses join </span>
+<span class="sd">        try_with_join: to use equivalent sql select that uses join</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">db</span><span class="o">=</span> <span class="n">PsqlWorker</span><span class="p">()</span>
     <span class="n">columns</span><span class="o">=</span> <span class="s1">&#39;id ra dec g r z rhalf n ba pa redshift&#39;</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39; &#39;</span><span class="p">)</span>
@@ -194,7 +195,7 @@
         <span class="n">cmd</span><span class="o">+=</span> <span class="s2">&quot;</span><span class="si">%s</span><span class="s2">,&quot;</span> <span class="o">%</span> <span class="n">col</span>
     <span class="n">cmd</span><span class="o">+=</span> <span class="s2">&quot;</span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">columns</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
 
-    <span class="k">if</span> <span class="ow">not</span> <span class="n">try_with_join</span><span class="p">:</span> 
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">try_with_join</span><span class="p">:</span>
         <span class="c1"># Simplest, faster</span>
         <span class="n">cmd</span><span class="o">+=</span> <span class="s2">&quot; FROM </span><span class="si">%s</span><span class="s2"> WHERE id in (&quot;</span> <span class="o">%</span> <span class="n">db_randoms_table</span>
         <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">ids</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]:</span>
@@ -206,18 +207,18 @@
         <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">ids</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]:</span>
             <span class="n">vals</span><span class="o">+=</span> <span class="s2">&quot;(</span><span class="si">%d</span><span class="s2">),&quot;</span> <span class="o">%</span> <span class="n">i</span>
         <span class="n">vals</span><span class="o">+=</span> <span class="s2">&quot;(</span><span class="si">%d</span><span class="s2">)&quot;</span> <span class="o">%</span> <span class="n">ids</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
-        <span class="n">cmd</span><span class="o">=</span> <span class="p">(</span><span class="n">cmd</span> <span class="o">+</span> <span class="s2">&quot; FROM </span><span class="si">%s</span><span class="s2"> as db RIGHT JOIN (values </span><span class="si">%s</span><span class="s2">) &quot;</span> 
-              <span class="o">%</span> <span class="p">(</span><span class="n">db_randoms_table</span><span class="p">,</span><span class="n">vals</span><span class="p">)</span> 
-              <span class="o">+</span> 
+        <span class="n">cmd</span><span class="o">=</span> <span class="p">(</span><span class="n">cmd</span> <span class="o">+</span> <span class="s2">&quot; FROM </span><span class="si">%s</span><span class="s2"> as db RIGHT JOIN (values </span><span class="si">%s</span><span class="s2">) &quot;</span>
+              <span class="o">%</span> <span class="p">(</span><span class="n">db_randoms_table</span><span class="p">,</span><span class="n">vals</span><span class="p">)</span>
+              <span class="o">+</span>
               <span class="s2">&quot;as v(id) on (db.id=v.id)&quot;</span><span class="p">)</span>
     <span class="c1">#print(&#39;cmd= %s&#39; % cmd)</span>
     <span class="n">db</span><span class="o">.</span><span class="n">cur</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">cmd</span><span class="p">)</span>
     <span class="c1"># List of tuples [(id,reshift,...),(id,reshift,...)]</span>
-    <span class="n">a</span><span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">cur</span><span class="o">.</span><span class="n">fetchall</span><span class="p">()</span> 
+    <span class="n">a</span><span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">cur</span><span class="o">.</span><span class="n">fetchall</span><span class="p">()</span>
     <span class="c1"># Tuple of lists (ids,reshifts,...)</span>
     <span class="n">tup</span><span class="o">=</span> <span class="nb">zip</span><span class="p">(</span><span class="o">*</span><span class="n">a</span><span class="p">)</span>
     <span class="c1">#tup[ith_col])</span>
-    <span class="k">return</span> <span class="p">{</span><span class="n">col</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">vals</span><span class="p">)</span> 
+    <span class="k">return</span> <span class="p">{</span><span class="n">col</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">vals</span><span class="p">)</span>
             <span class="k">for</span> <span class="n">col</span><span class="p">,</span><span class="n">vals</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">columns</span><span class="p">,</span><span class="n">tup</span><span class="p">)}</span></div>
     <span class="c1">#return np.array(sql_ids),np.array(sql_redshift)</span>
 
@@ -228,7 +229,6 @@
     <span class="n">data_dict</span><span class="o">=</span> <span class="n">all_psqlcols_for_ids</span><span class="p">(</span><span class="n">simcat</span><span class="o">.</span><span class="n">id</span><span class="p">,</span> <span class="n">db_randoms_table</span><span class="o">=</span><span class="s1">&#39;obiwan_elg_ra175&#39;</span><span class="p">)</span>
     <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">10</span><span class="p">):</span>
         <span class="nb">print</span><span class="p">(</span><span class="n">data_dict</span><span class="p">[</span><span class="s1">&#39;id&#39;</span><span class="p">][</span><span class="n">i</span><span class="p">],</span><span class="n">data_dict</span><span class="p">[</span><span class="s1">&#39;redshift&#39;</span><span class="p">][</span><span class="n">i</span><span class="p">])</span>
-    
 </pre></div>
 
     </div>

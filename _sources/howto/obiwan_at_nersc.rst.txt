@@ -1,0 +1,165 @@
+************************
+Running Obiwan @ NERSC
+************************
+
+Code and Data
+----------------
+Git clone the repos to a directory "obiwan_code"::
+
+  export obiwan_code=$CSCRATCH/obiwan_code
+  mkdir $obiwan_code
+  cd $obiwan_code
+  git clone https://github.com/legacysurvey/obiwan.git
+  git clone https://github.com/legacysurvey/theValidator.git
+  git clone https://github.com/legacysurvey/legacypipe.git
+  cd legacypipe
+  git fetch
+  git checkout dr5_wobiwan
+
+
+Wget dataset files::
+
+  export obiwan_data=$CSCRATCH/obiwan_data
+  mkdir $obiwan_data
+  cd $obiwan_data
+  wget http://portal.nersc.gov/project/desi/users/kburleigh/obiwan/legacysurveydirs.tar.gz
+  tar -xzvf legacysurveydirs.tar.gz
+
+
+Dust map files::
+
+  mkdir -p $obiwan_data/dust/maps
+  cd $obiwan_data/dust/maps
+  wget -c http://portal.nersc.gov/project/cosmo/temp/dstn/travis-ci/maps/SFD_dust_4096_ngp.fits
+  wget -c http://portal.nersc.gov/project/cosmo/temp/dstn/travis-ci/maps/SFD_dust_4096_sgp.fits
+
+Python environment
+-------------------
+
+I created a conda environment for Obiwan using Ted Kisner's desiconda_ package for the imaging pipeline. You activate it with a NERSC ``module load`` command, after which you have the usual conda functionality, like ``conda info -e``. I put the module load command and setting additional env vars in ``https://github.com/legacysurvey/obiwan/blob/master/bin/run_atnersc/bashrc_obiwan``, so once you git clone obiwan you simply source this file. From a clean environment on Cori,
+
+.. _desiconda: https://github.com/desihub/desiconda.git
+
+Either do::
+
+  source $obiwan_code/obiwan/bin/run_atnersc/bashrc_obiwan
+
+or copy the file to your $HOME and::
+
+  cp $obiwan_code/obiwan/bin/run_atnersc/bashrc_obiwan
+  source ~/bashrc_obiwan
+
+Run unit tests
+---------------
+It is a good idea to pull master before running anything::
+
+  cd $obiwan_code/obiwan
+  git pull origin master
+
+Now run the first suite of unit tests::
+
+  python $obiwan_code/obiwan/tests/test_200x200_pixel_regions.py
+
+Login to the PostgreSQL DB
+----------------------------
+
+The psql db at NERSC is called "desi". It's hosted at scidb2.nersc.gov and you sign in with user "desi_user". You'll need the ``.pgpass`` password file. Then put the ``.pgpass`` file in ``$HOME/`` on Cori and give it user rw permissions.::
+
+  cp <path/to/kaylans/.pgpass $HOME/
+  chmod u+rw $HOME/.pgpass
+
+
+Make sure the bashrc_obiwan loaded the ``postresql`` module. Then do::
+
+  psql -U desi_user -d desi -h scidb2.nersc.gov
+
+It worked if that brings you to a ``desi=>`` prompt
+
+Production Runs
+-------------------
+
+There are two basic ways of doing the production runs
+
+1. submit a slurm job script for every brick you want to run
+2. automatically submit jobs with qdo
+
+And two options telling the compute nodes about your python environment for obiwan
+
+A. use the obiwan conda environment: source "prodenv_obiwan"
+B. use a Docker image (coming soon)
+
+1A
+"""""
+See `https://github.com/legacysurvey/obiwan/blob/master/bin/slurm_job.sh`
+
+Edit these lines::
+
+  export brick=1238p245
+  export rowstart=0
+  export object=elg
+  export dataset=dr5
+  export nobj=100
+
+
+Then run with::
+
+  cd $obiwan_code
+  sbatch $obiwan_code/obiwan/bin/slurm_job.sh
+
+
+1B
+"""""
+Coming soon
+
+2A
+""""
+See `https://github.com/legacysurvey/obiwan/blob/master/bin/qdo_job.sh`
+
+Edit these lines::
+
+  export object=elg
+  export dataset=dr5
+  export nobj=100
+
+
+Add list of bricks and indices of randoms as qdo tasks::
+
+  cd $obiwan_code
+  for i in {100..500..100};do echo 1238p245 $i >> obiwan_qdo.txt;done
+  qdo load obiwan obiwan_qdo.txt
+
+Now launch 5 qdo workers for the 5 qdo tasks you just made, using 6 hardware cores per task::
+
+  cd $obiwan_code
+  qdo launch obiwan 5 --cores_per_worker 6 --batchqueue debug --walltime 00:30:00 --script $CSCRATCH/obiwan_code/obiwan/bin/qdo_job.sh --keep_env
+
+2B
+""""
+Coming soon
+
+********
+Extra
+********
+
+How I made the conda environment I used for the eBOSS ELG runs
+----------------------------------------------------------------
+
+I made my conda environment by::
+
+  cd desiconda
+  CONFIG=cori-gcc-py27 PREFIX=/global/cscratch1/sd/kaylanb/obiwan_desiconda_add_pytest make clean
+  CONFIG=cori-gcc-py27 PREFIX=/global/cscratch1/sd/kaylanb/obiwan_desiconda_add_pytest make imaging
+  # Use NERSC's No Machine software b/c this command takes a LONG Time
+  ./install_imaging_cori-gcc-py27.sh 2>&1 | tee log_add_pytest
+
+Legacypipe versions::
+
+  git checkout tags/dr5.0
+
+
+If other desiconda modules already loaded, do::
+
+  for name in desiconda; do module unload $name;done
+  for name in legacysurvey unwise_coadds unwise_coadds_timeresolved dust;do
+    module unload $name
+  done

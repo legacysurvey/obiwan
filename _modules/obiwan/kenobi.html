@@ -137,28 +137,28 @@
 <span class="kn">from</span> <span class="nn">astropy</span> <span class="k">import</span> <span class="n">units</span>
 <span class="kn">from</span> <span class="nn">astropy.coordinates</span> <span class="k">import</span> <span class="n">SkyCoord</span>
 
-<span class="kn">from</span> <span class="nn">obiwan.db_tools</span> <span class="k">import</span> <span class="n">getSrcsInBrick</span> 
-<span class="kn">from</span> <span class="nn">obiwan.common</span> <span class="k">import</span> <span class="n">get_outdir_runbrick</span><span class="p">,</span> <span class="n">get_brickinfo_hack</span> 
+<span class="kn">from</span> <span class="nn">obiwan.db_tools</span> <span class="k">import</span> <span class="n">getSrcsInBrick</span>
+<span class="kn">from</span> <span class="nn">obiwan.common</span> <span class="k">import</span> <span class="n">get_outdir_runbrick</span><span class="p">,</span> <span class="n">get_brickinfo_hack</span>
 <span class="kn">from</span> <span class="nn">obiwan.common</span> <span class="k">import</span> <span class="n">stack_tables</span>
 
 <span class="c1"># Sphinx build would crash</span>
-<span class="k">try</span><span class="p">:</span>
-    <span class="kn">from</span> <span class="nn">legacypipe.runbrick</span> <span class="k">import</span> <span class="n">run_brick</span>
-    <span class="kn">from</span> <span class="nn">legacypipe.decam</span> <span class="k">import</span> <span class="n">DecamImage</span>
-    <span class="kn">from</span> <span class="nn">legacypipe.survey</span> <span class="k">import</span> <span class="n">LegacySurveyData</span><span class="p">,</span> <span class="n">wcs_for_brick</span>
-    <span class="kn">from</span> <span class="nn">legacypipe.runcosmos</span> <span class="k">import</span> <span class="n">DecamImagePlusNoise</span><span class="p">,</span> <span class="n">CosmosSurvey</span> 
+<span class="c1">#try:</span>
+<span class="kn">from</span> <span class="nn">legacypipe.runbrick</span> <span class="k">import</span> <span class="n">run_brick</span>
+<span class="kn">from</span> <span class="nn">legacypipe.decam</span> <span class="k">import</span> <span class="n">DecamImage</span>
+<span class="kn">from</span> <span class="nn">legacypipe.survey</span> <span class="k">import</span> <span class="n">LegacySurveyData</span><span class="p">,</span> <span class="n">wcs_for_brick</span>
+<span class="kn">from</span> <span class="nn">legacypipe.runcosmos</span> <span class="k">import</span> <span class="n">DecamImagePlusNoise</span><span class="p">,</span> <span class="n">CosmosSurvey</span>
 
-    <span class="kn">from</span> <span class="nn">astrometry.util.fits</span> <span class="k">import</span> <span class="n">fits_table</span><span class="p">,</span> <span class="n">merge_tables</span>
-    <span class="kn">from</span> <span class="nn">astrometry.util.ttime</span> <span class="k">import</span> <span class="n">Time</span>
-    <span class="kn">from</span> <span class="nn">astrometry.libkd.spherematch</span> <span class="k">import</span> <span class="n">match_radec</span>
+<span class="kn">from</span> <span class="nn">astrometry.util.fits</span> <span class="k">import</span> <span class="n">fits_table</span><span class="p">,</span> <span class="n">merge_tables</span>
+<span class="kn">from</span> <span class="nn">astrometry.util.ttime</span> <span class="k">import</span> <span class="n">Time</span>
+<span class="kn">from</span> <span class="nn">astrometry.libkd.spherematch</span> <span class="k">import</span> <span class="n">match_radec</span>
 
-    <span class="kn">from</span> <span class="nn">tractor.psfex</span> <span class="k">import</span> <span class="n">PsfEx</span><span class="p">,</span> <span class="n">PsfExModel</span>
-    <span class="kn">from</span> <span class="nn">tractor.basics</span> <span class="k">import</span> <span class="n">GaussianMixtureEllipsePSF</span><span class="p">,</span> <span class="n">RaDecPos</span>
-    <span class="kn">from</span> <span class="nn">tractor.sfd</span> <span class="k">import</span> <span class="n">SFDMap</span>
+<span class="kn">from</span> <span class="nn">tractor.psfex</span> <span class="k">import</span> <span class="n">PsfEx</span><span class="p">,</span> <span class="n">PsfExModel</span>
+<span class="kn">from</span> <span class="nn">tractor.basics</span> <span class="k">import</span> <span class="n">GaussianMixtureEllipsePSF</span><span class="p">,</span> <span class="n">RaDecPos</span>
+<span class="kn">from</span> <span class="nn">tractor.sfd</span> <span class="k">import</span> <span class="n">SFDMap</span>
 
-    <span class="kn">import</span> <span class="nn">galsim</span>
-<span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
-    <span class="k">pass</span>
+<span class="kn">import</span> <span class="nn">galsim</span>
+<span class="c1">#except ImportError:</span>
+<span class="c1">#    pass</span>
 
 <span class="n">DATASETS</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;dr5&#39;</span><span class="p">,</span><span class="s1">&#39;dr3&#39;</span><span class="p">,</span><span class="s1">&#39;cosmos&#39;</span><span class="p">,</span><span class="s1">&#39;dr6&#39;</span><span class="p">]</span>
 
@@ -179,7 +179,7 @@
         <span class="n">img</span> <span class="o">=</span> <span class="n">stamp</span><span class="o">.</span><span class="n">array</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
     <span class="k">else</span><span class="p">:</span>
         <span class="n">img</span><span class="o">=</span> <span class="n">stamp</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
-    <span class="n">img</span><span class="o">=</span><span class="n">img</span> <span class="o">+</span> <span class="nb">abs</span><span class="p">(</span><span class="n">img</span><span class="o">.</span><span class="n">min</span><span class="p">())</span><span class="o">+</span><span class="mi">1</span> 
+    <span class="n">img</span><span class="o">=</span><span class="n">img</span> <span class="o">+</span> <span class="nb">abs</span><span class="p">(</span><span class="n">img</span><span class="o">.</span><span class="n">min</span><span class="p">())</span><span class="o">+</span><span class="mi">1</span>
     <span class="n">plt</span><span class="o">.</span><span class="n">imsave</span><span class="p">(</span><span class="n">fn</span><span class="p">,</span><span class="n">np</span><span class="o">.</span><span class="n">log10</span><span class="p">(</span><span class="n">img</span><span class="p">),</span><span class="n">origin</span><span class="o">=</span><span class="s1">&#39;lower&#39;</span><span class="p">,</span><span class="n">cmap</span><span class="o">=</span><span class="s1">&#39;gray&#39;</span><span class="p">)</span>
     <span class="c1">#plt.imshow(np.log10(img),origin=&#39;lower&#39;,cmap=&#39;gray&#39;)</span>
     <span class="c1">#plt.savefig(fn)</span>
@@ -197,7 +197,7 @@
 
 
 <div class="viewcode-block" id="ptime"><a class="viewcode-back" href="../../_autosummary/obiwan.kenobi.html#obiwan.kenobi.ptime">[docs]</a><span class="k">def</span> <span class="nf">ptime</span><span class="p">(</span><span class="n">text</span><span class="p">,</span><span class="n">t0</span><span class="p">):</span>
-    <span class="sd">&#39;&#39;&#39;Timer&#39;&#39;&#39;</span>    
+    <span class="sd">&#39;&#39;&#39;Timer&#39;&#39;&#39;</span>
     <span class="n">tnow</span><span class="o">=</span><span class="n">Time</span><span class="p">()</span>
     <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;TIMING:</span><span class="si">%s</span><span class="s1"> &#39;</span> <span class="o">%</span> <span class="n">text</span><span class="p">,</span><span class="n">tnow</span><span class="o">-</span><span class="n">t0</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">tnow</span></div>
@@ -216,295 +216,295 @@
     <span class="k">return</span> <span class="s1">&#39;-</span><span class="si">{}</span><span class="s1">-</span><span class="si">{}</span><span class="s1">.fits&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;objtype&#39;</span><span class="p">],</span> <span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;brickname&#39;</span><span class="p">])</span>
                                    <span class="c1">#&#39;rs%d&#39; % kwargs[&#39;rowst&#39;])</span>
 
-<span class="k">try</span><span class="p">:</span> 
-    <span class="k">class</span> <span class="nc">SimDecals</span><span class="p">(</span><span class="n">LegacySurveyData</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Top level object that specifying which data to run through pipeline</span>
-<span class="sd">        </span>
-<span class="sd">        Same behavior as legacypipe.runs.Dr3DecalsSurvey which chooses which</span>
-<span class="sd">            CCDs to include. But this also stores all the relevant obiwan</span>
-<span class="sd">            objects</span>
-<span class="sd">        </span>
-<span class="sd">        Args:</span>
-<span class="sd">            dataset: see definition in </span>
-<span class="sd">                https://github.com/legacysurvey/obiwan/blob/master/py/obiwan/test/end_to_end/README.md </span>
-<span class="sd">            survey_dir: as used by legacypipe.runbrick.run_brick()</span>
-<span class="sd">                Defaults to $LEGACY_SURVEY_DIR environment variable.  Where to look for</span>
-<span class="sd">                files including calibration files, tables of CCDs and bricks, image data</span>
-<span class="sd">            metacat: fits_table </span>
-<span class="sd">                configuration-like params for the simulated sources</span>
-<span class="sd">            simcat: fits_table</span>
-<span class="sd">                simulated source catalog for a given brick (not CCD).</span>
-<span class="sd">            output_dir: legacypipe&#39;s outdir</span>
-<span class="sd">            add_sim_noise: add Poisson noise from the simulated source to the image</span>
-<span class="sd">            seed: for random number generators</span>
-<span class="sd">            image_eq_model: referred to as &#39;testA&#39;</span>
-<span class="sd">                wherever add a simulated source, replace both image and invvar of the image</span>
-<span class="sd">                with that of the simulated source only</span>
+<span class="c1"># try:</span>
+<div class="viewcode-block" id="SimDecals"><a class="viewcode-back" href="../../_autosummary/obiwan.kenobi.html#obiwan.kenobi.SimDecals">[docs]</a><span class="k">class</span> <span class="nc">SimDecals</span><span class="p">(</span><span class="n">LegacySurveyData</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Top level object that specifying which data to run through pipeline</span>
 
-<span class="sd">        Attributes:</span>
-<span class="sd">            DR: see above </span>
-<span class="sd">            metacat: fits_table </span>
-<span class="sd">                configuration-like params for the simulated sources</span>
-<span class="sd">            simcat: fits_table</span>
-<span class="sd">                simulated source catalog for a given brick (not CCD).</span>
-<span class="sd">            output_dir: legacypipe&#39;s outdir</span>
-<span class="sd">            add_sim_noise: add Poisson noise from the simulated source to the image </span>
-<span class="sd">            image_eq_model: referred to as &#39;testA&#39;</span>
-<span class="sd">                wherever add a simulated source, replace both image and invvar of the image</span>
-<span class="sd">                with that of the simulated source only</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        
-        <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dataset</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">survey_dir</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">metacat</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">simcat</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> 
-                     <span class="n">output_dir</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span><span class="n">add_sim_noise</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
-                     <span class="n">image_eq_model</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span><span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">dataset</span><span class="o">=</span> <span class="n">dataset</span>
-            
-            <span class="n">kw</span><span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">survey_dir</span><span class="o">=</span><span class="n">survey_dir</span><span class="p">,</span> 
-                     <span class="n">output_dir</span><span class="o">=</span><span class="n">output_dir</span><span class="p">)</span>
-            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">dataset</span> <span class="o">==</span> <span class="s1">&#39;cosmos&#39;</span><span class="p">:</span>
-                <span class="n">kw</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">subset</span><span class="o">=</span><span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;subset&#39;</span><span class="p">])</span>
-            <span class="nb">super</span><span class="p">(</span><span class="n">SimDecals</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="o">**</span><span class="n">kw</span><span class="p">)</span>
+<span class="sd">    Same behavior as legacypipe.runs.Dr3DecalsSurvey which chooses which</span>
+<span class="sd">        CCDs to include. But this also stores all the relevant obiwan</span>
+<span class="sd">        objects</span>
 
-            <span class="bp">self</span><span class="o">.</span><span class="n">metacat</span> <span class="o">=</span> <span class="n">metacat</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">simcat</span> <span class="o">=</span> <span class="n">simcat</span>
-            <span class="c1"># Additional options from command line</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">add_sim_noise</span><span class="o">=</span> <span class="n">add_sim_noise</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">seed</span><span class="o">=</span> <span class="n">seed</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">image_eq_model</span><span class="o">=</span> <span class="n">image_eq_model</span>
-            <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;SimDecals: self.image_eq_model=&#39;</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">image_eq_model</span><span class="p">)</span>
-            
-        <span class="k">def</span> <span class="nf">get_image_object</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">t</span><span class="p">):</span>
-            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">dataset</span> <span class="o">==</span> <span class="s1">&#39;cosmos&#39;</span><span class="p">:</span>
-                <span class="k">return</span> <span class="n">SimImageCosmos</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">t</span><span class="p">)</span>
+<span class="sd">    Args:</span>
+<span class="sd">        dataset: see definition in</span>
+<span class="sd">            https://github.com/legacysurvey/obiwan/blob/master/py/obiwan/test/end_to_end/README.md</span>
+<span class="sd">        survey_dir: as used by legacypipe.runbrick.run_brick()</span>
+<span class="sd">            Defaults to $LEGACY_SURVEY_DIR environment variable.  Where to look for</span>
+<span class="sd">            files including calibration files, tables of CCDs and bricks, image data</span>
+<span class="sd">        metacat: fits_table</span>
+<span class="sd">            configuration-like params for the simulated sources</span>
+<span class="sd">        simcat: fits_table</span>
+<span class="sd">            simulated source catalog for a given brick (not CCD).</span>
+<span class="sd">        output_dir: legacypipe&#39;s outdir</span>
+<span class="sd">        add_sim_noise: add Poisson noise from the simulated source to the image</span>
+<span class="sd">        seed: for random number generators</span>
+<span class="sd">        image_eq_model: referred to as &#39;testA&#39;</span>
+<span class="sd">            wherever add a simulated source, replace both image and invvar of the image</span>
+<span class="sd">            with that of the simulated source only</span>
+
+<span class="sd">    Attributes:</span>
+<span class="sd">        DR: see above</span>
+<span class="sd">        metacat: fits_table</span>
+<span class="sd">            configuration-like params for the simulated sources</span>
+<span class="sd">        simcat: fits_table</span>
+<span class="sd">            simulated source catalog for a given brick (not CCD).</span>
+<span class="sd">        output_dir: legacypipe&#39;s outdir</span>
+<span class="sd">        add_sim_noise: add Poisson noise from the simulated source to the image</span>
+<span class="sd">        image_eq_model: referred to as &#39;testA&#39;</span>
+<span class="sd">            wherever add a simulated source, replace both image and invvar of the image</span>
+<span class="sd">            with that of the simulated source only</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dataset</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">survey_dir</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">metacat</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">simcat</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                 <span class="n">output_dir</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span><span class="n">add_sim_noise</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+                 <span class="n">image_eq_model</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span><span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dataset</span><span class="o">=</span> <span class="n">dataset</span>
+
+        <span class="n">kw</span><span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">survey_dir</span><span class="o">=</span><span class="n">survey_dir</span><span class="p">,</span>
+                 <span class="n">output_dir</span><span class="o">=</span><span class="n">output_dir</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">dataset</span> <span class="o">==</span> <span class="s1">&#39;cosmos&#39;</span><span class="p">:</span>
+            <span class="n">kw</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">subset</span><span class="o">=</span><span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;subset&#39;</span><span class="p">])</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">SimDecals</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="o">**</span><span class="n">kw</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">metacat</span> <span class="o">=</span> <span class="n">metacat</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">simcat</span> <span class="o">=</span> <span class="n">simcat</span>
+        <span class="c1"># Additional options from command line</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">add_sim_noise</span><span class="o">=</span> <span class="n">add_sim_noise</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">seed</span><span class="o">=</span> <span class="n">seed</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">image_eq_model</span><span class="o">=</span> <span class="n">image_eq_model</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;SimDecals: self.image_eq_model=&#39;</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">image_eq_model</span><span class="p">)</span>
+
+<div class="viewcode-block" id="SimDecals.get_image_object"><a class="viewcode-back" href="../../_autosummary/obiwan.kenobi.html#obiwan.kenobi.SimDecals.get_image_object">[docs]</a>    <span class="k">def</span> <span class="nf">get_image_object</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">t</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">dataset</span> <span class="o">==</span> <span class="s1">&#39;cosmos&#39;</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">SimImageCosmos</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">t</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">SimImage</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">t</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="SimDecals.filter_ccds_files"><a class="viewcode-back" href="../../_autosummary/obiwan.kenobi.html#obiwan.kenobi.SimDecals.filter_ccds_files">[docs]</a>    <span class="k">def</span> <span class="nf">filter_ccds_files</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fns</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;see legacypipe/runs.py&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">fns</span></div>
+
+    <span class="k">def</span> <span class="nf">ccds_for_fitting</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">brick</span><span class="p">,</span> <span class="n">ccds</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">dataset</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;dr3&#39;</span><span class="p">,</span><span class="s1">&#39;dr5&#39;</span><span class="p">]:</span>
+            <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">flatnonzero</span><span class="p">(</span><span class="n">ccds</span><span class="o">.</span><span class="n">camera</span> <span class="o">==</span> <span class="s1">&#39;decam&#39;</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">dataset</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;cosmos&#39;</span><span class="p">]:</span>
+            <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">flatnonzero</span><span class="p">(</span><span class="n">ccds</span><span class="o">.</span><span class="n">camera</span> <span class="o">==</span> <span class="s1">&#39;decam+noise&#39;</span><span class="p">)</span>
+        <span class="c1">#elif self.dataset == &#39;DR4&#39;:</span>
+            <span class="c1">#   return np.flatnonzero(np.logical_or(ccds.camera == &#39;mosaic&#39;,</span>
+        <span class="c1">#                         ccds.camera == &#39;90prime&#39;))</span>
+
+<div class="viewcode-block" id="SimDecals.filter_ccd_kd_files"><a class="viewcode-back" href="../../_autosummary/obiwan.kenobi.html#obiwan.kenobi.SimDecals.filter_ccd_kd_files">[docs]</a>    <span class="k">def</span> <span class="nf">filter_ccd_kd_files</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fns</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;see legacypipe/runs.py&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="p">[]</span></div></div>
+
+<div class="viewcode-block" id="get_srcimg_invvar"><a class="viewcode-back" href="../../_autosummary/obiwan.kenobi.html#obiwan.kenobi.get_srcimg_invvar">[docs]</a><span class="k">def</span> <span class="nf">get_srcimg_invvar</span><span class="p">(</span><span class="n">stamp_ivar</span><span class="p">,</span><span class="n">img_ivar</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;stamp_ivar, img_ivar -- galsim Image objects&quot;&quot;&quot;</span>
+    <span class="c1"># Use img_ivar when stamp_ivar == 0, both otherwise</span>
+    <span class="n">use_img_ivar</span><span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">img_ivar</span><span class="o">.</span><span class="n">array</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">bool</span><span class="p">)</span>
+    <span class="n">use_img_ivar</span><span class="p">[</span> <span class="n">stamp_ivar</span><span class="o">.</span><span class="n">array</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="p">]</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="c1"># First compute using both</span>
+    <span class="n">ivar</span><span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">power</span><span class="p">(</span><span class="n">stamp_ivar</span><span class="o">.</span><span class="n">array</span><span class="o">.</span><span class="n">copy</span><span class="p">(),</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">power</span><span class="p">(</span><span class="n">img_ivar</span><span class="o">.</span><span class="n">array</span><span class="o">.</span><span class="n">copy</span><span class="p">(),</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+    <span class="n">ivar</span><span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">power</span><span class="p">(</span><span class="n">ivar</span><span class="p">,</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+    <span class="n">keep</span><span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">ivar</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">bool</span><span class="p">)</span>
+    <span class="n">keep</span><span class="p">[</span> <span class="p">(</span><span class="n">stamp_ivar</span><span class="o">.</span><span class="n">array</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">)</span><span class="o">*</span>\
+          <span class="p">(</span><span class="n">img_ivar</span><span class="o">.</span><span class="n">array</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">)</span> <span class="p">]</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="n">ivar</span><span class="p">[</span><span class="n">keep</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.</span>
+    <span class="c1"># Now use img_ivar only where need to</span>
+    <span class="n">ivar</span><span class="p">[</span> <span class="n">use_img_ivar</span> <span class="p">]</span> <span class="o">=</span> <span class="n">img_ivar</span><span class="o">.</span><span class="n">array</span><span class="o">.</span><span class="n">copy</span><span class="p">()[</span> <span class="n">use_img_ivar</span> <span class="p">]</span>
+    <span class="c1"># return</span>
+    <span class="n">obj_ivar</span> <span class="o">=</span> <span class="n">stamp_ivar</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+    <span class="n">obj_ivar</span><span class="o">.</span><span class="n">fill</span><span class="p">(</span><span class="mf">0.</span><span class="p">)</span>
+    <span class="n">obj_ivar</span><span class="o">+=</span> <span class="n">ivar</span>
+    <span class="k">return</span> <span class="n">obj_ivar</span></div>
+
+<span class="k">def</span> <span class="nf">saturation_e</span><span class="p">(</span><span class="n">camera</span><span class="p">):</span>
+    <span class="c1"># Saturation limit</span>
+    <span class="n">d</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span><span class="n">decam</span><span class="o">=</span><span class="mf">3e4</span><span class="p">)</span> <span class="c1"># e-</span>
+    <span class="k">return</span> <span class="n">d</span><span class="p">[</span><span class="n">camera</span><span class="p">]</span>
+
+<span class="k">def</span> <span class="nf">ivar_to_var</span><span class="p">(</span><span class="n">ivar</span><span class="p">,</span><span class="n">nano2e</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span><span class="n">camera</span><span class="o">=</span><span class="s1">&#39;decam&#39;</span><span class="p">):</span>
+    <span class="k">assert</span><span class="p">(</span><span class="n">nano2e</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">)</span>
+    <span class="n">flag</span><span class="o">=</span> <span class="n">ivar</span> <span class="o">==</span> <span class="mf">0.</span>
+    <span class="n">var</span><span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">power</span><span class="p">(</span><span class="n">ivar</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+    <span class="c1"># Set 0 ivar pixels to satuation limit</span>
+    <span class="c1"># var * nano2e^2 = e-^2</span>
+    <span class="n">sat</span><span class="o">=</span> <span class="n">saturation_e</span><span class="p">(</span><span class="n">camera</span><span class="p">)</span> <span class="o">/</span> <span class="n">nano2e</span><span class="o">**</span><span class="mi">2</span>
+    <span class="n">var</span><span class="p">[</span><span class="n">flag</span><span class="p">]</span><span class="o">=</span> <span class="n">sat</span>
+    <span class="k">return</span> <span class="n">var</span>
+<span class="c1"># except NameError:</span>
+<span class="c1">#     pass</span>
+
+<span class="c1"># try:</span>
+<div class="viewcode-block" id="SimDecalsCosmos"><a class="viewcode-back" href="../../_autosummary/obiwan.kenobi.html#obiwan.kenobi.SimDecalsCosmos">[docs]</a><span class="k">class</span> <span class="nc">SimDecalsCosmos</span><span class="p">(</span><span class="n">SimDecals</span><span class="p">,</span><span class="n">CosmosSurvey</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Filters the CCDs to just those in the cosmos realizations</span>
+
+<span class="sd">    Call just like SimDecals except with additional Argument &#39;subset&#39;</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        **kwargs: SimDecals args + &#39;subset&#39;</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">SimDecalsCosmos</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
+<span class="c1"># except NameError:</span>
+<span class="c1">#     pass</span>
+
+
+
+<span class="c1"># try:</span>
+<div class="viewcode-block" id="SimImage"><a class="viewcode-back" href="../../_autosummary/obiwan.kenobi.html#obiwan.kenobi.SimImage">[docs]</a><span class="k">class</span> <span class="nc">SimImage</span><span class="p">(</span><span class="n">DecamImage</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Adds simulated sources to a single exposure</span>
+
+<span class="sd">    Similar behavior as legacypipe.decam.DecamImage. Instead of</span>
+<span class="sd">        loading images specifically from DECam, this  loads images</span>
+<span class="sd">        with simulated sources added in</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        survey: SimDecals() object</span>
+<span class="sd">        t: as used by DecamImage</span>
+<span class="sd">            a single row fits_table for a specific CCD</span>
+
+<span class="sd">    Attributes:</span>
+<span class="sd">        inherits: DecamImage</span>
+<span class="sd">        t: as used by DecamImage</span>
+<span class="sd">            a single row fits_table for a specific CCD</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">survey</span><span class="p">,</span> <span class="n">t</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">SimImage</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">survey</span><span class="p">,</span> <span class="n">t</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">t</span> <span class="o">=</span> <span class="n">t</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">survey</span><span class="o">.</span><span class="n">dataset</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;dr3&#39;</span><span class="p">]:</span>
+            <span class="k">assert</span><span class="p">(</span><span class="s1">&#39;arawgain&#39;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">t</span><span class="o">.</span><span class="n">get_columns</span><span class="p">())</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">t</span><span class="o">.</span><span class="n">rename</span><span class="p">(</span><span class="s1">&#39;arawgain&#39;</span><span class="p">,</span> <span class="s1">&#39;gain&#39;</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">survey</span><span class="o">.</span><span class="n">dataset</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;dr5&#39;</span><span class="p">]:</span>
+            <span class="k">assert</span> <span class="s1">&#39;gain&#39;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">t</span><span class="o">.</span><span class="n">get_columns</span><span class="p">()</span>
+        <span class="c1"># Find image on proj or proja if doesn&#39;t exist</span>
+        <span class="n">dirs</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span><span class="n">proj</span><span class="o">=</span><span class="s1">&#39;/global/project/projectdirs/cosmo/staging/decam&#39;</span><span class="p">,</span>
+                  <span class="n">proja</span><span class="o">=</span><span class="s1">&#39;/global/projecta/projectdirs/cosmo/staging/decam&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">imgfn</span><span class="p">):</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;doesnt exist: </span><span class="si">%s</span><span class="s1">, finding new location for file&#39;</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">imgfn</span><span class="p">)</span>
+            <span class="n">base</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">basename</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">imgfn</span><span class="p">)</span>
+            <span class="n">found</span><span class="o">=</span> <span class="n">glob</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">%s</span><span class="s1">/**/</span><span class="si">%s</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">dirs</span><span class="p">[</span><span class="s1">&#39;proja&#39;</span><span class="p">],</span><span class="n">base</span><span class="p">),</span> <span class="n">recursive</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">found</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">found</span><span class="o">=</span> <span class="n">glob</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">%s</span><span class="s1">/**/</span><span class="si">%s</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">dirs</span><span class="p">[</span><span class="s1">&#39;proj&#39;</span><span class="p">],</span><span class="n">base</span><span class="p">),</span> <span class="n">recursive</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">found</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">OSError</span><span class="p">(</span><span class="s1">&#39;cannot find image on project or projecta: </span><span class="si">%s</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="n">base</span><span class="p">)</span>
             <span class="k">else</span><span class="p">:</span>
-                <span class="k">return</span> <span class="n">SimImage</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">t</span><span class="p">)</span>
-        
-        <span class="k">def</span> <span class="nf">filter_ccds_files</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fns</span><span class="p">):</span>
-            <span class="sd">&quot;&quot;&quot;see legacypipe/runs.py&quot;&quot;&quot;</span>
-            <span class="k">return</span> <span class="n">fns</span>
-        
-        <span class="k">def</span> <span class="nf">ccds_for_fitting</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">brick</span><span class="p">,</span> <span class="n">ccds</span><span class="p">):</span>
-            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">dataset</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;dr3&#39;</span><span class="p">,</span><span class="s1">&#39;dr5&#39;</span><span class="p">]:</span>
-                <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">flatnonzero</span><span class="p">(</span><span class="n">ccds</span><span class="o">.</span><span class="n">camera</span> <span class="o">==</span> <span class="s1">&#39;decam&#39;</span><span class="p">)</span>
-            <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">dataset</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;cosmos&#39;</span><span class="p">]:</span>
-                <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">flatnonzero</span><span class="p">(</span><span class="n">ccds</span><span class="o">.</span><span class="n">camera</span> <span class="o">==</span> <span class="s1">&#39;decam+noise&#39;</span><span class="p">)</span>
-            <span class="c1">#elif self.dataset == &#39;DR4&#39;:</span>
-                <span class="c1">#   return np.flatnonzero(np.logical_or(ccds.camera == &#39;mosaic&#39;,</span>
-            <span class="c1">#                         ccds.camera == &#39;90prime&#39;))</span>
-        
-        <span class="k">def</span> <span class="nf">filter_ccd_kd_files</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fns</span><span class="p">):</span>
-            <span class="sd">&quot;&quot;&quot;see legacypipe/runs.py&quot;&quot;&quot;</span>
-            <span class="k">return</span> <span class="p">[]</span>
-        
-<div class="viewcode-block" id="get_srcimg_invvar"><a class="viewcode-back" href="../../_autosummary/obiwan.kenobi.html#obiwan.kenobi.get_srcimg_invvar">[docs]</a>    <span class="k">def</span> <span class="nf">get_srcimg_invvar</span><span class="p">(</span><span class="n">stamp_ivar</span><span class="p">,</span><span class="n">img_ivar</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;stamp_ivar, img_ivar -- galsim Image objects&quot;&quot;&quot;</span>
-        <span class="c1"># Use img_ivar when stamp_ivar == 0, both otherwise</span>
-        <span class="n">use_img_ivar</span><span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">img_ivar</span><span class="o">.</span><span class="n">array</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">bool</span><span class="p">)</span>
-        <span class="n">use_img_ivar</span><span class="p">[</span> <span class="n">stamp_ivar</span><span class="o">.</span><span class="n">array</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="p">]</span> <span class="o">=</span> <span class="kc">False</span>
-        <span class="c1"># First compute using both</span>
-        <span class="n">ivar</span><span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">power</span><span class="p">(</span><span class="n">stamp_ivar</span><span class="o">.</span><span class="n">array</span><span class="o">.</span><span class="n">copy</span><span class="p">(),</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">power</span><span class="p">(</span><span class="n">img_ivar</span><span class="o">.</span><span class="n">array</span><span class="o">.</span><span class="n">copy</span><span class="p">(),</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span> 
-        <span class="n">ivar</span><span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">power</span><span class="p">(</span><span class="n">ivar</span><span class="p">,</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span> 
-        <span class="n">keep</span><span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">ivar</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">bool</span><span class="p">)</span>
-        <span class="n">keep</span><span class="p">[</span> <span class="p">(</span><span class="n">stamp_ivar</span><span class="o">.</span><span class="n">array</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">)</span><span class="o">*</span>\
-              <span class="p">(</span><span class="n">img_ivar</span><span class="o">.</span><span class="n">array</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">)</span> <span class="p">]</span> <span class="o">=</span> <span class="kc">False</span>
-        <span class="n">ivar</span><span class="p">[</span><span class="n">keep</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.</span>
-        <span class="c1"># Now use img_ivar only where need to</span>
-        <span class="n">ivar</span><span class="p">[</span> <span class="n">use_img_ivar</span> <span class="p">]</span> <span class="o">=</span> <span class="n">img_ivar</span><span class="o">.</span><span class="n">array</span><span class="o">.</span><span class="n">copy</span><span class="p">()[</span> <span class="n">use_img_ivar</span> <span class="p">]</span>
-        <span class="c1"># return </span>
-        <span class="n">obj_ivar</span> <span class="o">=</span> <span class="n">stamp_ivar</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
-        <span class="n">obj_ivar</span><span class="o">.</span><span class="n">fill</span><span class="p">(</span><span class="mf">0.</span><span class="p">)</span>
-        <span class="n">obj_ivar</span><span class="o">+=</span> <span class="n">ivar</span>
-        <span class="k">return</span> <span class="n">obj_ivar</span></div>
+                <span class="bp">self</span><span class="o">.</span><span class="n">imgfn</span><span class="o">=</span> <span class="n">found</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;found new location, overwrite self.imgfn with </span><span class="si">%s</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">imgfn</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">wtfn</span><span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">imgfn</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;_oki_&#39;</span><span class="p">,</span><span class="s1">&#39;_oow_&#39;</span><span class="p">)</span>
+                                  <span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;_ooi_&#39;</span><span class="p">,</span><span class="s1">&#39;_oow_&#39;</span><span class="p">))</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">dqfn</span><span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">wtfn</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;_oow_&#39;</span><span class="p">,</span><span class="s1">&#39;_ood_&#39;</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">saturation_e</span><span class="p">(</span><span class="n">camera</span><span class="p">):</span>
-        <span class="c1"># Saturation limit</span>
-        <span class="n">d</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span><span class="n">decam</span><span class="o">=</span><span class="mf">3e4</span><span class="p">)</span> <span class="c1"># e-</span>
-        <span class="k">return</span> <span class="n">d</span><span class="p">[</span><span class="n">camera</span><span class="p">]</span>
-
-    <span class="k">def</span> <span class="nf">ivar_to_var</span><span class="p">(</span><span class="n">ivar</span><span class="p">,</span><span class="n">nano2e</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span><span class="n">camera</span><span class="o">=</span><span class="s1">&#39;decam&#39;</span><span class="p">):</span>
-        <span class="k">assert</span><span class="p">(</span><span class="n">nano2e</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">)</span>
-        <span class="n">flag</span><span class="o">=</span> <span class="n">ivar</span> <span class="o">==</span> <span class="mf">0.</span>
-        <span class="n">var</span><span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">power</span><span class="p">(</span><span class="n">ivar</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span>
-        <span class="c1"># Set 0 ivar pixels to satuation limit</span>
-        <span class="c1"># var * nano2e^2 = e-^2</span>
-        <span class="n">sat</span><span class="o">=</span> <span class="n">saturation_e</span><span class="p">(</span><span class="n">camera</span><span class="p">)</span> <span class="o">/</span> <span class="n">nano2e</span><span class="o">**</span><span class="mi">2</span>
-        <span class="n">var</span><span class="p">[</span><span class="n">flag</span><span class="p">]</span><span class="o">=</span> <span class="n">sat</span>
-        <span class="k">return</span> <span class="n">var</span> 
-<span class="k">except</span> <span class="ne">NameError</span><span class="p">:</span>
-    <span class="k">pass</span>
-
-<span class="k">try</span><span class="p">:</span> 
-    <span class="k">class</span> <span class="nc">SimDecalsCosmos</span><span class="p">(</span><span class="n">SimDecals</span><span class="p">,</span><span class="n">CosmosSurvey</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Filters the CCDs to just those in the cosmos realizations</span>
-
-<span class="sd">        Call just like SimDecals except with additional Argument &#39;subset&#39;        </span>
-<span class="sd">        </span>
-<span class="sd">        Args:</span>
-<span class="sd">            **kwargs: SimDecals args + &#39;subset&#39;</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        
-        <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
-            <span class="nb">super</span><span class="p">(</span><span class="n">SimDecalsCosmos</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
-<span class="k">except</span> <span class="ne">NameError</span><span class="p">:</span>
-    <span class="k">pass</span>
-
-
-
-<span class="k">try</span><span class="p">:</span> 
-    <span class="k">class</span> <span class="nc">SimImage</span><span class="p">(</span><span class="n">DecamImage</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Adds simulated sources to a single exposure</span>
-
-<span class="sd">        Similar behavior as legacypipe.decam.DecamImage. Instead of </span>
-<span class="sd">            loading images specifically from DECam, this  loads images</span>
-<span class="sd">            with simulated sources added in </span>
-
-<span class="sd">        Args:</span>
-<span class="sd">            survey: SimDecals() object</span>
-<span class="sd">            t: as used by DecamImage</span>
-<span class="sd">                a single row fits_table for a specific CCD</span>
-
-<span class="sd">        Attributes:</span>
-<span class="sd">            inherits: DecamImage</span>
-<span class="sd">            t: as used by DecamImage</span>
-<span class="sd">                a single row fits_table for a specific CCD</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-
-        <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">survey</span><span class="p">,</span> <span class="n">t</span><span class="p">):</span>
-            <span class="nb">super</span><span class="p">(</span><span class="n">SimImage</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">survey</span><span class="p">,</span> <span class="n">t</span><span class="p">)</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">t</span> <span class="o">=</span> <span class="n">t</span>
-            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">survey</span><span class="o">.</span><span class="n">dataset</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;dr3&#39;</span><span class="p">]:</span>
-                <span class="k">assert</span><span class="p">(</span><span class="s1">&#39;arawgain&#39;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">t</span><span class="o">.</span><span class="n">get_columns</span><span class="p">())</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">t</span><span class="o">.</span><span class="n">rename</span><span class="p">(</span><span class="s1">&#39;arawgain&#39;</span><span class="p">,</span> <span class="s1">&#39;gain&#39;</span><span class="p">)</span>
-            <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">survey</span><span class="o">.</span><span class="n">dataset</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;dr5&#39;</span><span class="p">]:</span>
-                <span class="k">assert</span> <span class="s1">&#39;gain&#39;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">t</span><span class="o">.</span><span class="n">get_columns</span><span class="p">()</span>
-            <span class="c1"># Find image on proj or proja if doesn&#39;t exist</span>
-            <span class="n">dirs</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span><span class="n">proj</span><span class="o">=</span><span class="s1">&#39;/project/projectdirs/cosmo/staging/decam&#39;</span><span class="p">,</span>
-                      <span class="n">proja</span><span class="o">=</span><span class="s1">&#39;/global/projecta/projectdirs/cosmo/staging/decam&#39;</span><span class="p">)</span>
-            <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">imgfn</span><span class="p">):</span>
-                <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;doesnt exist: </span><span class="si">%s</span><span class="s1">, finding new location for file&#39;</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">imgfn</span><span class="p">)</span>
-                <span class="n">base</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">basename</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">imgfn</span><span class="p">)</span>
-                <span class="n">found</span><span class="o">=</span> <span class="n">glob</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">%s</span><span class="s1">/**/</span><span class="si">%s</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">dirs</span><span class="p">[</span><span class="s1">&#39;proja&#39;</span><span class="p">],</span><span class="n">base</span><span class="p">),</span> <span class="n">recursive</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-                <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">found</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
-                    <span class="n">found</span><span class="o">=</span> <span class="n">glob</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">%s</span><span class="s1">/**/</span><span class="si">%s</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">dirs</span><span class="p">[</span><span class="s1">&#39;proj&#39;</span><span class="p">],</span><span class="n">base</span><span class="p">),</span> <span class="n">recursive</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-                <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">found</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
-                    <span class="k">raise</span> <span class="ne">OSError</span><span class="p">(</span><span class="s1">&#39;cannot find image on project or projecta: </span><span class="si">%s</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="n">base</span><span class="p">)</span>
-                <span class="k">else</span><span class="p">:</span>
-                    <span class="bp">self</span><span class="o">.</span><span class="n">imgfn</span><span class="o">=</span> <span class="n">found</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
-                <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;found new location, overwrite self.imgfn with </span><span class="si">%s</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">imgfn</span><span class="p">)</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">wtfn</span><span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">imgfn</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;_oki_&#39;</span><span class="p">,</span><span class="s1">&#39;_oow_&#39;</span><span class="p">)</span>
-                                      <span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;_ooi_&#39;</span><span class="p">,</span><span class="s1">&#39;_oow_&#39;</span><span class="p">))</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">dqfn</span><span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">wtfn</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;_oow_&#39;</span><span class="p">,</span><span class="s1">&#39;_ood_&#39;</span><span class="p">)</span>
-
-        <span class="k">def</span> <span class="nf">get_tractor_image</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
-            <span class="n">tim</span> <span class="o">=</span> <span class="nb">super</span><span class="p">(</span><span class="n">SimImage</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">get_tractor_image</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
-            <span class="k">if</span> <span class="n">tim</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span> <span class="c1"># this can be None when the edge of a CCD overlaps</span>
-                <span class="k">return</span> <span class="n">tim</span>
-
-            <span class="c1"># Seed</span>
-            <span class="c1">#if &#39;SEED&#39; in self.survey.metacat.columns:</span>
-            <span class="c1">#    seed = self.survey.metacat[&#39;SEED&#39;]</span>
-            <span class="c1">#else:</span>
-            <span class="c1">#    seed = None</span>
-
-            <span class="n">objtype</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">survey</span><span class="o">.</span><span class="n">metacat</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;objtype&#39;</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
-            <span class="n">objstamp</span> <span class="o">=</span> <span class="n">BuildStamp</span><span class="p">(</span><span class="n">tim</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">survey</span><span class="o">.</span><span class="n">seed</span><span class="p">,</span>
-                                  <span class="n">camera</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">t</span><span class="o">.</span><span class="n">camera</span><span class="p">,</span>
-                                  <span class="n">gain</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">t</span><span class="o">.</span><span class="n">gain</span><span class="p">,</span><span class="n">exptime</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">t</span><span class="o">.</span><span class="n">exptime</span><span class="p">)</span>
-            <span class="c1"># ids make it onto a ccd (geometry cut)</span>
-            <span class="n">tim</span><span class="o">.</span><span class="n">ids_added</span><span class="o">=</span><span class="p">[]</span>
-
-            <span class="c1"># Grab the data and inverse variance images [nanomaggies!]</span>
-            <span class="n">tim_image</span> <span class="o">=</span> <span class="n">galsim</span><span class="o">.</span><span class="n">Image</span><span class="p">(</span><span class="n">tim</span><span class="o">.</span><span class="n">getImage</span><span class="p">())</span>
-            <span class="n">tim_invvar</span> <span class="o">=</span> <span class="n">galsim</span><span class="o">.</span><span class="n">Image</span><span class="p">(</span><span class="n">tim</span><span class="o">.</span><span class="n">getInvvar</span><span class="p">())</span>
-            <span class="n">tim_dq</span> <span class="o">=</span> <span class="n">galsim</span><span class="o">.</span><span class="n">Image</span><span class="p">(</span><span class="n">tim</span><span class="o">.</span><span class="n">dq</span><span class="p">)</span>
-            <span class="c1"># Also store galaxy sims and sims invvar</span>
-            <span class="n">sims_image</span> <span class="o">=</span> <span class="n">tim_image</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span> 
-            <span class="n">sims_image</span><span class="o">.</span><span class="n">fill</span><span class="p">(</span><span class="mf">0.0</span><span class="p">)</span>
-            <span class="n">sims_ivar</span> <span class="o">=</span> <span class="n">sims_image</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
-
-            <span class="c1"># Store simulated galaxy images in tim object </span>
-            <span class="c1"># Loop on each object.</span>
-            <span class="k">for</span> <span class="n">ii</span><span class="p">,</span> <span class="n">obj</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">survey</span><span class="o">.</span><span class="n">simcat</span><span class="p">):</span>
-                <span class="c1"># Print timing</span>
-                <span class="n">t0</span><span class="o">=</span> <span class="n">Time</span><span class="p">()</span>
-                <span class="k">if</span> <span class="n">objtype</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;lrg&#39;</span><span class="p">,</span><span class="s1">&#39;elg&#39;</span><span class="p">]:</span>
-                    <span class="n">strin</span><span class="o">=</span> <span class="s1">&#39;Drawing 1 </span><span class="si">%s</span><span class="s1">: n=</span><span class="si">%.2f</span><span class="s1">, rhalf=</span><span class="si">%.2f</span><span class="s1">, e1=</span><span class="si">%.2f</span><span class="s1">, e2=</span><span class="si">%.2f</span><span class="s1">&#39;</span> <span class="o">%</span> \
-                            <span class="p">(</span><span class="n">objtype</span><span class="o">.</span><span class="n">upper</span><span class="p">(),</span> <span class="n">obj</span><span class="o">.</span><span class="n">n</span><span class="p">,</span><span class="n">obj</span><span class="o">.</span><span class="n">rhalf</span><span class="p">,</span><span class="n">obj</span><span class="o">.</span><span class="n">e1</span><span class="p">,</span><span class="n">obj</span><span class="o">.</span><span class="n">e2</span><span class="p">)</span>
-                    <span class="nb">print</span><span class="p">(</span><span class="n">strin</span><span class="p">)</span>
-
-                <span class="k">if</span> <span class="n">objtype</span> <span class="o">==</span> <span class="s1">&#39;star&#39;</span><span class="p">:</span>
-                    <span class="n">stamp</span> <span class="o">=</span> <span class="n">objstamp</span><span class="o">.</span><span class="n">star</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span>
-                <span class="k">elif</span> <span class="n">objtype</span> <span class="o">==</span> <span class="s1">&#39;elg&#39;</span><span class="p">:</span>
-                    <span class="n">stamp</span> <span class="o">=</span> <span class="n">objstamp</span><span class="o">.</span><span class="n">elg</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span>
-                <span class="k">elif</span> <span class="n">objtype</span> <span class="o">==</span> <span class="s1">&#39;lrg&#39;</span><span class="p">:</span>
-                    <span class="n">stamp</span> <span class="o">=</span> <span class="n">objstamp</span><span class="o">.</span><span class="n">lrg</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span>
-                <span class="k">elif</span> <span class="n">objtype</span> <span class="o">==</span> <span class="s1">&#39;qso&#39;</span><span class="p">:</span>
-                    <span class="n">stamp</span> <span class="o">=</span> <span class="n">objstamp</span><span class="o">.</span><span class="n">qso</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span>
-                <span class="n">t0</span><span class="o">=</span> <span class="n">ptime</span><span class="p">(</span><span class="s1">&#39;Finished Drawing </span><span class="si">%s</span><span class="s1">: id=</span><span class="si">%d</span><span class="s1"> band=</span><span class="si">%s</span><span class="s1"> dbflux=</span><span class="si">%f</span><span class="s1"> addedflux=</span><span class="si">%f</span><span class="s1">&#39;</span> <span class="o">%</span> 
-                    <span class="p">(</span><span class="n">objtype</span><span class="o">.</span><span class="n">upper</span><span class="p">(),</span> <span class="n">obj</span><span class="o">.</span><span class="n">id</span><span class="p">,</span><span class="n">objstamp</span><span class="o">.</span><span class="n">band</span><span class="p">,</span> 
-                     <span class="n">obj</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">objstamp</span><span class="o">.</span><span class="n">band</span><span class="o">+</span><span class="s1">&#39;flux&#39;</span><span class="p">),</span><span class="n">stamp</span><span class="o">.</span><span class="n">array</span><span class="o">.</span><span class="n">sum</span><span class="p">()),</span> <span class="n">t0</span><span class="p">)</span>
-
-                <span class="n">stamp_nonoise</span><span class="o">=</span> <span class="n">stamp</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
-                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">survey</span><span class="o">.</span><span class="n">add_sim_noise</span><span class="p">:</span>
-                    <span class="n">stamp</span> <span class="o">+=</span> <span class="n">noise_for_galaxy</span><span class="p">(</span><span class="n">stamp</span><span class="p">,</span><span class="n">objstamp</span><span class="o">.</span><span class="n">nano2e</span><span class="p">)</span>
-                <span class="n">ivarstamp</span><span class="o">=</span> <span class="n">ivar_for_galaxy</span><span class="p">(</span><span class="n">stamp</span><span class="p">,</span><span class="n">objstamp</span><span class="o">.</span><span class="n">nano2e</span><span class="p">)</span>
-                <span class="c1"># Add source if EVEN 1 pix falls on the CCD</span>
-                <span class="n">overlap</span> <span class="o">=</span> <span class="n">stamp</span><span class="o">.</span><span class="n">bounds</span> <span class="o">&amp;</span> <span class="n">tim_image</span><span class="o">.</span><span class="n">bounds</span>
-                <span class="k">if</span> <span class="n">overlap</span><span class="o">.</span><span class="n">area</span><span class="p">()</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
-                    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Stamp overlaps tim: id=</span><span class="si">%d</span><span class="s1"> band=</span><span class="si">%s</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">obj</span><span class="o">.</span><span class="n">id</span><span class="p">,</span><span class="n">objstamp</span><span class="o">.</span><span class="n">band</span><span class="p">))</span>     
-                    <span class="n">tim</span><span class="o">.</span><span class="n">ids_added</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">obj</span><span class="o">.</span><span class="n">id</span><span class="p">)</span>
-                    <span class="n">stamp</span> <span class="o">=</span> <span class="n">stamp</span><span class="p">[</span><span class="n">overlap</span><span class="p">]</span>   
-                    <span class="n">ivarstamp</span> <span class="o">=</span> <span class="n">ivarstamp</span><span class="p">[</span><span class="n">overlap</span><span class="p">]</span>      
-                    <span class="n">stamp_nonoise</span><span class="o">=</span> <span class="n">stamp_nonoise</span><span class="p">[</span><span class="n">overlap</span><span class="p">]</span>
-                    
-                    <span class="c1"># Zero out invvar where bad pixel mask is flagged (&gt; 0)</span>
-                    <span class="n">keep</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">tim_dq</span><span class="p">[</span><span class="n">overlap</span><span class="p">]</span><span class="o">.</span><span class="n">array</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
-                    <span class="n">keep</span><span class="p">[</span> <span class="n">tim_dq</span><span class="p">[</span><span class="n">overlap</span><span class="p">]</span><span class="o">.</span><span class="n">array</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="p">]</span> <span class="o">=</span> <span class="mf">0.</span>
-                    <span class="n">ivarstamp</span> <span class="o">*=</span> <span class="n">keep</span>
-
-                    <span class="c1"># Add stamp to image</span>
-                    <span class="n">back</span><span class="o">=</span> <span class="n">tim_image</span><span class="p">[</span><span class="n">overlap</span><span class="p">]</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
-                    <span class="n">tim_image</span><span class="p">[</span><span class="n">overlap</span><span class="p">]</span> <span class="o">+=</span> <span class="n">stamp</span> <span class="c1">#= back.copy() + stamp.copy()</span>
-                    <span class="c1"># Add variances</span>
-                    <span class="n">back_ivar</span><span class="o">=</span> <span class="n">tim_invvar</span><span class="p">[</span><span class="n">overlap</span><span class="p">]</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
-                    <span class="n">tot_ivar</span><span class="o">=</span> <span class="n">get_srcimg_invvar</span><span class="p">(</span><span class="n">ivarstamp</span><span class="p">,</span> <span class="n">back_ivar</span><span class="p">)</span>
-                    <span class="n">tim_invvar</span><span class="p">[</span><span class="n">overlap</span><span class="p">]</span> <span class="o">=</span> <span class="n">tot_ivar</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
-                    
-                    <span class="c1">#Extra</span>
-                    <span class="n">sims_image</span><span class="p">[</span><span class="n">overlap</span><span class="p">]</span> <span class="o">+=</span> <span class="n">stamp</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span> 
-                    <span class="n">sims_ivar</span><span class="p">[</span><span class="n">overlap</span><span class="p">]</span> <span class="o">+=</span> <span class="n">ivarstamp</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
-                    
-                    <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="n">sims_ivar</span><span class="o">.</span><span class="n">array</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
-                        <span class="n">log</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s1">&#39;Negative invvar!&#39;</span><span class="p">)</span>
-                        <span class="kn">import</span> <span class="nn">pdb</span> <span class="p">;</span> <span class="n">pdb</span><span class="o">.</span><span class="n">set_trace</span><span class="p">()</span>
-            <span class="n">tim</span><span class="o">.</span><span class="n">sims_image</span> <span class="o">=</span> <span class="n">sims_image</span><span class="o">.</span><span class="n">array</span>
-            <span class="n">tim</span><span class="o">.</span><span class="n">sims_inverr</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">sims_ivar</span><span class="o">.</span><span class="n">array</span><span class="p">)</span>
-            <span class="c1"># Can set image=model, ivar=1/model for testing</span>
-            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">survey</span><span class="o">.</span><span class="n">image_eq_model</span><span class="p">:</span>
-                <span class="n">tim</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="n">sims_image</span><span class="o">.</span><span class="n">array</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
-                <span class="n">tim</span><span class="o">.</span><span class="n">inverr</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">tim</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
-                <span class="n">tim</span><span class="o">.</span><span class="n">inverr</span><span class="p">[</span><span class="n">sims_image</span><span class="o">.</span><span class="n">array</span> <span class="o">&gt;</span> <span class="mf">0.</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="mf">1.</span><span class="o">/</span><span class="n">sims_image</span><span class="o">.</span><span class="n">array</span><span class="o">.</span><span class="n">copy</span><span class="p">()[</span><span class="n">sims_image</span><span class="o">.</span><span class="n">array</span> <span class="o">&gt;</span> <span class="mf">0.</span><span class="p">])</span> 
-            <span class="k">else</span><span class="p">:</span>
-                <span class="n">tim</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="n">tim_image</span><span class="o">.</span><span class="n">array</span>
-                <span class="n">tim</span><span class="o">.</span><span class="n">inverr</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">tim_invvar</span><span class="o">.</span><span class="n">array</span><span class="p">)</span>
+<div class="viewcode-block" id="SimImage.get_tractor_image"><a class="viewcode-back" href="../../_autosummary/obiwan.kenobi.html#obiwan.kenobi.SimImage.get_tractor_image">[docs]</a>    <span class="k">def</span> <span class="nf">get_tractor_image</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="n">tim</span> <span class="o">=</span> <span class="nb">super</span><span class="p">(</span><span class="n">SimImage</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">get_tractor_image</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">tim</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span> <span class="c1"># this can be None when the edge of a CCD overlaps</span>
             <span class="k">return</span> <span class="n">tim</span>
-<span class="k">except</span> <span class="ne">NameError</span><span class="p">:</span>
-    <span class="k">pass</span>
 
-<span class="k">try</span><span class="p">:</span> 
-    <span class="k">class</span> <span class="nc">SimImageCosmos</span><span class="p">(</span><span class="n">SimImage</span><span class="p">,</span><span class="n">DecamImagePlusNoise</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Filters the CCDs to just those in the cosmos realizations</span>
+        <span class="c1"># Seed</span>
+        <span class="c1">#if &#39;SEED&#39; in self.survey.metacat.columns:</span>
+        <span class="c1">#    seed = self.survey.metacat[&#39;SEED&#39;]</span>
+        <span class="c1">#else:</span>
+        <span class="c1">#    seed = None</span>
 
-<span class="sd">        Call just like SimDecals except with additional Argument &#39;subset&#39;        </span>
-<span class="sd">        </span>
-<span class="sd">        Args:</span>
-<span class="sd">            **kwargs: SimDecals args + &#39;subset&#39;</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        
-        <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">survey</span><span class="p">,</span> <span class="n">t</span><span class="p">):</span>
-            <span class="nb">super</span><span class="p">(</span><span class="n">SimImageCosmos</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">survey</span><span class="p">,</span> <span class="n">t</span><span class="p">)</span>
-<span class="k">except</span> <span class="ne">NameError</span><span class="p">:</span>
-    <span class="k">pass</span>
+        <span class="n">objtype</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">survey</span><span class="o">.</span><span class="n">metacat</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;objtype&#39;</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">objstamp</span> <span class="o">=</span> <span class="n">BuildStamp</span><span class="p">(</span><span class="n">tim</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">survey</span><span class="o">.</span><span class="n">seed</span><span class="p">,</span>
+                              <span class="n">camera</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">t</span><span class="o">.</span><span class="n">camera</span><span class="p">,</span>
+                              <span class="n">gain</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">t</span><span class="o">.</span><span class="n">gain</span><span class="p">,</span><span class="n">exptime</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">t</span><span class="o">.</span><span class="n">exptime</span><span class="p">)</span>
+        <span class="c1"># ids make it onto a ccd (geometry cut)</span>
+        <span class="n">tim</span><span class="o">.</span><span class="n">ids_added</span><span class="o">=</span><span class="p">[]</span>
+
+        <span class="c1"># Grab the data and inverse variance images [nanomaggies!]</span>
+        <span class="n">tim_image</span> <span class="o">=</span> <span class="n">galsim</span><span class="o">.</span><span class="n">Image</span><span class="p">(</span><span class="n">tim</span><span class="o">.</span><span class="n">getImage</span><span class="p">())</span>
+        <span class="n">tim_invvar</span> <span class="o">=</span> <span class="n">galsim</span><span class="o">.</span><span class="n">Image</span><span class="p">(</span><span class="n">tim</span><span class="o">.</span><span class="n">getInvvar</span><span class="p">())</span>
+        <span class="n">tim_dq</span> <span class="o">=</span> <span class="n">galsim</span><span class="o">.</span><span class="n">Image</span><span class="p">(</span><span class="n">tim</span><span class="o">.</span><span class="n">dq</span><span class="p">)</span>
+        <span class="c1"># Also store galaxy sims and sims invvar</span>
+        <span class="n">sims_image</span> <span class="o">=</span> <span class="n">tim_image</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="n">sims_image</span><span class="o">.</span><span class="n">fill</span><span class="p">(</span><span class="mf">0.0</span><span class="p">)</span>
+        <span class="n">sims_ivar</span> <span class="o">=</span> <span class="n">sims_image</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+
+        <span class="c1"># Store simulated galaxy images in tim object</span>
+        <span class="c1"># Loop on each object.</span>
+        <span class="k">for</span> <span class="n">ii</span><span class="p">,</span> <span class="n">obj</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">survey</span><span class="o">.</span><span class="n">simcat</span><span class="p">):</span>
+            <span class="c1"># Print timing</span>
+            <span class="n">t0</span><span class="o">=</span> <span class="n">Time</span><span class="p">()</span>
+            <span class="k">if</span> <span class="n">objtype</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;lrg&#39;</span><span class="p">,</span><span class="s1">&#39;elg&#39;</span><span class="p">]:</span>
+                <span class="n">strin</span><span class="o">=</span> <span class="s1">&#39;Drawing 1 </span><span class="si">%s</span><span class="s1">: n=</span><span class="si">%.2f</span><span class="s1">, rhalf=</span><span class="si">%.2f</span><span class="s1">, e1=</span><span class="si">%.2f</span><span class="s1">, e2=</span><span class="si">%.2f</span><span class="s1">&#39;</span> <span class="o">%</span> \
+                        <span class="p">(</span><span class="n">objtype</span><span class="o">.</span><span class="n">upper</span><span class="p">(),</span> <span class="n">obj</span><span class="o">.</span><span class="n">n</span><span class="p">,</span><span class="n">obj</span><span class="o">.</span><span class="n">rhalf</span><span class="p">,</span><span class="n">obj</span><span class="o">.</span><span class="n">e1</span><span class="p">,</span><span class="n">obj</span><span class="o">.</span><span class="n">e2</span><span class="p">)</span>
+                <span class="nb">print</span><span class="p">(</span><span class="n">strin</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">objtype</span> <span class="o">==</span> <span class="s1">&#39;star&#39;</span><span class="p">:</span>
+                <span class="n">stamp</span> <span class="o">=</span> <span class="n">objstamp</span><span class="o">.</span><span class="n">star</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="n">objtype</span> <span class="o">==</span> <span class="s1">&#39;elg&#39;</span><span class="p">:</span>
+                <span class="n">stamp</span> <span class="o">=</span> <span class="n">objstamp</span><span class="o">.</span><span class="n">elg</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="n">objtype</span> <span class="o">==</span> <span class="s1">&#39;lrg&#39;</span><span class="p">:</span>
+                <span class="n">stamp</span> <span class="o">=</span> <span class="n">objstamp</span><span class="o">.</span><span class="n">lrg</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="n">objtype</span> <span class="o">==</span> <span class="s1">&#39;qso&#39;</span><span class="p">:</span>
+                <span class="n">stamp</span> <span class="o">=</span> <span class="n">objstamp</span><span class="o">.</span><span class="n">qso</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span>
+            <span class="n">t0</span><span class="o">=</span> <span class="n">ptime</span><span class="p">(</span><span class="s1">&#39;Finished Drawing </span><span class="si">%s</span><span class="s1">: id=</span><span class="si">%d</span><span class="s1"> band=</span><span class="si">%s</span><span class="s1"> dbflux=</span><span class="si">%f</span><span class="s1"> addedflux=</span><span class="si">%f</span><span class="s1">&#39;</span> <span class="o">%</span>
+                <span class="p">(</span><span class="n">objtype</span><span class="o">.</span><span class="n">upper</span><span class="p">(),</span> <span class="n">obj</span><span class="o">.</span><span class="n">id</span><span class="p">,</span><span class="n">objstamp</span><span class="o">.</span><span class="n">band</span><span class="p">,</span>
+                 <span class="n">obj</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">objstamp</span><span class="o">.</span><span class="n">band</span><span class="o">+</span><span class="s1">&#39;flux&#39;</span><span class="p">),</span><span class="n">stamp</span><span class="o">.</span><span class="n">array</span><span class="o">.</span><span class="n">sum</span><span class="p">()),</span> <span class="n">t0</span><span class="p">)</span>
+
+            <span class="n">stamp_nonoise</span><span class="o">=</span> <span class="n">stamp</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">survey</span><span class="o">.</span><span class="n">add_sim_noise</span><span class="p">:</span>
+                <span class="n">stamp</span> <span class="o">+=</span> <span class="n">noise_for_galaxy</span><span class="p">(</span><span class="n">stamp</span><span class="p">,</span><span class="n">objstamp</span><span class="o">.</span><span class="n">nano2e</span><span class="p">)</span>
+            <span class="n">ivarstamp</span><span class="o">=</span> <span class="n">ivar_for_galaxy</span><span class="p">(</span><span class="n">stamp</span><span class="p">,</span><span class="n">objstamp</span><span class="o">.</span><span class="n">nano2e</span><span class="p">)</span>
+            <span class="c1"># Add source if EVEN 1 pix falls on the CCD</span>
+            <span class="n">overlap</span> <span class="o">=</span> <span class="n">stamp</span><span class="o">.</span><span class="n">bounds</span> <span class="o">&amp;</span> <span class="n">tim_image</span><span class="o">.</span><span class="n">bounds</span>
+            <span class="k">if</span> <span class="n">overlap</span><span class="o">.</span><span class="n">area</span><span class="p">()</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Stamp overlaps tim: id=</span><span class="si">%d</span><span class="s1"> band=</span><span class="si">%s</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">obj</span><span class="o">.</span><span class="n">id</span><span class="p">,</span><span class="n">objstamp</span><span class="o">.</span><span class="n">band</span><span class="p">))</span>
+                <span class="n">tim</span><span class="o">.</span><span class="n">ids_added</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">obj</span><span class="o">.</span><span class="n">id</span><span class="p">)</span>
+                <span class="n">stamp</span> <span class="o">=</span> <span class="n">stamp</span><span class="p">[</span><span class="n">overlap</span><span class="p">]</span>
+                <span class="n">ivarstamp</span> <span class="o">=</span> <span class="n">ivarstamp</span><span class="p">[</span><span class="n">overlap</span><span class="p">]</span>
+                <span class="n">stamp_nonoise</span><span class="o">=</span> <span class="n">stamp_nonoise</span><span class="p">[</span><span class="n">overlap</span><span class="p">]</span>
+
+                <span class="c1"># Zero out invvar where bad pixel mask is flagged (&gt; 0)</span>
+                <span class="n">keep</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">tim_dq</span><span class="p">[</span><span class="n">overlap</span><span class="p">]</span><span class="o">.</span><span class="n">array</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+                <span class="n">keep</span><span class="p">[</span> <span class="n">tim_dq</span><span class="p">[</span><span class="n">overlap</span><span class="p">]</span><span class="o">.</span><span class="n">array</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="p">]</span> <span class="o">=</span> <span class="mf">0.</span>
+                <span class="n">ivarstamp</span> <span class="o">*=</span> <span class="n">keep</span>
+
+                <span class="c1"># Add stamp to image</span>
+                <span class="n">back</span><span class="o">=</span> <span class="n">tim_image</span><span class="p">[</span><span class="n">overlap</span><span class="p">]</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+                <span class="n">tim_image</span><span class="p">[</span><span class="n">overlap</span><span class="p">]</span> <span class="o">+=</span> <span class="n">stamp</span> <span class="c1">#= back.copy() + stamp.copy()</span>
+                <span class="c1"># Add variances</span>
+                <span class="n">back_ivar</span><span class="o">=</span> <span class="n">tim_invvar</span><span class="p">[</span><span class="n">overlap</span><span class="p">]</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+                <span class="n">tot_ivar</span><span class="o">=</span> <span class="n">get_srcimg_invvar</span><span class="p">(</span><span class="n">ivarstamp</span><span class="p">,</span> <span class="n">back_ivar</span><span class="p">)</span>
+                <span class="n">tim_invvar</span><span class="p">[</span><span class="n">overlap</span><span class="p">]</span> <span class="o">=</span> <span class="n">tot_ivar</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+
+                <span class="c1">#Extra</span>
+                <span class="n">sims_image</span><span class="p">[</span><span class="n">overlap</span><span class="p">]</span> <span class="o">+=</span> <span class="n">stamp</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+                <span class="n">sims_ivar</span><span class="p">[</span><span class="n">overlap</span><span class="p">]</span> <span class="o">+=</span> <span class="n">ivarstamp</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+
+                <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="n">sims_ivar</span><span class="o">.</span><span class="n">array</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
+                    <span class="n">log</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s1">&#39;Negative invvar!&#39;</span><span class="p">)</span>
+                    <span class="kn">import</span> <span class="nn">pdb</span> <span class="p">;</span> <span class="n">pdb</span><span class="o">.</span><span class="n">set_trace</span><span class="p">()</span>
+        <span class="n">tim</span><span class="o">.</span><span class="n">sims_image</span> <span class="o">=</span> <span class="n">sims_image</span><span class="o">.</span><span class="n">array</span>
+        <span class="n">tim</span><span class="o">.</span><span class="n">sims_inverr</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">sims_ivar</span><span class="o">.</span><span class="n">array</span><span class="p">)</span>
+        <span class="c1"># Can set image=model, ivar=1/model for testing</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">survey</span><span class="o">.</span><span class="n">image_eq_model</span><span class="p">:</span>
+            <span class="n">tim</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="n">sims_image</span><span class="o">.</span><span class="n">array</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+            <span class="n">tim</span><span class="o">.</span><span class="n">inverr</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">tim</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+            <span class="n">tim</span><span class="o">.</span><span class="n">inverr</span><span class="p">[</span><span class="n">sims_image</span><span class="o">.</span><span class="n">array</span> <span class="o">&gt;</span> <span class="mf">0.</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="mf">1.</span><span class="o">/</span><span class="n">sims_image</span><span class="o">.</span><span class="n">array</span><span class="o">.</span><span class="n">copy</span><span class="p">()[</span><span class="n">sims_image</span><span class="o">.</span><span class="n">array</span> <span class="o">&gt;</span> <span class="mf">0.</span><span class="p">])</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">tim</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="n">tim_image</span><span class="o">.</span><span class="n">array</span>
+            <span class="n">tim</span><span class="o">.</span><span class="n">inverr</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">tim_invvar</span><span class="o">.</span><span class="n">array</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">tim</span></div></div>
+<span class="c1"># except NameError:</span>
+<span class="c1">#     pass</span>
+
+<span class="c1"># try:</span>
+<div class="viewcode-block" id="SimImageCosmos"><a class="viewcode-back" href="../../_autosummary/obiwan.kenobi.html#obiwan.kenobi.SimImageCosmos">[docs]</a><span class="k">class</span> <span class="nc">SimImageCosmos</span><span class="p">(</span><span class="n">SimImage</span><span class="p">,</span><span class="n">DecamImagePlusNoise</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Filters the CCDs to just those in the cosmos realizations</span>
+
+<span class="sd">    Call just like SimDecals except with additional Argument &#39;subset&#39;</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        **kwargs: SimDecals args + &#39;subset&#39;</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">survey</span><span class="p">,</span> <span class="n">t</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">SimImageCosmos</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">survey</span><span class="p">,</span> <span class="n">t</span><span class="p">)</span></div>
+<span class="c1"># except NameError:</span>
+<span class="c1">#     pass</span>
 
 <div class="viewcode-block" id="noise_for_galaxy"><a class="viewcode-back" href="../../_autosummary/obiwan.kenobi.html#obiwan.kenobi.noise_for_galaxy">[docs]</a><span class="k">def</span> <span class="nf">noise_for_galaxy</span><span class="p">(</span><span class="n">gal</span><span class="p">,</span><span class="n">nano2e</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Returns numpy array of noise in Img count units for gal in image cnt units&quot;&quot;&quot;</span>
@@ -541,7 +541,7 @@
 <div class="viewcode-block" id="BuildStamp"><a class="viewcode-back" href="../../_autosummary/obiwan.kenobi.html#obiwan.kenobi.BuildStamp">[docs]</a><span class="k">class</span> <span class="nc">BuildStamp</span><span class="p">():</span>
     <span class="sd">&quot;&quot;&quot;Does the drawing of simulated sources on a single exposure</span>
 
-<span class="sd">    Args: </span>
+<span class="sd">    Args:</span>
 <span class="sd">        tim: Tractor Image Object for a specific CCD</span>
 <span class="sd">        gain: gain of the CCD</span>
 
@@ -563,32 +563,32 @@
         <span class="c1">#self.camera=camera</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">band</span> <span class="o">=</span> <span class="n">tim</span><span class="o">.</span><span class="n">band</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
         <span class="c1"># GSParams should be used when galsim object is initialized</span>
-        <span class="c1"># MAX size for sersic n &lt; 6.2 </span>
+        <span class="c1"># MAX size for sersic n &lt; 6.2</span>
         <span class="c1"># https://github.com/GalSim-developers/GalSim/pull/450/commits/755bcfdca25afe42cccfd6a7f8660da5ecda2a65</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">gsparams</span> <span class="o">=</span> <span class="n">galsim</span><span class="o">.</span><span class="n">GSParams</span><span class="p">(</span><span class="n">maximum_fft_size</span><span class="o">=</span><span class="mi">65536</span><span class="p">)</span>
         <span class="c1">#print(&#39;FIX ME!!!!!!!!!!!!!!!!!!!!!!!!!!!!&#39;)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">gsdeviate</span> <span class="o">=</span> <span class="n">galsim</span><span class="o">.</span><span class="n">BaseDeviate</span><span class="p">(</span><span class="n">seed</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">wcs</span> <span class="o">=</span> <span class="n">tim</span><span class="o">.</span><span class="n">getWcs</span><span class="p">()</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">psf</span> <span class="o">=</span> <span class="n">tim</span><span class="o">.</span><span class="n">getPsf</span><span class="p">()</span>
-        
+
         <span class="c1"># zpscale equivalent to magzpt = self.t.ccdzpt+2.5*np.log10(self.t.exptime)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">zpscale</span> <span class="o">=</span> <span class="n">tim</span><span class="o">.</span><span class="n">zpscale</span>      <span class="c1"># nanomaggies--&gt;ADU (decam) or e-/sec (bass,mzls)</span>
         <span class="k">assert</span><span class="p">(</span><span class="n">camera</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;decam&#39;</span><span class="p">,</span><span class="s1">&#39;mosaic&#39;</span><span class="p">,</span><span class="s1">&#39;90prime&#39;</span><span class="p">])</span>
         <span class="k">if</span> <span class="n">camera</span> <span class="o">==</span> <span class="s1">&#39;decam&#39;</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">nano2e</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">zpscale</span><span class="o">*</span><span class="n">gain</span> <span class="c1"># nanomaggies -&gt; ADU -&gt; e-</span>
-        <span class="k">else</span><span class="p">:</span>   
+        <span class="k">else</span><span class="p">:</span>
             <span class="c1"># correct for mzls, possibly not for bass</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">nano2e</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">zpscale</span> <span class="c1"># nanomaggies -&gt; e-/s -&gt; e-</span>
 
 <div class="viewcode-block" id="BuildStamp.setlocal"><a class="viewcode-back" href="../../_autosummary/obiwan.kenobi.html#obiwan.kenobi.BuildStamp.setlocal">[docs]</a>    <span class="k">def</span> <span class="nf">setlocal</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">obj</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Get the pixel positions, local wcs, local PSF.&quot;&quot;&quot;</span> 
+        <span class="sd">&quot;&quot;&quot;Get the pixel positions, local wcs, local PSF.&quot;&quot;&quot;</span>
 
         <span class="n">xx</span><span class="p">,</span> <span class="n">yy</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">wcs</span><span class="o">.</span><span class="n">positionToPixel</span><span class="p">(</span><span class="n">RaDecPos</span><span class="p">(</span><span class="n">obj</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;ra&#39;</span><span class="p">),</span> <span class="n">obj</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;dec&#39;</span><span class="p">)))</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">pos</span> <span class="o">=</span> <span class="n">galsim</span><span class="o">.</span><span class="n">PositionD</span><span class="p">(</span><span class="n">xx</span><span class="p">,</span> <span class="n">yy</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">xpos</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">pos</span><span class="o">.</span><span class="n">x</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">ypos</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">pos</span><span class="o">.</span><span class="n">y</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">offset</span> <span class="o">=</span> <span class="n">galsim</span><span class="o">.</span><span class="n">PositionD</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">pos</span><span class="o">.</span><span class="n">x</span><span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">xpos</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">pos</span><span class="o">.</span><span class="n">y</span><span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">ypos</span><span class="p">)</span>
-        
+
         <span class="c1"># Get the local PSF</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">localpsf</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">psf</span><span class="o">.</span><span class="n">getPointSourcePatch</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">xpos</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">ypos</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">localpsf</span><span class="o">=</span> <span class="n">galsim</span><span class="o">.</span><span class="n">Image</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">localpsf</span><span class="o">.</span><span class="n">getImage</span><span class="p">(),</span>
@@ -602,7 +602,7 @@
         <span class="c1"># Use input flux as the 7&#39;&#39; aperture flux</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">setlocal</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span>
         <span class="n">stamp</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">localpsf</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
-        <span class="n">stamp</span><span class="o">.</span><span class="n">shift</span><span class="p">(</span><span class="n">dx</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">offset</span><span class="o">.</span><span class="n">x</span><span class="p">,</span><span class="n">dy</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">offset</span><span class="o">.</span><span class="n">y</span><span class="p">)</span>      
+        <span class="n">stamp</span><span class="o">.</span><span class="n">shift</span><span class="p">(</span><span class="n">dx</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">offset</span><span class="o">.</span><span class="n">x</span><span class="p">,</span><span class="n">dy</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">offset</span><span class="o">.</span><span class="n">y</span><span class="p">)</span>
         <span class="c1"># Scale to desired flux</span>
         <span class="n">stamp</span> <span class="o">*=</span> <span class="nb">float</span><span class="p">(</span><span class="n">obj</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">band</span><span class="o">+</span><span class="s1">&#39;flux&#39;</span><span class="p">))</span> <span class="c1"># [nanomaggies]</span>
         <span class="c1"># position in observed image</span>
@@ -615,7 +615,7 @@
         <span class="n">psf</span><span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">localpsf</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
         <span class="c1"># doesn&#39;t change tractor measurements</span>
         <span class="c1">#psf /= psf.array.sum()</span>
-        <span class="n">psf</span><span class="o">=</span> <span class="n">galsim</span><span class="o">.</span><span class="n">InterpolatedImage</span><span class="p">(</span><span class="n">psf</span><span class="p">)</span> 
+        <span class="n">psf</span><span class="o">=</span> <span class="n">galsim</span><span class="o">.</span><span class="n">InterpolatedImage</span><span class="p">(</span><span class="n">psf</span><span class="p">)</span>
                                              <span class="c1">#gsparams=self.gsparams)</span>
         <span class="k">return</span> <span class="n">galsim</span><span class="o">.</span><span class="n">Convolve</span><span class="p">([</span><span class="n">gal</span><span class="p">,</span> <span class="n">psf</span><span class="p">])</span> <span class="c1">#, gsparams=self.gsparams)</span></div>
 
@@ -625,15 +625,15 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">setlocal</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span>
         <span class="c1">#try:</span>
         <span class="c1"># TRIAL: galaxy profile</span>
-        <span class="n">gal</span> <span class="o">=</span> <span class="n">galsim</span><span class="o">.</span><span class="n">Sersic</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">obj</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;n&#39;</span><span class="p">)),</span> 
+        <span class="n">gal</span> <span class="o">=</span> <span class="n">galsim</span><span class="o">.</span><span class="n">Sersic</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">obj</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;n&#39;</span><span class="p">)),</span>
                     <span class="n">half_light_radius</span><span class="o">=</span><span class="nb">float</span><span class="p">(</span><span class="n">obj</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;rhalf&#39;</span><span class="p">)),</span>\
-                    <span class="n">flux</span><span class="o">=</span><span class="nb">float</span><span class="p">(</span><span class="n">obj</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">band</span><span class="o">+</span><span class="s1">&#39;flux&#39;</span><span class="p">)),</span> 
+                    <span class="n">flux</span><span class="o">=</span><span class="nb">float</span><span class="p">(</span><span class="n">obj</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">band</span><span class="o">+</span><span class="s1">&#39;flux&#39;</span><span class="p">)),</span>
                     <span class="n">gsparams</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">gsparams</span><span class="p">)</span>
         <span class="n">gal</span> <span class="o">=</span> <span class="n">gal</span><span class="o">.</span><span class="n">shear</span><span class="p">(</span><span class="n">e1</span><span class="o">=</span><span class="nb">float</span><span class="p">(</span><span class="n">obj</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;e1&#39;</span><span class="p">)),</span> <span class="n">e2</span><span class="o">=</span><span class="nb">float</span><span class="p">(</span><span class="n">obj</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;e2&#39;</span><span class="p">)))</span>
         <span class="c1"># Convolve with normed-psf</span>
         <span class="n">gal</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">convolve_galaxy</span><span class="p">(</span><span class="n">gal</span><span class="p">)</span>
         <span class="n">gal</span> <span class="o">=</span> <span class="n">gal</span><span class="o">.</span><span class="n">drawImage</span><span class="p">(</span><span class="n">method</span><span class="o">=</span><span class="s1">&#39;auto&#39;</span><span class="p">,</span>
-                            <span class="n">offset</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">offset</span><span class="p">,</span>  
+                            <span class="n">offset</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">offset</span><span class="p">,</span>
                             <span class="n">scale</span><span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">wcs</span><span class="o">.</span><span class="n">pixscale_at</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">xpos</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">ypos</span><span class="p">))</span>
                             <span class="c1">#method=&#39;no_pixel&#39;</span>
         <span class="c1"># Scale to desired flux</span>
@@ -696,10 +696,10 @@
 <span class="sd">            usually a subset of all sources in the brick determined by</span>
 <span class="sd">            rowstart (rs)</span>
 <span class="sd">        brickwcs: WCS object for the brick</span>
-<span class="sd">        meta: &#39;metacat&#39; table </span>
+<span class="sd">        meta: &#39;metacat&#39; table</span>
 <span class="sd">            fits_table with configuration-like params for the simulated sources</span>
 
-<span class="sd">    Returns: </span>
+<span class="sd">    Returns:</span>
 <span class="sd">        tuple of</span>
 <span class="sd">        cat:</span>
 <span class="sd">        skipping_ids:</span>
@@ -718,7 +718,7 @@
     <span class="n">skipping_ids</span><span class="o">=</span> <span class="n">Samp</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;id&#39;</span><span class="p">)[</span><span class="n">i_skip</span><span class="p">]</span>
     <span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;sources </span><span class="si">%d</span><span class="s1">, keeping </span><span class="si">%d</span><span class="s1">, flagged as nearby </span><span class="si">%d</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">Samp</span><span class="p">),</span><span class="nb">len</span><span class="p">(</span><span class="n">i_keep</span><span class="p">),</span><span class="nb">len</span><span class="p">(</span><span class="n">i_skip</span><span class="p">)))</span>
     <span class="n">Samp</span><span class="o">.</span><span class="n">cut</span><span class="p">(</span><span class="n">i_keep</span><span class="p">)</span>
-    
+
     <span class="n">xxyy</span> <span class="o">=</span> <span class="n">brickwcs</span><span class="o">.</span><span class="n">radec2pixelxy</span><span class="p">(</span><span class="n">Samp</span><span class="o">.</span><span class="n">ra</span><span class="p">,</span><span class="n">Samp</span><span class="o">.</span><span class="n">dec</span><span class="p">)</span>
 
     <span class="c1">#cat = Table()</span>
@@ -735,11 +735,11 @@
 
     <span class="n">typ</span><span class="o">=</span><span class="n">meta</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;objtype&#39;</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
     <span class="c1"># Mags</span>
-    <span class="n">filts</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;</span><span class="si">%s</span><span class="s1"> </span><span class="si">%s</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="s1">&#39;DES&#39;</span><span class="p">,</span> <span class="n">f</span><span class="p">)</span> <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="s1">&#39;grz&#39;</span><span class="p">]</span> 
+    <span class="n">filts</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;</span><span class="si">%s</span><span class="s1"> </span><span class="si">%s</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="s1">&#39;DES&#39;</span><span class="p">,</span> <span class="n">f</span><span class="p">)</span> <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="s1">&#39;grz&#39;</span><span class="p">]</span>
     <span class="k">for</span> <span class="n">band</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;g&#39;</span><span class="p">,</span><span class="s1">&#39;r&#39;</span><span class="p">,</span><span class="s1">&#39;z&#39;</span><span class="p">]:</span>
-        <span class="n">nanomag</span><span class="o">=</span> <span class="mf">1E9</span><span class="o">*</span><span class="mi">10</span><span class="o">**</span><span class="p">(</span><span class="o">-</span><span class="mf">0.4</span><span class="o">*</span><span class="n">Samp</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">band</span><span class="p">))</span> 
+        <span class="n">nanomag</span><span class="o">=</span> <span class="mf">1E9</span><span class="o">*</span><span class="mi">10</span><span class="o">**</span><span class="p">(</span><span class="o">-</span><span class="mf">0.4</span><span class="o">*</span><span class="n">Samp</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">band</span><span class="p">))</span>
         <span class="c1"># Add extinction (to stars too, b/c &quot;decam-chatter 6517&quot;)</span>
-        <span class="n">mw_transmission</span><span class="o">=</span> <span class="n">SFDMap</span><span class="p">()</span><span class="o">.</span><span class="n">extinction</span><span class="p">([</span><span class="s1">&#39;DES </span><span class="si">%s</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="n">band</span><span class="p">],</span> 
+        <span class="n">mw_transmission</span><span class="o">=</span> <span class="n">SFDMap</span><span class="p">()</span><span class="o">.</span><span class="n">extinction</span><span class="p">([</span><span class="s1">&#39;DES </span><span class="si">%s</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="n">band</span><span class="p">],</span>
                                              <span class="n">Samp</span><span class="o">.</span><span class="n">ra</span><span class="p">,</span> <span class="n">Samp</span><span class="o">.</span><span class="n">dec</span><span class="p">)</span>
         <span class="n">mw_transmission</span><span class="o">=</span> <span class="mi">10</span><span class="o">**</span><span class="p">(</span><span class="o">-</span><span class="n">mw_transmission</span><span class="p">[:,</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span><span class="o">/</span><span class="mf">2.5</span><span class="p">)</span>
         <span class="n">cat</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">%s</span><span class="s1">flux&#39;</span> <span class="o">%</span> <span class="n">band</span><span class="p">,</span> <span class="n">nanomag</span> <span class="o">*</span> <span class="n">mw_transmission</span><span class="p">)</span>
@@ -750,8 +750,8 @@
         <span class="c1"># Convert to e1,e2 if given ba,pa</span>
         <span class="k">if</span> <span class="p">(</span><span class="s1">&#39;ba&#39;</span> <span class="ow">in</span> <span class="n">Samp</span><span class="o">.</span><span class="n">get_columns</span><span class="p">())</span> <span class="o">&amp;</span> <span class="p">(</span><span class="s1">&#39;pa&#39;</span> <span class="ow">in</span> <span class="n">Samp</span><span class="o">.</span><span class="n">get_columns</span><span class="p">()):</span>
             <span class="n">e1</span><span class="p">,</span><span class="n">e2</span><span class="o">=</span> <span class="n">get_e1_e2</span><span class="p">(</span><span class="n">Samp</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;ba&#39;</span><span class="p">),</span><span class="n">Samp</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;pa&#39;</span><span class="p">))</span>
-            <span class="n">Samp</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="s1">&#39;e1&#39;</span><span class="p">,</span><span class="n">e1</span><span class="p">)</span> 
-            <span class="n">Samp</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="s1">&#39;e2&#39;</span><span class="p">,</span><span class="n">e2</span><span class="p">)</span> 
+            <span class="n">Samp</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="s1">&#39;e1&#39;</span><span class="p">,</span><span class="n">e1</span><span class="p">)</span>
+            <span class="n">Samp</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="s1">&#39;e2&#39;</span><span class="p">,</span><span class="n">e2</span><span class="p">)</span>
         <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;n&#39;</span><span class="p">,</span><span class="s1">&#39;rhalf&#39;</span><span class="p">,</span><span class="s1">&#39;e1&#39;</span><span class="p">,</span><span class="s1">&#39;e2&#39;</span><span class="p">]:</span>
             <span class="n">cat</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">Samp</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">key</span><span class="p">))</span>
         <span class="c1"># Sersic n: GALSIM n = [0.3,6.2] for numerical stability,see</span>
@@ -766,14 +766,14 @@
     <span class="n">parser</span> <span class="o">=</span> <span class="n">argparse</span><span class="o">.</span><span class="n">ArgumentParser</span><span class="p">(</span><span class="n">formatter_class</span><span class="o">=</span><span class="n">argparse</span><span class="o">.</span>
                                      <span class="n">ArgumentDefaultsHelpFormatter</span><span class="p">,</span>
                                      <span class="n">description</span><span class="o">=</span><span class="s1">&#39;DECaLS simulations.&#39;</span><span class="p">)</span>
-    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;--dataset&#39;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">str</span><span class="p">,</span> <span class="n">choices</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;dr5&#39;</span><span class="p">,</span><span class="s1">&#39;dr3&#39;</span><span class="p">,</span> <span class="s1">&#39;cosmos&#39;</span><span class="p">,</span><span class="s1">&#39;dr6&#39;</span><span class="p">],</span> <span class="n">required</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s1">&#39;see definitions in obiwan/test/README.md&#39;</span><span class="p">)</span> 
-    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;-o&#39;</span><span class="p">,</span> <span class="s1">&#39;--objtype&#39;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">str</span><span class="p">,</span> <span class="n">choices</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;star&#39;</span><span class="p">,</span><span class="s1">&#39;elg&#39;</span><span class="p">,</span> <span class="s1">&#39;lrg&#39;</span><span class="p">,</span> <span class="s1">&#39;qso&#39;</span><span class="p">],</span> <span class="n">default</span><span class="o">=</span><span class="s1">&#39;star&#39;</span><span class="p">,</span> <span class="n">required</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span> 
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;--dataset&#39;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">str</span><span class="p">,</span> <span class="n">choices</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;dr5&#39;</span><span class="p">,</span><span class="s1">&#39;dr3&#39;</span><span class="p">,</span> <span class="s1">&#39;cosmos&#39;</span><span class="p">,</span><span class="s1">&#39;dr6&#39;</span><span class="p">],</span> <span class="n">required</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s1">&#39;see definitions in obiwan/test/README.md&#39;</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;-o&#39;</span><span class="p">,</span> <span class="s1">&#39;--objtype&#39;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">str</span><span class="p">,</span> <span class="n">choices</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;star&#39;</span><span class="p">,</span><span class="s1">&#39;elg&#39;</span><span class="p">,</span> <span class="s1">&#39;lrg&#39;</span><span class="p">,</span> <span class="s1">&#39;qso&#39;</span><span class="p">],</span> <span class="n">default</span><span class="o">=</span><span class="s1">&#39;star&#39;</span><span class="p">,</span> <span class="n">required</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
     <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;-b&#39;</span><span class="p">,</span> <span class="s1">&#39;--brick&#39;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">str</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s1">&#39;2428p117&#39;</span><span class="p">,</span> <span class="n">required</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
     <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;--outdir&#39;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s1">&#39;./&#39;</span><span class="p">,</span> <span class="n">required</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
     <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;--logfn&#39;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s1">&#39;./&#39;</span><span class="p">,</span> <span class="n">required</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
-    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;-n&#39;</span><span class="p">,</span> <span class="s1">&#39;--nobj&#39;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mi">500</span><span class="p">,</span> <span class="n">metavar</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">,</span> 
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;-n&#39;</span><span class="p">,</span> <span class="s1">&#39;--nobj&#39;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mi">500</span><span class="p">,</span> <span class="n">metavar</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">,</span>
                         <span class="n">help</span><span class="o">=</span><span class="s1">&#39;number of objects to simulate (required input)&#39;</span><span class="p">)</span>
-    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;-rs&#39;</span><span class="p">,</span> <span class="s1">&#39;--rowstart&#39;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">metavar</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">,</span> 
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;-rs&#39;</span><span class="p">,</span> <span class="s1">&#39;--rowstart&#39;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">metavar</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">,</span>
                         <span class="n">help</span><span class="o">=</span><span class="s1">&#39;zero indexed, row of ra,dec,mags table, after it is cut to brick, to start on&#39;</span><span class="p">)</span>
     <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;--do_skipids&#39;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">str</span><span class="p">,</span> <span class="n">choices</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;no&#39;</span><span class="p">,</span><span class="s1">&#39;yes&#39;</span><span class="p">],</span><span class="n">default</span><span class="o">=</span><span class="s1">&#39;no&#39;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s1">&#39;inject skipped ids for brick, otherwise run as usual&#39;</span><span class="p">)</span>
     <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;--do_more&#39;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">str</span><span class="p">,</span> <span class="n">choices</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;no&#39;</span><span class="p">,</span><span class="s1">&#39;yes&#39;</span><span class="p">],</span><span class="n">default</span><span class="o">=</span><span class="s1">&#39;no&#39;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s1">&#39;yes if running more randoms b/c TS returns too few targets&#39;</span><span class="p">)</span>
@@ -781,15 +781,15 @@
     <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;--randoms_db&#39;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s1">&#39;obiwan_elg&#39;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s1">&#39;desi db table name for randoms&#39;</span><span class="p">)</span>
     <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;--randoms_from_fits&#39;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s1">&#39;set to read randoms from fits file instead of scidb2.nersc.gov db, set to absolute path of local fits file on computer&#39;</span><span class="p">)</span>
     <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;--dont_sort_sampleid&#39;</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="s2">&quot;store_true&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s1">&#39;False to sort sample by id&#39;</span><span class="p">)</span>
-    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;-t&#39;</span><span class="p">,</span> <span class="s1">&#39;--threads&#39;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">metavar</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">,</span> 
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;-t&#39;</span><span class="p">,</span> <span class="s1">&#39;--threads&#39;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">metavar</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">,</span>
                         <span class="n">help</span><span class="o">=</span><span class="s1">&#39;number of threads to use when calling The Tractor&#39;</span><span class="p">)</span>
-    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;-z&#39;</span><span class="p">,</span> <span class="s1">&#39;--zoom&#39;</span><span class="p">,</span> <span class="n">nargs</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">3600</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">3600</span><span class="p">),</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span> <span class="n">metavar</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">,</span> 
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;-z&#39;</span><span class="p">,</span> <span class="s1">&#39;--zoom&#39;</span><span class="p">,</span> <span class="n">nargs</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">3600</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">3600</span><span class="p">),</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span> <span class="n">metavar</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">,</span>
                         <span class="n">help</span><span class="o">=</span><span class="s1">&#39;see runbrick.py; (default is 0 3600 0 3600)&#39;</span><span class="p">)</span>
-    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;-survey-dir&#39;</span><span class="p">,</span> <span class="s1">&#39;--survey_dir&#39;</span><span class="p">,</span> <span class="n">metavar</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">,</span> 
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;-survey-dir&#39;</span><span class="p">,</span> <span class="s1">&#39;--survey_dir&#39;</span><span class="p">,</span> <span class="n">metavar</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">,</span>
                         <span class="n">help</span><span class="o">=</span><span class="s1">&#39;Location of survey-ccds*.fits.gz&#39;</span><span class="p">)</span>
     <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;--add_sim_noise&#39;</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="s2">&quot;store_true&quot;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&quot;set to add noise to simulated sources&quot;</span><span class="p">)</span>
     <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;-testA&#39;</span><span class="p">,</span><span class="s1">&#39;--image_eq_model&#39;</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="s2">&quot;store_true&quot;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&quot;set to set image,inverr by model only (ignore real image,invvar)&quot;</span><span class="p">)</span>
-    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;--all-blobs&#39;</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="s1">&#39;store_true&#39;</span><span class="p">,</span> 
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;--all-blobs&#39;</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="s1">&#39;store_true&#39;</span><span class="p">,</span>
                         <span class="n">help</span><span class="o">=</span><span class="s1">&#39;Process all the blobs, not just those that contain simulated sources.&#39;</span><span class="p">)</span>
     <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;--stage&#39;</span><span class="p">,</span> <span class="n">choices</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;tims&#39;</span><span class="p">,</span> <span class="s1">&#39;image_coadds&#39;</span><span class="p">,</span> <span class="s1">&#39;srcs&#39;</span><span class="p">,</span> <span class="s1">&#39;fitblobs&#39;</span><span class="p">,</span> <span class="s1">&#39;coadds&#39;</span><span class="p">],</span>
                         <span class="nb">type</span><span class="o">=</span><span class="nb">str</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">metavar</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s1">&#39;Run through the stage then stop&#39;</span><span class="p">)</span>
@@ -813,20 +813,20 @@
                         <span class="n">help</span><span class="o">=</span><span class="s1">&#39;run the code even if expected output already exists&#39;</span><span class="p">)</span>
     <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;-v&#39;</span><span class="p">,</span> <span class="s1">&#39;--verbose&#39;</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="s1">&#39;store_true&#39;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s1">&#39;toggle on verbose output&#39;</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">parser</span></div>
- 
+
 <div class="viewcode-block" id="create_metadata"><a class="viewcode-back" href="../../_autosummary/obiwan.kenobi.html#obiwan.kenobi.create_metadata">[docs]</a><span class="k">def</span> <span class="nf">create_metadata</span><span class="p">(</span><span class="n">kwargs</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;fits_table with configuration-like params for the simulated sources</span>
-<span class="sd">    </span>
+
 <span class="sd">    TODO: Should metacat table have a rowstart column?</span>
 <span class="sd">    TODO: One metacat table per brick, instead of one per `rs*` directory?</span>
-<span class="sd">    </span>
+
 <span class="sd">    Args:</span>
 <span class="sd">        kwargs: configuration-like params for the simulated sources</span>
 <span class="sd">            {&#39;brickname&#39;: which chunk of sky</span>
 <span class="sd">            &#39;objtype&#39;: star,elg,lrg,qso</span>
 <span class="sd">            &#39;nobj&#39;: number of simulated sources for this run</span>
 <span class="sd">            }</span>
-<span class="sd">    </span>
+
 <span class="sd">    Returns:</span>
 <span class="sd">        Nothing</span>
 <span class="sd">        writes the &#39;metacat&#39; fits_table to disk and stores it</span>
@@ -854,11 +854,11 @@
     <span class="c1">#if not kwargs[&#39;args&#39;].seed:</span>
     <span class="c1">#    log.info(&#39;Random seed = {}&#39;.format(kwargs[&#39;args&#39;].seed))</span>
     <span class="c1">#    metacat[&#39;SEED&#39;] = kwargs[&#39;args&#39;].seed</span>
-    <span class="c1">#metacat_dir = os.path.join(kwargs[&#39;decals_sim_dir&#39;], kwargs[&#39;objtype&#39;],kwargs[&#39;brickname&#39;][:3],kwargs[&#39;brickname&#39;])    </span>
+    <span class="c1">#metacat_dir = os.path.join(kwargs[&#39;decals_sim_dir&#39;], kwargs[&#39;objtype&#39;],kwargs[&#39;brickname&#39;][:3],kwargs[&#39;brickname&#39;])</span>
     <span class="n">metacat_dir</span><span class="o">=</span> <span class="n">get_outdir_runbrick</span><span class="p">(</span><span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;decals_sim_dir&#39;</span><span class="p">],</span>
                              <span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;brickname&#39;</span><span class="p">],</span><span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;rowst&#39;</span><span class="p">],</span>
                              <span class="n">do_skipids</span><span class="o">=</span><span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;do_skipids&#39;</span><span class="p">],</span><span class="n">do_more</span><span class="o">=</span><span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;do_more&#39;</span><span class="p">])</span>
-    <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">metacat_dir</span><span class="p">):</span> 
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">metacat_dir</span><span class="p">):</span>
         <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="n">metacat_dir</span><span class="p">)</span>
     <span class="n">metafile</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">metacat_dir</span><span class="p">,</span> <span class="s1">&#39;metacat&#39;</span><span class="o">+</span><span class="n">get_fnsuffix</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">))</span>
     <span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;Writing </span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">metafile</span><span class="p">))</span>
@@ -878,7 +878,7 @@
 <span class="sd">            &#39;brickwcs&#39;: WCS object for the brick</span>
 <span class="sd">            &#39;metacat&#39;: fits_table with configuration params for the simulated sources</span>
 <span class="sd">            }</span>
-<span class="sd">        </span>
+
 <span class="sd">    Returns:</span>
 <span class="sd">        Nothing, saves the &#39;simcat&#39; and &#39;skipped_ids&#39; tables</span>
 <span class="sd">        Adds &#39;simcat&#39; table to dict &#39;d&#39;</span>
@@ -890,11 +890,11 @@
     <span class="c1">#seed= d[&#39;seeds&#39;][ith_chunk]</span>
     <span class="c1">#simcat = build_simcat(d[&#39;nobj&#39;], d[&#39;brickname&#39;], d[&#39;brickwcs&#39;], d[&#39;metacat&#39;], seed)</span>
     <span class="n">simcat</span><span class="p">,</span> <span class="n">skipped_ids</span> <span class="o">=</span> <span class="n">build_simcat</span><span class="p">(</span><span class="n">Samp</span><span class="o">=</span><span class="n">d</span><span class="p">[</span><span class="s1">&#39;Samp&#39;</span><span class="p">],</span><span class="n">brickwcs</span><span class="o">=</span><span class="n">d</span><span class="p">[</span><span class="s1">&#39;brickwcs&#39;</span><span class="p">],</span><span class="n">meta</span><span class="o">=</span><span class="n">d</span><span class="p">[</span><span class="s1">&#39;metacat&#39;</span><span class="p">])</span>
-    <span class="c1"># Simcat </span>
+    <span class="c1"># Simcat</span>
     <span class="n">simcat_dir</span> <span class="o">=</span> <span class="n">get_outdir_runbrick</span><span class="p">(</span><span class="n">d</span><span class="p">[</span><span class="s1">&#39;decals_sim_dir&#39;</span><span class="p">],</span>
                            <span class="n">d</span><span class="p">[</span><span class="s1">&#39;brickname&#39;</span><span class="p">],</span><span class="n">d</span><span class="p">[</span><span class="s1">&#39;rowst&#39;</span><span class="p">],</span>
                            <span class="n">do_skipids</span><span class="o">=</span><span class="n">d</span><span class="p">[</span><span class="s1">&#39;do_skipids&#39;</span><span class="p">],</span><span class="n">do_more</span><span class="o">=</span><span class="n">d</span><span class="p">[</span><span class="s1">&#39;do_more&#39;</span><span class="p">])</span>
-    <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">simcat_dir</span><span class="p">):</span> 
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">simcat_dir</span><span class="p">):</span>
         <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="n">simcat_dir</span><span class="p">)</span>
     <span class="c1">#simcatfile = os.path.join(simcat_dir, &#39;simcat-{}-{}-row{}-{}.fits&#39;.format(d[&#39;brickname&#39;], d[&#39;objtype&#39;],rowstart,rowend)) # chunksuffix))</span>
     <span class="n">simcatfile</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">simcat_dir</span><span class="p">,</span> <span class="s1">&#39;simcat&#39;</span><span class="o">+</span><span class="n">get_fnsuffix</span><span class="p">(</span><span class="o">**</span><span class="n">d</span><span class="p">))</span>
@@ -923,19 +923,19 @@
 
 <div class="viewcode-block" id="get_runbrick_setup"><a class="viewcode-back" href="../../_autosummary/obiwan.kenobi.html#obiwan.kenobi.get_runbrick_setup">[docs]</a><span class="k">def</span> <span class="nf">get_runbrick_setup</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Convert runbrick.py cmd line options into `**kwargs` for run_brick()</span>
-<span class="sd">    </span>
+
 <span class="sd">    The command line options depend on the Data Release (e.g. the</span>
-<span class="sd">        legacypipe code version. The cmd line options associated with </span>
-<span class="sd">        each DR get modified and repackaged into a dict in </span>
+<span class="sd">        legacypipe code version. The cmd line options associated with</span>
+<span class="sd">        each DR get modified and repackaged into a dict in</span>
 <span class="sd">        legacypipe.runbrick so this converter is required to call run_brick</span>
 <span class="sd">        appropriately</span>
-<span class="sd">    </span>
+
 <span class="sd">    Args:</span>
 <span class="sd">        **kwargs: dict of the cmd line options to obiwan.kenobi.py</span>
-<span class="sd">    </span>
+
 <span class="sd">    Returns:</span>
 <span class="sd">        dict to use when calling legacypipe.runbrick.run_brick like</span>
-<span class="sd">            run_brick(brickname, survey, `**dict`)      </span>
+<span class="sd">            run_brick(brickname, survey, `**dict`)</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">dataset</span><span class="o">=</span> <span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;dataset&#39;</span><span class="p">]</span>
     <span class="k">assert</span><span class="p">(</span><span class="n">dataset</span> <span class="ow">in</span> <span class="n">DATASETS</span><span class="p">)</span>
@@ -963,8 +963,8 @@
     <span class="k">elif</span> <span class="n">dataset</span> <span class="o">==</span> <span class="s1">&#39;dr5&#39;</span><span class="p">:</span>
         <span class="c1"># defaults: rex (use --simp), nsigma 6 ,hybrid-psf (--no-hybrid-psf otherwise)</span>
         <span class="c1"># depth cut already done (use --depth-cut to do depth cut anyway)</span>
-        <span class="n">cmd_line</span> <span class="o">+=</span> <span class="p">[</span><span class="s1">&#39;--run&#39;</span><span class="p">,</span> <span class="s1">&#39;dr5&#39;</span><span class="p">]</span> 
-    
+        <span class="n">cmd_line</span> <span class="o">+=</span> <span class="p">[</span><span class="s1">&#39;--run&#39;</span><span class="p">,</span> <span class="s1">&#39;dr5&#39;</span><span class="p">]</span>
+
     <span class="n">rb_parser</span><span class="o">=</span> <span class="n">get_runbrick_parser</span><span class="p">()</span>
     <span class="n">rb_opt</span> <span class="o">=</span> <span class="n">rb_parser</span><span class="o">.</span><span class="n">parse_args</span><span class="p">(</span><span class="n">args</span><span class="o">=</span><span class="n">cmd_line</span><span class="p">)</span>
     <span class="n">rb_optdict</span> <span class="o">=</span> <span class="nb">vars</span><span class="p">(</span><span class="n">rb_opt</span><span class="p">)</span>
@@ -976,18 +976,18 @@
 
 <div class="viewcode-block" id="do_one_chunk"><a class="viewcode-back" href="../../_autosummary/obiwan.kenobi.html#obiwan.kenobi.do_one_chunk">[docs]</a><span class="k">def</span> <span class="nf">do_one_chunk</span><span class="p">(</span><span class="n">d</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Runs the legacypipe/Tractor pipeline on images with simulated sources</span>
-<span class="sd">    </span>
+
 <span class="sd">    Args:</span>
 <span class="sd">        d: {&#39;args&#39;: obiwan.kenobi.py cmd line argparse.Namespace object</span>
 <span class="sd">            &#39;brickname&#39;: chunk of sky</span>
 <span class="sd">            &#39;metacat&#39;: fits_table configuration params for the simulated sources</span>
 <span class="sd">            &#39;simcat&#39;: fits_table simulated source catalog for a given brick (not CCD).</span>
-<span class="sd">    </span>
+
 <span class="sd">    Note:</span>
 <span class="sd">        runb_brick() is &#39;main&#39; for the legacypipe/Tractor pipeline</span>
-<span class="sd">    </span>
+
 <span class="sd">    Returns:</span>
-<span class="sd">        Nothing, but this func end ups writing out all the obiwan results </span>
+<span class="sd">        Nothing, but this func end ups writing out all the obiwan results</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">assert</span><span class="p">(</span><span class="n">d</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">)</span>
     <span class="n">kw</span><span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">dataset</span><span class="o">=</span><span class="n">d</span><span class="p">[</span><span class="s1">&#39;args&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">dataset</span><span class="p">,</span>\
@@ -1006,7 +1006,7 @@
     <span class="k">else</span><span class="p">:</span>
         <span class="n">blobxy</span> <span class="o">=</span> <span class="nb">zip</span><span class="p">(</span><span class="n">d</span><span class="p">[</span><span class="s1">&#39;simcat&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;x&#39;</span><span class="p">),</span> <span class="n">d</span><span class="p">[</span><span class="s1">&#39;simcat&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;y&#39;</span><span class="p">))</span>
     <span class="c1"># Default runbrick call sequence</span>
-    <span class="n">obiwan_kwargs</span><span class="o">=</span> <span class="nb">vars</span><span class="p">(</span><span class="n">d</span><span class="p">[</span><span class="s1">&#39;args&#39;</span><span class="p">])</span> 
+    <span class="n">obiwan_kwargs</span><span class="o">=</span> <span class="nb">vars</span><span class="p">(</span><span class="n">d</span><span class="p">[</span><span class="s1">&#39;args&#39;</span><span class="p">])</span>
     <span class="n">runbrick_kwargs</span><span class="o">=</span> <span class="n">get_runbrick_setup</span><span class="p">(</span><span class="o">**</span><span class="n">obiwan_kwargs</span><span class="p">)</span>
     <span class="c1"># Obiwan modifications</span>
     <span class="n">runbrick_kwargs</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">blobxy</span><span class="o">=</span><span class="n">blobxy</span><span class="p">)</span>
@@ -1027,13 +1027,13 @@
 <div class="viewcode-block" id="do_ith_cleanup"><a class="viewcode-back" href="../../_autosummary/obiwan.kenobi.html#obiwan.kenobi.do_ith_cleanup">[docs]</a><span class="k">def</span> <span class="nf">do_ith_cleanup</span><span class="p">(</span><span class="n">d</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Moves all obiwan+legacypipe outputs to a new directory stucture</span>
 
-<span class="sd">    Uses rsync to move everthing, if all the rsync&#39;s succeed then all the </span>
-<span class="sd">        original files and directories are removed </span>
+<span class="sd">    Uses rsync to move everthing, if all the rsync&#39;s succeed then all the</span>
+<span class="sd">        original files and directories are removed</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        d: dict with keys brickname, simcat_dir</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">assert</span><span class="p">(</span><span class="n">d</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">)</span> 
+    <span class="k">assert</span><span class="p">(</span><span class="n">d</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">)</span>
     <span class="n">log</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="s1">&#39;decals_sim&#39;</span><span class="p">)</span>
     <span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;Cleaning up...&#39;</span><span class="p">)</span>
     <span class="n">brick</span><span class="o">=</span> <span class="n">d</span><span class="p">[</span><span class="s1">&#39;brickname&#39;</span><span class="p">]</span>
@@ -1076,13 +1076,13 @@
     <span class="k">if</span> <span class="ow">not</span> <span class="n">d</span><span class="p">[</span><span class="s1">&#39;args&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">early_coadds</span><span class="p">:</span>
         <span class="n">drs</span><span class="o">+=</span> <span class="p">[</span><span class="s1">&#39;chi2&#39;</span><span class="p">]</span>
     <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">names</span><span class="p">:</span>
-        <span class="n">dobash</span><span class="p">(</span><span class="s1">&#39;rm </span><span class="si">%s</span><span class="s1">/coadd/</span><span class="si">%s</span><span class="s1">/</span><span class="si">%s</span><span class="s1">/</span><span class="si">%s</span><span class="s1">/*</span><span class="si">%s</span><span class="s1">*&#39;</span> <span class="o">%</span> 
+        <span class="n">dobash</span><span class="p">(</span><span class="s1">&#39;rm </span><span class="si">%s</span><span class="s1">/coadd/</span><span class="si">%s</span><span class="s1">/</span><span class="si">%s</span><span class="s1">/</span><span class="si">%s</span><span class="s1">/*</span><span class="si">%s</span><span class="s1">*&#39;</span> <span class="o">%</span>
                     <span class="p">(</span><span class="n">base</span><span class="p">,</span><span class="n">bri</span><span class="p">,</span><span class="n">brick</span><span class="p">,</span><span class="n">rsdir</span><span class="p">,</span><span class="n">name</span><span class="p">))</span>
     <span class="k">if</span> <span class="n">rsdir</span> <span class="o">!=</span> <span class="s1">&#39;rs0&#39;</span><span class="p">:</span>
         <span class="c1"># jpgs are nice to look at, but only keep in 1 dir</span>
         <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;jpg&#39;</span><span class="p">]:</span>
-            <span class="n">dobash</span><span class="p">(</span><span class="s1">&#39;rm </span><span class="si">%s</span><span class="s1">/coadd/</span><span class="si">%s</span><span class="s1">/</span><span class="si">%s</span><span class="s1">/</span><span class="si">%s</span><span class="s1">/*.</span><span class="si">%s</span><span class="s1">&#39;</span> <span class="o">%</span> 
-                        <span class="p">(</span><span class="n">base</span><span class="p">,</span><span class="n">bri</span><span class="p">,</span><span class="n">brick</span><span class="p">,</span><span class="n">rsdir</span><span class="p">,</span><span class="n">name</span><span class="p">))</span>    </div>
+            <span class="n">dobash</span><span class="p">(</span><span class="s1">&#39;rm </span><span class="si">%s</span><span class="s1">/coadd/</span><span class="si">%s</span><span class="s1">/</span><span class="si">%s</span><span class="s1">/</span><span class="si">%s</span><span class="s1">/*.</span><span class="si">%s</span><span class="s1">&#39;</span> <span class="o">%</span>
+                        <span class="p">(</span><span class="n">base</span><span class="p">,</span><span class="n">bri</span><span class="p">,</span><span class="n">brick</span><span class="p">,</span><span class="n">rsdir</span><span class="p">,</span><span class="n">name</span><span class="p">))</span></div>
 
 
 <div class="viewcode-block" id="get_sample"><a class="viewcode-back" href="../../_autosummary/obiwan.kenobi.html#obiwan.kenobi.get_sample">[docs]</a><span class="k">def</span> <span class="nf">get_sample</span><span class="p">(</span><span class="n">objtype</span><span class="p">,</span><span class="n">brick</span><span class="p">,</span><span class="n">randoms_db</span><span class="p">,</span>
@@ -1101,7 +1101,7 @@
 <span class="sd">        outdir: None if do_skipids=&#39;no&#39;; otherwise path like $CSCRATCH/obiwan_out/elg_9deg2_ra175</span>
 <span class="sd">        dont_sort_sampleid: False to sort sample by id</span>
 
-<span class="sd">    </span>
+
 <span class="sd">    Returns:</span>
 <span class="sd">        tupe: sample fits_table, seed</span>
 <span class="sd">    &quot;&quot;&quot;</span>
@@ -1117,7 +1117,7 @@
         <span class="n">skip_ids</span><span class="o">=</span> <span class="n">get_skip_ids</span><span class="p">(</span><span class="n">outdir</span><span class="p">,</span> <span class="n">brick</span><span class="p">,</span> <span class="n">objtype</span><span class="p">)</span>
         <span class="n">Samp</span><span class="p">,</span><span class="n">seed</span><span class="o">=</span> <span class="n">getSrcsInBrick</span><span class="p">(</span><span class="n">brick</span><span class="p">,</span><span class="n">objtype</span><span class="p">,</span> <span class="n">db_table</span><span class="o">=</span><span class="n">randoms_db</span><span class="p">,</span>
                              <span class="n">skipped_ids</span><span class="o">=</span> <span class="n">skip_ids</span><span class="p">)</span>
-    <span class="c1"># Already did these cuts in decals_sim_radeccolors </span>
+    <span class="c1"># Already did these cuts in decals_sim_radeccolors</span>
     <span class="c1">#r0,r1,d0,d1= brickwcs.radec_bounds()</span>
     <span class="c1">#Samp.cut( (Samp.ra &gt;= r0)*(Samp.ra &lt;= r1)*\</span>
     <span class="c1">#          (Samp.dec &gt;= d0)*(Samp.dec &lt;= d1) )</span>
@@ -1138,13 +1138,13 @@
     <span class="c1"># Command line options</span>
     <span class="k">if</span> <span class="n">args</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
         <span class="c1"># Read from cmd line</span>
-        <span class="n">parser</span><span class="o">=</span> <span class="n">get_parser</span><span class="p">()</span>  
+        <span class="n">parser</span><span class="o">=</span> <span class="n">get_parser</span><span class="p">()</span>
         <span class="n">args</span> <span class="o">=</span> <span class="n">parser</span><span class="o">.</span><span class="n">parse_args</span><span class="p">(</span><span class="n">args</span><span class="o">=</span><span class="n">args</span><span class="p">)</span>
     <span class="k">else</span><span class="p">:</span>
         <span class="c1"># args is already a argparse.Namespace obj</span>
-        <span class="k">pass</span> 
+        <span class="k">pass</span>
     <span class="c1"># Print calling sequence</span>
-    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Args:&#39;</span><span class="p">,</span> <span class="n">args</span><span class="p">)</span>   
+    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Args:&#39;</span><span class="p">,</span> <span class="n">args</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">do_more</span> <span class="o">==</span> <span class="s1">&#39;yes&#39;</span><span class="p">:</span>
       <span class="k">assert</span><span class="p">(</span><span class="ow">not</span> <span class="n">args</span><span class="o">.</span><span class="n">minid</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">)</span>
     <span class="c1"># Setup loggers</span>
@@ -1154,19 +1154,19 @@
         <span class="n">lvl</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">INFO</span>
     <span class="n">logging</span><span class="o">.</span><span class="n">basicConfig</span><span class="p">(</span><span class="n">level</span><span class="o">=</span><span class="n">lvl</span><span class="p">,</span> <span class="n">stream</span><span class="o">=</span><span class="n">sys</span><span class="o">.</span><span class="n">stdout</span><span class="p">)</span> <span class="c1">#,format=&#39;%(message)s&#39;)</span>
     <span class="n">log</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="s1">&#39;decals_sim&#39;</span><span class="p">)</span>
-    <span class="c1"># Sort through args </span>
+    <span class="c1"># Sort through args</span>
     <span class="c1">#log.info(&#39;decals_sim.py args={}&#39;.format(args))</span>
     <span class="c1">#max_nobj=500</span>
     <span class="c1">#max_nchunk=1000</span>
     <span class="c1">#if args.ith_chunk is not None: assert(args.ith_chunk &lt;= max_nchunk-1)</span>
     <span class="c1">#assert(args.nchunk &lt;= max_nchunk)</span>
     <span class="c1">#assert(args.nobj &lt;= max_nobj)</span>
-    <span class="c1">#if args.ith_chunk is not None: </span>
+    <span class="c1">#if args.ith_chunk is not None:</span>
     <span class="c1">#    assert(args.nchunk == 1) #if choose a chunk, only doing 1 chunk</span>
     <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">nobj</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
         <span class="n">parser</span><span class="o">.</span><span class="n">print_help</span><span class="p">()</span>
         <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
- 
+
     <span class="c1"># Exit if expected output already exists</span>
     <span class="n">rsdir</span><span class="o">=</span> <span class="n">get_outdir_runbrick</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">outdir</span><span class="p">,</span>
                         <span class="n">args</span><span class="o">.</span><span class="n">brick</span><span class="p">,</span><span class="n">args</span><span class="o">.</span><span class="n">rowstart</span><span class="p">,</span>
@@ -1177,17 +1177,17 @@
                     <span class="s1">&#39;tractor&#39;</span><span class="p">,</span><span class="n">args</span><span class="o">.</span><span class="n">brick</span><span class="p">[:</span><span class="mi">3</span><span class="p">],</span><span class="n">args</span><span class="o">.</span><span class="n">brick</span><span class="p">,</span>
                     <span class="n">rsdir</span><span class="p">,</span>
                     <span class="s1">&#39;tractor-</span><span class="si">%s</span><span class="s1">.fits&#39;</span> <span class="o">%</span> <span class="n">args</span><span class="o">.</span><span class="n">brick</span><span class="p">)</span>
-    <span class="k">if</span> <span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">tractor_fn</span><span class="p">)</span> <span class="o">&amp;</span> 
+    <span class="k">if</span> <span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">tractor_fn</span><span class="p">)</span> <span class="o">&amp;</span>
         <span class="p">(</span><span class="ow">not</span> <span class="n">args</span><span class="o">.</span><span class="n">overwrite_if_exists</span><span class="p">)):</span>
        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Exiting, already finished </span><span class="si">%s</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="n">tractor_fn</span><span class="p">)</span>
-       <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+       <span class="k">return</span> <span class="mi">0</span> <span class="c1">#sys.exit(0)</span>
 
     <span class="n">brickname</span> <span class="o">=</span> <span class="n">args</span><span class="o">.</span><span class="n">brick</span>
     <span class="n">objtype</span> <span class="o">=</span> <span class="n">args</span><span class="o">.</span><span class="n">objtype</span>
 
     <span class="c1"># Output dir</span>
     <span class="n">decals_sim_dir</span> <span class="o">=</span> <span class="n">args</span><span class="o">.</span><span class="n">outdir</span>
-        
+
     <span class="c1">#nchunk = args.nchunk</span>
     <span class="c1">#rand = np.random.RandomState(args.seed) # determines seed for all chunks</span>
     <span class="c1">#seeds = rand.random_integers(0,2**18, max_nchunk)</span>
@@ -1263,7 +1263,7 @@
         <span class="n">junk</span><span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">system</span><span class="p">(</span><span class="s1">&#39;touch </span><span class="si">%s</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="n">fn</span><span class="p">)</span>
         <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Wrote </span><span class="si">%s</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="n">fn</span><span class="p">)</span>
         <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;starting row=</span><span class="si">%d</span><span class="s1"> exceeds number of artificial sources, quit&#39;</span> <span class="o">%</span> <span class="n">args</span><span class="o">.</span><span class="n">rowstart</span><span class="p">)</span>
-    
+
     <span class="c1"># Create simulated catalogues and run Tractor</span>
     <span class="n">create_metadata</span><span class="p">(</span><span class="n">kwargs</span><span class="o">=</span><span class="n">kwargs</span><span class="p">)</span>
     <span class="n">t0</span><span class="o">=</span> <span class="n">ptime</span><span class="p">(</span><span class="s1">&#39;create_metadata&#39;</span><span class="p">,</span><span class="n">t0</span><span class="p">)</span>
@@ -1282,11 +1282,11 @@
     <span class="n">t0</span><span class="o">=</span> <span class="n">ptime</span><span class="p">(</span><span class="s1">&#39;do_ith_cleanup&#39;</span><span class="p">,</span><span class="n">t0</span><span class="p">)</span>
     <span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;All done!&#39;</span><span class="p">)</span>
     <span class="k">return</span> <span class="mi">0</span></div>
-     
+
 <span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s1">&#39;__main__&#39;</span><span class="p">:</span>
-    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;obiwan started at </span><span class="si">%s</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="n">time_builtin</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="s2">&quot;%Y-%m-</span><span class="si">%d</span><span class="s2"> %H:%M:%S&quot;</span><span class="p">))</span>   
+    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;obiwan started at </span><span class="si">%s</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="n">time_builtin</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="s2">&quot;%Y-%m-</span><span class="si">%d</span><span class="s2"> %H:%M:%S&quot;</span><span class="p">))</span>
     <span class="n">main</span><span class="p">()</span>
-    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;obiwan finshed at </span><span class="si">%s</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="n">time_builtin</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="s2">&quot;%Y-%m-</span><span class="si">%d</span><span class="s2"> %H:%M:%S&quot;</span><span class="p">))</span>   
+    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;obiwan finshed at </span><span class="si">%s</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="n">time_builtin</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="s2">&quot;%Y-%m-</span><span class="si">%d</span><span class="s2"> %H:%M:%S&quot;</span><span class="p">))</span>
 </pre></div>
 
     </div>

@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>obiwan.qa.plots_footprint &#8212; obiwan 1.2.0 documentation</title>
+    <link rel="stylesheet" href="../../../_static/bootstrap-sphinx.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script type="text/javascript" src="../../../_static/js/jquery-1.11.0.min.js"></script>
+    <script type="text/javascript" src="../../../_static/js/jquery-fix.js"></script>
+    <script type="text/javascript" src="../../../_static/bootstrap-3.3.7/js/bootstrap.min.js"></script>
+    <script type="text/javascript" src="../../../_static/bootstrap-sphinx.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+<meta charset='utf-8'>
+<meta http-equiv='X-UA-Compatible' content='IE=edge,chrome=1'>
+<meta name='viewport' content='width=device-width, initial-scale=1.0, maximum-scale=1'>
+<meta name="apple-mobile-web-app-capable" content="yes">
+
+  </head><body>
+
+  <div id="navbar" class="navbar navbar-default ">
+    <div class="container">
+      <div class="navbar-header">
+        <!-- .btn-navbar is used as the toggle for collapsed navbar content -->
+        <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".nav-collapse">
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+        </button>
+        <a class="navbar-brand" href="../../../index.html">
+          Obiwan</a>
+        <span class="navbar-text navbar-version pull-left"><b>1.2.0</b></span>
+      </div>
+
+        <div class="collapse navbar-collapse nav-collapse">
+          <ul class="nav navbar-nav">
+            
+                <li><a href="../../../api.html">API</a></li>
+                <li><a href="../../../tutorials.html">Tutorials</a></li>
+                <li><a href="../../../deeplearning.html">Deep Learning</a></li>
+            
+            
+              <li class="dropdown globaltoc-container">
+  <a role="button"
+     id="dLabelGlobalToc"
+     data-toggle="dropdown"
+     data-target="#"
+     href="../../../index.html">Pages <b class="caret"></b></a>
+  <ul class="dropdown-menu globaltoc"
+      role="menu"
+      aria-labelledby="dLabelGlobalToc"></ul>
+</li>
+              
+                <li class="dropdown">
+  <a role="button"
+     id="dLabelLocalToc"
+     data-toggle="dropdown"
+     data-target="#"
+     href="#">This Page <b class="caret"></b></a>
+  <ul class="dropdown-menu localtoc"
+      role="menu"
+      aria-labelledby="dLabelLocalToc"></ul>
+</li>
+              
+            
+            
+              
+                
+              
+            
+            
+            
+            
+          </ul>
+
+          
+            
+<form class="navbar-form navbar-right" action="../../../search.html" method="get">
+ <div class="form-group">
+  <input type="text" name="q" class="form-control" placeholder="Search" />
+ </div>
+  <input type="hidden" name="check_keywords" value="yes" />
+  <input type="hidden" name="area" value="default" />
+</form>
+          
+        </div>
+    </div>
+  </div>
+
+<div class="container">
+  <div class="row">
+    <div class="col-md-12 content">
+      
+  <h1>Source code for obiwan.qa.plots_footprint</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;Draw box around region of intertest, show where</span>
+<span class="sd">injected sources, color code sources by those with obiwa tractor catalogues</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s1">&#39;__main__&#39;</span><span class="p">:</span>
+    <span class="kn">import</span> <span class="nn">matplotlib</span>
+    <span class="n">matplotlib</span><span class="o">.</span><span class="n">use</span><span class="p">(</span><span class="s1">&#39;Agg&#39;</span><span class="p">)</span> <span class="c1"># display backend</span>
+<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
+<span class="kn">from</span> <span class="nn">matplotlib.patches</span> <span class="k">import</span> <span class="n">Rectangle</span>
+<span class="kn">from</span> <span class="nn">matplotlib.collections</span> <span class="k">import</span> <span class="n">PatchCollection</span>
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="kn">from</span> <span class="nn">glob</span> <span class="k">import</span> <span class="n">glob</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+
+<span class="kn">from</span> <span class="nn">astrometry.util.fits</span> <span class="k">import</span> <span class="n">fits_table</span><span class="p">,</span> <span class="n">merge_tables</span>
+
+<span class="kn">import</span> <span class="nn">obiwan.qa.plots_common</span> <span class="k">as</span> <span class="nn">common</span>
+
+<span class="n">REGIONS</span><span class="o">=</span> <span class="p">[</span><span class="s1">&#39;eboss_ngc&#39;</span><span class="p">,</span><span class="s1">&#39;eboss_sgc&#39;</span><span class="p">,</span><span class="s1">&#39;dr5&#39;</span><span class="p">,</span><span class="s1">&#39;cosmos&#39;</span><span class="p">]</span>
+
+
+<div class="viewcode-block" id="footprint_outline"><a class="viewcode-back" href="../../../_autosummary/obiwan.qa.plots_footprint.html#obiwan.qa.plots_footprint.footprint_outline">[docs]</a><span class="k">def</span> <span class="nf">footprint_outline</span><span class="p">(</span><span class="n">region</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;region that wish to inject simulated sources into&quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">region</span> <span class="o">==</span> <span class="s1">&#39;eboss_ngc&#39;</span><span class="p">:</span>
+        <span class="n">ramin</span><span class="p">,</span><span class="n">ramax</span><span class="p">,</span><span class="n">decmin</span><span class="p">,</span><span class="n">decmax</span><span class="o">=</span> <span class="mi">126</span><span class="p">,</span><span class="mi">165</span><span class="p">,</span><span class="mi">14</span><span class="p">,</span><span class="mi">29</span>
+        <span class="n">x</span><span class="o">=</span> <span class="p">[</span><span class="n">ramin</span><span class="p">,</span><span class="n">ramax</span><span class="p">,</span><span class="n">ramax</span><span class="p">,</span><span class="n">ramin</span><span class="p">,</span><span class="n">ramin</span><span class="p">]</span>
+        <span class="n">y</span><span class="o">=</span> <span class="p">[</span><span class="n">decmin</span><span class="p">,</span><span class="n">decmin</span><span class="p">,</span><span class="n">decmax</span><span class="p">,</span><span class="n">decmax</span><span class="p">,</span><span class="n">decmin</span><span class="p">]</span>
+    <span class="k">elif</span> <span class="n">region</span> <span class="o">==</span> <span class="s1">&#39;eboss_sgc&#39;</span><span class="p">:</span>
+        <span class="n">ramin</span><span class="p">,</span><span class="n">ramax</span><span class="p">,</span><span class="n">decmin</span><span class="p">,</span><span class="n">decmax</span><span class="o">=</span> <span class="mi">316</span><span class="p">,</span><span class="mi">360</span><span class="p">,</span><span class="o">-</span><span class="mi">2</span><span class="p">,</span><span class="mi">2</span>
+        <span class="n">x</span><span class="o">=</span> <span class="p">[</span><span class="n">ramax</span><span class="p">,</span><span class="n">ramin</span><span class="p">,</span><span class="n">ramin</span><span class="p">,</span><span class="n">ramax</span><span class="p">]</span>
+        <span class="n">y</span><span class="o">=</span> <span class="p">[</span><span class="n">decmin</span><span class="p">,</span><span class="n">decmin</span><span class="p">,</span><span class="n">decmax</span><span class="p">,</span><span class="n">decmax</span><span class="p">]</span>
+        <span class="n">ramin</span><span class="p">,</span><span class="n">ramax</span><span class="p">,</span><span class="n">decmin</span><span class="p">,</span><span class="n">decmax</span><span class="o">=</span> <span class="mi">0</span><span class="p">,</span><span class="mi">45</span><span class="p">,</span><span class="o">-</span><span class="mi">5</span><span class="p">,</span><span class="mi">5</span>
+        <span class="n">x</span> <span class="o">+=</span> <span class="p">[</span><span class="n">ramin</span><span class="p">,</span><span class="n">ramax</span><span class="p">,</span><span class="n">ramax</span><span class="p">,</span><span class="n">ramin</span><span class="p">,</span><span class="n">ramin</span><span class="p">]</span>
+        <span class="n">y</span> <span class="o">+=</span> <span class="p">[</span><span class="n">decmax</span><span class="p">,</span><span class="n">decmax</span><span class="p">,</span><span class="n">decmin</span><span class="p">,</span><span class="n">decmin</span><span class="p">,</span><span class="o">-</span><span class="mi">2</span><span class="p">]</span>
+    <span class="k">elif</span> <span class="n">region</span> <span class="o">==</span> <span class="s1">&#39;cosmos&#39;</span><span class="p">:</span>
+        <span class="n">lims</span><span class="o">=</span> <span class="n">radec_limits</span><span class="p">(</span><span class="n">region</span><span class="p">)</span>
+        <span class="n">ramin</span><span class="p">,</span><span class="n">ramax</span><span class="o">=</span> <span class="n">lims</span><span class="p">[</span><span class="s1">&#39;ra&#39;</span><span class="p">][</span><span class="mi">0</span><span class="p">],</span><span class="n">lims</span><span class="p">[</span><span class="s1">&#39;ra&#39;</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span>
+        <span class="n">decmin</span><span class="p">,</span><span class="n">decmax</span><span class="o">=</span> <span class="n">lims</span><span class="p">[</span><span class="s1">&#39;dec&#39;</span><span class="p">][</span><span class="mi">0</span><span class="p">],</span><span class="n">lims</span><span class="p">[</span><span class="s1">&#39;dec&#39;</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span>
+        <span class="n">x</span><span class="o">=</span> <span class="p">[</span><span class="n">ramin</span><span class="p">,</span><span class="n">ramax</span><span class="p">,</span><span class="n">ramax</span><span class="p">,</span><span class="n">ramin</span><span class="p">,</span><span class="n">ramin</span><span class="p">]</span>
+        <span class="n">y</span><span class="o">=</span> <span class="p">[</span><span class="n">decmin</span><span class="p">,</span><span class="n">decmin</span><span class="p">,</span><span class="n">decmax</span><span class="p">,</span><span class="n">decmax</span><span class="p">,</span><span class="n">decmin</span><span class="p">]</span>
+    <span class="n">x</span><span class="p">,</span><span class="n">y</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">x</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">y</span><span class="p">)</span>
+    <span class="n">x</span><span class="p">[</span><span class="n">x</span> <span class="o">&gt;=</span> <span class="mi">300</span><span class="p">]</span> <span class="o">-=</span> <span class="mi">360</span>
+    <span class="k">return</span> <span class="n">x</span><span class="p">,</span><span class="n">y</span></div>
+
+<div class="viewcode-block" id="radec_limits"><a class="viewcode-back" href="../../../_autosummary/obiwan.qa.plots_footprint.html#obiwan.qa.plots_footprint.radec_limits">[docs]</a><span class="k">def</span> <span class="nf">radec_limits</span><span class="p">(</span><span class="n">region</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;region containing bricks that ran with obiwan&quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">region</span> <span class="o">==</span> <span class="s1">&#39;eboss_ngc&#39;</span><span class="p">:</span>
+        <span class="k">return</span> <span class="nb">dict</span><span class="p">(</span><span class="n">ra</span><span class="o">=</span><span class="p">(</span><span class="mi">120</span><span class="p">,</span><span class="mi">170</span><span class="p">),</span>
+                    <span class="n">dec</span><span class="o">=</span><span class="p">(</span><span class="mi">12</span><span class="p">,</span><span class="mi">32</span><span class="p">))</span>
+    <span class="k">elif</span> <span class="n">region</span> <span class="o">==</span> <span class="s1">&#39;eboss_sgc&#39;</span><span class="p">:</span>
+        <span class="k">return</span> <span class="nb">dict</span><span class="p">(</span><span class="n">ra</span><span class="o">=</span><span class="p">(</span><span class="o">-</span><span class="mi">50</span><span class="p">,</span><span class="mi">50</span><span class="p">),</span>
+                    <span class="n">dec</span><span class="o">=</span><span class="p">(</span><span class="o">-</span><span class="mi">6</span><span class="p">,</span><span class="mi">6</span><span class="p">))</span>
+    <span class="k">elif</span> <span class="n">region</span> <span class="o">==</span> <span class="s1">&#39;cosmos&#39;</span><span class="p">:</span>
+        <span class="k">return</span> <span class="nb">dict</span><span class="p">(</span><span class="n">ra</span><span class="o">=</span><span class="p">(</span><span class="mf">148.5</span><span class="p">,</span><span class="mf">151.6</span><span class="p">),</span>
+                    <span class="n">dec</span><span class="o">=</span><span class="p">(</span><span class="mf">0.4</span><span class="p">,</span><span class="mf">3.4</span><span class="p">))</span></div>
+
+<span class="k">def</span> <span class="nf">radec_limits_tight</span><span class="p">(</span><span class="n">region</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">region</span> <span class="o">==</span> <span class="s1">&#39;eboss_ngc&#39;</span><span class="p">:</span>
+        <span class="k">return</span> <span class="nb">dict</span><span class="p">(</span><span class="n">ra</span><span class="o">=</span><span class="p">(</span><span class="mi">125</span><span class="p">,</span><span class="mi">166</span><span class="p">),</span>
+                    <span class="n">dec</span><span class="o">=</span><span class="p">(</span><span class="mf">13.5</span><span class="p">,</span><span class="mf">29.5</span><span class="p">))</span>
+    <span class="k">elif</span> <span class="n">region</span> <span class="o">==</span> <span class="s1">&#39;eboss_sgc&#39;</span><span class="p">:</span>
+        <span class="k">return</span> <span class="nb">dict</span><span class="p">(</span><span class="n">ra</span><span class="o">=</span><span class="p">(</span><span class="o">-</span><span class="mi">46</span><span class="p">,</span><span class="mi">46</span><span class="p">),</span>
+                    <span class="n">dec</span><span class="o">=</span><span class="p">(</span><span class="o">-</span><span class="mf">5.2</span><span class="p">,</span><span class="mf">5.2</span><span class="p">))</span>
+    <span class="k">elif</span> <span class="n">region</span> <span class="o">==</span> <span class="s1">&#39;cosmos&#39;</span><span class="p">:</span>
+        <span class="k">return</span> <span class="nb">dict</span><span class="p">(</span><span class="n">ra</span><span class="o">=</span><span class="p">(</span><span class="mf">148.5</span><span class="p">,</span><span class="mf">151.6</span><span class="p">),</span>
+                    <span class="n">dec</span><span class="o">=</span><span class="p">(</span><span class="mf">0.4</span><span class="p">,</span><span class="mf">3.4</span><span class="p">))</span>
+
+<div class="viewcode-block" id="cut_to_region"><a class="viewcode-back" href="../../../_autosummary/obiwan.qa.plots_footprint.html#obiwan.qa.plots_footprint.cut_to_region">[docs]</a><span class="k">def</span> <span class="nf">cut_to_region</span><span class="p">(</span><span class="n">table</span><span class="p">,</span><span class="n">region</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;returns a copy of table cut to region&quot;&quot;&quot;</span>
+    <span class="n">lims</span><span class="o">=</span> <span class="n">radec_limits</span><span class="p">(</span><span class="n">region</span><span class="p">)</span>
+    <span class="n">T</span><span class="o">=</span> <span class="n">table</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+    <span class="n">hiRa</span><span class="o">=</span> <span class="n">T</span><span class="o">.</span><span class="n">ra</span> <span class="o">&gt;=</span> <span class="mi">300</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">T</span><span class="p">[</span><span class="n">hiRa</span><span class="p">])</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="n">T</span><span class="o">.</span><span class="n">ra</span><span class="p">[</span><span class="n">hiRa</span><span class="p">]</span> <span class="o">-=</span> <span class="mi">360</span>
+    <span class="n">keep</span><span class="o">=</span> <span class="p">((</span><span class="n">T</span><span class="o">.</span><span class="n">ra</span> <span class="o">&gt;=</span> <span class="n">lims</span><span class="p">[</span><span class="s1">&#39;ra&#39;</span><span class="p">][</span><span class="mi">0</span><span class="p">])</span> <span class="o">&amp;</span>
+           <span class="p">(</span><span class="n">T</span><span class="o">.</span><span class="n">ra</span> <span class="o">&lt;=</span> <span class="n">lims</span><span class="p">[</span><span class="s1">&#39;ra&#39;</span><span class="p">][</span><span class="mi">1</span><span class="p">])</span> <span class="o">&amp;</span>
+           <span class="p">(</span><span class="n">T</span><span class="o">.</span><span class="n">dec</span> <span class="o">&gt;=</span> <span class="n">lims</span><span class="p">[</span><span class="s1">&#39;dec&#39;</span><span class="p">][</span><span class="mi">0</span><span class="p">])</span> <span class="o">&amp;</span>
+           <span class="p">(</span><span class="n">T</span><span class="o">.</span><span class="n">dec</span> <span class="o">&lt;=</span> <span class="n">lims</span><span class="p">[</span><span class="s1">&#39;dec&#39;</span><span class="p">][</span><span class="mi">1</span><span class="p">]))</span>
+    <span class="k">return</span> <span class="n">T</span><span class="p">[</span><span class="n">keep</span><span class="p">]</span></div>
+
+
+
+<div class="viewcode-block" id="SummaryPlots"><a class="viewcode-back" href="../../../_autosummary/obiwan.qa.plots_footprint.html#obiwan.qa.plots_footprint.SummaryPlots">[docs]</a><span class="k">class</span> <span class="nc">SummaryPlots</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Plots heatmaps of the summary table quantities&quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">summary_fn</span><span class="p">,</span><span class="n">survey_bricks_fn</span><span class="p">,</span>
+                 <span class="n">region</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span><span class="n">subset</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Add additional info to summary table so can make plots and heatmaps&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">summary</span><span class="o">=</span> <span class="n">fits_table</span><span class="p">(</span><span class="n">summary_fn</span><span class="p">)</span>
+        <span class="c1"># Add ra,dec</span>
+        <span class="n">bricks</span><span class="o">=</span> <span class="n">fits_table</span><span class="p">(</span><span class="n">survey_bricks_fn</span><span class="p">)</span>
+        <span class="n">keep</span><span class="o">=</span><span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">char</span><span class="o">.</span><span class="n">strip</span><span class="p">(</span><span class="n">bricks</span><span class="o">.</span><span class="n">brickname</span><span class="p">))</span><span class="o">.</span><span class="n">isin</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">char</span><span class="o">.</span><span class="n">strip</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">summary</span><span class="o">.</span><span class="n">brickname</span><span class="p">))</span>
+        <span class="n">bricks</span><span class="o">.</span><span class="n">cut</span><span class="p">(</span><span class="n">keep</span><span class="p">)</span>
+        <span class="n">bricks</span><span class="o">=</span> <span class="n">bricks</span><span class="p">[</span> <span class="n">np</span><span class="o">.</span><span class="n">argsort</span><span class="p">(</span><span class="n">bricks</span><span class="o">.</span><span class="n">brickname</span><span class="p">)]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">summary</span><span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">summary</span><span class="p">[</span> <span class="n">np</span><span class="o">.</span><span class="n">argsort</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">summary</span><span class="o">.</span><span class="n">brickname</span><span class="p">)]</span>
+        <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;ra&#39;</span><span class="p">,</span><span class="s1">&#39;dec&#39;</span><span class="p">]:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">summary</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="n">key</span><span class="p">,</span><span class="n">bricks</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">key</span><span class="p">))</span>
+        <span class="c1"># Region to process</span>
+        <span class="k">assert</span><span class="p">(</span><span class="n">region</span> <span class="ow">in</span> <span class="n">REGIONS</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">region</span><span class="o">=</span> <span class="n">region</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">subset</span><span class="o">=</span> <span class="n">subset</span>
+
+<div class="viewcode-block" id="SummaryPlots.heatmaps"><a class="viewcode-back" href="../../../_autosummary/obiwan.qa.plots_footprint.html#obiwan.qa.plots_footprint.SummaryPlots.heatmaps">[docs]</a>    <span class="k">def</span> <span class="nf">heatmaps</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Function that plots ALL the heatmaps&quot;&quot;&quot;</span>
+        <span class="c1"># Continuous RA for SGC</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">region</span> <span class="o">==</span> <span class="s1">&#39;eboss_sgc&#39;</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">summary</span><span class="o">=</span> <span class="n">cut_to_region</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">summary</span><span class="p">,</span><span class="n">region</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">region</span><span class="p">)</span>
+        <span class="c1"># bool array for this region</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">inRegion</span><span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">summary</span><span class="p">),</span><span class="nb">bool</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">region</span> <span class="o">==</span> <span class="s1">&#39;eboss_ngc&#39;</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">inRegion</span><span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">summary</span><span class="o">.</span><span class="n">dec</span> <span class="o">&gt;</span> <span class="mi">10</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">region</span> <span class="o">==</span> <span class="s1">&#39;eboss_sgc&#39;</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">inRegion</span><span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">summary</span><span class="o">.</span><span class="n">dec</span> <span class="o">&lt;</span> <span class="mi">10</span>
+        <span class="c1"># Ra,Dec limits for this region</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">radec_lims</span><span class="o">=</span> <span class="n">radec_limits_tight</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">region</span><span class="p">)</span>
+        <span class="c1"># Good plot properties</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">heatmap_props</span><span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span><span class="mi">5</span><span class="p">),</span><span class="n">ms</span><span class="o">=</span><span class="mi">15</span><span class="p">,</span><span class="n">m</span><span class="o">=</span><span class="s1">&#39;o&#39;</span><span class="p">,</span>
+                                 <span class="n">fn_suffix</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">region</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">region</span> <span class="o">==</span> <span class="s1">&#39;cosmos&#39;</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">heatmap_props</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mf">3.6</span><span class="p">,</span><span class="mf">2.9</span><span class="p">),</span><span class="n">ms</span><span class="o">=</span><span class="mf">1.6e2</span><span class="p">,</span><span class="n">m</span><span class="o">=</span><span class="s1">&#39;s&#39;</span><span class="p">,</span>
+                                      <span class="n">fn_suffix</span><span class="o">=</span><span class="s1">&#39;</span><span class="si">%s</span><span class="s1">_</span><span class="si">%s</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">region</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">subset</span><span class="p">))</span>
+
+        <span class="c1"># Plot</span>
+        <span class="n">cbar_lims</span><span class="o">=</span><span class="kc">None</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">region</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;eboss_ngc&#39;</span><span class="p">,</span><span class="s1">&#39;eboss_sgc&#39;</span><span class="p">]:</span>
+            <span class="n">cbar_lims</span><span class="o">=</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">3000</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">heatmap</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">summary</span><span class="o">.</span><span class="n">n_inj</span> <span class="o">/</span> <span class="mf">0.25</span><span class="o">**</span><span class="mi">2</span><span class="p">,</span>
+                     <span class="n">cbar_lims</span><span class="o">=</span><span class="n">cbar_lims</span><span class="p">,</span> <span class="n">cbar_label</span><span class="o">=</span><span class="s1">&#39;N / deg2&#39;</span><span class="p">,</span>
+                     <span class="n">fn</span><span class="o">=</span><span class="s2">&quot;heatmap_num_dens_inj.png&quot;</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">heatmap</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">summary</span><span class="o">.</span><span class="n">n_rec</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">float</span><span class="p">)</span><span class="o">/</span><span class="bp">self</span><span class="o">.</span><span class="n">summary</span><span class="o">.</span><span class="n">n_inj</span><span class="p">,</span>
+                     <span class="n">cbar_lims</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">),</span><span class="n">cbar_label</span><span class="o">=</span><span class="s1">&#39;Fraction Recovered&#39;</span><span class="p">,</span>
+                     <span class="n">fn</span><span class="o">=</span><span class="s2">&quot;heatmap_recovered.png&quot;</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">heatmap</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">summary</span><span class="o">.</span><span class="n">n_inj_elg_trac_elg_ngc</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">float</span><span class="p">)</span><span class="o">/</span><span class="bp">self</span><span class="o">.</span><span class="n">summary</span><span class="o">.</span><span class="n">n_inj_elg_ngc</span><span class="p">,</span>
+                     <span class="n">cbar_lims</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">),</span><span class="n">cbar_label</span><span class="o">=</span><span class="s1">&#39;Fraction Recovered (NGC ELGs)&#39;</span><span class="p">,</span>
+                     <span class="n">fn</span><span class="o">=</span><span class="s2">&quot;heatmap_recovered_ngc_elgs.png&quot;</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">heatmap</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">summary</span><span class="o">.</span><span class="n">n_inj_elg_trac_elg_ngc</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">float</span><span class="p">)</span><span class="o">/</span><span class="bp">self</span><span class="o">.</span><span class="n">summary</span><span class="o">.</span><span class="n">n_inj_elg_trac_elg_ngc_allmask</span><span class="p">,</span>
+                     <span class="n">cbar_lims</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">),</span> <span class="n">cbar_label</span><span class="o">=</span><span class="s1">&#39;Ratio of Anymask to Allmask&#39;</span><span class="p">,</span>
+                     <span class="n">fn</span><span class="o">=</span><span class="s2">&quot;heatmap_anymask_allmask_ratio_ngc_elgs.png&quot;</span><span class="p">)</span></div>
+        <span class="c1">#fig,axes=plt.subplots(3,1,figsize=(8,10))</span>
+        <span class="c1">#d={}</span>
+        <span class="c1">#for band in &#39;grz&#39;:</span>
+        <span class="c1">#    d[&#39;depth_&#39;+band]= plots.flux2mag(5/np.sqrt(self.summary.get(&#39;galdepth_&#39;+band)))</span>
+        <span class="c1">#for band in &#39;grz&#39;:</span>
+        <span class="c1">#    kw.update(name=&#39;galdepth_%s&#39; % band,</span>
+        <span class="c1">#              clab=&#39;galdepth %s (not ext corr)&#39; % band)</span>
+        <span class="c1">#    newkeep= (keep) &amp; (np.isfinite(d[&#39;depth_&#39;+band]))</span>
+        <span class="c1">#    #print(&#39;depth= &#39;,d[&#39;depth_&#39;+band][newkeep])</span>
+        <span class="c1">#    try:</span>
+        <span class="c1">#        self.heatmap(d[&#39;depth_&#39;+band][newkeep])</span>
+        <span class="c1">#    except ValueError:</span>
+        <span class="c1">#        print(&#39;WARNING depth_%s FAILED, somethign about Invalid RGBA argument: 23.969765&#39; % band)</span>
+
+<div class="viewcode-block" id="SummaryPlots.nonheatmaps"><a class="viewcode-back" href="../../../_autosummary/obiwan.qa.plots_footprint.html#obiwan.qa.plots_footprint.SummaryPlots.nonheatmaps">[docs]</a>    <span class="k">def</span> <span class="nf">nonheatmaps</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Function that plots ALL the nonheatmaps, e.g. histograms&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">hist_num_dens_injected</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="SummaryPlots.heatmap"><a class="viewcode-back" href="../../../_autosummary/obiwan.qa.plots_footprint.html#obiwan.qa.plots_footprint.SummaryPlots.heatmap">[docs]</a>    <span class="k">def</span> <span class="nf">heatmap</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">data</span><span class="p">,</span> <span class="n">cbar_lims</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                <span class="n">cbar_label</span><span class="o">=</span><span class="s1">&#39;N / deg2&#39;</span><span class="p">,</span><span class="n">fn</span><span class="o">=</span><span class="s1">&#39;heatmap_tmp.png&#39;</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Makes and save a single panel heatmap&quot;&quot;&quot;</span>
+        <span class="n">fig</span><span class="p">,</span><span class="n">ax</span><span class="o">=</span><span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">heatmap_props</span><span class="p">[</span><span class="s1">&#39;figsize&#39;</span><span class="p">])</span>
+
+        <span class="n">x</span><span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">summary</span><span class="o">.</span><span class="n">ra</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">inRegion</span><span class="p">]</span>
+        <span class="n">y</span><span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">summary</span><span class="o">.</span><span class="n">dec</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">inRegion</span><span class="p">]</span>
+        <span class="n">color</span><span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">inRegion</span><span class="p">]</span>
+        <span class="n">cax</span><span class="o">=</span> <span class="n">ax</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="n">y</span><span class="p">,</span><span class="n">c</span><span class="o">=</span><span class="n">color</span><span class="p">,</span>
+                        <span class="n">edgecolors</span><span class="o">=</span><span class="s1">&#39;none&#39;</span><span class="p">,</span><span class="n">rasterized</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                        <span class="n">marker</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">heatmap_props</span><span class="p">[</span><span class="s1">&#39;m&#39;</span><span class="p">],</span>
+                        <span class="n">s</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">heatmap_props</span><span class="p">[</span><span class="s1">&#39;ms&#39;</span><span class="p">])</span>
+        <span class="k">if</span> <span class="n">cbar_lims</span><span class="p">:</span>
+            <span class="n">cax</span><span class="o">.</span><span class="n">set_clim</span><span class="p">(</span><span class="n">cbar_lims</span><span class="p">)</span> <span class="c1"># color bar limits</span>
+        <span class="n">cbar</span> <span class="o">=</span> <span class="n">fig</span><span class="o">.</span><span class="n">colorbar</span><span class="p">(</span><span class="n">cax</span><span class="p">)</span>
+
+        <span class="n">cbar</span><span class="o">.</span><span class="n">set_label</span><span class="p">(</span><span class="n">cbar_label</span><span class="p">)</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">set_xlim</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">radec_lims</span><span class="p">[</span><span class="s1">&#39;ra&#39;</span><span class="p">])</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">set_ylim</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">radec_lims</span><span class="p">[</span><span class="s1">&#39;dec&#39;</span><span class="p">])</span>
+        <span class="c1">#ax.set_aspect(aspect_num)</span>
+
+        <span class="n">xlab</span><span class="o">=</span><span class="n">ax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s1">&#39;RA&#39;</span><span class="p">)</span>
+        <span class="n">ylab</span><span class="o">=</span><span class="n">ax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s1">&#39;Dec&#39;</span><span class="p">)</span>
+        <span class="n">fn</span><span class="o">=</span> <span class="n">fn</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;.png&#39;</span><span class="p">,</span><span class="s1">&#39;_</span><span class="si">%s</span><span class="s1">.png&#39;</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">heatmap_props</span><span class="p">[</span><span class="s1">&#39;fn_suffix&#39;</span><span class="p">])</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="n">fn</span><span class="p">,</span><span class="n">bbox_extra_artists</span><span class="o">=</span><span class="p">[</span><span class="n">xlab</span><span class="p">,</span><span class="n">ylab</span><span class="p">],</span> <span class="n">bbox_inches</span><span class="o">=</span><span class="s1">&#39;tight&#39;</span><span class="p">)</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Wrote </span><span class="si">%s</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="n">fn</span><span class="p">)</span></div>
+
+    <span class="k">def</span> <span class="nf">hist_num_dens_injected</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">fn</span><span class="o">=</span><span class="s1">&#39;hist_num_dens_injected.png&#39;</span><span class="p">):</span>
+        <span class="c1"># FIX ME: this func only supports eboss region</span>
+        <span class="k">assert</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">region</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;eboss_ngc&#39;</span><span class="p">,</span><span class="s1">&#39;eboss_sgc&#39;</span><span class="p">])</span>
+        <span class="n">isNGC</span><span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">summary</span><span class="o">.</span><span class="n">dec</span> <span class="o">&gt;</span> <span class="mi">10</span>
+        <span class="n">dens_inj_ngc</span><span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">summary</span><span class="o">.</span><span class="n">n_inj</span><span class="p">[</span><span class="n">isNGC</span><span class="p">]</span> <span class="o">/</span> <span class="mf">0.25</span><span class="o">**</span><span class="mi">2</span> <span class="c1"># n/deg2</span>
+        <span class="n">dens_inj_sgc</span><span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">summary</span><span class="o">.</span><span class="n">n_inj</span><span class="p">[</span><span class="o">~</span><span class="n">isNGC</span><span class="p">]</span> <span class="o">/</span> <span class="mf">0.25</span><span class="o">**</span><span class="mi">2</span> <span class="c1"># n/deg2</span>
+        <span class="n">dens_inj_elg_ngc</span><span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">summary</span><span class="o">.</span><span class="n">n_inj_elg_ngc</span><span class="p">[</span><span class="n">isNGC</span><span class="p">]</span> <span class="o">/</span> <span class="mf">0.25</span><span class="o">**</span><span class="mi">2</span> <span class="c1"># n/deg2</span>
+        <span class="n">dens_inj_elg_sgc</span><span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">summary</span><span class="o">.</span><span class="n">n_inj_elg_sgc</span><span class="p">[</span><span class="o">~</span><span class="n">isNGC</span><span class="p">]</span> <span class="o">/</span> <span class="mf">0.25</span><span class="o">**</span><span class="mi">2</span>
+
+        <span class="n">fig</span><span class="p">,</span><span class="n">ax</span><span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">8</span><span class="p">,</span><span class="mi">4</span><span class="p">))</span>
+        <span class="n">xlab</span><span class="o">=</span><span class="n">ax</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s1">&#39;Density [#/deg2] of Injected Sources&#39;</span><span class="p">)</span>
+        <span class="n">_</span><span class="p">,</span><span class="n">bins</span><span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">histogram</span><span class="p">(</span><span class="n">dens_inj_ngc</span><span class="p">,</span><span class="n">bins</span><span class="o">=</span><span class="mi">30</span><span class="p">,</span><span class="n">normed</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">data</span><span class="p">,</span><span class="n">ls</span><span class="p">,</span><span class="n">name</span> <span class="ow">in</span> <span class="p">[(</span><span class="n">dens_inj_ngc</span><span class="p">,</span><span class="s1">&#39;-&#39;</span><span class="p">,</span><span class="s1">&#39;NGC&#39;</span><span class="p">),</span>
+                             <span class="p">(</span><span class="n">dens_inj_sgc</span><span class="p">,</span><span class="s1">&#39;--&#39;</span><span class="p">,</span><span class="s1">&#39;SGC&#39;</span><span class="p">)]:</span>
+            <span class="n">common</span><span class="o">.</span><span class="n">myhist_step</span><span class="p">(</span><span class="n">ax</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="n">data</span><span class="p">,</span><span class="n">bins</span><span class="o">=</span><span class="n">bins</span><span class="p">,</span>
+                          <span class="n">color</span><span class="o">=</span><span class="s1">&#39;k&#39;</span><span class="p">,</span><span class="n">ls</span><span class="o">=</span><span class="n">ls</span><span class="p">)</span> <span class="c1">#,label=name)</span>
+        <span class="n">xlab</span><span class="o">=</span><span class="n">ax</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s1">&#39;Density [#/deg2] of Injected eBOSS ELGs&#39;</span><span class="p">)</span>
+        <span class="n">_</span><span class="p">,</span><span class="n">bins</span><span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">histogram</span><span class="p">(</span><span class="n">dens_inj_elg_ngc</span><span class="p">,</span><span class="n">bins</span><span class="o">=</span><span class="mi">30</span><span class="p">,</span><span class="n">normed</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">data</span><span class="p">,</span><span class="n">ls</span><span class="p">,</span><span class="n">name</span> <span class="ow">in</span> <span class="p">[(</span><span class="n">dens_inj_elg_ngc</span><span class="p">,</span><span class="s1">&#39;-&#39;</span><span class="p">,</span><span class="s1">&#39;NGC&#39;</span><span class="p">),</span>
+                             <span class="p">(</span><span class="n">dens_inj_elg_sgc</span><span class="p">,</span><span class="s1">&#39;--&#39;</span><span class="p">,</span><span class="s1">&#39;SGC&#39;</span><span class="p">)]:</span>
+            <span class="n">common</span><span class="o">.</span><span class="n">myhist_step</span><span class="p">(</span><span class="n">ax</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span><span class="n">data</span><span class="p">,</span><span class="n">bins</span><span class="o">=</span><span class="n">bins</span><span class="p">,</span>
+                          <span class="n">color</span><span class="o">=</span><span class="s1">&#39;k&#39;</span><span class="p">,</span><span class="n">ls</span><span class="o">=</span><span class="n">ls</span><span class="p">,</span><span class="n">label</span><span class="o">=</span><span class="n">name</span><span class="p">)</span>
+        <span class="n">ylab</span><span class="o">=</span><span class="n">ax</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s1">&#39;Number of Bricks&#39;</span><span class="p">)</span>
+        <span class="n">ax</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">legend</span><span class="p">(</span><span class="n">loc</span><span class="o">=</span><span class="s1">&#39;upper left&#39;</span><span class="p">)</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="n">fn</span><span class="p">,</span><span class="n">bbox_extra_artists</span><span class="o">=</span><span class="p">[</span><span class="n">xlab</span><span class="p">,</span><span class="n">ylab</span><span class="p">],</span> <span class="n">bbox_inches</span><span class="o">=</span><span class="s1">&#39;tight&#39;</span><span class="p">)</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Wrote </span><span class="si">%s</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="n">fn</span><span class="p">)</span></div>
+
+
+
+<span class="k">class</span> <span class="nc">CCDsUsed</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">ccds_used_wildcard</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;plot ra,dec of ccds used (the footprint for this run)</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            ccds_used_wildcard: path to ccds file or path containing an asterisk</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="k">if</span> <span class="s2">&quot;*&quot;</span> <span class="ow">in</span> <span class="n">ccds_used_wildcard</span><span class="p">:</span>
+            <span class="n">fns</span><span class="o">=</span> <span class="n">glob</span><span class="p">(</span><span class="n">ccds_used_wildcard</span><span class="p">)</span>
+            <span class="k">assert</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">fns</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">)</span>
+            <span class="n">ccds</span><span class="o">=</span> <span class="p">[</span><span class="n">fits_table</span><span class="p">(</span><span class="n">fn</span><span class="p">,</span><span class="n">columns</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;ra&#39;</span><span class="p">,</span><span class="s1">&#39;dec&#39;</span><span class="p">,</span><span class="s1">&#39;expid&#39;</span><span class="p">])</span> <span class="k">for</span> <span class="n">fn</span> <span class="ow">in</span> <span class="n">fns</span><span class="p">]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">ccds</span><span class="o">=</span> <span class="n">merge_tables</span><span class="p">(</span><span class="n">ccds</span><span class="p">)</span>
+            <span class="k">del</span> <span class="n">ccds</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">ccds</span><span class="o">=</span> <span class="n">fits_table</span><span class="p">(</span><span class="n">ccds_used_wildcard</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">plot</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">savefn</span><span class="o">=</span><span class="s1">&#39;ccdsused.png&#39;</span><span class="p">,</span>
+             <span class="n">region</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span><span class="n">subset</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span><span class="mi">5</span><span class="p">)):</span>
+        <span class="k">assert</span><span class="p">(</span><span class="n">region</span> <span class="ow">in</span> <span class="n">REGIONS</span><span class="p">)</span>
+        <span class="n">savefn</span><span class="o">=</span> <span class="n">savefn</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;.png&#39;</span><span class="p">,</span><span class="s1">&#39;_</span><span class="si">%s</span><span class="s1">.png&#39;</span> <span class="o">%</span> <span class="n">region</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">region</span> <span class="o">==</span> <span class="s1">&#39;cosmos&#39;</span><span class="p">:</span>
+            <span class="n">savefn</span><span class="o">=</span> <span class="n">savefn</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;.png&#39;</span><span class="p">,</span><span class="s1">&#39;_</span><span class="si">%d</span><span class="s1">.png&#39;</span> <span class="o">%</span> <span class="n">subset</span><span class="p">)</span>
+        <span class="n">ccds</span><span class="o">=</span> <span class="n">cut_to_region</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ccds</span><span class="p">,</span><span class="n">region</span><span class="o">=</span><span class="n">region</span><span class="p">)</span>
+        <span class="n">x</span><span class="p">,</span><span class="n">y</span><span class="o">=</span> <span class="n">footprint_outline</span><span class="p">(</span><span class="n">region</span><span class="p">)</span>
+        <span class="n">lims</span><span class="o">=</span> <span class="n">radec_limits</span><span class="p">(</span><span class="n">region</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">region</span> <span class="o">==</span> <span class="s1">&#39;cosmos&#39;</span><span class="p">:</span>
+            <span class="k">assert</span><span class="p">(</span><span class="n">subset</span> <span class="ow">in</span> <span class="p">[</span><span class="mi">60</span><span class="p">,</span><span class="mi">64</span><span class="p">,</span><span class="mi">69</span><span class="p">])</span>
+            <span class="n">ccds</span><span class="o">=</span> <span class="n">ccds</span><span class="p">[</span><span class="n">ccds</span><span class="o">.</span><span class="n">subset</span> <span class="o">==</span> <span class="n">subset</span><span class="p">]</span>
+
+        <span class="n">fig</span><span class="p">,</span><span class="n">ax</span><span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="n">figsize</span><span class="p">)</span>
+        <span class="c1">#plt.subplots_adjust(hspace=0.2,wspace=0.2)</span>
+        <span class="c1"># CCDs background</span>
+        <span class="k">if</span> <span class="n">region</span> <span class="o">!=</span> <span class="s1">&#39;cosmos&#39;</span><span class="p">:</span>
+            <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">ccds</span><span class="o">.</span><span class="n">ra</span><span class="p">,</span><span class="n">ccds</span><span class="o">.</span><span class="n">dec</span><span class="p">,</span><span class="s1">&#39;k,&#39;</span><span class="p">,</span><span class="n">lw</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span><span class="n">label</span><span class="o">=</span><span class="s1">&#39;CCDs&#39;</span><span class="p">)</span>
+            <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="n">y</span><span class="p">,</span><span class="s1">&#39;b-&#39;</span><span class="p">,</span><span class="n">lw</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># ccd boundaries</span>
+            <span class="n">ra</span><span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">UL</span><span class="o">=</span><span class="n">ccds</span><span class="o">.</span><span class="n">ra0</span><span class="p">,</span>
+                     <span class="n">UR</span><span class="o">=</span><span class="n">ccds</span><span class="o">.</span><span class="n">ra1</span><span class="p">,</span>
+                     <span class="n">LR</span><span class="o">=</span><span class="n">ccds</span><span class="o">.</span><span class="n">ra2</span><span class="p">,</span>
+                     <span class="n">LL</span><span class="o">=</span><span class="n">ccds</span><span class="o">.</span><span class="n">ra3</span><span class="p">)</span>
+            <span class="n">dec</span><span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">UL</span><span class="o">=</span><span class="n">ccds</span><span class="o">.</span><span class="n">dec0</span><span class="p">,</span>
+                      <span class="n">UR</span><span class="o">=</span><span class="n">ccds</span><span class="o">.</span><span class="n">dec1</span><span class="p">,</span>
+                      <span class="n">LR</span><span class="o">=</span><span class="n">ccds</span><span class="o">.</span><span class="n">dec2</span><span class="p">,</span>
+                      <span class="n">LL</span><span class="o">=</span><span class="n">ccds</span><span class="o">.</span><span class="n">dec3</span><span class="p">)</span>
+            <span class="n">patches</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">ccds</span><span class="p">)):</span>
+                <span class="n">r</span><span class="o">=</span> <span class="n">Rectangle</span><span class="p">((</span><span class="n">ra</span><span class="p">[</span><span class="s1">&#39;LL&#39;</span><span class="p">][</span><span class="n">i</span><span class="p">],</span><span class="n">dec</span><span class="p">[</span><span class="s1">&#39;LL&#39;</span><span class="p">][</span><span class="n">i</span><span class="p">]),</span>
+                             <span class="n">width</span><span class="o">=</span><span class="n">ra</span><span class="p">[</span><span class="s1">&#39;LR&#39;</span><span class="p">][</span><span class="n">i</span><span class="p">]</span><span class="o">-</span><span class="n">ra</span><span class="p">[</span><span class="s1">&#39;LL&#39;</span><span class="p">][</span><span class="n">i</span><span class="p">],</span>
+                             <span class="n">height</span><span class="o">=</span><span class="n">dec</span><span class="p">[</span><span class="s1">&#39;UL&#39;</span><span class="p">][</span><span class="n">i</span><span class="p">]</span> <span class="o">-</span> <span class="n">dec</span><span class="p">[</span><span class="s1">&#39;LL&#39;</span><span class="p">][</span><span class="n">i</span><span class="p">])</span>
+                <span class="n">patches</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">r</span><span class="p">)</span>
+            <span class="n">kw</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span><span class="n">color</span><span class="o">=</span><span class="s1">&#39;b&#39;</span><span class="p">,</span><span class="n">alpha</span><span class="o">=</span><span class="mf">0.10</span><span class="p">)</span>
+            <span class="n">p</span> <span class="o">=</span> <span class="n">PatchCollection</span><span class="p">(</span><span class="n">patches</span><span class="p">,</span> <span class="o">**</span><span class="n">kw</span><span class="p">)</span>
+            <span class="n">ax</span><span class="o">.</span><span class="n">add_collection</span><span class="p">(</span><span class="n">p</span><span class="p">)</span>
+            <span class="c1">#ax.plot(x,y,&#39;b--&#39;,lw=3)</span>
+        <span class="c1"># Official footprint for the production run</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">set_xlim</span><span class="p">(</span><span class="n">lims</span><span class="p">[</span><span class="s1">&#39;ra&#39;</span><span class="p">])</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">set_ylim</span><span class="p">(</span><span class="n">lims</span><span class="p">[</span><span class="s1">&#39;dec&#39;</span><span class="p">])</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">legend</span><span class="p">(</span><span class="n">loc</span><span class="o">=</span><span class="s1">&#39;lower right&#39;</span><span class="p">)</span>
+        <span class="n">ylab</span><span class="o">=</span><span class="n">ax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s1">&#39;Dec&#39;</span><span class="p">)</span>
+        <span class="n">xlab</span><span class="o">=</span><span class="n">ax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s1">&#39;RA&#39;</span><span class="p">)</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="n">savefn</span><span class="p">,</span><span class="n">bbox_extra_artists</span><span class="o">=</span><span class="p">[</span><span class="n">xlab</span><span class="p">,</span><span class="n">ylab</span><span class="p">],</span> <span class="n">bbox_inches</span><span class="o">=</span><span class="s1">&#39;tight&#39;</span><span class="p">)</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Wrote </span><span class="si">%s</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="n">savefn</span><span class="p">)</span>
+
+<div class="viewcode-block" id="BricksQueued"><a class="viewcode-back" href="../../../_autosummary/obiwan.qa.plots_footprint.html#obiwan.qa.plots_footprint.BricksQueued">[docs]</a><span class="k">class</span> <span class="nc">BricksQueued</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;plot ra,dec of bricks submitted to QDO queue</span>
+
+<span class="sd">    Are we missing regions because didn&#39;t submit all the bricks?</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">bricks_list_fn</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span><span class="n">survey_bricks_fn</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;plot ra,dec of ccds used (the footprint for this run)&#39;&#39;&#39;</span>
+        <span class="n">bricks</span><span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">loadtxt</span><span class="p">(</span><span class="n">bricks_list_fn</span><span class="p">,</span><span class="n">dtype</span><span class="o">=</span><span class="nb">str</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">bricks</span><span class="o">=</span> <span class="n">fits_table</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">bricks</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="s1">&#39;brickname&#39;</span><span class="p">,</span><span class="n">bricks</span><span class="p">)</span>
+        <span class="c1"># Add ra,dec</span>
+        <span class="n">b</span><span class="o">=</span> <span class="n">fits_table</span><span class="p">(</span><span class="n">survey_bricks_fn</span><span class="p">)</span>
+        <span class="n">keep</span><span class="o">=</span><span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">char</span><span class="o">.</span><span class="n">strip</span><span class="p">(</span><span class="n">b</span><span class="o">.</span><span class="n">brickname</span><span class="p">))</span><span class="o">.</span><span class="n">isin</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">char</span><span class="o">.</span><span class="n">strip</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">bricks</span><span class="o">.</span><span class="n">brickname</span><span class="p">))</span>
+        <span class="n">b</span><span class="o">.</span><span class="n">cut</span><span class="p">(</span><span class="n">keep</span><span class="p">)</span>
+        <span class="n">b</span><span class="o">=</span> <span class="n">b</span><span class="p">[</span> <span class="n">np</span><span class="o">.</span><span class="n">argsort</span><span class="p">(</span><span class="n">b</span><span class="o">.</span><span class="n">brickname</span><span class="p">)]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">bricks</span><span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">bricks</span><span class="p">[</span> <span class="n">np</span><span class="o">.</span><span class="n">argsort</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">bricks</span><span class="o">.</span><span class="n">brickname</span><span class="p">)]</span>
+        <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;ra&#39;</span><span class="p">,</span><span class="s1">&#39;dec&#39;</span><span class="p">]:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">bricks</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="n">key</span><span class="p">,</span><span class="n">b</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">key</span><span class="p">))</span>
+
+    <span class="k">def</span> <span class="nf">plot</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">region</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span><span class="n">savefn</span><span class="o">=</span><span class="s1">&#39;bricksqueued.png&#39;</span><span class="p">):</span>
+        <span class="k">assert</span><span class="p">(</span><span class="n">region</span> <span class="ow">in</span> <span class="n">REGIONS</span><span class="p">)</span>
+        <span class="n">savefn</span><span class="o">=</span> <span class="n">savefn</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;.png&#39;</span><span class="p">,</span><span class="s1">&#39;_</span><span class="si">%s</span><span class="s1">.png&#39;</span> <span class="o">%</span> <span class="n">region</span><span class="p">)</span>
+        <span class="n">bricks</span><span class="o">=</span> <span class="n">cut_to_region</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">bricks</span><span class="p">,</span><span class="n">region</span><span class="p">)</span>
+        <span class="n">x</span><span class="p">,</span><span class="n">y</span><span class="o">=</span> <span class="n">footprint_outline</span><span class="p">(</span><span class="n">region</span><span class="p">)</span>
+        <span class="n">lims</span><span class="o">=</span> <span class="n">radec_limits</span><span class="p">(</span><span class="n">region</span><span class="p">)</span>
+
+        <span class="n">fig</span><span class="p">,</span><span class="n">ax</span><span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span><span class="mi">5</span><span class="p">))</span>
+        <span class="c1">#plt.subplots_adjust(hspace=0.2,wspace=0.2)</span>
+        <span class="c1"># CCDs background</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">bricks</span><span class="o">.</span><span class="n">ra</span><span class="p">,</span><span class="n">bricks</span><span class="o">.</span><span class="n">dec</span><span class="p">,</span><span class="s1">&#39;ko&#39;</span><span class="p">,</span><span class="n">markersize</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span><span class="n">label</span><span class="o">=</span><span class="s1">&#39;Bricks&#39;</span><span class="p">)</span>
+        <span class="c1"># Official footprint for the production run</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="n">y</span><span class="p">,</span><span class="s1">&#39;b-&#39;</span><span class="p">,</span><span class="n">lw</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">set_xlim</span><span class="p">(</span><span class="n">lims</span><span class="p">[</span><span class="s1">&#39;ra&#39;</span><span class="p">])</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">set_ylim</span><span class="p">(</span><span class="n">lims</span><span class="p">[</span><span class="s1">&#39;dec&#39;</span><span class="p">])</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">legend</span><span class="p">(</span><span class="n">loc</span><span class="o">=</span><span class="s1">&#39;lower right&#39;</span><span class="p">)</span>
+        <span class="n">ylab</span><span class="o">=</span><span class="n">ax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s1">&#39;Dec&#39;</span><span class="p">)</span>
+        <span class="n">xlab</span><span class="o">=</span><span class="n">ax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s1">&#39;RA&#39;</span><span class="p">)</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="n">savefn</span><span class="p">,</span><span class="n">bbox_extra_artists</span><span class="o">=</span><span class="p">[</span><span class="n">xlab</span><span class="p">,</span><span class="n">ylab</span><span class="p">],</span> <span class="n">bbox_inches</span><span class="o">=</span><span class="s1">&#39;tight&#39;</span><span class="p">)</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Wrote </span><span class="si">%s</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="n">savefn</span><span class="p">)</span></div>
+
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;__main__&quot;</span><span class="p">:</span>
+    <span class="kn">from</span> <span class="nn">argparse</span> <span class="k">import</span> <span class="n">ArgumentParser</span>
+    <span class="n">parser</span> <span class="o">=</span> <span class="n">ArgumentParser</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s1">&#39;DECaLS simulations.&#39;</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;--region&#39;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span><span class="n">choices</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;eboss_ngc&#39;</span><span class="p">,</span><span class="s1">&#39;eboss_sgc&#39;</span><span class="p">,</span><span class="s1">&#39;cosmos&#39;</span><span class="p">],</span> <span class="n">required</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;--subset&#39;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span><span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span><span class="n">choices</span><span class="o">=</span><span class="p">[</span><span class="mi">60</span><span class="p">,</span><span class="mi">64</span><span class="p">,</span><span class="mi">69</span><span class="p">],</span> <span class="n">required</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;--summary_table&#39;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">required</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;--ccds_used_wildcard&#39;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s1">&#39;path to ccds or path including wildcard for multiple ccds to merge&#39;</span><span class="p">,</span><span class="n">required</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;--bricks_list_fn&#39;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span><span class="n">help</span><span class="o">=</span><span class="s1">&#39;bricks.txt file&#39;</span><span class="p">,</span> <span class="n">required</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;--survey_bricks&#39;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s1">&#39;path to survey-bricks.fits.fz table&#39;</span><span class="p">,</span> <span class="n">required</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="c1">#parser.add_argument(&#39;--psql_radec&#39;, help=&#39;csv file from: psql -d desi -U desi_admin -h nerscdb03.nersc.gov -t -A -F&quot;,&quot; -c &quot;select ra,dec from obiwan_eboss_elg&quot; &gt; psql_radec.csv&#39;, required=True)</span>
+    <span class="n">args</span> <span class="o">=</span> <span class="n">parser</span><span class="o">.</span><span class="n">parse_args</span><span class="p">()</span>
+
+    <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">summary_table</span><span class="p">:</span>
+        <span class="n">summ</span><span class="o">=</span> <span class="n">SummaryPlots</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">summary_table</span><span class="p">,</span><span class="n">args</span><span class="o">.</span><span class="n">survey_bricks</span><span class="p">,</span>
+                           <span class="n">region</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">region</span><span class="p">,</span><span class="n">subset</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">subset</span><span class="p">)</span>
+        <span class="n">summ</span><span class="o">.</span><span class="n">nonheatmaps</span><span class="p">()</span>
+        <span class="n">summ</span><span class="o">.</span><span class="n">heatmaps</span><span class="p">()</span>
+
+    <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">ccds_used_wildcard</span><span class="p">:</span>
+        <span class="n">ccds</span><span class="o">=</span> <span class="n">CCDsUsed</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">ccds_used_wildcard</span><span class="p">)</span>
+        <span class="n">kw</span><span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">region</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">region</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">region</span> <span class="o">==</span> <span class="s1">&#39;cosmos&#39;</span><span class="p">:</span>
+            <span class="n">kw</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">subset</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">subset</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">region</span> <span class="o">==</span> <span class="s1">&#39;eboss_ngc&#39;</span><span class="p">:</span>
+            <span class="n">kw</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">7</span><span class="p">,</span><span class="mi">5</span><span class="p">))</span>
+        <span class="k">elif</span> <span class="n">args</span><span class="o">.</span><span class="n">region</span> <span class="o">==</span> <span class="s1">&#39;eboss_sgc&#39;</span><span class="p">:</span>
+            <span class="n">kw</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span><span class="mf">2.5</span><span class="p">))</span>
+        <span class="k">elif</span> <span class="n">args</span><span class="o">.</span><span class="n">region</span> <span class="o">==</span> <span class="s1">&#39;cosmos&#39;</span><span class="p">:</span>
+            <span class="n">kw</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span><span class="mi">3</span><span class="p">))</span>
+        <span class="n">ccds</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="o">**</span><span class="n">kw</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">bricks_list_fn</span><span class="p">:</span>
+        <span class="n">bricks</span><span class="o">=</span> <span class="n">BricksQueued</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">bricks_list_fn</span><span class="p">,</span><span class="n">args</span><span class="o">.</span><span class="n">survey_bricks</span><span class="p">)</span>
+        <span class="n">bricks</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">region</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">region</span><span class="p">)</span>
+</pre></div>
+
+    </div>
+      
+  </div>
+</div>
+<footer class="footer">
+  <div class="container">
+    <p class="pull-right">
+      <a href="#">Back to top</a>
+      
+    </p>
+    <p>
+        &copy; Copyright 2014-2018, Kaylan Burleigh, John Moustakas.<br/>
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.7.6.<br/>
+    </p>
+  </div>
+</footer>
+  </body>
+</html>

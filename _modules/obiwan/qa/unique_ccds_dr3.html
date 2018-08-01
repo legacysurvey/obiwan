@@ -100,9 +100,13 @@
       
   <h1>Source code for obiwan.qa.unique_ccds_dr3</h1><div class="highlight"><pre>
 <span></span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">Using obiwan outputs, make a table of &#39;official&#39; randoms per-brick</span>
-<span class="sd">- uniform randoms: random ra,dec + geometry cut</span>
-<span class="sd">- obiwan randoms: uniform randoms + recovered by tractor</span>
+<span class="sd">Searches a DataRelase like directory for all legacysurvey*ccd.fits files,</span>
+<span class="sd">creates a no-duplicate set of all CCDs included in that DR, and writes</span>
+<span class="sd">the list to disk.</span>
+
+<span class="sd">Used to create the list of CCDs that DR3 processed. Adn the list that eboss</span>
+<span class="sd">processed for DR3-era target selection, which is a superset of the CCDs that</span>
+<span class="sd">DR3 processed</span>
 <span class="sd">&quot;&quot;&quot;</span>
 
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
@@ -110,14 +114,14 @@
 <span class="kn">from</span> <span class="nn">glob</span> <span class="k">import</span> <span class="n">glob</span>
 <span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
 
-<span class="k">try</span><span class="p">:</span> 
-    <span class="kn">from</span> <span class="nn">astrometry.util.fits</span> <span class="k">import</span> <span class="n">fits_table</span><span class="p">,</span> <span class="n">merge_tables</span>
-    <span class="kn">from</span> <span class="nn">astrometry.libkd.spherematch</span> <span class="k">import</span> <span class="n">match_radec</span>
-<span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
-    <span class="k">pass</span>
+<span class="c1"># try:</span>
+<span class="kn">from</span> <span class="nn">astrometry.util.fits</span> <span class="k">import</span> <span class="n">fits_table</span><span class="p">,</span> <span class="n">merge_tables</span>
+<span class="kn">from</span> <span class="nn">astrometry.libkd.spherematch</span> <span class="k">import</span> <span class="n">match_radec</span>
+<span class="c1"># except ImportError:</span>
+<span class="c1">#     pass</span>
 
 <div class="viewcode-block" id="mpi_expids_per_bri"><a class="viewcode-back" href="../../../_autosummary/obiwan.qa.unique_ccds_dr3.html#obiwan.qa.unique_ccds_dr3.mpi_expids_per_bri">[docs]</a><span class="k">def</span> <span class="nf">mpi_expids_per_bri</span><span class="p">(</span><span class="n">nproc</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span><span class="n">data_dir</span><span class="o">=</span><span class="s1">&#39;./&#39;</span><span class="p">,</span><span class="n">outdir</span><span class="o">=</span><span class="s1">&#39;./&#39;</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;</span>
+    <span class="sd">&quot;&quot;&quot;Use MPI because there are so many legacysurvey*ccds.fits table in a DR</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        nproc: &gt; 1 for mpi4py</span>
@@ -127,7 +131,7 @@
     <span class="k">if</span> <span class="n">nproc</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
         <span class="kn">from</span> <span class="nn">mpi4py.MPI</span> <span class="k">import</span> <span class="n">COMM_WORLD</span> <span class="k">as</span> <span class="n">comm</span>
         <span class="n">bri_dirs</span><span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array_split</span><span class="p">(</span><span class="n">bri_dirs</span><span class="p">,</span> <span class="n">comm</span><span class="o">.</span><span class="n">size</span><span class="p">)[</span><span class="n">comm</span><span class="o">.</span><span class="n">rank</span><span class="p">]</span>
-    
+
     <span class="k">for</span> <span class="n">dr</span> <span class="ow">in</span> <span class="n">bri_dirs</span><span class="p">:</span>
         <span class="n">new_dr</span><span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">outdir</span><span class="p">,</span><span class="s1">&#39;derived&#39;</span><span class="p">,</span><span class="s1">&#39;ccds&#39;</span><span class="p">)</span>
         <span class="k">try</span><span class="p">:</span>
@@ -195,15 +199,15 @@
 <span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s1">&#39;__main__&#39;</span><span class="p">:</span>
     <span class="kn">from</span> <span class="nn">argparse</span> <span class="k">import</span> <span class="n">ArgumentParser</span>
     <span class="n">parser</span> <span class="o">=</span> <span class="n">ArgumentParser</span><span class="p">()</span>
-    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;--data_dir&#39;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">str</span><span class="p">,</span> <span class="n">required</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> 
-                        <span class="n">help</span><span class="o">=</span><span class="s1">&#39;path to obiwan/, tractor/ dirs&#39;</span><span class="p">)</span> 
-    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;--outdir&#39;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">str</span><span class="p">,</span> <span class="n">required</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> 
-                        <span class="n">help</span><span class="o">=</span><span class="s1">&#39;path to write output file&#39;</span><span class="p">)</span> 
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;--data_dir&#39;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">str</span><span class="p">,</span> <span class="n">required</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                        <span class="n">help</span><span class="o">=</span><span class="s1">&#39;path to obiwan/, tractor/ dirs&#39;</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;--outdir&#39;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">str</span><span class="p">,</span> <span class="n">required</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                        <span class="n">help</span><span class="o">=</span><span class="s1">&#39;path to write output file&#39;</span><span class="p">)</span>
     <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;--which&#39;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">str</span><span class="p">,</span> <span class="n">choices</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;per_bri&#39;</span><span class="p">,</span><span class="s1">&#39;final&#39;</span><span class="p">,</span><span class="s1">&#39;survey_ccds&#39;</span><span class="p">],</span>
-                        <span class="n">required</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span> 
-    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;--nproc&#39;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s1">&#39;set to &gt; 1 to run mpi4py&#39;</span><span class="p">)</span>  
-    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;--expid_npy_fn&#39;</span><span class="p">,</span> <span class="n">required</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span><span class="n">help</span><span class="o">=</span><span class="s1">&#39;if which == survey_ccds&#39;</span><span class="p">)</span> 
-    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;--survey_ccds_fn&#39;</span><span class="p">,</span> <span class="n">required</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span><span class="n">help</span><span class="o">=</span><span class="s1">&#39;if which == survey_ccds&#39;</span><span class="p">)</span> 
+                        <span class="n">required</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;--nproc&#39;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s1">&#39;set to &gt; 1 to run mpi4py&#39;</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;--expid_npy_fn&#39;</span><span class="p">,</span> <span class="n">required</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span><span class="n">help</span><span class="o">=</span><span class="s1">&#39;if which == survey_ccds&#39;</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;--survey_ccds_fn&#39;</span><span class="p">,</span> <span class="n">required</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span><span class="n">help</span><span class="o">=</span><span class="s1">&#39;if which == survey_ccds&#39;</span><span class="p">)</span>
     <span class="n">args</span> <span class="o">=</span> <span class="n">parser</span><span class="o">.</span><span class="n">parse_args</span><span class="p">()</span>
 
     <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">which</span> <span class="o">==</span> <span class="s1">&#39;per_bri&#39;</span><span class="p">:</span>
@@ -213,8 +217,7 @@
         <span class="n">final_expids</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">outdir</span><span class="p">)</span>
 
     <span class="k">elif</span> <span class="n">args</span><span class="o">.</span><span class="n">which</span> <span class="o">==</span> <span class="s1">&#39;survey_ccds&#39;</span><span class="p">:</span>
-        <span class="n">surveyccds_cut_to_expids</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">expid_npy_fn</span><span class="p">,</span><span class="n">args</span><span class="o">.</span><span class="n">survey_ccds_fn</span><span class="p">)</span> 
-
+        <span class="n">surveyccds_cut_to_expids</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">expid_npy_fn</span><span class="p">,</span><span class="n">args</span><span class="o">.</span><span class="n">survey_ccds_fn</span><span class="p">)</span>
 </pre></div>
 
     </div>

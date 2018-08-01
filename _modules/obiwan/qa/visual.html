@@ -100,7 +100,7 @@
       
   <h1>Source code for obiwan.qa.visual</h1><div class="highlight"><pre>
 <span></span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">Functions for visualizing the imaging data</span>
+<span class="sd">Helper functions for plotting fits and numpy 2D arrays as images</span>
 <span class="sd">&quot;&quot;&quot;</span>
 
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
@@ -113,7 +113,7 @@
 
 <div class="viewcode-block" id="plotImage"><a class="viewcode-back" href="../../../_autosummary/obiwan.qa.visual.html#obiwan.qa.visual.plotImage">[docs]</a><span class="k">class</span> <span class="nc">plotImage</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Helper functions for displaying image and overlaying circles around sources</span>
-<span class="sd">    </span>
+
 <span class="sd">    Args:</span>
 <span class="sd">        img: need to give as initial input b/c some helper funcs that dont directly</span>
 <span class="sd">            use img, need its shape at least, see circles()</span>
@@ -132,7 +132,7 @@
         <span class="n">ax</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">img</span><span class="p">,</span> <span class="n">interpolation</span><span class="o">=</span><span class="s1">&#39;none&#39;</span><span class="p">,</span> <span class="n">origin</span><span class="o">=</span><span class="s1">&#39;lower&#39;</span><span class="p">,</span>
                   <span class="n">cmap</span><span class="o">=</span><span class="n">cmap</span><span class="p">,</span><span class="n">vmin</span><span class="o">=</span><span class="n">minmax</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="n">vmax</span><span class="o">=</span><span class="n">minmax</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
         <span class="n">ax</span><span class="o">.</span><span class="n">tick_params</span><span class="p">(</span><span class="n">direction</span><span class="o">=</span><span class="s1">&#39;out&#39;</span><span class="p">)</span>
-        
+
 <div class="viewcode-block" id="plotImage.circles"><a class="viewcode-back" href="../../../_autosummary/obiwan.qa.visual.html#obiwan.qa.visual.plotImage.circles">[docs]</a>    <span class="k">def</span> <span class="nf">circles</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">xs</span><span class="p">,</span><span class="n">ys</span><span class="p">,</span><span class="n">ax</span><span class="p">,</span>
                 <span class="n">img_shape</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
                 <span class="n">xslice</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span><span class="n">yslice</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
@@ -151,25 +151,25 @@
             <span class="n">yslice</span><span class="o">=</span> <span class="nb">slice</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="n">img_shape</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
         <span class="n">keep</span><span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">justInSlice</span><span class="p">(</span><span class="n">xs</span><span class="p">,</span><span class="n">ys</span><span class="p">,</span><span class="n">xslice</span><span class="p">,</span><span class="n">yslice</span><span class="p">)</span>
         <span class="n">xpos</span><span class="p">,</span><span class="n">ypos</span><span class="o">=</span> <span class="n">xs</span><span class="p">[</span><span class="n">keep</span><span class="p">]</span><span class="o">-</span><span class="n">xslice</span><span class="o">.</span><span class="n">start</span><span class="p">,</span><span class="n">ys</span><span class="p">[</span><span class="n">keep</span><span class="p">]</span><span class="o">-</span><span class="n">yslice</span><span class="o">.</span><span class="n">start</span>
-        
-        <span class="n">dr</span><span class="o">=</span> <span class="n">r_pixels</span><span class="o">/</span> <span class="mi">20</span> 
+
+        <span class="n">dr</span><span class="o">=</span> <span class="n">r_pixels</span><span class="o">/</span> <span class="mi">20</span>
         <span class="n">patches</span><span class="o">=</span><span class="p">[</span><span class="n">Wedge</span><span class="p">((</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">),</span> <span class="n">r_pixels</span> <span class="o">+</span> <span class="n">dr</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">360</span><span class="p">,</span><span class="n">dr</span><span class="p">)</span>
                  <span class="k">for</span> <span class="n">x</span><span class="p">,</span><span class="n">y</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">xpos</span><span class="p">,</span> <span class="n">ypos</span><span class="p">)</span> <span class="p">]</span>
         <span class="n">coll</span> <span class="o">=</span> <span class="n">PatchCollection</span><span class="p">(</span><span class="n">patches</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="n">color</span><span class="p">)</span> <span class="c1">#,alpha=1)</span>
         <span class="n">ax</span><span class="o">.</span><span class="n">add_collection</span><span class="p">(</span><span class="n">coll</span><span class="p">)</span></div>
-        
+
 <div class="viewcode-block" id="plotImage.justInSlice"><a class="viewcode-back" href="../../../_autosummary/obiwan.qa.visual.html#obiwan.qa.visual.plotImage.justInSlice">[docs]</a>    <span class="k">def</span> <span class="nf">justInSlice</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">x</span><span class="p">,</span><span class="n">y</span><span class="p">,</span><span class="n">xslice</span><span class="p">,</span><span class="n">yslice</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Returns bool array of x,y positions in the slice()&quot;&quot;&quot;</span>
-        <span class="k">return</span> <span class="p">((</span><span class="n">x</span> <span class="o">&gt;=</span> <span class="n">xslice</span><span class="o">.</span><span class="n">start</span><span class="p">)</span> <span class="o">&amp;</span> 
+        <span class="k">return</span> <span class="p">((</span><span class="n">x</span> <span class="o">&gt;=</span> <span class="n">xslice</span><span class="o">.</span><span class="n">start</span><span class="p">)</span> <span class="o">&amp;</span>
                <span class="p">(</span><span class="n">x</span> <span class="o">&lt;=</span> <span class="n">xslice</span><span class="o">.</span><span class="n">stop</span><span class="p">)</span> <span class="o">&amp;</span>
-               <span class="p">(</span><span class="n">y</span> <span class="o">&gt;=</span> <span class="n">yslice</span><span class="o">.</span><span class="n">start</span><span class="p">)</span> <span class="o">&amp;</span> 
+               <span class="p">(</span><span class="n">y</span> <span class="o">&gt;=</span> <span class="n">yslice</span><span class="o">.</span><span class="n">start</span><span class="p">)</span> <span class="o">&amp;</span>
                <span class="p">(</span><span class="n">y</span> <span class="o">&lt;=</span> <span class="n">yslice</span><span class="o">.</span><span class="n">stop</span><span class="p">))</span></div></div>
 
 <div class="viewcode-block" id="readImage"><a class="viewcode-back" href="../../../_autosummary/obiwan.qa.visual.html#obiwan.qa.visual.readImage">[docs]</a><span class="k">def</span> <span class="nf">readImage</span><span class="p">(</span><span class="n">fn</span><span class="p">,</span><span class="n">jpeg</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span><span class="n">ext</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Reads FITS and jpeg images so that x,y indices refer to the same pixels</span>
-<span class="sd">    regardless of image format. x,y and fits correspond so the jpeg is rotated and flipped </span>
+<span class="sd">    regardless of image format. x,y and fits correspond so the jpeg is rotated and flipped</span>
 <span class="sd">    to align with fits</span>
-<span class="sd">    </span>
+
 <span class="sd">    Args:</span>
 <span class="sd">        fn: image filename</span>
 <span class="sd">        jpeg: bool, is is a jpeg?</span>
@@ -190,8 +190,6 @@
 
 <span class="k">def</span> <span class="nf">flux2mag</span><span class="p">(</span><span class="n">flux</span><span class="p">):</span>
     <span class="k">return</span> <span class="o">-</span><span class="mf">2.5</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">log10</span><span class="p">(</span><span class="mf">1e-9</span> <span class="o">*</span> <span class="n">flux</span><span class="p">)</span>
-
-
 </pre></div>
 
     </div>

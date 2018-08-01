@@ -1,0 +1,62 @@
+obiwan.qa.plots_randomsprops_fluxdiff
+=====================================
+
+.. automodule:: obiwan.qa.plots_randomsprops_fluxdiff
+   :members:
+   :inherited-members:
+
+   
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      getDepth
+   
+   
+
+   
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      confusion_matrix_by_type
+      delta_dec_vs_delta_ra
+      delta_vs_grzmag
+      e1_e2
+      e1_e2_separate_panels
+      fix_for_delta_flux
+      fracin_vs_numstddev_2dhist
+      fraction_recovered
+      fraction_recovered_vs_rhalf
+      gauss_model
+      grz_hist_by_type
+      grz_hist_elg_notelg
+      grz_hist_input_ext
+      grz_hist_input_ext_separate_panels
+      grz_hist_input_noise_ext
+      grz_hist_input_rec
+      hist_all_quantities_fracin_cut
+      hist_true_rhalf_by_type
+      hist_true_rhalf_input
+      my_step
+      myhist
+      mytext
+      num_std_dev_gaussfit_e1_e2
+      num_std_dev_gaussfit_flux
+      num_std_dev_gaussfit_flux_separate_panels
+      num_std_dev_gaussfit_rhalf
+      number_per_type_input_rec_meas
+      rec_lost_contam_delta_by_type
+      rec_lost_contam_gr_rz
+      rec_lost_contam_grz
+      redshifts_recovered
+      residual_gaussfit_rhalf
+      sum_of_noise_added
+   
+   
+
+   
+   
+   

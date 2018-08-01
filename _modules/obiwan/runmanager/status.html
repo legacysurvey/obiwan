@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>obiwan.runmanager.status &#8212; obiwan 1.2.0 documentation</title>
+    <link rel="stylesheet" href="../../../_static/bootstrap-sphinx.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script type="text/javascript" src="../../../_static/js/jquery-1.11.0.min.js"></script>
+    <script type="text/javascript" src="../../../_static/js/jquery-fix.js"></script>
+    <script type="text/javascript" src="../../../_static/bootstrap-3.3.7/js/bootstrap.min.js"></script>
+    <script type="text/javascript" src="../../../_static/bootstrap-sphinx.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+<meta charset='utf-8'>
+<meta http-equiv='X-UA-Compatible' content='IE=edge,chrome=1'>
+<meta name='viewport' content='width=device-width, initial-scale=1.0, maximum-scale=1'>
+<meta name="apple-mobile-web-app-capable" content="yes">
+
+  </head><body>
+
+  <div id="navbar" class="navbar navbar-default ">
+    <div class="container">
+      <div class="navbar-header">
+        <!-- .btn-navbar is used as the toggle for collapsed navbar content -->
+        <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".nav-collapse">
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+        </button>
+        <a class="navbar-brand" href="../../../index.html">
+          Obiwan</a>
+        <span class="navbar-text navbar-version pull-left"><b>1.2.0</b></span>
+      </div>
+
+        <div class="collapse navbar-collapse nav-collapse">
+          <ul class="nav navbar-nav">
+            
+                <li><a href="../../../api.html">API</a></li>
+                <li><a href="../../../tutorials.html">Tutorials</a></li>
+                <li><a href="../../../deeplearning.html">Deep Learning</a></li>
+            
+            
+              <li class="dropdown globaltoc-container">
+  <a role="button"
+     id="dLabelGlobalToc"
+     data-toggle="dropdown"
+     data-target="#"
+     href="../../../index.html">Pages <b class="caret"></b></a>
+  <ul class="dropdown-menu globaltoc"
+      role="menu"
+      aria-labelledby="dLabelGlobalToc"></ul>
+</li>
+              
+                <li class="dropdown">
+  <a role="button"
+     id="dLabelLocalToc"
+     data-toggle="dropdown"
+     data-target="#"
+     href="#">This Page <b class="caret"></b></a>
+  <ul class="dropdown-menu localtoc"
+      role="menu"
+      aria-labelledby="dLabelLocalToc"></ul>
+</li>
+              
+            
+            
+              
+                
+              
+            
+            
+            
+            
+          </ul>
+
+          
+            
+<form class="navbar-form navbar-right" action="../../../search.html" method="get">
+ <div class="form-group">
+  <input type="text" name="q" class="form-control" placeholder="Search" />
+ </div>
+  <input type="hidden" name="check_keywords" value="yes" />
+  <input type="hidden" name="area" value="default" />
+</form>
+          
+        </div>
+    </div>
+  </div>
+
+<div class="container">
+  <div class="row">
+    <div class="col-md-12 content">
+      
+  <h1>Source code for obiwan.runmanager.status</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Monitors an obiwan production run using qdo</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">glob</span> <span class="k">import</span> <span class="n">glob</span>
+<span class="kn">import</span> <span class="nn">re</span>
+<span class="kn">from</span> <span class="nn">collections</span> <span class="k">import</span> <span class="n">defaultdict</span>
+
+<span class="kn">from</span> <span class="nn">obiwan.common</span> <span class="k">import</span> <span class="n">dobash</span><span class="p">,</span><span class="n">writelist</span><span class="p">,</span><span class="n">get_rsdir</span>
+
+<span class="kn">import</span> <span class="nn">qdo</span>
+
+<span class="n">QDO_RESULT</span><span class="o">=</span> <span class="p">[</span><span class="s1">&#39;running&#39;</span><span class="p">,</span> <span class="s1">&#39;succeeded&#39;</span><span class="p">,</span> <span class="s1">&#39;failed&#39;</span><span class="p">]</span>
+
+
+<div class="viewcode-block" id="get_interm_dir"><a class="viewcode-back" href="../../../_autosummary/obiwan.runmanager.status.html#obiwan.runmanager.status.get_interm_dir">[docs]</a><span class="k">def</span> <span class="nf">get_interm_dir</span><span class="p">(</span><span class="n">outdir</span><span class="p">,</span><span class="n">brick</span><span class="p">,</span><span class="n">rowstart</span><span class="p">,</span>
+                <span class="n">do_skipids</span><span class="o">=</span><span class="s1">&#39;no&#39;</span><span class="p">,</span><span class="n">do_more</span><span class="o">=</span><span class="s1">&#39;no&#39;</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Returns paths like outdir/bri/brick/rs0&quot;&quot;&quot;</span>
+    <span class="n">rsdir</span><span class="o">=</span> <span class="n">get_rsdir</span><span class="p">(</span><span class="n">rowstart</span><span class="p">,</span>
+                     <span class="n">do_skipids</span><span class="p">,</span><span class="n">do_more</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">outdir</span><span class="p">,</span><span class="n">brick</span><span class="p">[:</span><span class="mi">3</span><span class="p">],</span><span class="n">brick</span><span class="p">,</span><span class="n">rsdir</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="get_final_dir"><a class="viewcode-back" href="../../../_autosummary/obiwan.runmanager.status.html#obiwan.runmanager.status.get_final_dir">[docs]</a><span class="k">def</span> <span class="nf">get_final_dir</span><span class="p">(</span><span class="n">outdir</span><span class="p">,</span><span class="n">brick</span><span class="p">,</span><span class="n">rowstart</span><span class="p">,</span>
+                  <span class="n">do_skipids</span><span class="o">=</span><span class="s1">&#39;no&#39;</span><span class="p">,</span><span class="n">do_more</span><span class="o">=</span><span class="s1">&#39;no&#39;</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Returns paths like outdir/replaceme/bri/brick/rs0&quot;&quot;&quot;</span>
+    <span class="n">rsdir</span><span class="o">=</span> <span class="n">get_rsdir</span><span class="p">(</span><span class="n">rowstart</span><span class="p">,</span>
+                     <span class="n">do_skipids</span><span class="p">,</span><span class="n">do_more</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">outdir</span><span class="p">,</span><span class="s1">&#39;replaceme&#39;</span><span class="p">,</span><span class="n">brick</span><span class="p">[:</span><span class="mi">3</span><span class="p">],</span><span class="n">brick</span><span class="p">,</span>
+                        <span class="n">rsdir</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="get_deldirs"><a class="viewcode-back" href="../../../_autosummary/obiwan.runmanager.status.html#obiwan.runmanager.status.get_deldirs">[docs]</a><span class="k">def</span> <span class="nf">get_deldirs</span><span class="p">(</span><span class="n">outdir</span><span class="p">,</span><span class="n">brick</span><span class="p">,</span><span class="n">rowstart</span><span class="p">,</span>
+                <span class="n">do_skipids</span><span class="o">=</span><span class="s1">&#39;no&#39;</span><span class="p">,</span><span class="n">do_more</span><span class="o">=</span><span class="s1">&#39;no&#39;</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;If slurm timeout or failed, logfile will exist in final dir but other outputs</span>
+<span class="sd">        will be in interm dir. Return list of dirst to all of these</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">dirs</span><span class="o">=</span> <span class="p">[</span><span class="n">get_final_dir</span><span class="p">(</span><span class="n">outdir</span><span class="p">,</span><span class="n">brick</span><span class="p">,</span><span class="n">rowstart</span><span class="p">,</span>
+                          <span class="n">do_skipids</span><span class="p">,</span><span class="n">do_more</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;replaceme&#39;</span><span class="p">,</span><span class="s1">&#39;logs&#39;</span><span class="p">)]</span>
+    <span class="n">dirs</span><span class="o">+=</span> <span class="p">[</span><span class="n">get_interm_dir</span><span class="p">(</span><span class="n">outdir</span><span class="p">,</span><span class="n">brick</span><span class="p">,</span><span class="n">rowstart</span><span class="p">,</span>
+                          <span class="n">do_skipids</span><span class="p">,</span><span class="n">do_more</span><span class="p">)]</span>
+    <span class="k">return</span> <span class="n">dirs</span></div>
+
+<span class="k">def</span> <span class="nf">get_checkpoint_fn</span><span class="p">(</span><span class="n">outdir</span><span class="p">,</span><span class="n">brick</span><span class="p">,</span><span class="n">rowstart</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">outdir</span><span class="p">,</span><span class="s1">&#39;checkpoint&#39;</span><span class="p">,</span>
+                        <span class="n">brick</span><span class="p">[:</span><span class="mi">3</span><span class="p">],</span><span class="n">brick</span><span class="p">,</span>
+                        <span class="s1">&#39;checkpoint_rs</span><span class="si">%d</span><span class="s1">.pickle&#39;</span> <span class="o">%</span> <span class="nb">int</span><span class="p">(</span><span class="n">rowstart</span><span class="p">))</span>
+
+
+
+<span class="k">def</span> <span class="nf">get_logdir</span><span class="p">(</span><span class="n">outdir</span><span class="p">,</span><span class="n">brick</span><span class="p">,</span><span class="n">rowstart</span><span class="p">,</span>
+               <span class="n">do_skipids</span><span class="o">=</span><span class="s1">&#39;no&#39;</span><span class="p">,</span><span class="n">do_more</span><span class="o">=</span><span class="s1">&#39;no&#39;</span><span class="p">):</span>
+   <span class="k">return</span> <span class="p">(</span><span class="n">get_final_dir</span><span class="p">(</span><span class="n">outdir</span><span class="p">,</span><span class="n">brick</span><span class="p">,</span><span class="n">rowstart</span><span class="p">,</span>
+                        <span class="n">do_skipids</span><span class="p">,</span><span class="n">do_more</span><span class="p">)</span>
+           <span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;replaceme&#39;</span><span class="p">,</span><span class="s1">&#39;logs&#39;</span><span class="p">))</span>
+
+
+<span class="k">def</span> <span class="nf">get_logfile</span><span class="p">(</span><span class="n">outdir</span><span class="p">,</span><span class="n">brick</span><span class="p">,</span><span class="n">rowstart</span><span class="p">,</span>
+                <span class="n">do_skipids</span><span class="o">=</span><span class="s1">&#39;no&#39;</span><span class="p">,</span><span class="n">do_more</span><span class="o">=</span><span class="s1">&#39;no&#39;</span><span class="p">):</span>
+    <span class="n">logdir</span><span class="o">=</span> <span class="n">get_logdir</span><span class="p">(</span><span class="n">outdir</span><span class="p">,</span><span class="n">brick</span><span class="p">,</span><span class="n">rowstart</span><span class="p">,</span>
+                       <span class="n">do_skipids</span><span class="p">,</span><span class="n">do_more</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">logdir</span><span class="p">,</span><span class="s1">&#39;log.&#39;</span><span class="o">+</span><span class="n">brick</span><span class="p">)</span>
+
+
+<span class="k">def</span> <span class="nf">get_slurm_files</span><span class="p">(</span><span class="n">outdir</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">glob</span><span class="p">(</span> <span class="n">outdir</span> <span class="o">+</span> <span class="s1">&#39;/slurm-*.out&#39;</span><span class="p">)</span>
+
+
+
+<div class="viewcode-block" id="QdoList"><a class="viewcode-back" href="../../../_autosummary/obiwan.runmanager.status.html#obiwan.runmanager.status.QdoList">[docs]</a><span class="k">class</span> <span class="nc">QdoList</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Queries the qdo db and maps log files to tasks and task status</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        outdir: obiwan outdir, the slurm*.out files are there</span>
+<span class="sd">        que_name: ie. qdo create que_name</span>
+<span class="sd">        skip_suceeded: number succeeded tasks can be very large for production runs,</span>
+<span class="sd">            this slows down code so skip those tasks</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">outdir</span><span class="p">,</span><span class="n">que_name</span><span class="o">=</span><span class="s1">&#39;obiwan&#39;</span><span class="p">,</span>
+                 <span class="n">skip_succeed</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                 <span class="n">rand_num</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                 <span class="n">firstN</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;que_name= &#39;</span><span class="p">,</span><span class="n">que_name</span><span class="o">.</span><span class="n">upper</span><span class="p">())</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">outdir</span><span class="o">=</span> <span class="n">outdir</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">que_name</span><span class="o">=</span> <span class="n">que_name</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">skip_succeed</span><span class="o">=</span> <span class="n">skip_succeed</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">rand_num</span><span class="o">=</span> <span class="n">rand_num</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">firstN</span><span class="o">=</span> <span class="n">firstN</span>
+
+    <span class="k">def</span> <span class="nf">isCosmos</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="s2">&quot;cosmos&quot;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">que_name</span>
+
+<div class="viewcode-block" id="QdoList.get_tasks_logs"><a class="viewcode-back" href="../../../_autosummary/obiwan.runmanager.status.html#obiwan.runmanager.status.QdoList.get_tasks_logs">[docs]</a>    <span class="k">def</span> <span class="nf">get_tasks_logs</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;get tasks and logs for the three types of qdo status&quot;&quot;&quot;</span>
+        <span class="c1"># Logs for all Failed tasks</span>
+        <span class="n">tasks</span><span class="o">=</span><span class="p">{}</span>
+        <span class="n">ids</span><span class="o">=</span><span class="p">{}</span>
+        <span class="n">logs</span><span class="o">=</span> <span class="n">defaultdict</span><span class="p">(</span><span class="nb">list</span><span class="p">)</span>
+        <span class="c1">#err= defaultdict(lambda: [])</span>
+        <span class="n">q</span> <span class="o">=</span> <span class="n">qdo</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">que_name</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">res</span> <span class="ow">in</span> <span class="n">QDO_RESULT</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">skip_succeed</span> <span class="ow">and</span> <span class="n">res</span> <span class="o">==</span> <span class="s1">&#39;succeeded&#39;</span><span class="p">:</span>
+                <span class="k">continue</span>
+            <span class="c1"># List of &quot;brick rs&quot; for each QDO_RESULT</span>
+            <span class="n">qdo_tasks</span><span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">q</span><span class="o">.</span><span class="n">tasks</span><span class="p">(</span><span class="n">state</span><span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">qdo</span><span class="o">.</span><span class="n">Task</span><span class="p">,</span> <span class="n">res</span><span class="o">.</span><span class="n">upper</span><span class="p">())))</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">rand_num</span><span class="p">:</span>
+                <span class="n">qdo_tasks</span><span class="o">=</span> <span class="n">qdo_tasks</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">randint</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="nb">len</span><span class="p">(</span><span class="n">qdo_tasks</span><span class="p">),</span><span class="n">size</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">rand_num</span><span class="p">)]</span>
+            <span class="k">elif</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">firstN</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">qdo_tasks</span><span class="o">=</span> <span class="n">qdo_tasks</span><span class="p">[:</span><span class="bp">self</span><span class="o">.</span><span class="n">firstN</span><span class="p">]</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">qdo_tasks</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">ids</span><span class="p">[</span><span class="n">res</span><span class="p">],</span><span class="n">tasks</span><span class="p">[</span><span class="n">res</span><span class="p">]</span> <span class="o">=</span> <span class="nb">zip</span><span class="p">(</span><span class="o">*</span><span class="p">[(</span><span class="n">a</span><span class="o">.</span><span class="n">id</span><span class="p">,</span><span class="n">a</span><span class="o">.</span><span class="n">task</span><span class="p">)</span>
+                                             <span class="k">for</span> <span class="n">a</span> <span class="ow">in</span> <span class="n">qdo_tasks</span><span class="p">])</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">ids</span><span class="p">[</span><span class="n">res</span><span class="p">],</span><span class="n">tasks</span><span class="p">[</span><span class="n">res</span><span class="p">]</span><span class="o">=</span> <span class="p">[],[]</span>
+            <span class="c1"># Corresponding log, slurm files</span>
+            <span class="k">for</span> <span class="n">task</span> <span class="ow">in</span> <span class="n">tasks</span><span class="p">[</span><span class="n">res</span><span class="p">]:</span>
+                <span class="c1"># Logs</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">isCosmos</span><span class="p">():</span>
+                    <span class="n">brick</span><span class="p">,</span><span class="n">rs</span><span class="p">,</span><span class="n">do_skipids</span><span class="p">,</span><span class="n">do_more</span><span class="p">,</span><span class="n">subset</span> <span class="o">=</span> <span class="n">task</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39; &#39;</span><span class="p">)</span>
+                    <span class="n">outdir</span><span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">outdir</span><span class="p">,</span><span class="s1">&#39;subset</span><span class="si">%s</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="n">subset</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">brick</span><span class="p">,</span><span class="n">rs</span><span class="p">,</span><span class="n">do_skipids</span><span class="p">,</span><span class="n">do_more</span> <span class="o">=</span> <span class="n">task</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39; &#39;</span><span class="p">)</span>
+                    <span class="n">outdir</span><span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">outdir</span>
+                <span class="n">logfn</span><span class="o">=</span> <span class="n">get_logfile</span><span class="p">(</span><span class="n">outdir</span><span class="p">,</span><span class="n">brick</span><span class="p">,</span><span class="n">rs</span><span class="p">,</span>
+                                   <span class="n">do_skipids</span><span class="o">=</span><span class="n">do_skipids</span><span class="p">,</span><span class="n">do_more</span><span class="o">=</span><span class="n">do_more</span><span class="p">)</span>
+                <span class="n">logs</span><span class="p">[</span><span class="n">res</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span> <span class="n">logfn</span> <span class="p">)</span>
+        <span class="k">return</span> <span class="n">tasks</span><span class="p">,</span><span class="n">ids</span><span class="p">,</span><span class="n">logs</span></div>
+
+<div class="viewcode-block" id="QdoList.change_task_state"><a class="viewcode-back" href="../../../_autosummary/obiwan.runmanager.status.html#obiwan.runmanager.status.QdoList.change_task_state">[docs]</a>    <span class="k">def</span> <span class="nf">change_task_state</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">task_ids</span><span class="p">,</span><span class="n">to</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">modify</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span><span class="n">rm_files</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;change qdo tasks state, for tasks with task_ids, to pending,failed, etc</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">          to: change qdo state to this, pending,failed</span>
+<span class="sd">          rm_files: delete the output files for that task</span>
+<span class="sd">          modify: actually do the modifications (fail safe option)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">assert</span><span class="p">(</span><span class="n">to</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;pending&#39;</span><span class="p">,</span><span class="s1">&#39;failed&#39;</span><span class="p">])</span>
+        <span class="n">q</span> <span class="o">=</span> <span class="n">qdo</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">que_name</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">task_id</span> <span class="ow">in</span> <span class="n">task_ids</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">task_obj</span><span class="o">=</span> <span class="n">q</span><span class="o">.</span><span class="n">tasks</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">task_id</span><span class="p">))</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">isCosmos</span><span class="p">():</span>
+                    <span class="n">brick</span><span class="p">,</span><span class="n">rs</span><span class="p">,</span><span class="n">do_skipids</span><span class="p">,</span><span class="n">do_more</span><span class="p">,</span><span class="n">subset</span> <span class="o">=</span> <span class="n">task_obj</span><span class="o">.</span><span class="n">task</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39; &#39;</span><span class="p">)</span>
+                    <span class="n">outdir</span><span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">outdir</span><span class="p">,</span><span class="s1">&#39;subset</span><span class="si">%s</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="n">subset</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">brick</span><span class="p">,</span><span class="n">rs</span><span class="p">,</span><span class="n">do_skipids</span><span class="p">,</span><span class="n">do_more</span> <span class="o">=</span> <span class="n">task_obj</span><span class="o">.</span><span class="n">task</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39; &#39;</span><span class="p">)</span>
+                    <span class="n">outdir</span><span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">outdir</span>
+                <span class="n">del_dirs</span><span class="o">=</span> <span class="n">get_deldirs</span><span class="p">(</span><span class="n">outdir</span><span class="p">,</span><span class="n">brick</span><span class="p">,</span><span class="n">rs</span><span class="p">,</span>
+                                       <span class="n">do_skipids</span><span class="o">=</span><span class="n">do_skipids</span><span class="p">,</span>
+                                       <span class="n">do_more</span><span class="o">=</span><span class="n">do_more</span><span class="p">)</span>
+                <span class="n">del_fns</span><span class="o">=</span> <span class="p">[</span><span class="n">get_checkpoint_fn</span><span class="p">(</span><span class="n">outdir</span><span class="p">,</span><span class="n">brick</span><span class="p">,</span><span class="n">rs</span><span class="p">)]</span>
+                <span class="k">if</span> <span class="n">modify</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="n">to</span> <span class="o">==</span> <span class="s1">&#39;pending&#39;</span><span class="p">:</span>
+                        <span class="c1"># Stuck in pending b/c slurm job timed out</span>
+                        <span class="n">task_obj</span><span class="o">.</span><span class="n">set_state</span><span class="p">(</span><span class="n">qdo</span><span class="o">.</span><span class="n">Task</span><span class="o">.</span><span class="n">PENDING</span><span class="p">)</span>
+                        <span class="c1">#print(&#39;id %s --&gt; PENDING&#39; % task_id)</span>
+                    <span class="k">elif</span> <span class="n">to</span> <span class="o">==</span> <span class="s1">&#39;failed&#39;</span><span class="p">:</span>
+                        <span class="c1"># Manually force to failed, keep whatever outputs have</span>
+                        <span class="n">task_obj</span><span class="o">.</span><span class="n">set_state</span><span class="p">(</span><span class="n">qdo</span><span class="o">.</span><span class="n">Task</span><span class="o">.</span><span class="n">FAILED</span><span class="p">)</span>
+                        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;id </span><span class="si">%s</span><span class="s1"> --&gt; FAILED&#39;</span> <span class="o">%</span> <span class="n">task_id</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="n">rm_files</span><span class="p">:</span>
+                        <span class="k">for</span> <span class="n">dr</span> <span class="ow">in</span> <span class="n">del_dirs</span><span class="p">:</span>
+                            <span class="n">dobash</span><span class="p">(</span><span class="s1">&#39;rm -r </span><span class="si">%s</span><span class="s1">/*&#39;</span> <span class="o">%</span> <span class="n">dr</span><span class="p">)</span>
+                        <span class="k">for</span> <span class="n">fn</span> <span class="ow">in</span> <span class="n">del_fns</span><span class="p">:</span>
+                            <span class="n">dobash</span><span class="p">(</span><span class="s1">&#39;rm </span><span class="si">%s</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="n">fn</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;set --modify to affect id=</span><span class="si">%d</span><span class="s1">, which corresponds to taks_obj=&#39;</span> <span class="o">%</span> <span class="n">task_id</span><span class="p">,</span><span class="n">task_obj</span><span class="p">)</span>
+                    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;set --rm_files to remove&#39;</span><span class="p">,</span><span class="n">del_dirs</span><span class="p">,</span><span class="n">del_fns</span><span class="p">)</span>
+            <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;cant find task_id=</span><span class="si">%d</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="n">task_id</span><span class="p">)</span></div></div>
+
+
+<div class="viewcode-block" id="RunStatus"><a class="viewcode-back" href="../../../_autosummary/obiwan.runmanager.status.html#obiwan.runmanager.status.RunStatus">[docs]</a><span class="k">class</span> <span class="nc">RunStatus</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Tallys which QDO_RESULTS actually finished, what errors occured, etc.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">    tasks: dict, each key is list of qdo tasks</span>
+<span class="sd">    logs: dict, each key is list of log files for each task</span>
+
+<span class="sd">    Defaults:</span>
+<span class="sd">    regex_errs: list of regular expressions matching possible log file errors</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">tasks</span><span class="p">,</span><span class="n">logs</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">tasks</span><span class="o">=</span> <span class="n">tasks</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">logs</span><span class="o">=</span> <span class="n">logs</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">regex_errs</span><span class="o">=</span> <span class="p">[</span>
+            <span class="sa">r</span><span class="s1">&#39;ValueError:\ starting\ row=[0-9]*?\ exceeds.*?sources&#39;</span><span class="p">,</span>
+            <span class="sa">r</span><span class="s1">&#39;\No\ randoms\ in\ brick&#39;</span><span class="p">,</span>
+            <span class="sa">r</span><span class="s1">&#39;pool\.py&quot;,\sline\s644,\sin\sget\n\s+raise\sself\._value\nAssertionError&#39;</span><span class="p">,</span>
+            <span class="sa">r</span><span class="s1">&#39;assert\(len\(R\)\s==\slen\(blobsrcs\)\)\nAssertionError&#39;</span><span class="p">,</span>
+            <span class="sa">r</span><span class="s2">&quot;ModuleNotFoundError:\sNo\smodule\snamed\s&#39;fitsio&#39;&quot;</span><span class="p">,</span>
+            <span class="sa">r</span><span class="s1">&#39;psycopg2\.OperationalError:&#39;</span><span class="p">,</span>
+            <span class="sa">r</span><span class="s1">&#39;MemoryError&#39;</span><span class="p">,</span>
+            <span class="sa">r</span><span class="s1">&#39;astropy\.extern\.configobj\.configobj\.ParseError&#39;</span><span class="p">,</span>
+            <span class="sa">r</span><span class="s1">&#39;RuntimeError:\ Command\ failed:\ sex\ -c&#39;</span><span class="p">,</span>
+            <span class="sa">r</span><span class="s1">&#39;multiprocessing\/pool\.py\&quot;,\sline\s567&#39;</span><span class="p">,</span>
+            <span class="sa">r</span><span class="s2">&quot;ImportError:\scannot\simport\sname\s&#39;_fitsio_wrap&#39;&quot;</span><span class="p">,</span>
+            <span class="sa">r</span><span class="s2">&quot;OSError:\sFile\s not\sfound:&quot;</span><span class="p">,</span>
+            <span class="sa">r</span><span class="s2">&quot;NothingToDoError:\sNo\sCCDs\stouching\sbrick&quot;</span><span class="p">,</span>
+            <span class="sa">r</span><span class="s1">&#39;SystemError:\ \&lt;built-in\ method\ flush&#39;</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">regex_errs_extra</span><span class="o">=</span> <span class="p">[</span><span class="s1">&#39;Other&#39;</span><span class="p">,</span><span class="s1">&#39;log does not exist&#39;</span><span class="p">]</span>
+
+    <span class="k">def</span> <span class="nf">get_tally</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">tally</span><span class="o">=</span> <span class="n">defaultdict</span><span class="p">(</span><span class="nb">list</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">res</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;succeeded&#39;</span><span class="p">,</span><span class="s1">&#39;failed&#39;</span><span class="p">,</span><span class="s1">&#39;running&#39;</span><span class="p">]:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;res=</span><span class="si">%s</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="n">res</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">res</span> <span class="o">==</span> <span class="s1">&#39;succeeded&#39;</span><span class="p">:</span>
+                <span class="k">for</span> <span class="n">log</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">logs</span><span class="p">[</span><span class="n">res</span><span class="p">]:</span>
+                    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">log</span><span class="p">,</span><span class="s1">&#39;r&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">foo</span><span class="p">:</span>
+                        <span class="n">text</span><span class="o">=</span> <span class="n">foo</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
+                    <span class="k">if</span> <span class="s2">&quot;decals_sim:All done!&quot;</span> <span class="ow">in</span> <span class="n">text</span><span class="p">:</span>
+                        <span class="n">tally</span><span class="p">[</span><span class="n">res</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span> <span class="mi">1</span> <span class="p">)</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="n">tally</span><span class="p">[</span><span class="n">res</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span> <span class="mi">0</span> <span class="p">)</span>
+            <span class="k">elif</span> <span class="n">res</span> <span class="o">==</span> <span class="s1">&#39;running&#39;</span><span class="p">:</span>
+                <span class="k">for</span> <span class="n">log</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">logs</span><span class="p">[</span><span class="n">res</span><span class="p">]:</span>
+                    <span class="n">tally</span><span class="p">[</span><span class="n">res</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="n">res</span> <span class="o">==</span> <span class="s1">&#39;failed&#39;</span><span class="p">:</span>
+                <span class="k">for</span> <span class="n">cnt</span><span class="p">,</span><span class="n">log</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">logs</span><span class="p">[</span><span class="n">res</span><span class="p">]):</span>
+                    <span class="k">if</span> <span class="p">(</span><span class="n">cnt</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span> <span class="o">%</span> <span class="mi">25</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span> <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">%d</span><span class="s1">/</span><span class="si">%d</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">cnt</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">logs</span><span class="p">[</span><span class="n">res</span><span class="p">])))</span>
+                    <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">log</span><span class="p">):</span>
+                        <span class="n">tally</span><span class="p">[</span><span class="n">res</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s1">&#39;log does not exist&#39;</span><span class="p">)</span>
+                        <span class="k">continue</span>
+                    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">log</span><span class="p">,</span><span class="s1">&#39;r&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">foo</span><span class="p">:</span>
+                        <span class="n">text</span><span class="o">=</span> <span class="n">foo</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
+                    <span class="n">found_err</span><span class="o">=</span> <span class="kc">False</span>
+                    <span class="k">for</span> <span class="n">regex</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">regex_errs</span><span class="p">:</span>
+                        <span class="n">foundIt</span><span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="n">regex</span><span class="p">,</span> <span class="n">text</span><span class="p">)</span>
+                        <span class="k">if</span> <span class="n">foundIt</span><span class="p">:</span>
+                            <span class="n">tally</span><span class="p">[</span><span class="n">res</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">regex</span><span class="p">)</span>
+                            <span class="n">found_err</span><span class="o">=</span><span class="kc">True</span>
+                            <span class="k">break</span>
+                    <span class="k">if</span> <span class="ow">not</span> <span class="n">found_err</span><span class="p">:</span>
+                        <span class="n">tally</span><span class="p">[</span><span class="n">res</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s1">&#39;Other&#39;</span><span class="p">)</span>
+        <span class="c1"># numpy array, not list, works with np.where()</span>
+        <span class="k">for</span> <span class="n">res</span> <span class="ow">in</span> <span class="n">tally</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+            <span class="n">tally</span><span class="p">[</span><span class="n">res</span><span class="p">]</span><span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">tally</span><span class="p">[</span><span class="n">res</span><span class="p">])</span>
+        <span class="k">return</span> <span class="n">tally</span>
+
+    <span class="k">def</span> <span class="nf">print_tally</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">tally</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">res</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">tasks</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;--- Tally </span><span class="si">%s</span><span class="s1"> ---&#39;</span> <span class="o">%</span> <span class="n">res</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">res</span> <span class="o">==</span> <span class="s1">&#39;succeeded&#39;</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">%d</span><span class="s1">/</span><span class="si">%d</span><span class="s1"> = done&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">tally</span><span class="p">[</span><span class="n">res</span><span class="p">]),</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">tally</span><span class="p">[</span><span class="n">res</span><span class="p">])))</span>
+            <span class="k">elif</span> <span class="n">res</span> <span class="o">==</span> <span class="s1">&#39;failed&#39;</span><span class="p">:</span>
+                <span class="k">for</span> <span class="n">regex</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">regex_errs</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">regex_errs_extra</span><span class="p">:</span>
+                    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">%d</span><span class="s1">/</span><span class="si">%d</span><span class="s1"> = </span><span class="si">%s</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="p">(</span>
+                        <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">tally</span><span class="p">[</span><span class="n">res</span><span class="p">]</span> <span class="o">==</span> <span class="n">regex</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">size</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">tally</span><span class="p">[</span><span class="n">res</span><span class="p">]),</span> <span class="n">regex</span><span class="p">))</span>
+            <span class="k">elif</span> <span class="n">res</span> <span class="o">==</span> <span class="s1">&#39;running&#39;</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">%d</span><span class="s1">/</span><span class="si">%d</span><span class="s1"> : need rerun&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">tally</span><span class="p">[</span><span class="n">res</span><span class="p">]),</span><span class="nb">len</span><span class="p">(</span><span class="n">tally</span><span class="p">[</span><span class="n">res</span><span class="p">])))</span>
+
+<div class="viewcode-block" id="RunStatus.get_logs_for_failed"><a class="viewcode-back" href="../../../_autosummary/obiwan.runmanager.status.html#obiwan.runmanager.status.RunStatus.get_logs_for_failed">[docs]</a>    <span class="k">def</span> <span class="nf">get_logs_for_failed</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">regex</span><span class="o">=</span><span class="s1">&#39;Other&#39;</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Returns log and slurm filenames for failed tasks labeled as regex&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">logs</span><span class="p">[</span> <span class="n">tally</span><span class="p">[</span><span class="s1">&#39;failed&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="n">regex</span> <span class="p">]</span></div></div>
+
+
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s1">&#39;__main__&#39;</span><span class="p">:</span>
+    <span class="kn">from</span> <span class="nn">argparse</span> <span class="k">import</span> <span class="n">ArgumentParser</span>
+    <span class="n">parser</span> <span class="o">=</span> <span class="n">ArgumentParser</span><span class="p">()</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;--qdo_quename&#39;</span><span class="p">,</span><span class="n">default</span><span class="o">=</span><span class="s1">&#39;obiwan_9deg&#39;</span><span class="p">,</span><span class="n">help</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">,</span><span class="n">required</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;--skip_succeed&#39;</span><span class="p">,</span><span class="n">action</span><span class="o">=</span><span class="s1">&#39;store_true&#39;</span><span class="p">,</span><span class="n">default</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span><span class="n">help</span><span class="o">=</span><span class="s1">&#39;speed up, number succeeded tasks can be very large for production runs and slows down status code&#39;</span><span class="p">,</span><span class="n">required</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;--rand_num&#39;</span><span class="p">,</span><span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span><span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span><span class="n">help</span><span class="o">=</span><span class="s1">&#39;only process this many succeed,failed,running chosen at random from each&#39;</span><span class="p">,</span><span class="n">required</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;--firstN&#39;</span><span class="p">,</span><span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span><span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span><span class="n">help</span><span class="o">=</span><span class="s1">&#39;speed up, instead of random 1000 do the first N (user specified) qdo tasks&#39;</span><span class="p">,</span><span class="n">required</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;--running_to_pending&#39;</span><span class="p">,</span><span class="n">action</span><span class="o">=</span><span class="s2">&quot;store_true&quot;</span><span class="p">,</span><span class="n">default</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span><span class="n">help</span><span class="o">=</span><span class="s1">&#39;set to reset all &quot;running&quot; jobs to &quot;pending&quot;&#39;</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;--running_to_failed&#39;</span><span class="p">,</span><span class="n">action</span><span class="o">=</span><span class="s2">&quot;store_true&quot;</span><span class="p">,</span><span class="n">default</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span><span class="n">help</span><span class="o">=</span><span class="s1">&#39;set to reset all &quot;running&quot; jobs to &quot;failed&quot;&#39;</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;--failed_message_to_pending&#39;</span><span class="p">,</span><span class="n">action</span><span class="o">=</span><span class="s1">&#39;store&#39;</span><span class="p">,</span><span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span><span class="n">help</span><span class="o">=</span><span class="s1">&#39;set to message of failed tak and reset all failed tasks with that message to pending&#39;</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;--failed_to_pending&#39;</span><span class="p">,</span><span class="n">action</span><span class="o">=</span><span class="s2">&quot;store_true&quot;</span><span class="p">,</span><span class="n">default</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span><span class="n">help</span><span class="o">=</span><span class="s1">&#39;set to reset all &quot;failed&quot; jobs to &quot;pending&quot;&#39;</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;--modify&#39;</span><span class="p">,</span><span class="n">action</span><span class="o">=</span><span class="s1">&#39;store_true&#39;</span><span class="p">,</span><span class="n">default</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span><span class="n">help</span><span class="o">=</span><span class="s1">&#39;set to actually reset the qdo tasks state AND to delete IFF running_to_pending or failed_message_to_pending are set&#39;</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;--outdir&#39;</span><span class="p">,</span><span class="n">default</span><span class="o">=</span><span class="s1">&#39;.&#39;</span><span class="p">,</span><span class="n">help</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">,</span><span class="n">required</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;--no_write&#39;</span><span class="p">,</span><span class="n">action</span><span class="o">=</span><span class="s2">&quot;store_true&quot;</span><span class="p">,</span><span class="n">default</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span><span class="n">help</span><span class="o">=</span><span class="s1">&#39;modify the qdo DB but dont write out any text files&#39;</span><span class="p">,</span><span class="n">required</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+    <span class="n">args</span> <span class="o">=</span> <span class="n">parser</span><span class="o">.</span><span class="n">parse_args</span><span class="p">()</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">args</span><span class="p">)</span>
+
+    <span class="n">Q</span><span class="o">=</span> <span class="n">QdoList</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">outdir</span><span class="p">,</span><span class="n">que_name</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">qdo_quename</span><span class="p">,</span>
+               <span class="n">skip_succeed</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">skip_succeed</span><span class="p">,</span>
+               <span class="n">rand_num</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">rand_num</span><span class="p">,</span>
+               <span class="n">firstN</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">firstN</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Getting tasks,logs&#39;</span><span class="p">)</span>
+    <span class="n">tasks</span><span class="p">,</span><span class="n">ids</span><span class="p">,</span><span class="n">logs</span><span class="o">=</span> <span class="n">Q</span><span class="o">.</span><span class="n">get_tasks_logs</span><span class="p">()</span>
+
+    <span class="c1"># Logfile lists grouped by succeeded,running,failed</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">args</span><span class="o">.</span><span class="n">no_write</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">res</span> <span class="ow">in</span> <span class="n">logs</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+            <span class="n">writelist</span><span class="p">(</span><span class="n">logs</span><span class="p">[</span><span class="n">res</span><span class="p">],</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2">_</span><span class="si">%s</span><span class="s2">_logfns.txt&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">qdo_quename</span><span class="p">,</span><span class="n">res</span><span class="p">))</span>
+
+    <span class="c1"># Rerun tasks and delete those tasks&#39; outputs</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">ids</span><span class="p">[</span><span class="s1">&#39;running&#39;</span><span class="p">])</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">running_to_pending</span><span class="p">:</span>
+            <span class="n">Q</span><span class="o">.</span><span class="n">change_task_state</span><span class="p">(</span><span class="n">ids</span><span class="p">[</span><span class="s1">&#39;running&#39;</span><span class="p">],</span> <span class="n">to</span><span class="o">=</span><span class="s1">&#39;pending&#39;</span><span class="p">,</span><span class="n">modify</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">modify</span><span class="p">,</span>
+                                <span class="n">rm_files</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">args</span><span class="o">.</span><span class="n">running_to_failed</span><span class="p">:</span>
+            <span class="n">Q</span><span class="o">.</span><span class="n">change_task_state</span><span class="p">(</span><span class="n">ids</span><span class="p">[</span><span class="s1">&#39;running&#39;</span><span class="p">],</span> <span class="n">to</span><span class="o">=</span><span class="s1">&#39;failed&#39;</span><span class="p">,</span><span class="n">modify</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">modify</span><span class="p">,</span>
+                                <span class="n">rm_files</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">ids</span><span class="p">[</span><span class="s1">&#39;failed&#39;</span><span class="p">])</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">failed_to_pending</span><span class="p">:</span>
+            <span class="n">Q</span><span class="o">.</span><span class="n">change_task_state</span><span class="p">(</span><span class="n">ids</span><span class="p">[</span><span class="s1">&#39;failed&#39;</span><span class="p">],</span> <span class="n">to</span><span class="o">=</span><span class="s1">&#39;pending&#39;</span><span class="p">,</span><span class="n">modify</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">modify</span><span class="p">,</span>
+                                <span class="n">rm_files</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+
+    <span class="c1"># Failed logfile lists, group by error message</span>
+    <span class="n">R</span><span class="o">=</span> <span class="n">RunStatus</span><span class="p">(</span><span class="n">tasks</span><span class="p">,</span><span class="n">logs</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Counting number of failed,suceed,running tasks for ech failure mode&#39;</span><span class="p">)</span>
+    <span class="n">tally</span><span class="o">=</span> <span class="n">R</span><span class="o">.</span><span class="n">get_tally</span><span class="p">()</span>
+    <span class="n">R</span><span class="o">.</span><span class="n">print_tally</span><span class="p">(</span><span class="n">tally</span><span class="p">)</span>
+
+    <span class="c1"># Subset of failed to pending</span>
+    <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">failed_message_to_pending</span><span class="p">:</span>
+        <span class="n">hasMessage</span><span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">tally</span><span class="p">[</span><span class="s1">&#39;failed&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="n">args</span><span class="o">.</span><span class="n">failed_message_to_pending</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">hasMessage</span><span class="o">.</span><span class="n">size</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">theIds</span><span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">ids</span><span class="p">[</span><span class="s1">&#39;failed&#39;</span><span class="p">])[</span><span class="n">hasMessage</span><span class="p">]</span>
+            <span class="n">Q</span><span class="o">.</span><span class="n">change_task_state</span><span class="p">(</span><span class="n">theIds</span><span class="p">,</span> <span class="n">to</span><span class="o">=</span><span class="s1">&#39;pending&#39;</span><span class="p">,</span> <span class="n">modify</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">modify</span><span class="p">,</span>
+                                <span class="n">rm_files</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+    <span class="c1"># logs,tasks for each type of failure</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">args</span><span class="o">.</span><span class="n">no_write</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Writing logs,tasks for each failure mode for failed tasks&#39;</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">err_key</span> <span class="ow">in</span> <span class="n">R</span><span class="o">.</span><span class="n">regex_errs</span> <span class="o">+</span> <span class="n">R</span><span class="o">.</span><span class="n">regex_errs_extra</span><span class="p">:</span>
+            <span class="n">err_logs</span><span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">logs</span><span class="p">[</span><span class="s1">&#39;failed&#39;</span><span class="p">])[</span> <span class="n">tally</span><span class="p">[</span><span class="s1">&#39;failed&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="n">err_key</span> <span class="p">]</span>
+            <span class="n">err_tasks</span><span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">tasks</span><span class="p">[</span><span class="s1">&#39;failed&#39;</span><span class="p">])[</span> <span class="n">tally</span><span class="p">[</span><span class="s1">&#39;failed&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="n">err_key</span> <span class="p">]</span>
+            <span class="n">err_string</span><span class="o">=</span> <span class="p">(</span><span class="n">err_key</span><span class="p">[:</span><span class="mi">12</span><span class="p">]</span> <span class="o">+</span> <span class="n">err_key</span><span class="p">[</span><span class="o">-</span><span class="mi">8</span><span class="p">:])</span>
+            <span class="n">err_string</span><span class="o">=</span> <span class="p">((</span><span class="n">err_key</span><span class="p">[:</span><span class="mi">10</span><span class="p">]</span> <span class="o">+</span> <span class="n">err_key</span><span class="p">[</span><span class="o">-</span><span class="mi">10</span><span class="p">:])</span>
+                         <span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot; &quot;</span><span class="p">,</span><span class="s2">&quot;_&quot;</span><span class="p">)</span>
+                         <span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;/&quot;</span><span class="p">,</span><span class="s2">&quot;&quot;</span><span class="p">)</span>
+                         <span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;*&quot;</span><span class="p">,</span><span class="s2">&quot;&quot;</span><span class="p">)</span>
+                         <span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;?&quot;</span><span class="p">,</span><span class="s2">&quot;&quot;</span><span class="p">)</span>
+                         <span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;:&quot;</span><span class="p">,</span><span class="s2">&quot;&quot;</span><span class="p">))</span>
+            <span class="n">writelist</span><span class="p">(</span><span class="n">err_logs</span><span class="p">,</span><span class="s2">&quot;logs_</span><span class="si">%s</span><span class="s2">_</span><span class="si">%s</span><span class="s2">.txt&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">qdo_quename</span><span class="p">,</span><span class="n">err_string</span><span class="p">))</span>
+            <span class="n">writelist</span><span class="p">(</span><span class="n">err_tasks</span><span class="p">,</span><span class="s2">&quot;tasks_</span><span class="si">%s</span><span class="s2">_</span><span class="si">%s</span><span class="s2">.txt&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">qdo_quename</span><span class="p">,</span><span class="n">err_string</span><span class="p">))</span>
+
+
+    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;done&#39;</span><span class="p">)</span>
+</pre></div>
+
+    </div>
+      
+  </div>
+</div>
+<footer class="footer">
+  <div class="container">
+    <p class="pull-right">
+      <a href="#">Back to top</a>
+      
+    </p>
+    <p>
+        &copy; Copyright 2014-2018, Kaylan Burleigh, John Moustakas.<br/>
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.7.6.<br/>
+    </p>
+  </div>
+</footer>
+  </body>
+</html>

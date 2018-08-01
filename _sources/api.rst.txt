@@ -10,10 +10,51 @@ Modules
 	:template: module.rst
 
 	obiwan.fetch
+	obiwan.mk_fits_image
 	obiwan.db_tools
+	obiwan._version
 	obiwan.draw_radec_color_z
 	obiwan.kenobi
 	obiwan.common
+	obiwan.runs
+	obiwan.time_per_brick
+
+Post-Processing
+---------------
+.. autosummary::
+	:toctree: _autosummary
+	:template: module.rst
+
+	obiwan.runmanager.merge_tables
+	obiwan.runmanager.derived_tables
+	obiwan.runmanager.qdo_tasks
+	obiwan.runmanager.update_imagefn_if_doesnt_exist
+	obiwan.runmanager.status
+
+Analysis & Plotting
+-------------------
+.. autosummary::
+	:toctree: _autosummary
+	:template: module.rst
+
+	obiwan.qa.plots_common
+	obiwan.qa.tally
+	obiwan.qa.number_finished_by_slurm
+	obiwan.qa.unique_ccds_dr3
+	obiwan.qa.cpu_hours
+	obiwan.qa.visual
+	obiwan.qa.aaron_healpix
+	obiwan.qa.plots_footprint
+	obiwan.qa.plots_randomsprops_fluxdiff
+
+Scaling Tests
+-------------
+.. autosummary::
+	:toctree: _autosummary
+	:template: module.rst
+
+	obiwan.scaling.select_bricks
+	obiwan.scaling.timing
 
 Tests
 -----
@@ -21,22 +62,9 @@ Tests
 	:toctree: _autosummary
 	:template: module.rst
 
-	tests.end_to_end.test_datasets
-
-Compute Jobs
-------------
-.. autosummary::
-	:toctree: _autosummary
-	:template: module.rst
-
-	obiwan.qa.plots_common
-	obiwan.qa.number_finished_by_slurm
-	obiwan.qa.unique_ccds_dr3
-	obiwan.qa.cpu_hours
-	obiwan.qa.visual
-	obiwan.qa.heatmaps
-	obiwan.qa.plots_footprint
-	obiwan.qa.plots_randomsprops_fluxdiff
+	tests.run_200x200_pixel_regions
+	tests.__init__
+	tests.test_200x200_pixel_regions
 
 Deep Learning
 -------------
@@ -45,7 +73,6 @@ Deep Learning
 	:template: module.rst
 
 	obiwan.dplearn.cnn
-	obiwan.dplearn.cnn_working_version
 	obiwan.dplearn.create_training
 	obiwan.dplearn.split_testtrain
 

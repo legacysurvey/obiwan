@@ -12,6 +12,10 @@ obiwan.kenobi
    .. autosummary::
    
       BuildStamp
+      SimDecals
+      SimDecalsCosmos
+      SimImage
+      SimImageCosmos
    
    
 

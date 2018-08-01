@@ -103,6 +103,7 @@
       
   <div class="section" id="module-obiwan.qa.plots_common">
 <span id="obiwan-qa-plots-common"></span><h1>obiwan.qa.plots_common<a class="headerlink" href="#module-obiwan.qa.plots_common" title="Permalink to this headline">¶</a></h1>
+<p>commonly used code for plotting and analysis</p>
 <p class="rubric">Functions</p>
 <table border="1" class="longtable docutils">
 <colgroup>
@@ -111,7 +112,7 @@
 </colgroup>
 <tbody valign="top">
 <tr class="row-odd"><td><a class="reference internal" href="#obiwan.qa.plots_common.bin_up" title="obiwan.qa.plots_common.bin_up"><code class="xref py py-obj docutils literal notranslate"><span class="pre">bin_up</span></code></a>(data_bin_by,&nbsp;data_for_percentile[,&nbsp;…])</td>
-<td>bins “data_for_percentile” into “nbins” using “data_bin_by” to decide how indices are assigned to bins returns bin center,N,q25,50,75 for each bin</td>
+<td>bins “data_for_percentile” into “nbins” based on “data_bin_by”</td>
 </tr>
 <tr class="row-even"><td><a class="reference internal" href="#obiwan.qa.plots_common.create_confusion_matrix" title="obiwan.qa.plots_common.create_confusion_matrix"><code class="xref py py-obj docutils literal notranslate"><span class="pre">create_confusion_matrix</span></code></a>(answer_type,&nbsp;…[,&nbsp;…])</td>
 <td>compares classifications of matched objects, returns 2D array which is conf matrix and xylabels return 5x5 confusion matrix and colum/row names answer_type,predict_type – arrays of same length with reference and prediction types</td>
@@ -120,10 +121,10 @@
 <td></td>
 </tr>
 <tr class="row-even"><td><a class="reference internal" href="#obiwan.qa.plots_common.flux2mag" title="obiwan.qa.plots_common.flux2mag"><code class="xref py py-obj docutils literal notranslate"><span class="pre">flux2mag</span></code></a>(nmgy)</td>
-<td>return ABmag</td>
+<td>converts nanomaggies to AB mag</td>
 </tr>
 <tr class="row-odd"><td><a class="reference internal" href="#obiwan.qa.plots_common.mag2flux" title="obiwan.qa.plots_common.mag2flux"><code class="xref py py-obj docutils literal notranslate"><span class="pre">mag2flux</span></code></a>(ABmag)</td>
-<td>return nmgy</td>
+<td>converts AB mag to nonomaggies</td>
 </tr>
 <tr class="row-even"><td><a class="reference internal" href="#obiwan.qa.plots_common.myannot" title="obiwan.qa.plots_common.myannot"><code class="xref py py-obj docutils literal notranslate"><span class="pre">myannot</span></code></a>(ax,&nbsp;xarr,&nbsp;yarr,&nbsp;sarr[,&nbsp;ha,&nbsp;va,&nbsp;fontsize])</td>
 <td>x,y,s are iterable</td>
@@ -154,8 +155,17 @@
 <dl class="function">
 <dt id="obiwan.qa.plots_common.bin_up">
 <code class="descclassname">obiwan.qa.plots_common.</code><code class="descname">bin_up</code><span class="sig-paren">(</span><em>data_bin_by</em>, <em>data_for_percentile</em>, <em>bin_minmax=(18.0</em>, <em>26.0)</em>, <em>nbins=20</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/obiwan/qa/plots_common.html#bin_up"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obiwan.qa.plots_common.bin_up" title="Permalink to this definition">¶</a></dt>
-<dd><p>bins “data_for_percentile” into “nbins” using “data_bin_by” to decide how indices are assigned to bins
-returns bin center,N,q25,50,75 for each bin</p>
+<dd><p>bins “data_for_percentile” into “nbins” based on “data_bin_by”</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">(bin center,N,q25,50,75) for each bin</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.7)">tuple</a></td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <dl class="function">
@@ -169,13 +179,13 @@ answer_type,predict_type – arrays of same length with reference and prediction
 <dl class="function">
 <dt id="obiwan.qa.plots_common.flux2mag">
 <code class="descclassname">obiwan.qa.plots_common.</code><code class="descname">flux2mag</code><span class="sig-paren">(</span><em>nmgy</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/obiwan/qa/plots_common.html#flux2mag"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obiwan.qa.plots_common.flux2mag" title="Permalink to this definition">¶</a></dt>
-<dd><p>return ABmag</p>
+<dd><p>converts nanomaggies to AB mag</p>
 </dd></dl>
 
 <dl class="function">
 <dt id="obiwan.qa.plots_common.mag2flux">
 <code class="descclassname">obiwan.qa.plots_common.</code><code class="descname">mag2flux</code><span class="sig-paren">(</span><em>ABmag</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/obiwan/qa/plots_common.html#mag2flux"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obiwan.qa.plots_common.mag2flux" title="Permalink to this definition">¶</a></dt>
-<dd><p>return nmgy</p>
+<dd><p>converts AB mag to nonomaggies</p>
 </dd></dl>
 
 <dl class="function">

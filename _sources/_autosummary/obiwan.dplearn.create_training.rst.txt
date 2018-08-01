@@ -1,0 +1,38 @@
+obiwan.dplearn.create_training
+==============================
+
+.. automodule:: obiwan.dplearn.create_training
+   :members:
+   :inherited-members:
+
+   
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      SimStamps
+      TractorStamps
+      UserDefinedStamps
+   
+   
+
+   
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      flux2mag
+      get_ELG_box
+      get_xy_pad
+      mpi_main
+      testcase_main
+      y1_line
+      y2_line
+   
+   
+
+   
+   
+   

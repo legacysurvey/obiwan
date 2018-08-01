@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>obiwan.runs &#8212; obiwan 1.2.0 documentation</title>
+    <link rel="stylesheet" href="../../_static/bootstrap-sphinx.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script type="text/javascript" src="../../_static/js/jquery-1.11.0.min.js"></script>
+    <script type="text/javascript" src="../../_static/js/jquery-fix.js"></script>
+    <script type="text/javascript" src="../../_static/bootstrap-3.3.7/js/bootstrap.min.js"></script>
+    <script type="text/javascript" src="../../_static/bootstrap-sphinx.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+<meta charset='utf-8'>
+<meta http-equiv='X-UA-Compatible' content='IE=edge,chrome=1'>
+<meta name='viewport' content='width=device-width, initial-scale=1.0, maximum-scale=1'>
+<meta name="apple-mobile-web-app-capable" content="yes">
+
+  </head><body>
+
+  <div id="navbar" class="navbar navbar-default ">
+    <div class="container">
+      <div class="navbar-header">
+        <!-- .btn-navbar is used as the toggle for collapsed navbar content -->
+        <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".nav-collapse">
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+        </button>
+        <a class="navbar-brand" href="../../index.html">
+          Obiwan</a>
+        <span class="navbar-text navbar-version pull-left"><b>1.2.0</b></span>
+      </div>
+
+        <div class="collapse navbar-collapse nav-collapse">
+          <ul class="nav navbar-nav">
+            
+                <li><a href="../../api.html">API</a></li>
+                <li><a href="../../tutorials.html">Tutorials</a></li>
+                <li><a href="../../deeplearning.html">Deep Learning</a></li>
+            
+            
+              <li class="dropdown globaltoc-container">
+  <a role="button"
+     id="dLabelGlobalToc"
+     data-toggle="dropdown"
+     data-target="#"
+     href="../../index.html">Pages <b class="caret"></b></a>
+  <ul class="dropdown-menu globaltoc"
+      role="menu"
+      aria-labelledby="dLabelGlobalToc"></ul>
+</li>
+              
+                <li class="dropdown">
+  <a role="button"
+     id="dLabelLocalToc"
+     data-toggle="dropdown"
+     data-target="#"
+     href="#">This Page <b class="caret"></b></a>
+  <ul class="dropdown-menu localtoc"
+      role="menu"
+      aria-labelledby="dLabelLocalToc"></ul>
+</li>
+              
+            
+            
+              
+                
+              
+            
+            
+            
+            
+          </ul>
+
+          
+            
+<form class="navbar-form navbar-right" action="../../search.html" method="get">
+ <div class="form-group">
+  <input type="text" name="q" class="form-control" placeholder="Search" />
+ </div>
+  <input type="hidden" name="check_keywords" value="yes" />
+  <input type="hidden" name="area" value="default" />
+</form>
+          
+        </div>
+    </div>
+  </div>
+
+<div class="container">
+  <div class="row">
+    <div class="col-md-12 content">
+      
+  <h1>Source code for obiwan.runs</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Grabs, configures, and otherwise sets up a production run on eBOSS DR3 data or DR5 data</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">from</span> <span class="nn">glob</span> <span class="k">import</span> <span class="n">glob</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+
+<span class="kn">from</span> <span class="nn">obiwan.common</span> <span class="k">import</span> <span class="n">stack_tables</span>
+<span class="kn">from</span> <span class="nn">astrometry.util.fits</span> <span class="k">import</span> <span class="n">fits_table</span><span class="p">,</span> <span class="n">merge_tables</span>
+
+<span class="n">DOWNLOAD_ROOT</span> <span class="o">=</span> <span class="s2">&quot;http://portal.nersc.gov/project/desi/users/kburleigh/obiwan/&quot;</span>
+<span class="n">NERSC_ROOT</span> <span class="o">=</span> <span class="n">DOWNLOAD_ROOT</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;http://portal.nersc.gov/project/&quot;</span><span class="p">,</span>
+                                   <span class="s2">&quot;/global/project/projectdirs/&quot;</span><span class="p">)</span>\
+                          <span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;/users/&quot;</span><span class="p">,</span><span class="s2">&quot;/www/users/&quot;</span><span class="p">)</span>
+
+<span class="n">MAX_CCDS</span><span class="o">=</span><span class="mi">62</span>
+
+<span class="k">def</span> <span class="nf">in_eboss</span><span class="p">(</span><span class="n">T</span><span class="p">):</span>
+    <span class="c1"># TODO: ccd corners instead of center</span>
+    <span class="n">x</span><span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">logical_and</span><span class="o">.</span><span class="n">reduce</span><span class="p">((</span><span class="n">T</span><span class="o">.</span><span class="n">ra</span> <span class="o">&gt;</span> <span class="mf">317.</span><span class="p">,</span><span class="n">T</span><span class="o">.</span><span class="n">ra</span> <span class="o">&lt;</span> <span class="mf">360.</span><span class="p">,</span> <span class="n">T</span><span class="o">.</span><span class="n">dec</span> <span class="o">&gt;</span> <span class="o">-</span><span class="mi">2</span><span class="p">,</span> <span class="n">T</span><span class="o">.</span><span class="n">dec</span> <span class="o">&lt;</span> <span class="mi">2</span><span class="p">))</span>
+    <span class="n">y</span><span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">logical_and</span><span class="o">.</span><span class="n">reduce</span><span class="p">((</span><span class="n">T</span><span class="o">.</span><span class="n">ra</span> <span class="o">&gt;</span> <span class="mf">0.</span><span class="p">,</span><span class="n">T</span><span class="o">.</span><span class="n">ra</span> <span class="o">&lt;</span> <span class="mf">45.</span><span class="p">,</span> <span class="n">T</span><span class="o">.</span><span class="n">dec</span> <span class="o">&gt;</span> <span class="o">-</span><span class="mf">5.</span><span class="p">,</span><span class="n">T</span><span class="o">.</span><span class="n">dec</span> <span class="o">&lt;</span> <span class="mf">5.</span><span class="p">))</span>
+    <span class="n">z</span><span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">logical_and</span><span class="o">.</span><span class="n">reduce</span><span class="p">((</span><span class="n">T</span><span class="o">.</span><span class="n">ra</span> <span class="o">&gt;</span> <span class="mf">126.</span><span class="p">,</span> <span class="n">T</span><span class="o">.</span><span class="n">ra</span> <span class="o">&lt;</span> <span class="mf">169.</span><span class="p">,</span><span class="n">T</span><span class="o">.</span><span class="n">dec</span> <span class="o">&gt;</span> <span class="mf">14.</span><span class="p">,</span><span class="n">T</span><span class="o">.</span><span class="n">dec</span> <span class="o">&lt;</span> <span class="mf">29.</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">logical_or</span><span class="o">.</span><span class="n">reduce</span><span class="p">((</span><span class="n">x</span><span class="p">,</span><span class="n">y</span><span class="p">,</span><span class="n">z</span><span class="p">))</span> 
+
+<span class="k">def</span> <span class="nf">add_str_arrays</span><span class="p">(</span><span class="n">lis</span><span class="p">):</span>
+    <span class="k">assert</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">lis</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">)</span>
+    <span class="n">a</span><span class="o">=</span> <span class="n">lis</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="k">for</span> <span class="n">b</span> <span class="ow">in</span> <span class="n">lis</span><span class="p">[</span><span class="mi">1</span><span class="p">:]:</span>
+        <span class="n">a</span><span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">char</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">a</span><span class="p">,</span><span class="n">b</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">a</span>
+                  
+<div class="viewcode-block" id="rm_duplicates"><a class="viewcode-back" href="../../_autosummary/obiwan.runs.html#obiwan.runs.rm_duplicates">[docs]</a><span class="k">def</span> <span class="nf">rm_duplicates</span><span class="p">(</span><span class="n">T</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;survey-ccds fits_table&quot;&quot;&quot;</span>
+    <span class="n">T</span><span class="o">.</span><span class="n">pid</span><span class="o">=</span> <span class="n">add_str_arrays</span><span class="p">([</span><span class="n">T</span><span class="o">.</span><span class="n">expnum</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">str</span><span class="p">),</span>
+                           <span class="n">np</span><span class="o">.</span><span class="n">char</span><span class="o">.</span><span class="n">strip</span><span class="p">(</span><span class="n">T</span><span class="o">.</span><span class="n">image_filename</span><span class="p">)])</span>
+    <span class="n">keep</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">T</span><span class="p">),</span><span class="nb">bool</span><span class="p">)</span>
+    <span class="n">pids</span><span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">T</span><span class="o">.</span><span class="n">pid</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">cnt</span><span class="p">,</span><span class="n">pid</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">pids</span><span class="p">):</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">cnt</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span> <span class="o">%</span> <span class="mi">100</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">%d</span><span class="s1">/</span><span class="si">%d</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">cnt</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span><span class="nb">len</span><span class="p">(</span><span class="n">pids</span><span class="p">)))</span>
+        <span class="n">ind</span><span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">T</span><span class="o">.</span><span class="n">pid</span> <span class="o">==</span> <span class="n">pid</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="c1"># More than 62 ccds have same expnum, must be dup</span>
+        <span class="k">if</span> <span class="n">ind</span><span class="o">.</span><span class="n">size</span> <span class="o">&gt;</span> <span class="n">MAX_CCDS</span><span class="p">:</span>
+            <span class="n">tmp_keep</span><span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">T</span><span class="p">[</span><span class="n">ind</span><span class="p">]),</span><span class="nb">bool</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">ccdid</span> <span class="ow">in</span> <span class="nb">set</span><span class="p">(</span><span class="n">T</span><span class="p">[</span><span class="n">ind</span><span class="p">]</span><span class="o">.</span><span class="n">ccdname</span><span class="p">):</span>
+                <span class="n">tmp_ind</span><span class="o">=</span>  <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">T</span><span class="p">[</span><span class="n">ind</span><span class="p">]</span><span class="o">.</span><span class="n">ccdname</span> <span class="o">==</span> <span class="n">ccdid</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+                <span class="c1"># duplicated ccdname</span>
+                <span class="k">if</span> <span class="n">tmp_ind</span><span class="o">.</span><span class="n">size</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+                    <span class="n">tmp_keep</span><span class="p">[</span> <span class="n">tmp_ind</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span> <span class="p">]</span> <span class="o">=</span><span class="kc">True</span> <span class="c1"># drop these</span>
+            <span class="n">keep</span><span class="p">[</span> <span class="n">ind</span><span class="p">[</span><span class="n">tmp_keep</span><span class="p">]</span> <span class="p">]</span><span class="o">=</span> <span class="kc">False</span> <span class="c1"># drop these by cut() method</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">%d</span><span class="s1">/</span><span class="si">%d</span><span class="s1"> are duplicates&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">keep</span> <span class="o">==</span> <span class="kc">False</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">size</span><span class="p">,</span><span class="nb">len</span><span class="p">(</span><span class="n">keep</span><span class="p">)))</span>
+    <span class="k">return</span> <span class="n">keep</span></div>
+
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;__main__&quot;</span><span class="p">:</span>
+    <span class="n">eboss_fns</span><span class="o">=</span> <span class="n">glob</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">NERSC_ROOT</span><span class="p">,</span><span class="s1">&#39;configs/dr3eBOSS/additional_ccds&#39;</span><span class="p">,</span>
+                               <span class="s2">&quot;survey-ccds-*.fits.gz&quot;</span><span class="p">))</span>
+    <span class="n">dr3_fns</span><span class="o">=</span> <span class="n">glob</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">NERSC_ROOT</span><span class="p">,</span><span class="s1">&#39;configs/dr3eBOSS/dr3&#39;</span><span class="p">,</span>
+                             <span class="s2">&quot;survey-ccds-*.fits.gz&quot;</span><span class="p">))</span>
+    <span class="k">assert</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">eboss_fns</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">)</span>
+    <span class="k">assert</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">dr3_fns</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">)</span>
+
+    <span class="n">dr3</span><span class="o">=</span> <span class="n">stack_tables</span><span class="p">(</span><span class="n">dr3_fns</span><span class="p">,</span><span class="n">textfile</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+    <span class="n">eboss</span><span class="o">=</span> <span class="n">stack_tables</span><span class="p">(</span><span class="n">eboss_fns</span><span class="p">,</span><span class="n">textfile</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+    <span class="n">dr3</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="s1">&#39;pid&#39;</span><span class="p">,</span> <span class="n">add_str_arrays</span><span class="p">([</span><span class="n">dr3</span><span class="o">.</span><span class="n">expnum</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">str</span><span class="p">),</span>
+                                 <span class="n">np</span><span class="o">.</span><span class="n">char</span><span class="o">.</span><span class="n">strip</span><span class="p">(</span><span class="n">dr3</span><span class="o">.</span><span class="n">image_filename</span><span class="p">)]))</span>
+    <span class="n">eboss</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="s1">&#39;pid&#39;</span><span class="p">,</span> <span class="n">add_str_arrays</span><span class="p">([</span><span class="n">eboss</span><span class="o">.</span><span class="n">expnum</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">str</span><span class="p">),</span>
+                                   <span class="n">np</span><span class="o">.</span><span class="n">char</span><span class="o">.</span><span class="n">strip</span><span class="p">(</span><span class="n">eboss</span><span class="o">.</span><span class="n">image_filename</span><span class="p">)]))</span>
+    <span class="n">dr3</span><span class="o">.</span><span class="n">cut</span><span class="p">(</span> <span class="n">in_eboss</span><span class="p">(</span><span class="n">dr3</span><span class="p">))</span>
+    <span class="n">eboss</span><span class="o">.</span><span class="n">cut</span><span class="p">(</span> <span class="n">in_eboss</span><span class="p">(</span><span class="n">eboss</span><span class="p">))</span>
+
+    <span class="n">T</span><span class="o">=</span>  <span class="n">merge_tables</span><span class="p">([</span><span class="n">dr3</span><span class="p">,</span><span class="n">eboss</span><span class="p">],</span> <span class="n">columns</span><span class="o">=</span><span class="s1">&#39;fillzero&#39;</span><span class="p">)</span>
+    <span class="n">keep</span><span class="o">=</span> <span class="n">rm_duplicates</span><span class="p">(</span><span class="n">T</span><span class="p">)</span>
+    <span class="n">T</span><span class="o">.</span><span class="n">cut</span><span class="p">(</span><span class="n">keep</span><span class="p">)</span>
+    <span class="n">name</span><span class="o">=</span><span class="s1">&#39;survey-ccds-ebossDR3.fits&#39;</span>
+    <span class="n">T</span><span class="o">.</span><span class="n">writeto</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Wrote </span><span class="si">%s</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="n">name</span><span class="p">)</span>
+
+    <span class="n">a</span><span class="o">=</span><span class="nb">set</span><span class="p">(</span><span class="n">dr3</span><span class="o">.</span><span class="n">pid</span><span class="p">)</span><span class="o">.</span><span class="n">union</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">eboss</span><span class="o">.</span><span class="n">pid</span><span class="p">))</span>
+    <span class="n">fn</span><span class="o">=</span><span class="p">[</span><span class="n">lin</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;decam/&quot;</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span> <span class="k">for</span> <span class="n">lin</span> <span class="ow">in</span> <span class="n">a</span><span class="p">]</span>
+    <span class="n">name</span><span class="o">=</span><span class="s1">&#39;eboss_image_list.txt&#39;</span>
+    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">name</span><span class="p">,</span><span class="s1">&#39;w&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">foo</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">fn</span><span class="p">:</span>
+            <span class="n">foo</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">%s</span><span class="se">\n</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="n">f</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Wrote </span><span class="si">%s</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="n">name</span><span class="p">)</span> 
+
+ 
+</pre></div>
+
+    </div>
+      
+  </div>
+</div>
+<footer class="footer">
+  <div class="container">
+    <p class="pull-right">
+      <a href="#">Back to top</a>
+      
+    </p>
+    <p>
+        &copy; Copyright 2014-2018, Kaylan Burleigh, John Moustakas.<br/>
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.7.6.<br/>
+    </p>
+  </div>
+</footer>
+  </body>
+</html>

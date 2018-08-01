@@ -1,0 +1,37 @@
+tests.run_200x200_pixel_regions
+===============================
+
+.. automodule:: tests.run_200x200_pixel_regions
+   :members:
+   :inherited-members:
+
+   
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      Tolerances
+      analysis_setup
+      run_kenobi_main
+      run_kenobi_main_cosmos
+      test_detected_simulated_and_real_sources
+      test_draw_circles_around_sources_check_by_eye
+      test_flux_shape_measurements
+   
+   
+
+   
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      at_most_N_is_false
+      nanomag2mag
+   
+   
+
+   
+   
+   

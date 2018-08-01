@@ -103,9 +103,12 @@
       
   <div class="section" id="module-obiwan.qa.unique_ccds_dr3">
 <span id="obiwan-qa-unique-ccds-dr3"></span><h1>obiwan.qa.unique_ccds_dr3<a class="headerlink" href="#module-obiwan.qa.unique_ccds_dr3" title="Permalink to this headline">¶</a></h1>
-<p>Using obiwan outputs, make a table of ‘official’ randoms per-brick
-- uniform randoms: random ra,dec + geometry cut
-- obiwan randoms: uniform randoms + recovered by tractor</p>
+<p>Searches a DataRelase like directory for all legacysurvey*ccd.fits files,
+creates a no-duplicate set of all CCDs included in that DR, and writes
+the list to disk.</p>
+<p>Used to create the list of CCDs that DR3 processed. Adn the list that eboss
+processed for DR3-era target selection, which is a superset of the CCDs that
+DR3 processed</p>
 <p class="rubric">Functions</p>
 <table border="1" class="longtable docutils">
 <colgroup>
@@ -117,15 +120,7 @@
 <td></td>
 </tr>
 <tr class="row-even"><td><a class="reference internal" href="#obiwan.qa.unique_ccds_dr3.mpi_expids_per_bri" title="obiwan.qa.unique_ccds_dr3.mpi_expids_per_bri"><code class="xref py py-obj docutils literal notranslate"><span class="pre">mpi_expids_per_bri</span></code></a>([nproc,&nbsp;data_dir,&nbsp;outdir])</td>
-<td><table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">param nproc:</th><td class="field-body">&gt; 1 for mpi4py</td>
-</tr>
-</tbody>
-</table>
-</td>
+<td>Use MPI because there are so many legacysurvey*ccds.fits table in a DR</td>
 </tr>
 <tr class="row-odd"><td><a class="reference internal" href="#obiwan.qa.unique_ccds_dr3.surveyccds_cut_to_expids" title="obiwan.qa.unique_ccds_dr3.surveyccds_cut_to_expids"><code class="xref py py-obj docutils literal notranslate"><span class="pre">surveyccds_cut_to_expids</span></code></a>(expid_npy_fn,&nbsp;…)</td>
 <td><table class="docutils field-list" frame="void" rules="none">
@@ -144,7 +139,8 @@
 <dl class="function">
 <dt id="obiwan.qa.unique_ccds_dr3.mpi_expids_per_bri">
 <code class="descclassname">obiwan.qa.unique_ccds_dr3.</code><code class="descname">mpi_expids_per_bri</code><span class="sig-paren">(</span><em>nproc=1</em>, <em>data_dir='./'</em>, <em>outdir='./'</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/obiwan/qa/unique_ccds_dr3.html#mpi_expids_per_bri"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obiwan.qa.unique_ccds_dr3.mpi_expids_per_bri" title="Permalink to this definition">¶</a></dt>
-<dd><table class="docutils field-list" frame="void" rules="none">
+<dd><p>Use MPI because there are so many legacysurvey*ccds.fits table in a DR</p>
+<table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">

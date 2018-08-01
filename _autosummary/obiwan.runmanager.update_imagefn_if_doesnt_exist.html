@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>obiwan.runmanager.update_imagefn_if_doesnt_exist &#8212; obiwan 1.2.0 documentation</title>
+    <link rel="stylesheet" href="../_static/bootstrap-sphinx.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script type="text/javascript" src="../_static/js/jquery-1.11.0.min.js"></script>
+    <script type="text/javascript" src="../_static/js/jquery-fix.js"></script>
+    <script type="text/javascript" src="../_static/bootstrap-3.3.7/js/bootstrap.min.js"></script>
+    <script type="text/javascript" src="../_static/bootstrap-sphinx.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+<meta charset='utf-8'>
+<meta http-equiv='X-UA-Compatible' content='IE=edge,chrome=1'>
+<meta name='viewport' content='width=device-width, initial-scale=1.0, maximum-scale=1'>
+<meta name="apple-mobile-web-app-capable" content="yes">
+
+  </head><body>
+
+  <div id="navbar" class="navbar navbar-default ">
+    <div class="container">
+      <div class="navbar-header">
+        <!-- .btn-navbar is used as the toggle for collapsed navbar content -->
+        <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".nav-collapse">
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+        </button>
+        <a class="navbar-brand" href="../index.html">
+          Obiwan</a>
+        <span class="navbar-text navbar-version pull-left"><b>1.2.0</b></span>
+      </div>
+
+        <div class="collapse navbar-collapse nav-collapse">
+          <ul class="nav navbar-nav">
+            
+                <li><a href="../api.html">API</a></li>
+                <li><a href="../tutorials.html">Tutorials</a></li>
+                <li><a href="../deeplearning.html">Deep Learning</a></li>
+            
+            
+              <li class="dropdown globaltoc-container">
+  <a role="button"
+     id="dLabelGlobalToc"
+     data-toggle="dropdown"
+     data-target="#"
+     href="../index.html">Pages <b class="caret"></b></a>
+  <ul class="dropdown-menu globaltoc"
+      role="menu"
+      aria-labelledby="dLabelGlobalToc"></ul>
+</li>
+              
+                <li class="dropdown">
+  <a role="button"
+     id="dLabelLocalToc"
+     data-toggle="dropdown"
+     data-target="#"
+     href="#">This Page <b class="caret"></b></a>
+  <ul class="dropdown-menu localtoc"
+      role="menu"
+      aria-labelledby="dLabelLocalToc"><ul>
+<li><a class="reference internal" href="#">obiwan.runmanager.update_imagefn_if_doesnt_exist</a></li>
+</ul>
+</ul>
+</li>
+              
+            
+            
+              
+                
+              
+            
+            
+            
+            
+          </ul>
+
+          
+            
+<form class="navbar-form navbar-right" action="../search.html" method="get">
+ <div class="form-group">
+  <input type="text" name="q" class="form-control" placeholder="Search" />
+ </div>
+  <input type="hidden" name="check_keywords" value="yes" />
+  <input type="hidden" name="area" value="default" />
+</form>
+          
+        </div>
+    </div>
+  </div>
+
+<div class="container">
+  <div class="row">
+    <div class="col-md-12 content">
+      
+  <div class="section" id="module-obiwan.runmanager.update_imagefn_if_doesnt_exist">
+<span id="obiwan-runmanager-update-imagefn-if-doesnt-exist"></span><h1>obiwan.runmanager.update_imagefn_if_doesnt_exist<a class="headerlink" href="#module-obiwan.runmanager.update_imagefn_if_doesnt_exist" title="Permalink to this headline">¶</a></h1>
+<p>Images used in DR3 are now in different location on project/staging. This script
+finds these cases and updated the survey-ccds files with the new imagefilename</p>
+<p class="rubric">Functions</p>
+<table border="1" class="longtable docutils">
+<colgroup>
+<col width="10%" />
+<col width="90%" />
+</colgroup>
+<tbody valign="top">
+<tr class="row-odd"><td><a class="reference internal" href="#obiwan.runmanager.update_imagefn_if_doesnt_exist.bashOutput" title="obiwan.runmanager.update_imagefn_if_doesnt_exist.bashOutput"><code class="xref py py-obj docutils literal notranslate"><span class="pre">bashOutput</span></code></a>(cmd)</td>
+<td>cmd is what would type on the command line, e.g.</td>
+</tr>
+<tr class="row-even"><td><code class="xref py py-obj docutils literal notranslate"><span class="pre">imagefns_from_ccds_table</span></code>(table_fn)</td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><a class="reference internal" href="#obiwan.runmanager.update_imagefn_if_doesnt_exist.mpi_fns_that_exist" title="obiwan.runmanager.update_imagefn_if_doesnt_exist.mpi_fns_that_exist"><code class="xref py py-obj docutils literal notranslate"><span class="pre">mpi_fns_that_exist</span></code></a>([nproc,&nbsp;imageFns,&nbsp;suffix])</td>
+<td><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">param nproc:</th><td class="field-body">&gt; 1 for mpi4py</td>
+</tr>
+</tbody>
+</table>
+</td>
+</tr>
+<tr class="row-even"><td><code class="xref py py-obj docutils literal notranslate"><span class="pre">update_surveyccds</span></code>(ccds_fn,&nbsp;old2new_fn)</td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<dl class="function">
+<dt id="obiwan.runmanager.update_imagefn_if_doesnt_exist.bashOutput">
+<code class="descclassname">obiwan.runmanager.update_imagefn_if_doesnt_exist.</code><code class="descname">bashOutput</code><span class="sig-paren">(</span><em>cmd</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/obiwan/runmanager/update_imagefn_if_doesnt_exist.html#bashOutput"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obiwan.runmanager.update_imagefn_if_doesnt_exist.bashOutput" title="Permalink to this definition">¶</a></dt>
+<dd><p>cmd is what would type on the command line, e.g. find . -name “hello.txt”</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="obiwan.runmanager.update_imagefn_if_doesnt_exist.mpi_fns_that_exist">
+<code class="descclassname">obiwan.runmanager.update_imagefn_if_doesnt_exist.</code><code class="descname">mpi_fns_that_exist</code><span class="sig-paren">(</span><em>nproc=1</em>, <em>imageFns=[]</em>, <em>suffix=''</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/obiwan/runmanager/update_imagefn_if_doesnt_exist.html#mpi_fns_that_exist"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obiwan.runmanager.update_imagefn_if_doesnt_exist.mpi_fns_that_exist" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>nproc</strong> – &gt; 1 for mpi4py</li>
+<li><strong>bricks</strong> – list of bricks</li>
+<li><strong>suffix</strong> – identifying name to append to output fns</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</div>
+
+
+    </div>
+      
+  </div>
+</div>
+<footer class="footer">
+  <div class="container">
+    <p class="pull-right">
+      <a href="#">Back to top</a>
+      
+    </p>
+    <p>
+        &copy; Copyright 2014-2018, Kaylan Burleigh, John Moustakas.<br/>
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.7.6.<br/>
+    </p>
+  </div>
+</footer>
+  </body>
+</html>

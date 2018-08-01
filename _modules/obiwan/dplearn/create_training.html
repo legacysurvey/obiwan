@@ -1,0 +1,697 @@
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>obiwan.dplearn.create_training &#8212; obiwan 1.2.0 documentation</title>
+    <link rel="stylesheet" href="../../../_static/bootstrap-sphinx.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script type="text/javascript" src="../../../_static/js/jquery-1.11.0.min.js"></script>
+    <script type="text/javascript" src="../../../_static/js/jquery-fix.js"></script>
+    <script type="text/javascript" src="../../../_static/bootstrap-3.3.7/js/bootstrap.min.js"></script>
+    <script type="text/javascript" src="../../../_static/bootstrap-sphinx.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+<meta charset='utf-8'>
+<meta http-equiv='X-UA-Compatible' content='IE=edge,chrome=1'>
+<meta name='viewport' content='width=device-width, initial-scale=1.0, maximum-scale=1'>
+<meta name="apple-mobile-web-app-capable" content="yes">
+
+  </head><body>
+
+  <div id="navbar" class="navbar navbar-default ">
+    <div class="container">
+      <div class="navbar-header">
+        <!-- .btn-navbar is used as the toggle for collapsed navbar content -->
+        <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".nav-collapse">
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+        </button>
+        <a class="navbar-brand" href="../../../index.html">
+          Obiwan</a>
+        <span class="navbar-text navbar-version pull-left"><b>1.2.0</b></span>
+      </div>
+
+        <div class="collapse navbar-collapse nav-collapse">
+          <ul class="nav navbar-nav">
+            
+                <li><a href="../../../api.html">API</a></li>
+                <li><a href="../../../tutorials.html">Tutorials</a></li>
+                <li><a href="../../../deeplearning.html">Deep Learning</a></li>
+            
+            
+              <li class="dropdown globaltoc-container">
+  <a role="button"
+     id="dLabelGlobalToc"
+     data-toggle="dropdown"
+     data-target="#"
+     href="../../../index.html">Pages <b class="caret"></b></a>
+  <ul class="dropdown-menu globaltoc"
+      role="menu"
+      aria-labelledby="dLabelGlobalToc"></ul>
+</li>
+              
+                <li class="dropdown">
+  <a role="button"
+     id="dLabelLocalToc"
+     data-toggle="dropdown"
+     data-target="#"
+     href="#">This Page <b class="caret"></b></a>
+  <ul class="dropdown-menu localtoc"
+      role="menu"
+      aria-labelledby="dLabelLocalToc"></ul>
+</li>
+              
+            
+            
+              
+                
+              
+            
+            
+            
+            
+          </ul>
+
+          
+            
+<form class="navbar-form navbar-right" action="../../../search.html" method="get">
+ <div class="form-group">
+  <input type="text" name="q" class="form-control" placeholder="Search" />
+ </div>
+  <input type="hidden" name="check_keywords" value="yes" />
+  <input type="hidden" name="area" value="default" />
+</form>
+          
+        </div>
+    </div>
+  </div>
+
+<div class="container">
+  <div class="row">
+    <div class="col-md-12 content">
+      
+  <h1>Source code for obiwan.dplearn.create_training</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">saves 64x64 pixel cutouts of each source in a Data Release as HDF5 files</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">from</span> <span class="nn">glob</span> <span class="k">import</span> <span class="n">glob</span>
+<span class="kn">import</span> <span class="nn">h5py</span>
+<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+
+<span class="kn">from</span> <span class="nn">obiwan.qa.visual</span> <span class="k">import</span> <span class="n">readImage</span><span class="p">,</span><span class="n">sliceImage</span>
+<span class="kn">from</span> <span class="nn">obiwan.common</span> <span class="k">import</span> <span class="n">dobash</span>
+
+<span class="c1"># try:</span>
+<span class="kn">from</span> <span class="nn">astrometry.util.fits</span> <span class="k">import</span> <span class="n">fits_table</span>
+<span class="kn">from</span> <span class="nn">legacypipe.survey</span> <span class="k">import</span> <span class="n">LegacySurveyData</span><span class="p">,</span> <span class="n">wcs_for_brick</span>
+<span class="kn">import</span> <span class="nn">galsim</span>
+<span class="c1"># except ImportError:</span>
+<span class="c1">#     pass</span>
+
+<span class="n">HDF5_KEYS</span><span class="o">=</span> <span class="p">[</span><span class="s1">&#39;g&#39;</span><span class="p">,</span><span class="s1">&#39;r&#39;</span><span class="p">,</span><span class="s1">&#39;z&#39;</span><span class="p">,</span><span class="s1">&#39;gr&#39;</span><span class="p">,</span><span class="s1">&#39;gz&#39;</span><span class="p">,</span><span class="s1">&#39;rz&#39;</span><span class="p">,</span><span class="s1">&#39;grz&#39;</span><span class="p">]</span>
+
+<span class="k">def</span> <span class="nf">flux2mag</span><span class="p">(</span><span class="n">nmgy</span><span class="p">):</span>
+    <span class="k">return</span> <span class="o">-</span><span class="mf">2.5</span> <span class="o">*</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">log10</span><span class="p">(</span><span class="n">nmgy</span><span class="p">)</span> <span class="o">-</span> <span class="mi">9</span><span class="p">)</span>
+
+<div class="viewcode-block" id="SimStamps"><a class="viewcode-back" href="../../../_autosummary/obiwan.dplearn.create_training.html#obiwan.dplearn.create_training.SimStamps">[docs]</a><span class="k">class</span> <span class="nc">SimStamps</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Object for exracting sim cutouts</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            ls_dir: LEGACY_SURVEY_DIR, like &#39;tests/end_to_end/testcase_DR5_grz&#39;</span>
+<span class="sd">            outdir: path to dir containing obiwan,coadd,tractor dirs</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">ls_dir</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span><span class="n">outdir</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                 <span class="n">savedir</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">jpeg</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;outdir: required</span>
+<span class="sd">           ls_dir: not needed if env var LEGACY_SURVEY_DIR already set</span>
+<span class="sd">           save_dir: where write hdf5 files, outdir if None</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">outdir</span><span class="o">=</span> <span class="n">outdir</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">jpeg</span><span class="o">=</span> <span class="n">jpeg</span>
+        <span class="k">if</span> <span class="n">ls_dir</span><span class="p">:</span>
+            <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s2">&quot;LEGACY_SURVEY_DIR&quot;</span><span class="p">]</span><span class="o">=</span> <span class="n">ls_dir</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">savedir</span><span class="o">=</span> <span class="n">savedir</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">savedir</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">savedir</span><span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">outdir</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">survey</span> <span class="o">=</span> <span class="n">LegacySurveyData</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">get_brickwcs</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">brick</span><span class="p">):</span>
+        <span class="n">brickinfo</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">survey</span><span class="o">.</span><span class="n">get_brick_by_name</span><span class="p">(</span><span class="n">brick</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">brickwcs</span> <span class="o">=</span> <span class="n">wcs_for_brick</span><span class="p">(</span><span class="n">brickinfo</span><span class="p">)</span>
+
+<div class="viewcode-block" id="SimStamps.load_data"><a class="viewcode-back" href="../../../_autosummary/obiwan.dplearn.create_training.html#obiwan.dplearn.create_training.SimStamps.load_data">[docs]</a>    <span class="k">def</span> <span class="nf">load_data</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">brick</span><span class="p">,</span><span class="n">cat_fn</span><span class="p">,</span><span class="n">coadd_dir</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;loads coadd and catalogue data</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            brick:</span>
+<span class="sd">            coadd_dir: path/to/rs0, rs300, rs300_skipid, etc</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Loading ra,dec from </span><span class="si">%s</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cat</span><span class="o">=</span> <span class="n">fits_table</span><span class="p">(</span><span class="n">cat_fn</span><span class="p">)</span>
+
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Loading from </span><span class="si">%s</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="n">coadd_dir</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">img_fits</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">ivar_fits</span><span class="o">=</span> <span class="p">{},{}</span>
+        <span class="k">for</span> <span class="n">b</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">bands</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">img_fits</span><span class="p">[</span><span class="n">b</span><span class="p">]</span><span class="o">=</span> <span class="n">readImage</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">coadd_dir</span><span class="p">,</span>
+                                        <span class="s1">&#39;legacysurvey-</span><span class="si">%s</span><span class="s1">-image-</span><span class="si">%s</span><span class="s1">.fits.fz&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">brick</span><span class="p">,</span><span class="n">b</span><span class="p">)))</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">ivar_fits</span><span class="p">[</span><span class="n">b</span><span class="p">]</span><span class="o">=</span> <span class="n">readImage</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">coadd_dir</span><span class="p">,</span>
+                                        <span class="s1">&#39;legacysurvey-</span><span class="si">%s</span><span class="s1">-invvar-</span><span class="si">%s</span><span class="s1">.fits.fz&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">brick</span><span class="p">,</span><span class="n">b</span><span class="p">)))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">img_jpeg</span><span class="o">=</span> <span class="n">readImage</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">coadd_dir</span><span class="p">,</span>
+                                 <span class="s1">&#39;legacysurvey-</span><span class="si">%s</span><span class="s1">-image.jpg&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">brick</span><span class="p">)),</span>
+                                 <span class="n">jpeg</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="c1"># galsim.Image() so can determine overlap w/cutouts</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">img_gs</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">ivar_gs</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">jpeg_gs</span><span class="o">=</span> <span class="p">{},{},{}</span>
+        <span class="k">for</span> <span class="n">ib</span><span class="p">,</span><span class="n">b</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">bands</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">img_gs</span><span class="p">[</span><span class="n">b</span><span class="p">]</span><span class="o">=</span> <span class="n">galsim</span><span class="o">.</span><span class="n">Image</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">img_fits</span><span class="p">[</span><span class="n">b</span><span class="p">])</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">ivar_gs</span><span class="p">[</span><span class="n">b</span><span class="p">]</span><span class="o">=</span> <span class="n">galsim</span><span class="o">.</span><span class="n">Image</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ivar_fits</span><span class="p">[</span><span class="n">b</span><span class="p">])</span></div>
+
+<div class="viewcode-block" id="SimStamps.extract"><a class="viewcode-back" href="../../../_autosummary/obiwan.dplearn.create_training.html#obiwan.dplearn.create_training.SimStamps.extract">[docs]</a>    <span class="k">def</span> <span class="nf">extract</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">hw</span><span class="o">=</span><span class="mi">32</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;For each id,x,y in self.cat, extracts image cutout</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            hw: half-width, pixels, (hw*2) x (hw*2) image cutout</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">for</span> <span class="n">cat</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">cat</span><span class="p">:</span>
+            <span class="n">xslc</span><span class="o">=</span> <span class="nb">slice</span><span class="p">(</span><span class="n">cat</span><span class="o">.</span><span class="n">x</span><span class="o">-</span><span class="n">hw</span><span class="p">,</span><span class="n">cat</span><span class="o">.</span><span class="n">x</span><span class="o">+</span><span class="n">hw</span><span class="p">)</span>
+            <span class="n">yslc</span><span class="o">=</span> <span class="nb">slice</span><span class="p">(</span><span class="n">cat</span><span class="o">.</span><span class="n">y</span><span class="o">-</span><span class="n">hw</span><span class="p">,</span><span class="n">cat</span><span class="o">.</span><span class="n">y</span><span class="o">+</span><span class="n">hw</span><span class="p">)</span>
+            <span class="c1"># N x N x Number of bands</span>
+            <span class="n">test_img</span><span class="o">=</span> <span class="n">galsim</span><span class="o">.</span><span class="n">Image</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="mi">2</span><span class="o">*</span><span class="n">hw</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="o">*</span><span class="n">hw</span><span class="o">+</span><span class="mi">1</span><span class="p">)))</span>
+            <span class="c1"># y,x because numpy indexing</span>
+            <span class="n">test_img</span><span class="o">.</span><span class="n">setCenter</span><span class="p">(</span><span class="n">cat</span><span class="o">.</span><span class="n">x</span><span class="p">,</span><span class="n">cat</span><span class="o">.</span><span class="n">y</span><span class="p">)</span>
+            <span class="n">olap</span><span class="o">=</span> <span class="n">test_img</span><span class="o">.</span><span class="n">bounds</span> <span class="o">&amp;</span> <span class="bp">self</span><span class="o">.</span><span class="n">img_gs</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">bands</span><span class="p">[</span><span class="mi">0</span><span class="p">]]</span><span class="o">.</span><span class="n">bounds</span>
+            <span class="k">assert</span><span class="p">(</span><span class="n">olap</span><span class="o">.</span><span class="n">area</span><span class="p">()</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">olap</span><span class="o">.</span><span class="n">numpyShape</span><span class="p">()</span> <span class="o">==</span> <span class="n">test_img</span><span class="o">.</span><span class="n">array</span><span class="o">.</span><span class="n">shape</span><span class="p">:</span>
+                <span class="c1"># Grab from fits image b/c aligned better</span>
+                <span class="n">_</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">hdf5_obj</span><span class="o">.</span><span class="n">create_dataset</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">cat</span><span class="o">.</span><span class="n">id</span><span class="p">)</span><span class="o">+</span><span class="s1">&#39;/img&#39;</span><span class="p">,</span>
+                                                 <span class="n">chunks</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> \
+                    <span class="n">data</span><span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">sliceImage</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">img_fits</span><span class="p">[</span><span class="n">band</span><span class="p">],</span>
+                                               <span class="n">xslice</span><span class="o">=</span><span class="n">xslc</span><span class="p">,</span><span class="n">yslice</span><span class="o">=</span><span class="n">yslc</span><span class="p">)</span>
+                                    <span class="k">for</span> <span class="n">band</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">bands_str</span><span class="p">])</span><span class="o">.</span><span class="n">T</span><span class="p">)</span>
+                <span class="n">_</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">hdf5_obj</span><span class="o">.</span><span class="n">create_dataset</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">cat</span><span class="o">.</span><span class="n">id</span><span class="p">)</span><span class="o">+</span><span class="s1">&#39;/ivar&#39;</span><span class="p">,</span>
+                                                 <span class="n">chunks</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> \
+                    <span class="n">data</span><span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">sliceImage</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ivar_fits</span><span class="p">[</span><span class="n">band</span><span class="p">],</span>
+                                               <span class="n">xslice</span><span class="o">=</span><span class="n">xslc</span><span class="p">,</span><span class="n">yslice</span><span class="o">=</span><span class="n">yslc</span><span class="p">)</span>
+                                    <span class="k">for</span> <span class="n">band</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">bands_str</span><span class="p">])</span><span class="o">.</span><span class="n">T</span><span class="p">)</span>
+
+                <span class="n">_</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">hdf5_jpeg</span><span class="o">.</span><span class="n">create_dataset</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">cat</span><span class="o">.</span><span class="n">id</span><span class="p">)</span><span class="o">+</span><span class="s1">&#39;/img&#39;</span><span class="p">,</span>
+                                                  <span class="n">chunks</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span><span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">uint8</span><span class="p">,</span> \
+                    <span class="n">data</span><span class="o">=</span> <span class="n">sliceImage</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">img_jpeg</span><span class="p">,</span>
+                                     <span class="n">xslice</span><span class="o">=</span><span class="n">xslc</span><span class="p">,</span><span class="n">yslice</span><span class="o">=</span><span class="n">yslc</span><span class="p">))</span>
+                <span class="c1"># _ = self.hdf5_obj.create_dataset(str(cat.id)+&#39;/img&#39;,</span>
+                <span class="c1">#                                  chunks=True, \</span>
+                <span class="c1">#     data= np.array([self.img_fits[band][olap].array</span>
+                <span class="c1">#                     for band in self.bands_str]).T)</span>
+                <span class="c1"># _ = self.hdf5_obj.create_dataset(str(cat.id)+&#39;/ivar&#39;,</span>
+                <span class="c1">#                                  chunks=True, \</span>
+                <span class="c1">#     data= np.array([self.ivar_fits[band][olap].array</span>
+                <span class="c1">#                     for band in self.bands_str]).T)</span>
+
+            <span class="k">else</span><span class="p">:</span>
+                <span class="c1"># On edge</span>
+                <span class="c1"># Note, galsim.Image() cannot be 3D</span>
+                <span class="n">img</span><span class="o">=</span> <span class="p">[</span><span class="n">test_img</span><span class="o">.</span><span class="n">copy</span><span class="p">()]</span><span class="o">*</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">bands</span><span class="p">)</span>
+                <span class="n">ivar</span><span class="o">=</span> <span class="p">[</span><span class="n">test_img</span><span class="o">.</span><span class="n">copy</span><span class="p">()]</span><span class="o">*</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">bands</span><span class="p">)</span>
+                <span class="k">for</span> <span class="n">i</span><span class="p">,</span><span class="n">band</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">bands_str</span><span class="p">):</span>
+                    <span class="n">img</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="n">olap</span><span class="p">]</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">img_gs</span><span class="p">[</span><span class="n">band</span><span class="p">][</span><span class="n">olap</span><span class="p">]</span>
+                    <span class="n">ivar</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="n">olap</span><span class="p">]</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ivar_gs</span><span class="p">[</span><span class="n">band</span><span class="p">][</span><span class="n">olap</span><span class="p">]</span>
+
+                <span class="n">_</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">hdf5_obj_onedge</span><span class="o">.</span><span class="n">create_dataset</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">cat</span><span class="o">.</span><span class="n">id</span><span class="p">)</span><span class="o">+</span><span class="s1">&#39;/img&#39;</span><span class="p">,</span>
+                                                        <span class="n">chunks</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> \
+                    <span class="n">data</span><span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">d</span><span class="o">.</span><span class="n">array</span> <span class="k">for</span> <span class="n">d</span> <span class="ow">in</span> <span class="n">img</span><span class="p">])</span><span class="o">.</span><span class="n">T</span><span class="p">)</span>
+                <span class="n">_</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">hdf5_obj_onedge</span><span class="o">.</span><span class="n">create_dataset</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">cat</span><span class="o">.</span><span class="n">id</span><span class="p">)</span><span class="o">+</span><span class="s1">&#39;/ivar&#39;</span><span class="p">,</span>
+                                                        <span class="n">chunks</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> \
+                    <span class="n">data</span><span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">d</span><span class="o">.</span><span class="n">array</span> <span class="k">for</span> <span class="n">d</span> <span class="ow">in</span> <span class="n">ivar</span><span class="p">])</span><span class="o">.</span><span class="n">T</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="SimStamps.run"><a class="viewcode-back" href="../../../_autosummary/obiwan.dplearn.create_training.html#obiwan.dplearn.create_training.SimStamps.run">[docs]</a>    <span class="k">def</span> <span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">brick</span><span class="p">,</span><span class="n">stampSize</span><span class="o">=</span><span class="mi">64</span><span class="p">,</span><span class="n">applyCuts</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span><span class="n">zoom</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Write the hdf5 image files for all rs/* in this brick</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            brick: brickname</span>
+<span class="sd">            stampSize: height and width in pixes of training image</span>
+<span class="sd">            zoom: if legacypipe was run with zoom option</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">get_brickwcs</span><span class="p">(</span><span class="n">brick</span><span class="p">)</span>
+        <span class="c1"># coadd fits images must exist</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">set_paths_to_data</span><span class="p">(</span><span class="n">brick</span><span class="p">)</span>
+        <span class="n">coadd_fns</span><span class="o">=</span> <span class="n">glob</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">coadd_dirs</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
+                                     <span class="s1">&#39;*-image-*.fits.fz&#39;</span><span class="p">))</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">coadd_fns</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">IOError</span><span class="p">(</span><span class="s1">&#39;no image.fits.fz file here: </span><span class="si">%s</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">coadd_dirs</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+        <span class="c1"># set of bands in this brick</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">bands</span><span class="o">=</span> <span class="p">(</span><span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">(</span><span class="n">coadd_fns</span><span class="p">)</span>
+                     <span class="o">.</span><span class="n">str</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;.fits.fz&#39;</span><span class="p">,</span><span class="s1">&#39;&#39;</span><span class="p">)</span>
+                     <span class="o">.</span><span class="n">str</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">)</span>
+        <span class="k">assert</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">bands</span><span class="o">.</span><span class="n">size</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">)</span>
+        <span class="c1"># One hdf5 file for this brick, like &#39;_rz.hdf5&#39;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">bands_str</span><span class="o">=</span> <span class="s1">&#39;&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">sorted</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">bands</span><span class="p">))</span>
+        <span class="k">assert</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">bands_str</span> <span class="ow">in</span> <span class="n">HDF5_KEYS</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">set_output_fns</span><span class="p">(</span><span class="n">brick</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">bands_str</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">hdf5_fn</span><span class="p">):</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">f</span><span class="o">=</span> <span class="n">h5py</span><span class="o">.</span><span class="n">File</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">hdf5_fn</span><span class="p">,</span> <span class="s1">&#39;r&#39;</span><span class="p">)</span>
+                <span class="n">f2</span><span class="o">=</span> <span class="n">h5py</span><span class="o">.</span><span class="n">File</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">hdf5_fn_onedge</span><span class="p">,</span> <span class="s1">&#39;r&#39;</span><span class="p">)</span>
+                <span class="n">f3</span><span class="o">=</span> <span class="n">h5py</span><span class="o">.</span><span class="n">File</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">hdf5_fn_jpeg</span><span class="p">,</span> <span class="s1">&#39;r&#39;</span><span class="p">)</span>
+                <span class="k">if</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">f</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)</span> <span class="o">&amp;</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">f2</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span> <span class="o">==</span> <span class="mi">0</span><span class="p">):</span>
+                    <span class="c1"># remove empty files then make them</span>
+                    <span class="k">for</span> <span class="n">fn</span> <span class="ow">in</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">hdf5_fn</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">hdf5_fn_onedge</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">hdf5_fn_jpeg</span><span class="p">]:</span>
+                        <span class="n">dobash</span><span class="p">(</span><span class="s1">&#39;rm </span><span class="si">%s</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="n">fn</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="c1"># processing done, skip this brick</span>
+                    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Skipping </span><span class="si">%s</span><span class="s1">, hdf5 already filled: </span><span class="si">%s</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">brick</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">hdf5_fn</span><span class="p">))</span>
+                    <span class="k">return</span> <span class="kc">None</span>
+            <span class="k">except</span> <span class="ne">OSError</span><span class="p">:</span>
+                <span class="c1"># One of these got messed up, redo it</span>
+                <span class="k">for</span> <span class="n">fn</span> <span class="ow">in</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">hdf5_fn</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">hdf5_fn_onedge</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">hdf5_fn_jpeg</span><span class="p">]:</span>
+                    <span class="n">os</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">fn</span><span class="p">)</span>
+                    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;removed &#39;</span><span class="p">,</span><span class="n">fn</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">hdf5_obj</span> <span class="o">=</span> <span class="n">h5py</span><span class="o">.</span><span class="n">File</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">hdf5_fn</span><span class="p">,</span> <span class="s2">&quot;w&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">hdf5_obj_onedge</span> <span class="o">=</span> <span class="n">h5py</span><span class="o">.</span><span class="n">File</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">hdf5_fn_onedge</span><span class="p">,</span> <span class="s2">&quot;w&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">hdf5_jpeg</span> <span class="o">=</span> <span class="n">h5py</span><span class="o">.</span><span class="n">File</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">hdf5_fn_jpeg</span><span class="p">,</span> <span class="s2">&quot;w&quot;</span><span class="p">)</span>
+        <span class="c1"># Many rs*/ dirs per brick</span>
+        <span class="k">for</span> <span class="n">cat_fn</span><span class="p">,</span><span class="n">coadd_dir</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cat_fns</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">coadd_dirs</span><span class="p">):</span>
+            <span class="k">if</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">jpeg</span><span class="p">)</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">basename</span><span class="p">(</span><span class="n">coadd_dir</span><span class="p">)</span> <span class="o">!=</span> <span class="s1">&#39;rs0&#39;</span><span class="p">):</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;jpeg=True, so skipping </span><span class="si">%s</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="n">coadd_dir</span><span class="p">)</span>
+                <span class="k">continue</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">load_data</span><span class="p">(</span><span class="n">brick</span><span class="p">,</span><span class="n">cat_fn</span><span class="p">,</span><span class="n">coadd_dir</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">set_xyid</span><span class="p">(</span><span class="n">zoom</span><span class="o">=</span><span class="n">zoom</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">applyCuts</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">apply_cuts</span><span class="p">()</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">write_mag_sorted_ids</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">extract</span><span class="p">(</span><span class="n">hw</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="n">stampSize</span><span class="o">/</span><span class="mi">2</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">hdf5_obj</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">hdf5_obj_onedge</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">hdf5_jpeg</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Wrote </span><span class="si">%s</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">hdf5_fn</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Wrote </span><span class="si">%s</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">hdf5_fn_onedge</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Wrote </span><span class="si">%s</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">hdf5_fn_jpeg</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="SimStamps.set_paths_to_data"><a class="viewcode-back" href="../../../_autosummary/obiwan.dplearn.create_training.html#obiwan.dplearn.create_training.SimStamps.set_paths_to_data">[docs]</a>    <span class="k">def</span> <span class="nf">set_paths_to_data</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">brick</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;lists of catalogues filenames and coadd dirs&quot;&quot;&quot;</span>
+        <span class="n">search</span><span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">outdir</span><span class="p">,</span><span class="s1">&#39;coadd&#39;</span><span class="p">,</span>
+                             <span class="n">brick</span><span class="p">[:</span><span class="mi">3</span><span class="p">],</span><span class="n">brick</span><span class="p">,</span><span class="s1">&#39;*rs*&#39;</span><span class="p">,</span>
+                             <span class="s1">&#39;legacysurvey-</span><span class="si">%s</span><span class="s1">-ccds.fits&#39;</span> <span class="o">%</span> <span class="n">brick</span><span class="p">)</span>
+        <span class="n">rs_dirs</span><span class="o">=</span> <span class="n">glob</span><span class="p">(</span><span class="n">search</span><span class="p">)</span>
+        <span class="n">rs_dirs</span><span class="o">=</span> <span class="p">[</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">basename</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="n">a</span><span class="p">))</span>
+                  <span class="k">for</span> <span class="n">a</span> <span class="ow">in</span> <span class="n">rs_dirs</span><span class="p">]</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">rs_dirs</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">IOError</span><span class="p">(</span><span class="s1">&#39;No rs dirs here: </span><span class="si">%s</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="n">search</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cat_fns</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">coadd_dirs</span><span class="o">=</span> \
+            <span class="nb">zip</span><span class="p">(</span><span class="o">*</span><span class="p">[(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">outdir</span><span class="p">,</span><span class="s1">&#39;obiwan&#39;</span><span class="p">,</span>
+                                <span class="n">brick</span><span class="p">[:</span><span class="mi">3</span><span class="p">],</span><span class="n">brick</span><span class="p">,</span><span class="n">rs_dir</span><span class="p">,</span>
+                                <span class="s1">&#39;simcat-elg-</span><span class="si">%s</span><span class="s1">.fits&#39;</span> <span class="o">%</span> <span class="n">brick</span><span class="p">),</span>
+                   <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">outdir</span><span class="p">,</span><span class="s1">&#39;coadd&#39;</span><span class="p">,</span>
+                                <span class="n">brick</span><span class="p">[:</span><span class="mi">3</span><span class="p">],</span><span class="n">brick</span><span class="p">,</span><span class="n">rs_dir</span><span class="p">)</span>
+                   <span class="p">)</span>
+                   <span class="k">for</span> <span class="n">rs_dir</span> <span class="ow">in</span> <span class="n">rs_dirs</span><span class="p">])</span></div>
+
+    <span class="k">def</span> <span class="nf">set_output_fns</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">brick</span><span class="p">,</span><span class="n">bands_str</span><span class="p">):</span>
+        <span class="n">dr</span><span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">savedir</span><span class="p">,</span><span class="s1">&#39;hdf5&#39;</span><span class="p">,</span>
+                         <span class="n">brick</span><span class="p">[:</span><span class="mi">3</span><span class="p">],</span><span class="n">brick</span><span class="p">)</span>
+        <span class="c1"># hdf5</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">hdf5_fn</span><span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">dr</span><span class="p">,</span>
+                                   <span class="s1">&#39;img_ivar_</span><span class="si">%s</span><span class="s1">.hdf5&#39;</span> <span class="o">%</span> <span class="n">bands_str</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">hdf5_fn_onedge</span><span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">hdf5_fn</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;.hdf5&#39;</span><span class="p">,</span>
+                                        <span class="s1">&#39;_onedge.hdf5&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">hdf5_fn_jpeg</span><span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">hdf5_fn</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;img_ivar_&#39;</span><span class="p">,</span><span class="s1">&#39;jpeg_&#39;</span><span class="p">)</span>
+        <span class="c1"># table of mag sorted ids</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sorted_ids_fn</span><span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">hdf5_fn</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">basename</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">hdf5_fn</span><span class="p">),</span>
+                                                <span class="s1">&#39;sorted_ids.fits&#39;</span><span class="p">)</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">dobash</span><span class="p">(</span><span class="s1">&#39;mkdir -p </span><span class="si">%s</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="n">dr</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;hdf5 dir already exists: &#39;</span><span class="p">,</span><span class="n">dr</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">set_xyid</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">zoom</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="n">_</span><span class="p">,</span><span class="n">x</span><span class="p">,</span><span class="n">y</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">brickwcs</span><span class="o">.</span><span class="n">radec2pixelxy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cat</span><span class="o">.</span><span class="n">ra</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">cat</span><span class="o">.</span><span class="n">dec</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">zoom</span><span class="p">:</span>
+            <span class="n">x</span> <span class="o">-=</span> <span class="n">zoom</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="n">y</span> <span class="o">-=</span> <span class="n">zoom</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cat</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="s1">&#39;x&#39;</span><span class="p">,</span><span class="n">x</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cat</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="s1">&#39;y&#39;</span><span class="p">,</span><span class="n">y</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">))</span>
+        <span class="k">assert</span><span class="p">(</span><span class="s1">&#39;id&#39;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">cat</span><span class="o">.</span><span class="n">get_columns</span><span class="p">())</span>
+
+    <span class="k">def</span> <span class="nf">apply_cuts</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">len_bef</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cat</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;After cut, have </span><span class="si">%d</span><span class="s1">/</span><span class="si">%d</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cat</span><span class="p">),</span><span class="n">len_bef</span><span class="p">))</span>
+
+    <span class="k">def</span> <span class="nf">write_mag_sorted_ids</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">band</span><span class="o">=</span><span class="s1">&#39;g&#39;</span><span class="p">):</span>
+        <span class="n">mag</span><span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_mag</span><span class="p">(</span><span class="n">band</span><span class="p">)</span>
+        <span class="n">inds</span><span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argsort</span><span class="p">(</span><span class="n">mag</span><span class="p">)</span> <span class="c1"># small to large (mag, so brightest to faintest)</span>
+        <span class="n">T</span><span class="o">=</span> <span class="n">fits_table</span><span class="p">()</span>
+        <span class="n">T</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="s1">&#39;id&#39;</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">cat</span><span class="o">.</span><span class="n">id</span><span class="p">)</span>
+        <span class="n">T</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="s1">&#39;mag_&#39;</span><span class="o">+</span><span class="n">band</span><span class="p">,</span><span class="n">mag</span><span class="p">)</span>
+        <span class="n">T</span><span class="o">=</span> <span class="n">T</span><span class="p">[</span><span class="n">inds</span><span class="p">]</span>
+        <span class="n">T</span><span class="o">.</span><span class="n">writeto</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">sorted_ids_fn</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Wrote </span><span class="si">%s</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">sorted_ids_fn</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">get_mag</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">band</span><span class="o">=</span><span class="s1">&#39;g&#39;</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">flux2mag</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cat</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">band</span><span class="o">+</span><span class="s1">&#39;flux&#39;</span><span class="p">))</span></div>
+
+
+<span class="c1">#######</span>
+<span class="c1"># Funcs to apply simulated source cuts to tractor catalogues sources</span>
+
+<div class="viewcode-block" id="get_xy_pad"><a class="viewcode-back" href="../../../_autosummary/obiwan.dplearn.create_training.html#obiwan.dplearn.create_training.get_xy_pad">[docs]</a><span class="k">def</span> <span class="nf">get_xy_pad</span><span class="p">(</span><span class="n">slope</span><span class="p">,</span><span class="n">pad</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Returns dx,dy&quot;&quot;&quot;</span>
+    <span class="n">theta</span><span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arctan</span><span class="p">(</span><span class="nb">abs</span><span class="p">(</span><span class="n">slope</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">pad</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">theta</span><span class="p">),</span> <span class="n">pad</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">theta</span><span class="p">)</span></div>
+
+<span class="k">def</span> <span class="nf">y1_line</span><span class="p">(</span><span class="n">rz</span><span class="p">,</span><span class="n">pad</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="n">slope</span><span class="p">,</span><span class="n">yint</span><span class="o">=</span> <span class="mf">1.15</span><span class="p">,</span><span class="o">-</span><span class="mf">0.15</span>
+    <span class="k">if</span> <span class="n">pad</span><span class="p">:</span>
+        <span class="n">dx</span><span class="p">,</span><span class="n">dy</span><span class="o">=</span> <span class="n">get_xy_pad</span><span class="p">(</span><span class="n">slope</span><span class="p">,</span><span class="n">pad</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">slope</span><span class="o">*</span><span class="p">(</span><span class="n">rz</span><span class="o">+</span><span class="n">dx</span><span class="p">)</span> <span class="o">+</span> <span class="n">yint</span> <span class="o">+</span> <span class="n">dy</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">slope</span><span class="o">*</span><span class="n">rz</span> <span class="o">+</span> <span class="n">yint</span>
+
+<span class="k">def</span> <span class="nf">y2_line</span><span class="p">(</span><span class="n">rz</span><span class="p">,</span><span class="n">pad</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="n">slope</span><span class="p">,</span><span class="n">yint</span><span class="o">=</span> <span class="o">-</span><span class="mf">1.2</span><span class="p">,</span><span class="mf">1.6</span>
+    <span class="k">if</span> <span class="n">pad</span><span class="p">:</span>
+        <span class="n">dx</span><span class="p">,</span><span class="n">dy</span><span class="o">=</span> <span class="n">get_xy_pad</span><span class="p">(</span><span class="n">slope</span><span class="p">,</span><span class="n">pad</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">slope</span><span class="o">*</span><span class="p">(</span><span class="n">rz</span><span class="o">-</span><span class="n">dx</span><span class="p">)</span> <span class="o">+</span> <span class="n">yint</span> <span class="o">+</span> <span class="n">dy</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">slope</span><span class="o">*</span><span class="n">rz</span> <span class="o">+</span> <span class="n">yint</span>
+
+<div class="viewcode-block" id="get_ELG_box"><a class="viewcode-back" href="../../../_autosummary/obiwan.dplearn.create_training.html#obiwan.dplearn.create_training.get_ELG_box">[docs]</a><span class="k">def</span> <span class="nf">get_ELG_box</span><span class="p">(</span><span class="n">rz</span><span class="p">,</span><span class="n">gr</span><span class="p">,</span> <span class="n">pad</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Args:</span>
+<span class="sd">        rz: r-z</span>
+<span class="sd">        gr: g-r</span>
+<span class="sd">        pad: magnitudes of padding to expand TS box</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">x1</span><span class="p">,</span><span class="n">y1</span><span class="o">=</span> <span class="n">rz</span><span class="p">,</span><span class="n">y1_line</span><span class="p">(</span><span class="n">rz</span><span class="p">)</span>
+    <span class="n">x2</span><span class="p">,</span><span class="n">y2</span><span class="o">=</span> <span class="n">rz</span><span class="p">,</span><span class="n">y2_line</span><span class="p">(</span><span class="n">rz</span><span class="p">)</span>
+    <span class="n">x3</span><span class="p">,</span><span class="n">y3</span><span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">0.3</span><span class="p">]</span><span class="o">*</span><span class="nb">len</span><span class="p">(</span><span class="n">rz</span><span class="p">)),</span><span class="n">gr</span>
+    <span class="n">x4</span><span class="p">,</span><span class="n">y4</span><span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">1.6</span><span class="p">]</span><span class="o">*</span><span class="nb">len</span><span class="p">(</span><span class="n">rz</span><span class="p">)),</span><span class="n">gr</span>
+    <span class="k">if</span> <span class="n">pad</span><span class="p">:</span>
+        <span class="n">dx</span><span class="p">,</span><span class="n">dy</span><span class="o">=</span> <span class="n">get_xy_pad</span><span class="p">(</span><span class="mf">1.15</span><span class="p">,</span><span class="n">pad</span><span class="p">)</span>
+        <span class="n">x1</span><span class="p">,</span><span class="n">y1</span><span class="o">=</span> <span class="n">x1</span><span class="o">-</span><span class="n">dx</span><span class="p">,</span><span class="n">y1</span><span class="o">+</span><span class="n">dy</span>
+        <span class="n">dx</span><span class="p">,</span><span class="n">dy</span><span class="o">=</span> <span class="n">get_xy_pad</span><span class="p">(</span><span class="o">-</span><span class="mf">1.2</span><span class="p">,</span><span class="n">pad</span><span class="p">)</span>
+        <span class="n">x2</span><span class="p">,</span><span class="n">y2</span><span class="o">=</span> <span class="n">x2</span><span class="o">+</span><span class="n">dx</span><span class="p">,</span><span class="n">y2</span><span class="o">+</span><span class="n">dy</span>
+        <span class="n">x3</span> <span class="o">-=</span> <span class="n">pad</span>
+        <span class="n">x4</span> <span class="o">+=</span> <span class="n">pad</span>
+    <span class="k">return</span> <span class="nb">dict</span><span class="p">(</span><span class="n">x1</span><span class="o">=</span><span class="n">x1</span><span class="p">,</span> <span class="n">y1</span><span class="o">=</span><span class="n">y1</span><span class="p">,</span>
+                <span class="n">x2</span><span class="o">=</span><span class="n">x2</span><span class="p">,</span> <span class="n">y2</span><span class="o">=</span><span class="n">y2</span><span class="p">,</span>
+                <span class="n">x3</span><span class="o">=</span><span class="n">x3</span><span class="p">,</span> <span class="n">y3</span><span class="o">=</span><span class="n">y3</span><span class="p">,</span>
+                <span class="n">x4</span><span class="o">=</span><span class="n">x4</span><span class="p">,</span> <span class="n">y4</span><span class="o">=</span><span class="n">y4</span><span class="p">)</span></div>
+<span class="c1">#####</span>
+
+<div class="viewcode-block" id="TractorStamps"><a class="viewcode-back" href="../../../_autosummary/obiwan.dplearn.create_training.html#obiwan.dplearn.create_training.TractorStamps">[docs]</a><span class="k">class</span> <span class="nc">TractorStamps</span><span class="p">(</span><span class="n">SimStamps</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">ls_dir</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span><span class="n">outdir</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                 <span class="n">savedir</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">jpeg</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Same as SimStamps but for tractor catalogues</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            savedir: required for tractor not sims b/c cannot write to dr5 dir</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">TractorStamps</span><span class="p">,</span><span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">ls_dir</span><span class="o">=</span><span class="n">ls_dir</span><span class="p">,</span>
+                                           <span class="n">outdir</span><span class="o">=</span><span class="n">outdir</span><span class="p">,</span>
+                                           <span class="n">savedir</span><span class="o">=</span><span class="n">savedir</span><span class="p">,</span>
+                                           <span class="n">jpeg</span><span class="o">=</span><span class="n">jpeg</span><span class="p">)</span>
+
+<div class="viewcode-block" id="TractorStamps.set_paths_to_data"><a class="viewcode-back" href="../../../_autosummary/obiwan.dplearn.create_training.html#obiwan.dplearn.create_training.TractorStamps.set_paths_to_data">[docs]</a>    <span class="k">def</span> <span class="nf">set_paths_to_data</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">brick</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;lists of catalogues filenames and coadd dirs&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cat_fns</span><span class="o">=</span> <span class="p">[</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">outdir</span><span class="p">,</span><span class="s1">&#39;tractor&#39;</span><span class="p">,</span>
+                                    <span class="n">brick</span><span class="p">[:</span><span class="mi">3</span><span class="p">],</span>
+                                    <span class="s1">&#39;tractor-</span><span class="si">%s</span><span class="s1">.fits&#39;</span> <span class="o">%</span> <span class="n">brick</span><span class="p">)]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">coadd_dirs</span><span class="o">=</span> <span class="p">[</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">outdir</span><span class="p">,</span><span class="s1">&#39;coadd&#39;</span><span class="p">,</span>
+                                       <span class="n">brick</span><span class="p">[:</span><span class="mi">3</span><span class="p">],</span><span class="n">brick</span><span class="p">)]</span>
+        <span class="k">if</span> <span class="p">((</span><span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cat_fns</span><span class="p">[</span><span class="mi">0</span><span class="p">]))</span> <span class="o">|</span>
+            <span class="p">(</span><span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">coadd_dirs</span><span class="p">[</span><span class="mi">0</span><span class="p">]))):</span>
+            <span class="k">raise</span> <span class="ne">OSError</span><span class="p">(</span><span class="s1">&#39;does not exist: </span><span class="si">%s</span><span class="s1"> OR </span><span class="si">%s</span><span class="s1">&#39;</span> <span class="o">%</span> \
+                    <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cat_fns</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="bp">self</span><span class="o">.</span><span class="n">coadd_dirs</span><span class="p">[</span><span class="mi">0</span><span class="p">]))</span></div>
+
+    <span class="k">def</span> <span class="nf">set_xyid</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">zoom</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="n">x</span><span class="p">,</span><span class="n">y</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">cat</span><span class="o">.</span><span class="n">bx</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">cat</span><span class="o">.</span><span class="n">by</span>
+        <span class="k">if</span> <span class="n">zoom</span><span class="p">:</span>
+            <span class="n">x</span> <span class="o">-=</span> <span class="n">zoom</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="n">y</span> <span class="o">-=</span> <span class="n">zoom</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cat</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="s1">&#39;x&#39;</span><span class="p">,</span><span class="n">x</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cat</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="s1">&#39;y&#39;</span><span class="p">,</span><span class="n">y</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cat</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="s1">&#39;id&#39;</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">cat</span><span class="o">.</span><span class="n">objid</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">get_mag</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">band</span><span class="o">=</span><span class="s1">&#39;g&#39;</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">flux2mag</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cat</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;flux_&#39;</span><span class="o">+</span><span class="n">band</span><span class="p">)</span><span class="o">/</span><span class="bp">self</span><span class="o">.</span><span class="n">cat</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;mw_transmission_&#39;</span><span class="o">+</span><span class="n">band</span><span class="p">))</span>
+
+
+    <span class="k">def</span> <span class="nf">apply_cuts</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="c1"># Need extinction correction mag and colors</span>
+        <span class="n">d</span><span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">b</span> <span class="ow">in</span> <span class="s1">&#39;grz&#39;</span><span class="p">:</span>
+            <span class="n">d</span><span class="p">[</span><span class="n">b</span><span class="p">]</span><span class="o">=</span> <span class="n">flux2mag</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cat</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;flux_&#39;</span><span class="o">+</span><span class="n">b</span><span class="p">)</span><span class="o">/</span><span class="bp">self</span><span class="o">.</span><span class="n">cat</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;mw_transmission_&#39;</span><span class="o">+</span><span class="n">b</span><span class="p">))</span>
+        <span class="n">df</span><span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">d</span><span class="p">)</span>
+        <span class="n">df</span><span class="p">[</span><span class="s1">&#39;g-r&#39;</span><span class="p">]</span><span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="s1">&#39;g&#39;</span><span class="p">]</span> <span class="o">-</span> <span class="n">df</span><span class="p">[</span><span class="s1">&#39;r&#39;</span><span class="p">]</span>
+        <span class="n">df</span><span class="p">[</span><span class="s1">&#39;r-z&#39;</span><span class="p">]</span><span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="s1">&#39;r&#39;</span><span class="p">]</span> <span class="o">-</span> <span class="n">df</span><span class="p">[</span><span class="s1">&#39;z&#39;</span><span class="p">]</span>
+
+        <span class="n">hasGRZ</span><span class="o">=</span> <span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">cat</span><span class="o">.</span><span class="n">brick_primary</span><span class="p">)</span> <span class="o">&amp;</span>
+                 <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cat</span><span class="o">.</span><span class="n">nobs_g</span> <span class="o">&gt;=</span> <span class="mi">1</span><span class="p">)</span> <span class="o">&amp;</span>
+                 <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cat</span><span class="o">.</span><span class="n">nobs_r</span> <span class="o">&gt;=</span> <span class="mi">1</span><span class="p">)</span> <span class="o">&amp;</span>
+                 <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cat</span><span class="o">.</span><span class="n">nobs_z</span> <span class="o">&gt;=</span> <span class="mi">1</span><span class="p">))</span>
+        <span class="n">noArtifacts</span><span class="o">=</span> <span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">cat</span><span class="o">.</span><span class="n">allmask_g</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)</span> <span class="o">&amp;</span>
+                      <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cat</span><span class="o">.</span><span class="n">allmask_r</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)</span> <span class="o">&amp;</span>
+                      <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cat</span><span class="o">.</span><span class="n">allmask_z</span> <span class="o">==</span> <span class="mi">0</span><span class="p">))</span>
+
+        <span class="n">keep</span><span class="o">=</span> <span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">sim_sampling_cut</span><span class="p">(</span><span class="n">df</span><span class="p">))</span> <span class="o">&amp;</span>
+               <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">isFaint_cut</span><span class="p">(</span><span class="n">df</span><span class="p">))</span> <span class="o">&amp;</span>
+               <span class="c1">#(noArtifacts) &amp;</span>
+               <span class="p">(</span><span class="n">hasGRZ</span><span class="p">))</span>
+
+        <span class="n">len_bef</span><span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cat</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cat</span><span class="o">.</span><span class="n">cut</span><span class="p">(</span><span class="n">keep</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;After cut, have </span><span class="si">%d</span><span class="s1">/</span><span class="si">%d</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cat</span><span class="p">),</span><span class="n">len_bef</span><span class="p">))</span>
+
+
+<div class="viewcode-block" id="TractorStamps.sim_sampling_cut"><a class="viewcode-back" href="../../../_autosummary/obiwan.dplearn.create_training.html#obiwan.dplearn.create_training.TractorStamps.sim_sampling_cut">[docs]</a>    <span class="k">def</span> <span class="nf">sim_sampling_cut</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">df</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;same cut applied to simulated sources</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            df: pd.DataFrame have tractor cat extinction corrected grz mags</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># TS box w/0.5 mag padding</span>
+        <span class="n">inBox</span><span class="o">=</span> <span class="p">((</span><span class="n">df</span><span class="p">[</span><span class="s1">&#39;g-r&#39;</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">y1_line</span><span class="p">(</span><span class="n">df</span><span class="p">[</span><span class="s1">&#39;r-z&#39;</span><span class="p">],</span><span class="n">pad</span><span class="o">=</span><span class="mf">0.5</span><span class="p">))</span> <span class="o">&amp;</span>
+                <span class="p">(</span><span class="n">df</span><span class="p">[</span><span class="s1">&#39;g-r&#39;</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">y2_line</span><span class="p">(</span><span class="n">df</span><span class="p">[</span><span class="s1">&#39;r-z&#39;</span><span class="p">],</span><span class="n">pad</span><span class="o">=</span><span class="mf">0.5</span><span class="p">))</span> <span class="o">&amp;</span>
+                <span class="p">(</span><span class="n">df</span><span class="p">[</span><span class="s1">&#39;r-z&#39;</span><span class="p">]</span> <span class="o">&gt;=</span> <span class="mf">0.3</span> <span class="o">-</span> <span class="mf">0.5</span><span class="p">)</span> <span class="o">&amp;</span>
+                <span class="p">(</span><span class="n">df</span><span class="p">[</span><span class="s1">&#39;r-z&#39;</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="mf">1.6</span> <span class="o">+</span> <span class="mf">0.5</span><span class="p">))</span>
+
+        <span class="c1"># Effective rhalf and drop comp, dev</span>
+        <span class="n">fwhm_or_rhalf</span><span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cat</span><span class="p">))</span><span class="o">-</span><span class="mi">1</span> <span class="c1"># arcsec</span>
+        <span class="n">isPSF</span><span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">char</span><span class="o">.</span><span class="n">strip</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cat</span><span class="o">.</span><span class="n">type</span><span class="p">)</span> <span class="o">==</span> <span class="s1">&#39;PSF&#39;</span>
+        <span class="n">isEXP</span><span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">char</span><span class="o">.</span><span class="n">strip</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cat</span><span class="o">.</span><span class="n">type</span><span class="p">))</span><span class="o">.</span><span class="n">isin</span><span class="p">([</span><span class="s1">&#39;EXP&#39;</span><span class="p">,</span><span class="s1">&#39;REX&#39;</span><span class="p">])</span>
+        <span class="n">isDEV</span><span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">char</span><span class="o">.</span><span class="n">strip</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cat</span><span class="o">.</span><span class="n">type</span><span class="p">)</span> <span class="o">==</span> <span class="s1">&#39;DEV&#39;</span>
+        <span class="n">isCOMP</span><span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">char</span><span class="o">.</span><span class="n">strip</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cat</span><span class="o">.</span><span class="n">type</span><span class="p">)</span> <span class="o">==</span> <span class="s1">&#39;COMP&#39;</span>
+        <span class="c1"># rhalf ~ fwhm/2</span>
+        <span class="n">fwhm_or_rhalf</span><span class="p">[</span><span class="n">isPSF</span><span class="p">]</span><span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">cat</span><span class="p">[</span><span class="n">isPSF</span><span class="p">]</span><span class="o">.</span><span class="n">psfsize_g</span><span class="p">,</span>
+                                                <span class="bp">self</span><span class="o">.</span><span class="n">cat</span><span class="p">[</span><span class="n">isPSF</span><span class="p">]</span><span class="o">.</span><span class="n">psfsize_r</span><span class="p">,</span>
+                                                <span class="bp">self</span><span class="o">.</span><span class="n">cat</span><span class="p">[</span><span class="n">isPSF</span><span class="p">]</span><span class="o">.</span><span class="n">psfsize_z</span><span class="p">]),</span><span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span><span class="o">/</span><span class="mi">2</span>
+        <span class="n">fwhm_or_rhalf</span><span class="p">[</span><span class="n">isEXP</span><span class="p">]</span><span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cat</span><span class="p">[</span><span class="n">isEXP</span><span class="p">]</span><span class="o">.</span><span class="n">shapeexp_r</span>
+        <span class="n">fwhm_or_rhalf</span><span class="p">[</span><span class="n">isDEV</span><span class="p">]</span><span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cat</span><span class="p">[</span><span class="n">isDEV</span><span class="p">]</span><span class="o">.</span><span class="n">shapedev_r</span>
+
+        <span class="n">grz_gt0</span><span class="o">=</span> <span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">cat</span><span class="o">.</span><span class="n">flux_g</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">)</span> <span class="o">&amp;</span>
+                  <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cat</span><span class="o">.</span><span class="n">flux_r</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">)</span> <span class="o">&amp;</span>
+                  <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cat</span><span class="o">.</span><span class="n">flux_z</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">)</span> <span class="o">&amp;</span>
+                  <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cat</span><span class="o">.</span><span class="n">flux_ivar_g</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">)</span> <span class="o">&amp;</span>
+                  <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cat</span><span class="o">.</span><span class="n">flux_ivar_r</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">)</span> <span class="o">&amp;</span>
+                  <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cat</span><span class="o">.</span><span class="n">flux_ivar_z</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">))</span>
+
+        <span class="n">keep</span><span class="o">=</span> <span class="p">((</span><span class="n">grz_gt0</span><span class="p">)</span> <span class="o">&amp;</span>
+               <span class="p">(</span><span class="n">isCOMP</span> <span class="o">==</span> <span class="kc">False</span><span class="p">)</span> <span class="o">&amp;</span>
+               <span class="p">(</span><span class="n">isDEV</span> <span class="o">==</span> <span class="kc">False</span><span class="p">)</span> <span class="o">&amp;</span>
+               <span class="p">(</span><span class="n">fwhm_or_rhalf</span> <span class="o">&lt;</span> <span class="mi">5</span><span class="p">))</span>
+
+        <span class="c1">#Last cut</span>
+        <span class="n">rhalf_lim</span><span class="o">=</span> <span class="p">(</span><span class="mf">0.262</span><span class="o">/</span><span class="mi">2</span><span class="p">,</span><span class="mf">2.</span><span class="p">)</span> <span class="c1"># Camera, Data</span>
+        <span class="n">g</span><span class="p">,</span><span class="n">r</span><span class="p">,</span><span class="n">z</span><span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">24.0</span><span class="p">,</span><span class="mf">23.4</span><span class="p">,</span><span class="mf">22.5</span><span class="p">])</span><span class="o">+</span><span class="mf">0.5</span><span class="p">)</span>
+        <span class="n">bad</span><span class="o">=</span> <span class="p">((</span><span class="n">fwhm_or_rhalf</span> <span class="o">&lt;</span> <span class="n">rhalf_lim</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="o">|</span>
+              <span class="p">(</span><span class="n">fwhm_or_rhalf</span> <span class="o">&gt;</span> <span class="n">rhalf_lim</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span> <span class="o">|</span>
+              <span class="p">(</span><span class="n">df</span><span class="p">[</span><span class="s1">&#39;z&#39;</span><span class="p">]</span> <span class="o">&gt;=</span> <span class="n">z</span><span class="p">)</span> <span class="o">|</span> <span class="c1">#beyond mag limit</span>
+              <span class="p">(</span><span class="n">df</span><span class="p">[</span><span class="s1">&#39;r&#39;</span><span class="p">]</span> <span class="o">&gt;=</span> <span class="n">r</span><span class="p">)</span> <span class="o">|</span>
+              <span class="p">(</span><span class="n">df</span><span class="p">[</span><span class="s1">&#39;g&#39;</span><span class="p">]</span> <span class="o">&gt;=</span> <span class="n">g</span><span class="p">))</span>
+
+        <span class="k">return</span> <span class="p">(</span><span class="n">inBox</span><span class="p">)</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">keep</span><span class="p">)</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">bad</span> <span class="o">==</span> <span class="kc">False</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="TractorStamps.isFaint_cut"><a class="viewcode-back" href="../../../_autosummary/obiwan.dplearn.create_training.html#obiwan.dplearn.create_training.TractorStamps.isFaint_cut">[docs]</a>    <span class="k">def</span> <span class="nf">isFaint_cut</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">df</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;There are only faint sources in the deep2 matched sample,</span>
+<span class="sd">        but in the tractor catalogus have a bright population presumably</span>
+<span class="sd">        stars. Remove these</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            df: pd.DataFrame have tractor cat extinction corrected grz mags</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># &quot;elg_sample_5dim_10k.fits&quot;</span>
+        <span class="n">min_mag</span><span class="o">=</span> <span class="p">{</span><span class="s1">&#39;r&#39;</span><span class="p">:</span> <span class="mf">20.4659</span><span class="p">,</span>
+                  <span class="s1">&#39;z&#39;</span><span class="p">:</span> <span class="mf">19.4391</span><span class="p">,</span>
+                  <span class="s1">&#39;g&#39;</span><span class="p">:</span> <span class="mf">20.6766</span><span class="p">}</span>
+        <span class="n">keep</span><span class="o">=</span> <span class="p">((</span><span class="n">df</span><span class="p">[</span><span class="s1">&#39;g&#39;</span><span class="p">]</span> <span class="o">&gt;=</span> <span class="n">min_mag</span><span class="p">[</span><span class="s1">&#39;g&#39;</span><span class="p">])</span> <span class="o">&amp;</span>
+               <span class="p">(</span><span class="n">df</span><span class="p">[</span><span class="s1">&#39;r&#39;</span><span class="p">]</span> <span class="o">&gt;=</span> <span class="n">min_mag</span><span class="p">[</span><span class="s1">&#39;r&#39;</span><span class="p">])</span> <span class="o">&amp;</span>
+               <span class="p">(</span><span class="n">df</span><span class="p">[</span><span class="s1">&#39;z&#39;</span><span class="p">]</span> <span class="o">&gt;=</span> <span class="n">min_mag</span><span class="p">[</span><span class="s1">&#39;z&#39;</span><span class="p">]))</span>
+        <span class="k">return</span> <span class="n">keep</span></div></div>
+
+<div class="viewcode-block" id="UserDefinedStamps"><a class="viewcode-back" href="../../../_autosummary/obiwan.dplearn.create_training.html#obiwan.dplearn.create_training.UserDefinedStamps">[docs]</a><span class="k">class</span> <span class="nc">UserDefinedStamps</span><span class="p">(</span><span class="n">SimStamps</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">ls_dir</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span><span class="n">outdir</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                 <span class="n">savedir</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">jpeg</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Same as SimStamps but for tractor catalogues</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            savedir: required for tractor not sims b/c cannot write to dr5 dir</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">ls_dir</span><span class="o">=</span><span class="n">ls_dir</span><span class="p">,</span>
+                         <span class="n">outdir</span><span class="o">=</span><span class="n">outdir</span><span class="p">,</span>
+                         <span class="n">savedir</span><span class="o">=</span><span class="n">savedir</span><span class="p">,</span>
+                         <span class="n">jpeg</span><span class="o">=</span><span class="n">jpeg</span><span class="p">)</span>
+
+<div class="viewcode-block" id="UserDefinedStamps.set_paths_to_data"><a class="viewcode-back" href="../../../_autosummary/obiwan.dplearn.create_training.html#obiwan.dplearn.create_training.UserDefinedStamps.set_paths_to_data">[docs]</a>    <span class="k">def</span> <span class="nf">set_paths_to_data</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">brick</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;lists of catalogues filenames and coadd dirs&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cat_fns</span><span class="o">=</span> <span class="p">[</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">savedir</span><span class="p">,</span><span class="s1">&#39;</span><span class="si">%s</span><span class="s1">.fits&#39;</span> <span class="o">%</span> <span class="n">brick</span><span class="p">)]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">coadd_dirs</span><span class="o">=</span> <span class="p">[</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">outdir</span><span class="p">,</span><span class="s1">&#39;coadd&#39;</span><span class="p">,</span>
+                                       <span class="n">brick</span><span class="p">[:</span><span class="mi">3</span><span class="p">],</span><span class="n">brick</span><span class="p">)]</span>
+        <span class="k">if</span> <span class="p">((</span><span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cat_fns</span><span class="p">[</span><span class="mi">0</span><span class="p">]))</span> <span class="o">|</span>
+            <span class="p">(</span><span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">coadd_dirs</span><span class="p">[</span><span class="mi">0</span><span class="p">]))):</span>
+            <span class="k">raise</span> <span class="ne">OSError</span><span class="p">(</span><span class="s1">&#39;does not exist: </span><span class="si">%s</span><span class="s1"> OR </span><span class="si">%s</span><span class="s1">&#39;</span> <span class="o">%</span> \
+                    <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cat_fns</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="bp">self</span><span class="o">.</span><span class="n">coadd_dirs</span><span class="p">[</span><span class="mi">0</span><span class="p">]))</span></div></div>
+
+
+<span class="k">def</span> <span class="nf">testcase_main</span><span class="p">():</span>
+    <span class="n">name</span><span class="o">=</span> <span class="s1">&#39;testcase_DR5_grz&#39;</span>
+    <span class="n">obj</span><span class="o">=</span><span class="s1">&#39;elg&#39;</span>
+    <span class="n">onedge</span><span class="o">=</span><span class="kc">False</span>
+    <span class="k">if</span> <span class="s1">&#39;_grz&#39;</span> <span class="ow">in</span> <span class="n">name</span><span class="p">:</span>
+        <span class="n">brick</span><span class="o">=</span><span class="s1">&#39;0285m165&#39;</span>
+        <span class="n">zoom</span><span class="o">=</span> <span class="p">[</span><span class="mi">3077</span><span class="p">,</span> <span class="mi">3277</span><span class="p">,</span> <span class="mi">2576</span><span class="p">,</span> <span class="mi">2776</span><span class="p">]</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">brick</span><span class="o">=</span><span class="s1">&#39;1741p242&#39;</span>
+        <span class="n">zoom</span><span class="o">=</span> <span class="p">[</span><span class="mi">90</span><span class="p">,</span> <span class="mi">290</span><span class="p">,</span> <span class="mi">2773</span><span class="p">,</span> <span class="mi">2973</span><span class="p">]</span>
+
+    <span class="n">repo_dir</span><span class="o">=</span> <span class="s1">&#39;/home/kaylan/myrepo/obiwan/&#39;</span>
+    <span class="n">ls_dir</span><span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">repo_dir</span><span class="p">,</span>
+                         <span class="s1">&#39;tests/end_to_end&#39;</span><span class="p">,</span><span class="n">name</span><span class="p">)</span>
+    <span class="n">obj_dir</span><span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">repo_dir</span><span class="p">,</span>
+                         <span class="s1">&#39;tests/end_to_end&#39;</span><span class="p">,</span><span class="s1">&#39;out_&#39;</span><span class="o">+</span><span class="n">name</span><span class="o">+</span><span class="s1">&#39;_&#39;</span><span class="o">+</span><span class="n">obj</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">onedge</span><span class="p">:</span>
+        <span class="n">obj_dir</span> <span class="o">+=</span> <span class="s1">&#39;_onedge&#39;</span>
+
+    <span class="n">Sim</span><span class="o">=</span> <span class="n">SimcatStamps</span><span class="p">(</span><span class="n">ls_dir</span><span class="o">=</span><span class="n">ls_dir</span><span class="p">,</span> <span class="n">obj_dir</span><span class="o">=</span><span class="n">obj_dir</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">brick</span> <span class="ow">in</span> <span class="p">[</span><span class="n">brick</span><span class="p">]:</span>
+        <span class="n">Sim</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">brick</span><span class="p">,</span> <span class="n">zoom</span><span class="o">=</span><span class="n">zoom</span><span class="p">)</span>
+
+<div class="viewcode-block" id="mpi_main"><a class="viewcode-back" href="../../../_autosummary/obiwan.dplearn.create_training.html#obiwan.dplearn.create_training.mpi_main">[docs]</a><span class="k">def</span> <span class="nf">mpi_main</span><span class="p">(</span><span class="n">nproc</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span><span class="n">which</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+             <span class="n">outdir</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span><span class="n">ls_dir</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span><span class="n">savedir</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+             <span class="n">jpeg</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+             <span class="n">bricks</span><span class="o">=</span><span class="p">[]):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        nproc: &gt; 1 for mpi4py</span>
+<span class="sd">        which: one of [&#39;tractor&#39;,&#39;sim&#39;,&#39;userDefined&#39;]</span>
+<span class="sd">        outdir: path to coadd,tractor dirs</span>
+<span class="sd">        ls_dir: not needed if legacy_survey_dir env var already set</span>
+<span class="sd">        savedir: where to write the hdf5 files, outdir if None</span>
+<span class="sd">        jpeg: extract .jpg instead of .fits</span>
+<span class="sd">        bricks: list bricks to make hdf5 cutouts from</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">assert</span><span class="p">(</span><span class="n">which</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;tractor&#39;</span><span class="p">,</span><span class="s1">&#39;sim&#39;</span><span class="p">,</span><span class="s1">&#39;userDefined&#39;</span><span class="p">])</span>
+    <span class="k">if</span> <span class="n">nproc</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="kn">from</span> <span class="nn">mpi4py.MPI</span> <span class="k">import</span> <span class="n">COMM_WORLD</span> <span class="k">as</span> <span class="n">comm</span>
+        <span class="n">bricks</span><span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array_split</span><span class="p">(</span><span class="n">bricks</span><span class="p">,</span> <span class="n">comm</span><span class="o">.</span><span class="n">size</span><span class="p">)[</span><span class="n">comm</span><span class="o">.</span><span class="n">rank</span><span class="p">]</span>
+
+    <span class="n">d</span><span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">outdir</span><span class="o">=</span><span class="n">outdir</span><span class="p">,</span><span class="n">ls_dir</span><span class="o">=</span><span class="n">ls_dir</span><span class="p">,</span>
+            <span class="n">savedir</span><span class="o">=</span><span class="n">savedir</span><span class="p">,</span> <span class="n">jpeg</span><span class="o">=</span><span class="n">jpeg</span><span class="p">)</span>
+    <span class="n">kwargs</span><span class="o">=</span><span class="p">{}</span>
+    <span class="k">if</span> <span class="n">which</span> <span class="o">==</span> <span class="s1">&#39;sim&#39;</span><span class="p">:</span>
+        <span class="n">Obj</span><span class="o">=</span> <span class="n">SimStamps</span><span class="p">(</span><span class="o">**</span><span class="n">d</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="n">which</span> <span class="o">==</span> <span class="s1">&#39;tractor&#39;</span><span class="p">:</span>
+        <span class="n">Obj</span><span class="o">=</span> <span class="n">TractorStamps</span><span class="p">(</span><span class="o">**</span><span class="n">d</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="n">which</span> <span class="o">==</span> <span class="s1">&#39;userDefined&#39;</span><span class="p">:</span>
+        <span class="n">Obj</span><span class="o">=</span> <span class="n">UserDefinedStamps</span><span class="p">(</span><span class="o">**</span><span class="n">d</span><span class="p">)</span>
+        <span class="n">kwargs</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">stampSize</span><span class="o">=</span><span class="mi">64</span><span class="p">,</span>
+                      <span class="n">applyCuts</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+    <span class="k">for</span> <span class="n">brick</span> <span class="ow">in</span> <span class="n">bricks</span><span class="p">:</span>
+        <span class="n">Obj</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">brick</span><span class="p">)</span></div>
+
+
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s1">&#39;__main__&#39;</span><span class="p">:</span>
+    <span class="c1">#testcase_main()</span>
+    <span class="kn">from</span> <span class="nn">argparse</span> <span class="k">import</span> <span class="n">ArgumentParser</span>
+    <span class="n">parser</span> <span class="o">=</span> <span class="n">ArgumentParser</span><span class="p">()</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;--which&#39;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">str</span><span class="p">,</span> <span class="n">choices</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;tractor&#39;</span><span class="p">,</span><span class="s1">&#39;sim&#39;</span><span class="p">,</span><span class="s1">&#39;userDefined&#39;</span><span class="p">],</span> <span class="n">required</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s1">&#39;whether to make training hdf5 cutouts of real (DR5) or simulated (elg_dr5_coadds) outputs&#39;</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;--nproc&#39;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s1">&#39;set to &gt; 1 to run mpi4py&#39;</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;--bricks_fn&#39;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">str</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s1">&#39;specify a fn listing bricks to run, or a single default brick will be ran&#39;</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;--savedir&#39;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">str</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s1">&#39;specify a fn listing bricks to run, or a single default brick will be ran&#39;</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;--jpeg&#39;</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="s1">&#39;store_true&#39;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s1">&#39;put jpeg images in hdf5 file instead of fits coadss&#39;</span><span class="p">)</span>
+    <span class="n">args</span> <span class="o">=</span> <span class="n">parser</span><span class="o">.</span><span class="n">parse_args</span><span class="p">()</span>
+
+    <span class="c1"># Data paths</span>
+    <span class="n">d</span><span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">savedir</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">savedir</span><span class="p">,</span>
+            <span class="n">jpeg</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">jpeg</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s1">&#39;HOME&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;/home/kaylan&#39;</span><span class="p">:</span>
+        <span class="c1"># ubuntu</span>
+        <span class="n">d</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">ls_dir</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s1">&#39;HOME&#39;</span><span class="p">],</span>
+                                 <span class="s1">&#39;mydata/legacysurveydir&#39;</span><span class="p">))</span>
+        <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">which</span> <span class="o">==</span> <span class="s1">&#39;sim&#39;</span><span class="p">:</span>
+            <span class="n">d</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">outdir</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s1">&#39;HOME&#39;</span><span class="p">],</span>
+                                 <span class="s1">&#39;mydata/elg_dr5_coadds&#39;</span><span class="p">))</span>
+        <span class="k">elif</span> <span class="n">args</span><span class="o">.</span><span class="n">which</span> <span class="o">==</span> <span class="s1">&#39;tractor&#39;</span><span class="p">:</span>
+            <span class="n">d</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">outdir</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s1">&#39;HOME&#39;</span><span class="p">],</span>
+                                 <span class="s1">&#39;mydata/dr5_cutouts&#39;</span><span class="p">))</span>
+            <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">savedir</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">d</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">savedir</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s1">&#39;HOME&#39;</span><span class="p">],</span>
+                                              <span class="s1">&#39;mydata/dr5_hdf5&#39;</span><span class="p">))</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="c1"># nersc</span>
+        <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">which</span> <span class="o">==</span> <span class="s1">&#39;sim&#39;</span><span class="p">:</span>
+            <span class="n">d</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">outdir</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s1">&#39;CSCRATCH&#39;</span><span class="p">],</span>
+                                 <span class="s1">&#39;obiwan_out/elg_dr5_coadds&#39;</span><span class="p">))</span>
+        <span class="k">elif</span> <span class="n">args</span><span class="o">.</span><span class="n">which</span> <span class="o">==</span> <span class="s1">&#39;tractor&#39;</span><span class="p">:</span>
+            <span class="n">d</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">outdir</span><span class="o">=</span><span class="s1">&#39;/global/project/projectdirs/cosmo/data/legacysurvey/dr5&#39;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">args</span><span class="o">.</span><span class="n">savedir</span><span class="p">:</span>
+                <span class="n">d</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">savedir</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s1">&#39;CSCRATCH&#39;</span><span class="p">],</span>
+                                              <span class="s1">&#39;obiwan_out/dr5_hdf5&#39;</span><span class="p">))</span>
+        <span class="k">elif</span> <span class="n">args</span><span class="o">.</span><span class="n">which</span> <span class="o">==</span> <span class="s1">&#39;userDefined&#39;</span><span class="p">:</span>
+            <span class="n">d</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">outdir</span><span class="o">=</span><span class="s1">&#39;/global/project/projectdirs/cosmo/data/legacysurvey/dr5&#39;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">args</span><span class="o">.</span><span class="n">savedir</span><span class="p">:</span>
+                <span class="n">d</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">savedir</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s1">&#39;CSCRATCH&#39;</span><span class="p">],</span>
+                                              <span class="s1">&#39;obiwan_out/dr5_hdf5&#39;</span><span class="p">))</span>
+
+    <span class="c1"># Bricks to run</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">args</span><span class="o">.</span><span class="n">bricks_fn</span><span class="p">:</span>
+        <span class="n">bricks</span><span class="o">=</span> <span class="p">[</span><span class="s1">&#39;1211p060&#39;</span><span class="p">]</span> <span class="c1">#[&#39;1126p220&#39;]</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">bricks</span><span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">loadtxt</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">bricks_fn</span><span class="p">,</span><span class="n">dtype</span><span class="o">=</span><span class="nb">str</span><span class="p">)</span>
+
+    <span class="n">mpi_main</span><span class="p">(</span><span class="n">nproc</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">nproc</span><span class="p">,</span><span class="n">which</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">which</span><span class="p">,</span><span class="n">bricks</span><span class="o">=</span><span class="n">bricks</span><span class="p">,</span>
+             <span class="o">**</span><span class="n">d</span><span class="p">)</span>
+</pre></div>
+
+    </div>
+      
+  </div>
+</div>
+<footer class="footer">
+  <div class="container">
+    <p class="pull-right">
+      <a href="#">Back to top</a>
+      
+    </p>
+    <p>
+        &copy; Copyright 2014-2018, Kaylan Burleigh, John Moustakas.<br/>
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.7.6.<br/>
+    </p>
+  </div>
+</footer>
+  </body>
+</html>

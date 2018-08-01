@@ -99,8 +99,11 @@
     <div class="col-md-12 content">
       
   <h1>Source code for obiwan.qa.plots_common</h1><div class="highlight"><pre>
-<span></span><span class="kn">import</span> <span class="nn">matplotlib</span>
-<span class="n">matplotlib</span><span class="o">.</span><span class="n">use</span><span class="p">(</span><span class="s1">&#39;Agg&#39;</span><span class="p">)</span> <span class="c1"># display backend</span>
+<span></span><span class="sd">&quot;&quot;&quot;commonly used code for plotting and analysis&quot;&quot;&quot;</span>
+
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s1">&#39;__main__&#39;</span><span class="p">:</span>
+    <span class="kn">import</span> <span class="nn">matplotlib</span>
+    <span class="n">matplotlib</span><span class="o">.</span><span class="n">use</span><span class="p">(</span><span class="s1">&#39;Agg&#39;</span><span class="p">)</span> <span class="c1"># display backend</span>
 <span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
 <span class="kn">from</span> <span class="nn">matplotlib.patches</span> <span class="k">import</span> <span class="n">Circle</span>
 <span class="kn">import</span> <span class="nn">matplotlib.image</span> <span class="k">as</span> <span class="nn">mpimg</span>
@@ -108,16 +111,18 @@
 <span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
 
 <div class="viewcode-block" id="flux2mag"><a class="viewcode-back" href="../../../_autosummary/obiwan.qa.plots_common.html#obiwan.qa.plots_common.flux2mag">[docs]</a><span class="k">def</span> <span class="nf">flux2mag</span><span class="p">(</span><span class="n">nmgy</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;return ABmag&quot;&quot;&quot;</span>
+    <span class="sd">&quot;&quot;&quot;converts nanomaggies to AB mag&quot;&quot;&quot;</span>
     <span class="k">return</span> <span class="o">-</span><span class="mf">2.5</span> <span class="o">*</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">log10</span><span class="p">(</span><span class="n">nmgy</span><span class="p">)</span> <span class="o">-</span> <span class="mi">9</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="mag2flux"><a class="viewcode-back" href="../../../_autosummary/obiwan.qa.plots_common.html#obiwan.qa.plots_common.mag2flux">[docs]</a><span class="k">def</span> <span class="nf">mag2flux</span><span class="p">(</span><span class="n">ABmag</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;return nmgy&quot;&quot;&quot;</span>
+    <span class="sd">&quot;&quot;&quot;converts AB mag to nonomaggies&quot;&quot;&quot;</span>
     <span class="k">return</span> <span class="mi">10</span><span class="o">**</span><span class="p">(</span><span class="o">-</span><span class="n">ABmag</span><span class="o">/</span><span class="mf">2.5</span> <span class="o">+</span> <span class="mi">9</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="bin_up"><a class="viewcode-back" href="../../../_autosummary/obiwan.qa.plots_common.html#obiwan.qa.plots_common.bin_up">[docs]</a><span class="k">def</span> <span class="nf">bin_up</span><span class="p">(</span><span class="n">data_bin_by</span><span class="p">,</span><span class="n">data_for_percentile</span><span class="p">,</span> <span class="n">bin_minmax</span><span class="o">=</span><span class="p">(</span><span class="mf">18.</span><span class="p">,</span><span class="mf">26.</span><span class="p">),</span><span class="n">nbins</span><span class="o">=</span><span class="mi">20</span><span class="p">):</span>
-    <span class="sd">&#39;&#39;&#39;bins &quot;data_for_percentile&quot; into &quot;nbins&quot; using &quot;data_bin_by&quot; to decide how indices are assigned to bins</span>
-<span class="sd">    returns bin center,N,q25,50,75 for each bin</span>
+    <span class="sd">&#39;&#39;&#39;bins &quot;data_for_percentile&quot; into &quot;nbins&quot; based on &quot;data_bin_by&quot;</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        tuple: (bin center,N,q25,50,75) for each bin</span>
 <span class="sd">    &#39;&#39;&#39;</span>
     <span class="n">bin_edges</span><span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="n">bin_minmax</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="n">bin_minmax</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span><span class="n">num</span><span class="o">=</span> <span class="n">nbins</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span>
     <span class="n">vals</span><span class="o">=</span><span class="p">{}</span>
@@ -131,7 +136,7 @@
             <span class="n">vals</span><span class="p">[</span><span class="s1">&#39;q50&#39;</span><span class="p">][</span><span class="n">i</span><span class="p">]</span><span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">percentile</span><span class="p">(</span><span class="n">data_for_percentile</span><span class="p">[</span><span class="n">keep</span><span class="p">],</span><span class="n">q</span><span class="o">=</span><span class="mi">50</span><span class="p">)</span>
             <span class="n">vals</span><span class="p">[</span><span class="s1">&#39;q75&#39;</span><span class="p">][</span><span class="n">i</span><span class="p">]</span><span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">percentile</span><span class="p">(</span><span class="n">data_for_percentile</span><span class="p">[</span><span class="n">keep</span><span class="p">],</span><span class="n">q</span><span class="o">=</span><span class="mi">75</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="n">vals</span><span class="p">[</span><span class="s1">&#39;n&#39;</span><span class="p">][</span><span class="n">i</span><span class="p">]</span><span class="o">=</span><span class="mi">0</span> 
+            <span class="n">vals</span><span class="p">[</span><span class="s1">&#39;n&#39;</span><span class="p">][</span><span class="n">i</span><span class="p">]</span><span class="o">=</span><span class="mi">0</span>
     <span class="k">return</span> <span class="n">vals</span></div>
 
 <span class="k">def</span> <span class="nf">myhist2D</span><span class="p">(</span><span class="n">ax</span><span class="p">,</span><span class="n">x</span><span class="p">,</span><span class="n">y</span><span class="p">,</span><span class="n">xlim</span><span class="o">=</span><span class="p">(),</span><span class="n">ylim</span><span class="o">=</span><span class="p">(),</span><span class="n">nbins</span><span class="o">=</span><span class="p">()):</span>
@@ -142,7 +147,7 @@
     <span class="c1"># Create a black and white color map where bad data (NaNs) are white</span>
     <span class="n">cmap</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">cm</span><span class="o">.</span><span class="n">binary</span>
     <span class="n">cmap</span><span class="o">.</span><span class="n">set_bad</span><span class="p">(</span><span class="s1">&#39;w&#39;</span><span class="p">,</span> <span class="mf">1.</span><span class="p">)</span>
-    
+
     <span class="n">H</span><span class="p">[</span><span class="n">H</span> <span class="o">==</span> <span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>  <span class="c1"># prevent warnings in log10</span>
     <span class="n">ax</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">log10</span><span class="p">(</span><span class="n">H</span><span class="p">)</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="n">origin</span><span class="o">=</span><span class="s1">&#39;lower&#39;</span><span class="p">,</span>
               <span class="c1">#extent=[xbins[0], xbins[-1], ybins[0], ybins[-1]],</span>
@@ -210,14 +215,14 @@
         <span class="n">ax</span><span class="o">.</span><span class="n">errorbar</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="n">y</span><span class="p">,</span> <span class="n">xerr</span><span class="o">=</span><span class="n">xerr</span><span class="p">,</span><span class="n">yerr</span><span class="o">=</span><span class="n">yerr</span><span class="p">,</span><span class="n">ls</span><span class="o">=</span><span class="n">ls</span><span class="p">,</span><span class="n">alpha</span><span class="o">=</span><span class="n">alpha</span><span class="p">,</span><span class="n">label</span><span class="o">=</span><span class="n">label</span><span class="p">,</span>
                     <span class="n">marker</span><span class="o">=</span><span class="n">m</span><span class="p">,</span><span class="n">ms</span><span class="o">=</span><span class="n">s</span><span class="p">,</span><span class="n">mfc</span><span class="o">=</span><span class="n">color</span><span class="p">,</span><span class="n">mec</span><span class="o">=</span><span class="n">color</span><span class="p">,</span><span class="n">ecolor</span><span class="o">=</span><span class="n">color</span><span class="p">,</span><span class="n">mew</span><span class="o">=</span><span class="n">mew</span><span class="p">)</span>
 
-<div class="viewcode-block" id="create_confusion_matrix"><a class="viewcode-back" href="../../../_autosummary/obiwan.qa.plots_common.html#obiwan.qa.plots_common.create_confusion_matrix">[docs]</a><span class="k">def</span> <span class="nf">create_confusion_matrix</span><span class="p">(</span><span class="n">answer_type</span><span class="p">,</span><span class="n">predict_type</span><span class="p">,</span> 
+<div class="viewcode-block" id="create_confusion_matrix"><a class="viewcode-back" href="../../../_autosummary/obiwan.qa.plots_common.html#obiwan.qa.plots_common.create_confusion_matrix">[docs]</a><span class="k">def</span> <span class="nf">create_confusion_matrix</span><span class="p">(</span><span class="n">answer_type</span><span class="p">,</span><span class="n">predict_type</span><span class="p">,</span>
                             <span class="n">poss_ans_types</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;PSF&#39;</span><span class="p">,</span><span class="s1">&#39;SIMP&#39;</span><span class="p">,</span><span class="s1">&#39;EXP&#39;</span><span class="p">,</span><span class="s1">&#39;DEV&#39;</span><span class="p">,</span><span class="s1">&#39;COMP&#39;</span><span class="p">,</span><span class="s1">&#39;REX&#39;</span><span class="p">],</span>
                             <span class="n">poss_pred_types</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;PSF&#39;</span><span class="p">,</span><span class="s1">&#39;SIMP&#39;</span><span class="p">,</span><span class="s1">&#39;EXP&#39;</span><span class="p">,</span><span class="s1">&#39;DEV&#39;</span><span class="p">,</span><span class="s1">&#39;COMP&#39;</span><span class="p">,</span><span class="s1">&#39;REX&#39;</span><span class="p">]):</span>
     <span class="sd">&#39;&#39;&#39;compares classifications of matched objects, returns 2D array which is conf matrix and xylabels</span>
 <span class="sd">    return 5x5 confusion matrix and colum/row names</span>
 <span class="sd">    answer_type,predict_type -- arrays of same length with reference and prediction types&#39;&#39;&#39;</span>
     <span class="k">for</span> <span class="n">typ</span> <span class="ow">in</span> <span class="nb">set</span><span class="p">(</span><span class="n">answer_type</span><span class="p">):</span> <span class="k">assert</span><span class="p">(</span><span class="n">typ</span> <span class="ow">in</span> <span class="n">poss_ans_types</span><span class="p">)</span>
-    <span class="k">for</span> <span class="n">typ</span> <span class="ow">in</span> <span class="nb">set</span><span class="p">(</span><span class="n">predict_type</span><span class="p">):</span> 
+    <span class="k">for</span> <span class="n">typ</span> <span class="ow">in</span> <span class="nb">set</span><span class="p">(</span><span class="n">predict_type</span><span class="p">):</span>
         <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;typ=&#39;</span><span class="p">,</span><span class="n">typ</span><span class="p">)</span>
         <span class="k">assert</span><span class="p">(</span><span class="n">typ</span> <span class="ow">in</span> <span class="n">poss_pred_types</span><span class="p">)</span>
     <span class="n">cm</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="nb">len</span><span class="p">(</span><span class="n">poss_ans_types</span><span class="p">),</span><span class="nb">len</span><span class="p">(</span><span class="n">poss_pred_types</span><span class="p">)))</span><span class="o">-</span><span class="mi">1</span>
@@ -243,8 +248,6 @@
                          <span class="p">(</span><span class="mf">0.637</span> <span class="o">*</span> <span class="n">gr</span> <span class="o">+</span> <span class="mf">0.399</span> <span class="o">&lt;</span> <span class="n">rz</span><span class="p">)</span> <span class="o">&amp;</span>
                          <span class="p">(</span><span class="n">rz</span> <span class="o">&lt;</span> <span class="o">-</span><span class="mf">0.555</span> <span class="o">*</span> <span class="n">gr</span> <span class="o">+</span> <span class="mf">1.901</span><span class="p">)))</span>
     <span class="k">return</span> <span class="n">colorCut</span><span class="p">[</span><span class="n">region</span><span class="p">]</span>
-
-
 </pre></div>
 
     </div>

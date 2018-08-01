@@ -275,7 +275,7 @@
 <div class="section" id="create-training-set">
 <h2><a class="toc-backref" href="#id14">Create Training Set</a><a class="headerlink" href="#create-training-set" title="Permalink to this headline">¶</a></h2>
 <ul class="simple">
-<li><code class="xref py py-mod docutils literal notranslate"><span class="pre">obiwan.dplearn.create_training</span></code> (source code: <a class="reference external" href="https://github.com/legacysurvey/obiwan/blob/master/py/obiwan/dplearn/create_training.py">create_training.py</a>) saves 64x64 pixels cutouts of each source to an HDF5 file, indexed by its unique tractor id. This writes one HDF5 file per brick for Data Releases, or one file per obiwan Monte Carlo simulation.</li>
+<li><a class="reference internal" href="_autosummary/obiwan.dplearn.create_training.html#module-obiwan.dplearn.create_training" title="obiwan.dplearn.create_training"><code class="xref py py-mod docutils literal notranslate"><span class="pre">obiwan.dplearn.create_training</span></code></a> (source code: <a class="reference external" href="https://github.com/legacysurvey/obiwan/blob/master/py/obiwan/dplearn/create_training.py">create_training.py</a>) saves 64x64 pixels cutouts of each source to an HDF5 file, indexed by its unique tractor id. This writes one HDF5 file per brick for Data Releases, or one file per obiwan Monte Carlo simulation.</li>
 </ul>
 <p>Fake galaxies are designed to occupy the narrow region of parameter space we are interested in, but real galaxies do not. When building the real galaxy training set, real galaxies outside this parameter space are removed.</p>
 <p>There are millions of fake and real galaxy images, so I use mpi4py to scale to a few hundred compute nodes. About 1 million real galaxy examples can be created in an hour using 50 nodes. Use the following SLURM script:</p>
@@ -326,7 +326,7 @@ srun -n ${tasks} -c 1 python create_training.py \
 <div class="section" id="train">
 <h2><a class="toc-backref" href="#id16">Train</a><a class="headerlink" href="#train" title="Permalink to this headline">¶</a></h2>
 <ul>
-<li><p class="first"><code class="xref py py-mod docutils literal notranslate"><span class="pre">obiwan.dplearn.cnn</span></code> (source code: <a class="reference external" href="https://github.com/legacysurvey/obiwan/blob/master/py/obiwan/dplearn/cnn.py">cnn.py</a>) trains the CNN using TensorFlow. The following runs on a single Xeon Phi node using 68 threads (“srun” is not needed because this is a single node job):</p>
+<li><p class="first"><a class="reference internal" href="_autosummary/obiwan.dplearn.cnn.html#module-obiwan.dplearn.cnn" title="obiwan.dplearn.cnn"><code class="xref py py-mod docutils literal notranslate"><span class="pre">obiwan.dplearn.cnn</span></code></a> (source code: <a class="reference external" href="https://github.com/legacysurvey/obiwan/blob/master/py/obiwan/dplearn/cnn.py">cnn.py</a>) trains the CNN using TensorFlow. The following runs on a single Xeon Phi node using 68 threads (“srun” is not needed because this is a single node job):</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="ch">#!/bin/bash</span>
 <span class="c1">#SBATCH -N 1</span>
 <span class="c1">#SBATCH -C knl,quad,cache</span>

@@ -1,0 +1,36 @@
+obiwan.qa.aaron_healpix
+=======================
+
+.. automodule:: obiwan.qa.aaron_healpix
+   :members:
+   :inherited-members:
+
+   
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      Bricks
+      Data
+      EmptyClass
+      Healpix
+      Plots
+      footprint_wSFD
+   
+   
+
+   
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      get_DR5_ccds
+      orig_code
+   
+   
+
+   
+   
+   
