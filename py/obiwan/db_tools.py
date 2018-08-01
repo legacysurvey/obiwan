@@ -6,12 +6,13 @@ import psycopg2
 import os
 import numpy as np
 
-try:
-    from astrometry.util.fits import fits_table, merge_tables
-except ImportError:
-    pass
+# try:
+from astrometry.util.fits import fits_table, merge_tables
+# except ImportError:
+# pass
 
 class PsqlWorker(object):
+    """Connects to and queries psql db"""
     def __init__(self):
         self.conn= psycopg2.connect(host='nerscdb03.nersc.gov', user='desi_admin', database='desi')
         self.cur= self.conn.cursor()
@@ -23,7 +24,7 @@ class PsqlWorker(object):
 def getSrcsInBrick(brickname,objtype, db_table='obiwan_elg',
                    skipped_ids=None):
     """Returns tuple: fits table, seed
-    
+
     Args:
         skipped_ids: array or list of strings of ids if not None, the db ids
     """
@@ -82,7 +83,7 @@ def all_psqlcols_for_ids(ids, db_randoms_table='obiwan_elg_ra175',
     Args:
         ids: list or array, ids generally come from obiwan 'simcat*.fits' table, for example
         db_table: table name in psql db 'desi' hosted at 'scidb2.nersc.gov'
-        try_with_join: to use equivalent sql select that uses join 
+        try_with_join: to use equivalent sql select that uses join
     """
     db= PsqlWorker()
     columns= 'id ra dec g r z rhalf n ba pa redshift'.split(' ')
@@ -93,7 +94,7 @@ def all_psqlcols_for_ids(ids, db_randoms_table='obiwan_elg_ra175',
         cmd+= "%s," % col
     cmd+= "%s" % columns[-1]
 
-    if not try_with_join: 
+    if not try_with_join:
         # Simplest, faster
         cmd+= " FROM %s WHERE id in (" % db_randoms_table
         for i in ids[:-1]:
@@ -105,18 +106,18 @@ def all_psqlcols_for_ids(ids, db_randoms_table='obiwan_elg_ra175',
         for i in ids[:-1]:
             vals+= "(%d)," % i
         vals+= "(%d)" % ids[-1]
-        cmd= (cmd + " FROM %s as db RIGHT JOIN (values %s) " 
-              % (db_randoms_table,vals) 
-              + 
+        cmd= (cmd + " FROM %s as db RIGHT JOIN (values %s) "
+              % (db_randoms_table,vals)
+              +
               "as v(id) on (db.id=v.id)")
     #print('cmd= %s' % cmd)
     db.cur.execute(cmd)
     # List of tuples [(id,reshift,...),(id,reshift,...)]
-    a= db.cur.fetchall() 
+    a= db.cur.fetchall()
     # Tuple of lists (ids,reshifts,...)
     tup= zip(*a)
     #tup[ith_col])
-    return {col: np.array(vals) 
+    return {col: np.array(vals)
             for col,vals in zip(columns,tup)}
     #return np.array(sql_ids),np.array(sql_redshift)
 
@@ -127,4 +128,3 @@ if __name__ == '__main__':
     data_dict= all_psqlcols_for_ids(simcat.id, db_randoms_table='obiwan_elg_ra175')
     for i in range(10):
         print(data_dict['id'][i],data_dict['redshift'][i])
-    

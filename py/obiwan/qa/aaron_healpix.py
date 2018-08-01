@@ -1,3 +1,7 @@
+"""Work with healpix data
+
+In this case for the QA plots Aaron creates. e.g. PS1 minus tractor flux"""
+
 import numpy as np
 import os
 import healpy as hp
@@ -21,7 +25,7 @@ class Healpix(object):
     def get_nside(self,num_pix):
         assert(num_pix % 12 == 0)
         return int( np.sqrt(num_pix / 12) )
-    
+
     def get_pixscale(self,num_pix,unit='deg'):
         assert(unit in ['deg','arcsec'])
         deg2= 4*np.pi * (180/np.pi)**2 / num_pix
@@ -42,7 +46,7 @@ class Data(object):
         name='healpix.tar.gz'
         fetch_targz(os.path.join(DOWNLOAD_ROOT,self.drname,name),
                     os.path.joni(self.targz_dir,self.drname))
-        
+
     def get_data(self,psf_or_aper,which):
         """read healpix data, RING ordered'
 
@@ -72,7 +76,7 @@ class EmptyClass(object):
 class footprint_wSFD(object):
     """makes nice figure showing DECaLS,MzLS,BASS footprint ontop of sfd98 dust
 
-    Example: 
+    Example:
         Foot= footprint_wSFD('/home/kaylan/mydata')
         sfd= Foot.get_footprint_object()
         Foot.plot_footprint_object()
@@ -92,7 +96,7 @@ class footprint_wSFD(object):
         hdu=fitsio.FITS(os.path.join(self.map_dir,'lambda_sfd_ebv.fits'))
         sfd= EmptyClass()
         temp= hdu[1].read()
-        sfd.temp= temp['TEMPERATURE'] 
+        sfd.temp= temp['TEMPERATURE']
         npix= Healpix().get_nside(len(sfd.temp))
         assert(npix == 512)
         sfd.l_indeg,sfd.b_indeg= hp.pix2ang(512,np.where(sfd.temp > 0)[0],nest=True,lonlat=True)
@@ -108,10 +112,10 @@ class footprint_wSFD(object):
         inDESI= ( (all_tiles.in_desi_orig == 1) |
                   (all_tiles.in_desi == 1))
         inDecals= ( (inDESI) &
-                    (all_tiles.dec <= 30.)) 
+                    (all_tiles.dec <= 30.))
                     #(mzls_decals.in_des == 0))
         inMzls=   ( (inDESI) &
-                    (all_tiles.dec > 30.)) 
+                    (all_tiles.dec > 30.))
                     #(mzls_decals.in_des == 0))
         inDes= (  (wdes_tiles.in_desi_orig == 1) |
                   (wdes_tiles.in_desi == 1))
@@ -161,7 +165,7 @@ class footprint_wSFD(object):
         temp= np.log10(footprint_obj.temp)
         temp[footprint_obj.ipix_legsurvey]= 2.
         hp.mollview(temp,nest=True,flip='geo',title='Mollweide Projection, Galactic Coordinates',unit='',max=-0.5)
-        hp.graticule(c='k',lw=1) 
+        hp.graticule(c='k',lw=1)
         plt.savefig('footprint_wSFD.png',dpi=150)
 
     def modify_healpy_colorbar1():
@@ -228,10 +232,10 @@ class Plots(object):
     def __init__(self,outdir='./', close=True):
         self.outdir= outdir
         self.close= close
-    
+
     def basic(self,data,min=None,max=None):
         hp.mollview(data,min=min,max=max,nest=False)
-        
+
     def mollzoom(self, ra,dec,hp_vals,name,
                  vlim=None,ralim=None,declim=None,
                  figsize=(5,5)):
@@ -252,7 +256,7 @@ class Plots(object):
         print('Wrote %s' % fn)
         if self.close:
             plt.close()
-            
+
     def scatter(self, ra,dec,name,
                 ralim=None,declim=None):
         plt.figure(figsize=(10,4))
@@ -272,12 +276,12 @@ class Plots(object):
 
 def orig_code(data,nmatch):
     nside= Healpix().get_nside( len(data) )
-    
+
     _, lo, hi = sigmaclip(data[data != 0], low=3, high=3)
     flag= np.logical_or(data < lo, data > hi)
     flag*= (nmatch > 20)
     ra,dec= hp.pix2ang(nside,np.where(flag)[0],lonlat=True)
-    
+
     # PLOTTING
     ralim=[ra.min(),ra.max()]
     declim=[dec.min(),dec.max()]
@@ -293,7 +297,7 @@ def orig_code(data,nmatch):
     keep*= (nmatch > 20)
     my_mollzoom(temp_ra[keep],temp_dec[keep],data[keep],'nmatch_gt20',
                 ralim=ralim,declim=declim, vlim=(lo,hi))
-    
+
     # Match bricks
     #heal= fits_table()
     #for col,arr in zip(['ra','dec'],[ra,dec]):
@@ -311,13 +315,13 @@ def orig_code(data,nmatch):
     brick.cut(imatch['obs'])
     my_scatter(brick.ra,brick.dec,'bricks',
                ralim=ralim,declim=declim)
-    
+
     id= fn.replace('/','').replace('.fits','')
     savenm= os.path.join(args.outdir,'brick_table_%s.fits' % id)
     brick.writeto(savenm)
-    print('Wrote %s' % savenm)    
+    print('Wrote %s' % savenm)
 
-    
+
 def get_DR5_ccds(bricknames):
     path='/global/cscratch1/sd/desiproc/DR5_out/'
     T=[]
@@ -326,7 +330,7 @@ def get_DR5_ccds(bricknames):
         ccd_fn= os.path.join(path,
                              'coadd/%s/%s/legacysurvey-%s-ccds.fits' %
                              (bri,brick,brick))
-        try: 
+        try:
             t=fits_table(ccd_fn)
             t.set('brickname', np.array([brick]*len(t)))
             T.append(t)
@@ -345,7 +349,7 @@ def get_DR5_ccds(bricknames):
 #    T=fits_table()
 #    ccds= fits_table('%s/coadd/ccds.fits' % brick)
 #    ccds.set('brick',np.array([brick]*len(ccds)))
-#    T=merge_tables([T,ccd],fill=zero) 
+#    T=merge_tables([T,ccd],fill=zero)
 
 if __name__ == '__main__':
     from argparse import ArgumentParser
@@ -386,12 +390,9 @@ if __name__ == '__main__':
         for dev,ra,dec,brick in zip(worst['dev'],
                                     worst['ra'],worst['dec'],worst['brick']):
             f.write('%.2f %.2f %.2f %s\n' % (dev,ra,dec,brick))
-        
+
 
     #orig_code(data,nmatch)
     #b=fits_table("/global/cscratch1/sd/kaylanb/dr5_qa/brick_table_psfhealpixdecam-ps1-0128-ddec.fits")
-    #get_DR5_ccds(b.brickname)    
+    #get_DR5_ccds(b.brickname)
     #raise ValueError
-
-
-

@@ -1,5 +1,5 @@
 """
-for a given brick, prints whether each rs* obiwan job finished or not
+Monitors an obiwan production run using qdo
 """
 import os
 import numpy as np
@@ -14,30 +14,30 @@ import qdo
 QDO_RESULT= ['running', 'succeeded', 'failed']
 
 
-def get_interm_dir(outdir,brick,rowstart, 
+def get_interm_dir(outdir,brick,rowstart,
                 do_skipids='no',do_more='no'):
     """Returns paths like outdir/bri/brick/rs0"""
-    rsdir= get_rsdir(rowstart, 
+    rsdir= get_rsdir(rowstart,
                      do_skipids,do_more)
     return os.path.join(outdir,brick[:3],brick,rsdir)
 
-def get_final_dir(outdir,brick,rowstart, 
+def get_final_dir(outdir,brick,rowstart,
                   do_skipids='no',do_more='no'):
     """Returns paths like outdir/replaceme/bri/brick/rs0"""
-    rsdir= get_rsdir(rowstart, 
+    rsdir= get_rsdir(rowstart,
                      do_skipids,do_more)
     return os.path.join(outdir,'replaceme',brick[:3],brick,
                         rsdir)
 
 
-def get_deldirs(outdir,brick,rowstart, 
+def get_deldirs(outdir,brick,rowstart,
                 do_skipids='no',do_more='no'):
     """If slurm timeout or failed, logfile will exist in final dir but other outputs
         will be in interm dir. Return list of dirst to all of these
     """
-    dirs= [get_final_dir(outdir,brick,rowstart, 
+    dirs= [get_final_dir(outdir,brick,rowstart,
                           do_skipids,do_more).replace('replaceme','logs')]
-    dirs+= [get_interm_dir(outdir,brick,rowstart, 
+    dirs+= [get_interm_dir(outdir,brick,rowstart,
                           do_skipids,do_more)]
     return dirs
 
@@ -48,23 +48,23 @@ def get_checkpoint_fn(outdir,brick,rowstart):
 
 
 
-def get_logdir(outdir,brick,rowstart, 
+def get_logdir(outdir,brick,rowstart,
                do_skipids='no',do_more='no'):
-   return (get_final_dir(outdir,brick,rowstart, 
+   return (get_final_dir(outdir,brick,rowstart,
                         do_skipids,do_more)
            .replace('replaceme','logs'))
 
 
-def get_logfile(outdir,brick,rowstart, 
+def get_logfile(outdir,brick,rowstart,
                 do_skipids='no',do_more='no'):
-    logdir= get_logdir(outdir,brick,rowstart, 
+    logdir= get_logdir(outdir,brick,rowstart,
                        do_skipids,do_more)
     return os.path.join(logdir,'log.'+brick)
 
 
 def get_slurm_files(outdir):
     return glob( outdir + '/slurm-*.out')
- 
+
 
 
 class QdoList(object):
@@ -73,7 +73,7 @@ class QdoList(object):
     Args:
         outdir: obiwan outdir, the slurm*.out files are there
         que_name: ie. qdo create que_name
-        skip_suceeded: number succeeded tasks can be very large for production runs, 
+        skip_suceeded: number succeeded tasks can be very large for production runs,
             this slows down code so skip those tasks
     """
     def __init__(self,outdir,que_name='obiwan',
@@ -101,18 +101,18 @@ class QdoList(object):
         for res in QDO_RESULT:
             if self.skip_succeed and res == 'succeeded':
                 continue
-            # List of "brick rs" for each QDO_RESULT 
+            # List of "brick rs" for each QDO_RESULT
             qdo_tasks= np.array(q.tasks(state= getattr(qdo.Task, res.upper())))
             if self.rand_num:
                 qdo_tasks= qdo_tasks[np.random.randint(0,len(qdo_tasks),size=self.rand_num)]
             elif not self.firstN is None:
                 qdo_tasks= qdo_tasks[:self.firstN]
             if len(qdo_tasks) > 0:
-                ids[res],tasks[res] = zip(*[(a.id,a.task) 
+                ids[res],tasks[res] = zip(*[(a.id,a.task)
                                              for a in qdo_tasks])
             else:
                 ids[res],tasks[res]= [],[]
-            # Corresponding log, slurm files  
+            # Corresponding log, slurm files
             for task in tasks[res]:
                 # Logs
                 if self.isCosmos():
@@ -121,7 +121,7 @@ class QdoList(object):
                 else:
                     brick,rs,do_skipids,do_more = task.split(' ')
                     outdir= self.outdir
-                logfn= get_logfile(outdir,brick,rs, 
+                logfn= get_logfile(outdir,brick,rs,
                                    do_skipids=do_skipids,do_more=do_more)
                 logs[res].append( logfn )
         return tasks,ids,logs
@@ -145,7 +145,7 @@ class QdoList(object):
                 else:
                     brick,rs,do_skipids,do_more = task_obj.task.split(' ')
                     outdir= self.outdir
-                del_dirs= get_deldirs(outdir,brick,rs, 
+                del_dirs= get_deldirs(outdir,brick,rs,
                                        do_skipids=do_skipids,
                                        do_more=do_more)
                 del_fns= [get_checkpoint_fn(outdir,brick,rs)]
@@ -296,7 +296,7 @@ if __name__ == '__main__':
         if args.failed_to_pending:
             Q.change_task_state(ids['failed'], to='pending',modify=args.modify,
                                 rm_files=False)
-   
+
 
     # Failed logfile lists, group by error message
     R= RunStatus(tasks,logs)

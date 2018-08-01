@@ -1,0 +1,29 @@
+#FROM kaylanb/obiwan_new
+FROM kaylanb/rtd_new
+
+COPY requirements_jupyter.txt /tmp/
+RUN source /srv/py3_venv/bin/activate && \
+    pip3 install --upgrade pip setuptools wheel && \
+    pip3 install --requirement /tmp/requirements_jupyter.txt
+
+RUN source /srv/py3_venv/bin/activate && \
+    pip3 install --upgrade pip setuptools wheel && \
+    pip3 install jupyter ipywidgets npm && \
+    jupyter nbextension enable --py widgetsnbextension --sys-prefix
+
+EXPOSE 8888
+
+COPY jupyter_notebook_config.py /root/.jupyter/
+
+# ENV NB_USER kdragon
+# ENV NB_UID 1000
+# ENV NB_GID 100
+# RUN mkdir /home/appuser && \
+#     fix-permissions /home/appuser
+# RUN groupadd -g 999 appuser && \
+#     useradd -r -u 999 -g appuser appuser
+# USER appuser
+
+COPY entrypoint_jupyter.sh /
+ENTRYPOINT ["/entrypoint_jupyter.sh"]
+#CMD ["jupyter","notebook"]

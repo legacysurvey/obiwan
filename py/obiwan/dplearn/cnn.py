@@ -1,5 +1,5 @@
 """
-Trains a CNN on fake and real galaxy images using TensorFlow. 
+Trains a CNN on fake and real galaxy images using TensorFlow.
 
 Adapted from https://github.com/ageron/handson-ml
 """
@@ -11,22 +11,18 @@ from glob import glob
 
 import tensorflow as tf
 
-import ml_comm as mc
-import math
-
-
 def get_indir(nersc=False):
     '''Returns path to dr5_testtrain directory'''
-    if nersc: 
+    if nersc:
         return os.path.join('/global/cscratch1/sd/kaylanb','obiwan_out')
     else:
         return os.path.join(os.environ['HOME'],'Downloads')
 
 def get_outdir(nersc=False,knl=False):
     '''Where to write ckpt and log files'''
-    if (nersc) & (knl): 
+    if (nersc) & (knl):
         return os.path.join('/global/cscratch1/sd/kaylanb','obiwan_out','cnn_knl')
-    elif (nersc) & (not knl): 
+    elif (nersc) & (not knl):
         return os.path.join('/global/cscratch1/sd/kaylanb','obiwan_out','cnn')
     else:
         return os.path.join(os.environ['HOME'],'Downloads','cnn')
@@ -77,7 +73,7 @@ def get_bookmark(outdir):
     with open(bookmark_fn(outdir),'r') as f:
         epoch,brick,ith_batch= f.read().strip().split(' ')
     return epoch,brick,ith_batch
-        
+
 def get_logdir(outdir):
     now = datetime.utcnow().strftime("%Y%m%d%H%M%S")
     logdir= os.path.join(outdir,'logs')
@@ -85,7 +81,7 @@ def get_logdir(outdir):
 
 
 
-height,width,channels = (64,64,6) 
+height,width,channels = (64,64,6)
 
 conv_kwargs= dict(strides=1,
                   padding='SAME',
@@ -96,7 +92,7 @@ pool_kwargs= dict(ksize= [1,2,2,1],
 
 with tf.name_scope("inputs"):
     X = tf.placeholder(tf.float32, shape=[None,height,width,channels], name="X")
-    y = tf.placeholder(tf.int32, shape=[None], name="y") 
+    y = tf.placeholder(tf.int32, shape=[None], name="y")
 
 
 
@@ -118,7 +114,7 @@ with tf.name_scope("layer3"):
                              **conv_kwargs)
     pool3 = tf.nn.avg_pool(conv3, **pool_kwargs)
     # next is fc
-    pool3_flat = tf.reshape(pool3, 
+    pool3_flat = tf.reshape(pool3,
                             shape=[-1, pool3.shape[1] * pool3.shape[2] * pool3.shape[3]])
 
 
@@ -133,19 +129,7 @@ with tf.name_scope("train"):
     xentropy = tf.nn.sparse_softmax_cross_entropy_with_logits(logits=logits, labels=y)
     loss = tf.reduce_mean(xentropy)
     optimizer = tf.train.AdamOptimizer()
-    #create train step handle
-    # CRAY ADDED
-    # we need to split out the minimize call below so we can modify gradients
-    grads_and_vars = optimizer.compute_gradients(loss)
-
-    grads     = mc.gradients([gv[0] for gv in grads_and_vars], 0)
-    gs_and_vs = [(g,v) for (_,v), g in zip(grads_and_vars, grads)]
-
-    global_step= tf.train.get_or_create_global_step()
-    training_op = opt.apply_gradients(gs_and_vs, global_step=global_step) # return this global_step
-    # END CRAY ADDED 
-    #training_op = optimizer.minimize(loss)
-
+    training_op = optimizer.minimize(loss)
 
 with tf.name_scope("eval"):
     correct = tf.nn.in_top_k(logits, y, 1)
@@ -167,10 +151,6 @@ if __name__ == '__main__':
     parser= ArgumentParser()
     parser.add_argument('--outdir', type=str, default=None, help='optional output directory for the checkpoint and log files')
     args= parser.parse_args()
-
-    # help mc
-    # threads per task,tasks,membory in bytes for all model weights
-    mc.init(1,1,5*1024**2, "tensorflow")
 
     knl=False
     config=None
@@ -194,7 +174,7 @@ if __name__ == '__main__':
     n_epochs = 4
     batch_size = 16
     bricks= get_bricks()
-    file_writer = tf.summary.FileWriter(get_logdir(outdir), 
+    file_writer = tf.summary.FileWriter(get_logdir(outdir),
                                         tf.get_default_graph())
 
     first_epoch,first_brick,first_batch= '0',bricks[0],'0'
@@ -207,26 +187,15 @@ if __name__ == '__main__':
         ckpt_fn= None
     last_ibrick= np.where(bricks == last_brick)[0][0] #+ 1 creates bug where last break skips all epochs
     #bricks= ['1211p060']
-    # 100 = 10% of total steps epoch * traiing, 200? cray said to
-    # number teams is the first arg
-    mc.config_team(0,0,100,number_steps,0,200)
-    # >> mc.get_rank()
-    # checkpoint dir None unless rank=0
-    #mc.config_team(1,0,100,number_steps,0,200) # would tell a second team to go 
 
-    # make tf monitored session for distrib tensorflow
-    # session(config=config, checkpointfn=checkpointfn)
-    # hooks for summary, log, etc
-    # hooks= [above hooks]
-    # tf.monitoredTrainingSession(**kwargs, hooks=hooks)
     with tf.Session(config=config) as sess:
-        if ckpt_fn is None: 
+        if ckpt_fn is None:
             sess.run(init)
             print('Starting from scratch')
         else:
             saver.restore(sess, ckpt_fn)
             print('Restored ckpt %s' % ckpt_fn)
-        
+
         batch_index= int(last_batch)
         for epoch in range(int(last_epoch),n_epochs+1):
             for ibrick,brick in enumerate(bricks):
@@ -240,9 +209,9 @@ if __name__ == '__main__':
                     batch_index+=1
                     if batch_index % 2 == 0:
                         step = batch_index
-                        file_writer.add_summary(loss_summary.eval(feed_dict={X: X_, y: y_}), 
+                        file_writer.add_summary(loss_summary.eval(feed_dict={X: X_, y: y_}),
                                                 step)
-                        file_writer.add_summary(accur_summary.eval(feed_dict={X: X_, y: y_}), 
+                        file_writer.add_summary(accur_summary.eval(feed_dict={X: X_, y: y_}),
                                                 step)
                 acc_train = accuracy.eval(feed_dict={X: X_, y: y_})
                 print(epoch, "Train accuracy:", acc_train)
@@ -255,6 +224,3 @@ if __name__ == '__main__':
                 print('Updated %s' % bookmark_fn(outdir))
                 # Reset last_ibrick so use all bricks in next epoch
                 last_ibrick= 0
-        
-        mc.finalize()
-

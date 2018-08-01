@@ -1,0 +1,25 @@
+Sphinx
+numpy
+scipy
+matplotlib
+cython
+numpydoc
+astropy
+h5py
+pandas
+psycopg2
+scikit-image
+scikit-learn
+nose
+future
+pyyaml
+ipython
+pytest-cov
+coveralls
+pytest-pep8
+pyfits
+seaborn 
+#fitsio
+#--no-deps git+https://github.com/astropy/photutils.git
+#-U pytest
+#--no-deps --upgrade git+https://github.com/esheldon/fitsio.git#egg=fitsio

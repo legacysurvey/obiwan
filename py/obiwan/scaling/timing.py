@@ -1,5 +1,8 @@
-import matplotlib
-matplotlib.use('Agg')
+"""Script to make the obiwan scaling plots in my thesis"""
+
+if __name__ == "__main__":
+    import matplotlib
+    matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import numpy as np
 import subprocess
@@ -9,7 +12,7 @@ import json
 import re
 import pandas as pd
 
-STAGES=['tims', 'mask_junk', 'srcs', 
+STAGES=['tims', 'mask_junk', 'srcs',
         'fitblobs', 'coadds', 'writecat']
 
 
@@ -49,7 +52,7 @@ class Plots(object):
         #add_scatter(ax,xvals, tm['total']/60., c='b',m='o',lab='total')
         ax.set_xticks(xvals)
         names= np.zeros(d['nodes'].size).astype(str)
-        for i in range(names.size): 
+        for i in range(names.size):
             names[i]= '%d/%d' % (d['cores'][i],d['nodes'][i])
         ax.set_xticklabels(names,rotation=45, ha='right')
         #ax.set_yscale('log')
@@ -104,13 +107,13 @@ def time_per_stage(bigstring):
             .replace(',',''))
 
     t={}
-    for stage in STAGES: 
+    for stage in STAGES:
         a=re.search(r'Resources for stage %s(.*\n)*?Grand total Wall:.*\n' % stage,
                     bigstring)
         print('stage=%s, a=' % stage,a)
         lines= bigstring[slice(a.regs[0][0],a.regs[0][1])].split('\n')
         print('lines=',lines)
-        lines= pd.Series(lines) 
+        lines= pd.Series(lines)
         line= lines[lines.str.contains('Grand total Wall')].str.split(r'\s+')
         assert(line.size == 1)
         assert(line.str[-1].values[0] == 'sec')
@@ -134,7 +137,7 @@ def write_measurements(d,savenm='test.txt'):
         text += ' %s' % d['total_sec']
         foo.write(text+'\n')
     print('Appended measurements %s' % savenm)
-        
+
 
 if __name__ == '__main__':
     from argparse import ArgumentParser
@@ -159,7 +162,6 @@ if __name__ == '__main__':
                 **number_injected(bigstring,nobj=int(d['nobj']))
                 }
             write_measurements(d, args.savenm)
-    
+
     # Plots
     df= pd.read_csv(args.savenm,sep=' ')
-

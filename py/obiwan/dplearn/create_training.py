@@ -11,12 +11,12 @@ import pandas as pd
 from obiwan.qa.visual import readImage,sliceImage
 from obiwan.common import dobash
 
-try: 
-    from astrometry.util.fits import fits_table
-    from legacypipe.survey import LegacySurveyData, wcs_for_brick
-    import galsim
-except ImportError:
-    pass
+# try:
+from astrometry.util.fits import fits_table
+from legacypipe.survey import LegacySurveyData, wcs_for_brick
+import galsim
+# except ImportError:
+#     pass
 
 HDF5_KEYS= ['g','r','z','gr','gz','rz','grz']
 
@@ -24,7 +24,7 @@ def flux2mag(nmgy):
     return -2.5 * (np.log10(nmgy) - 9)
 
 class SimStamps(object):
-    """Object for exracting sim cutouts 
+    """Object for exracting sim cutouts
 
         Args:
             ls_dir: LEGACY_SURVEY_DIR, like 'tests/end_to_end/testcase_DR5_grz'
@@ -62,7 +62,7 @@ class SimStamps(object):
 
         print('Loading from %s' % coadd_dir)
         self.img_fits,self.ivar_fits= {},{}
-        for b in self.bands: 
+        for b in self.bands:
             self.img_fits[b]= readImage(os.path.join(coadd_dir,
                                         'legacysurvey-%s-image-%s.fits.fz' % (brick,b)))
             self.ivar_fits[b]= readImage(os.path.join(coadd_dir,
@@ -93,26 +93,26 @@ class SimStamps(object):
             assert(olap.area() > 0)
             if olap.numpyShape() == test_img.array.shape:
                 # Grab from fits image b/c aligned better
-                _ = self.hdf5_obj.create_dataset(str(cat.id)+'/img', 
+                _ = self.hdf5_obj.create_dataset(str(cat.id)+'/img',
                                                  chunks=True, \
                     data= np.array([sliceImage(self.img_fits[band],
                                                xslice=xslc,yslice=yslc)
                                     for band in self.bands_str]).T)
-                _ = self.hdf5_obj.create_dataset(str(cat.id)+'/ivar', 
+                _ = self.hdf5_obj.create_dataset(str(cat.id)+'/ivar',
                                                  chunks=True, \
                     data= np.array([sliceImage(self.ivar_fits[band],
                                                xslice=xslc,yslice=yslc)
                                     for band in self.bands_str]).T)
 
-                _ = self.hdf5_jpeg.create_dataset(str(cat.id)+'/img', 
+                _ = self.hdf5_jpeg.create_dataset(str(cat.id)+'/img',
                                                   chunks=True,dtype=np.uint8, \
                     data= sliceImage(self.img_jpeg,
                                      xslice=xslc,yslice=yslc))
-                # _ = self.hdf5_obj.create_dataset(str(cat.id)+'/img', 
+                # _ = self.hdf5_obj.create_dataset(str(cat.id)+'/img',
                 #                                  chunks=True, \
                 #     data= np.array([self.img_fits[band][olap].array
                 #                     for band in self.bands_str]).T)
-                # _ = self.hdf5_obj.create_dataset(str(cat.id)+'/ivar', 
+                # _ = self.hdf5_obj.create_dataset(str(cat.id)+'/ivar',
                 #                                  chunks=True, \
                 #     data= np.array([self.ivar_fits[band][olap].array
                 #                     for band in self.bands_str]).T)
@@ -126,10 +126,10 @@ class SimStamps(object):
                     img[i][olap] += self.img_gs[band][olap]
                     ivar[i][olap] += self.ivar_gs[band][olap]
 
-                _ = self.hdf5_obj_onedge.create_dataset(str(cat.id)+'/img', 
+                _ = self.hdf5_obj_onedge.create_dataset(str(cat.id)+'/img',
                                                         chunks=True, \
                     data= np.array([d.array for d in img]).T)
-                _ = self.hdf5_obj_onedge.create_dataset(str(cat.id)+'/ivar', 
+                _ = self.hdf5_obj_onedge.create_dataset(str(cat.id)+'/ivar',
                                                         chunks=True, \
                     data= np.array([d.array for d in ivar]).T)
 
@@ -157,7 +157,7 @@ class SimStamps(object):
         self.bands_str= ''.join(sorted(self.bands))
         assert(self.bands_str in HDF5_KEYS)
         self.set_output_fns(brick,self.bands_str)
-    
+
         if os.path.exists(self.hdf5_fn):
             try:
                 f= h5py.File(self.hdf5_fn, 'r')
@@ -181,7 +181,7 @@ class SimStamps(object):
         self.hdf5_jpeg = h5py.File(self.hdf5_fn_jpeg, "w")
         # Many rs*/ dirs per brick
         for cat_fn,coadd_dir in zip(self.cat_fns,self.coadd_dirs):
-            if (self.jpeg) & (os.path.basename(coadd_dir) != 'rs0'): 
+            if (self.jpeg) & (os.path.basename(coadd_dir) != 'rs0'):
                 print('jpeg=True, so skipping %s' % coadd_dir)
                 continue
             self.load_data(brick,cat_fn,coadd_dir)
@@ -196,7 +196,7 @@ class SimStamps(object):
         print('Wrote %s' % self.hdf5_fn)
         print('Wrote %s' % self.hdf5_fn_onedge)
         print('Wrote %s' % self.hdf5_fn_jpeg)
-        
+
     def set_paths_to_data(self,brick):
         """lists of catalogues filenames and coadd dirs"""
         search= os.path.join(self.outdir,'coadd',
@@ -245,7 +245,7 @@ class SimStamps(object):
     def apply_cuts(self):
         len_bef=len(self.cat)
         print('After cut, have %d/%d' % (len(self.cat),len_bef))
-    
+
     def write_mag_sorted_ids(self,band='g'):
         mag= self.get_mag(band)
         inds= np.argsort(mag) # small to large (mag, so brightest to faintest)
@@ -255,13 +255,13 @@ class SimStamps(object):
         T= T[inds]
         T.writeto(self.sorted_ids_fn)
         print('Wrote %s' % self.sorted_ids_fn)
-   
+
     def get_mag(self,band='g'):
         return flux2mag(self.cat.get(band+'flux'))
 
 
 #######
-# Funcs to apply simulated source cuts to tractor catalogues sources 
+# Funcs to apply simulated source cuts to tractor catalogues sources
 
 def get_xy_pad(slope,pad):
     """Returns dx,dy"""
@@ -270,20 +270,20 @@ def get_xy_pad(slope,pad):
 
 def y1_line(rz,pad=None):
     slope,yint= 1.15,-0.15
-    if pad: 
+    if pad:
         dx,dy= get_xy_pad(slope,pad)
         return slope*(rz+dx) + yint + dy
     else:
         return slope*rz + yint
-    
+
 def y2_line(rz,pad=None):
     slope,yint= -1.2,1.6
-    if pad: 
+    if pad:
         dx,dy= get_xy_pad(slope,pad)
         return slope*(rz-dx) + yint + dy
     else:
         return slope*rz + yint
-    
+
 def get_ELG_box(rz,gr, pad=None):
     """
     Args:
@@ -320,7 +320,7 @@ class TractorStamps(SimStamps):
                                            outdir=outdir,
                                            savedir=savedir,
                                            jpeg=jpeg)
-    
+
     def set_paths_to_data(self,brick):
         """lists of catalogues filenames and coadd dirs"""
         self.cat_fns= [os.path.join(self.outdir,'tractor',
@@ -358,10 +358,10 @@ class TractorStamps(SimStamps):
         hasGRZ= ((self.cat.brick_primary) &
                  (self.cat.nobs_g >= 1) &
                  (self.cat.nobs_r >= 1) &
-                 (self.cat.nobs_z >= 1)) 
-        noArtifacts= ((self.cat.allmask_g == 0) & 
-                      (self.cat.allmask_r == 0) & 
-                      (self.cat.allmask_z == 0)) 
+                 (self.cat.nobs_z >= 1))
+        noArtifacts= ((self.cat.allmask_g == 0) &
+                      (self.cat.allmask_r == 0) &
+                      (self.cat.allmask_z == 0))
 
         keep= ((self.sim_sampling_cut(df)) &
                (self.isFaint_cut(df)) &
@@ -377,15 +377,15 @@ class TractorStamps(SimStamps):
         """same cut applied to simulated sources
 
         Args:
-            df: pd.DataFrame have tractor cat extinction corrected grz mags 
+            df: pd.DataFrame have tractor cat extinction corrected grz mags
         """
         # TS box w/0.5 mag padding
         inBox= ((df['g-r'] <= y1_line(df['r-z'],pad=0.5)) &
-                (df['g-r'] <= y2_line(df['r-z'],pad=0.5)) & 
-                (df['r-z'] >= 0.3 - 0.5) & 
+                (df['g-r'] <= y2_line(df['r-z'],pad=0.5)) &
+                (df['r-z'] >= 0.3 - 0.5) &
                 (df['r-z'] <= 1.6 + 0.5))
 
-        # Effective rhalf and drop comp, dev 
+        # Effective rhalf and drop comp, dev
         fwhm_or_rhalf= np.zeros(len(self.cat))-1 # arcsec
         isPSF= np.char.strip(self.cat.type) == 'PSF'
         isEXP= pd.Series(np.char.strip(self.cat.type)).isin(['EXP','REX'])
@@ -405,10 +405,10 @@ class TractorStamps(SimStamps):
                   (self.cat.flux_ivar_r > 0) &
                   (self.cat.flux_ivar_z > 0))
 
-        keep= ((grz_gt0) & 
+        keep= ((grz_gt0) &
                (isCOMP == False) &
                (isDEV == False) &
-               (fwhm_or_rhalf < 5)) 
+               (fwhm_or_rhalf < 5))
 
         #Last cut
         rhalf_lim= (0.262/2,2.) # Camera, Data
@@ -424,16 +424,16 @@ class TractorStamps(SimStamps):
 
 
     def isFaint_cut(self,df):
-        """There are only faint sources in the deep2 matched sample, 
+        """There are only faint sources in the deep2 matched sample,
         but in the tractor catalogus have a bright population presumably
         stars. Remove these
-        
+
         Args:
-            df: pd.DataFrame have tractor cat extinction corrected grz mags 
+            df: pd.DataFrame have tractor cat extinction corrected grz mags
         """
         # "elg_sample_5dim_10k.fits"
-        min_mag= {'r': 20.4659, 
-                  'z': 19.4391, 
+        min_mag= {'r': 20.4659,
+                  'z': 19.4391,
                   'g': 20.6766}
         keep= ((df['g'] >= min_mag['g']) &
                (df['r'] >= min_mag['r']) &
@@ -452,7 +452,7 @@ class UserDefinedStamps(SimStamps):
                          outdir=outdir,
                          savedir=savedir,
                          jpeg=jpeg)
-    
+
     def set_paths_to_data(self,brick):
         """lists of catalogues filenames and coadd dirs"""
         self.cat_fns= [os.path.join(self.savedir,'%s.fits' % brick)]
@@ -464,12 +464,12 @@ class UserDefinedStamps(SimStamps):
                     (self.cat_fns[0],self.coadd_dirs[0]))
 
 
-def testcase_main(): 
+def testcase_main():
     name= 'testcase_DR5_grz'
     obj='elg'
     onedge=False
     if '_grz' in name:
-        brick='0285m165' 
+        brick='0285m165'
         zoom= [3077, 3277, 2576, 2776]
     else:
         brick='1741p242'
@@ -482,7 +482,7 @@ def testcase_main():
                          'tests/end_to_end','out_'+name+'_'+obj)
     if onedge:
         obj_dir += '_onedge'
-    
+
     Sim= SimcatStamps(ls_dir=ls_dir, obj_dir=obj_dir)
     for brick in [brick]:
         Sim.run(brick, zoom=zoom)
@@ -512,13 +512,13 @@ def mpi_main(nproc=1,which=None,
     kwargs={}
     if which == 'sim':
         Obj= SimStamps(**d)
-    elif which == 'tractor'
+    elif which == 'tractor':
         Obj= TractorStamps(**d)
-    elif which == 'userDefined'
+    elif which == 'userDefined':
         Obj= UserDefinedStamps(**d)
         kwargs.update(stampSize=64,
                       applyCuts=False)
-    
+
     for brick in bricks:
         Obj.run(brick)
 
@@ -527,11 +527,11 @@ if __name__ == '__main__':
     #testcase_main()
     from argparse import ArgumentParser
     parser = ArgumentParser()
-    parser.add_argument('--which', type=str, choices=['tractor','sim','userDefined'], required=True, help='whether to make training hdf5 cutouts of real (DR5) or simulated (elg_dr5_coadds) outputs') 
-    parser.add_argument('--nproc', type=int, default=1, help='set to > 1 to run mpi4py') 
-    parser.add_argument('--bricks_fn', type=str, default=None, help='specify a fn listing bricks to run, or a single default brick will be ran') 
-    parser.add_argument('--savedir', type=str, default=None, help='specify a fn listing bricks to run, or a single default brick will be ran') 
-    parser.add_argument('--jpeg', action='store_true', default=False, help='put jpeg images in hdf5 file instead of fits coadss') 
+    parser.add_argument('--which', type=str, choices=['tractor','sim','userDefined'], required=True, help='whether to make training hdf5 cutouts of real (DR5) or simulated (elg_dr5_coadds) outputs')
+    parser.add_argument('--nproc', type=int, default=1, help='set to > 1 to run mpi4py')
+    parser.add_argument('--bricks_fn', type=str, default=None, help='specify a fn listing bricks to run, or a single default brick will be ran')
+    parser.add_argument('--savedir', type=str, default=None, help='specify a fn listing bricks to run, or a single default brick will be ran')
+    parser.add_argument('--jpeg', action='store_true', default=False, help='put jpeg images in hdf5 file instead of fits coadss')
     args = parser.parse_args()
 
     # Data paths
@@ -565,7 +565,7 @@ if __name__ == '__main__':
             if not args.savedir:
                 d.update(savedir=os.path.join(os.environ['CSCRATCH'],
                                               'obiwan_out/dr5_hdf5'))
-     
+
     # Bricks to run
     if not args.bricks_fn:
         bricks= ['1211p060'] #['1126p220']
@@ -574,4 +574,3 @@ if __name__ == '__main__':
 
     mpi_main(nproc=args.nproc,which=args.which,bricks=bricks,
              **d)
-

@@ -1,5 +1,5 @@
 """
-Computes the number of CPU hours burned using SLURM sacct
+Uses 'SLURM sacct' to compute the number of CPU and MPP hours
 """
 
 import pandas as pd
@@ -22,7 +22,7 @@ def cpu_hrs(nodes,h,m,s, mpp=False,cori=True):
         mpp_factor= 2.5
         if not cori:
             mpp_factor= 2.
-    
+
     return mpp_factor * cores_per_node * nodes * h + m/60. + s/3600.
 
 def dobash(cmd):

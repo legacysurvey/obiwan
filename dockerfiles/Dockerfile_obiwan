@@ -1,0 +1,20 @@
+FROM kaylanb/legacypipe_new
+#FROM kaylanb/obiwan_new
+
+RUN apt-get update && apt-get install -y \
+    libfftw3-dev
+
+# COPY obiwan_extra_requirements.txt /tmp/
+RUN source /srv/py3_venv/bin/activate && \
+    pip3 install --upgrade pip setuptools wheel && \
+    pip3 install galsim==2.0.0
+
+COPY entrypoint_obiwan.sh /
+ENTRYPOINT ["/entrypoint_obiwan.sh"]
+#CMD ["/bin/bash"]
+
+#RUN mkdir -p /myrepo/obiwan
+
+# WORKDIR $MYREPO
+# RUN git clone https://github.com/legacysurvey/obiwan.git
+# ENV PYTHONPATH $MYREPO/obiwan/py:$PYTHONPATH

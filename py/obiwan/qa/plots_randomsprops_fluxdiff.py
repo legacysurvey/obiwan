@@ -1,5 +1,11 @@
-import matplotlib
-matplotlib.use('Agg') # display backend
+"""The main analysis script, created the majority of my thesis plots Ch 4-5
+
+Philosophy: name of plot is also name of the function
+"""
+
+if __name__ == '__main__':
+    import matplotlib
+    matplotlib.use('Agg') # display backend
 import matplotlib.pyplot as plt
 import numpy as np
 import os
@@ -13,55 +19,57 @@ from astrometry.util.fits import fits_table, merge_tables
 
 import obiwan.qa.plots_common as plots
 
-plt.rcParams['axes.labelsize'] = 14
-plt.rcParams['xtick.labelsize'] = 12
-plt.rcParams['ytick.labelsize'] = 12
-
 #######################
-parser = ArgumentParser(description='DECaLS simulations.')
-parser.add_argument('--randoms_table', required=True)
-parser.add_argument('--which', choices=['cosmos','eboss','desi'],required=True)
-args = parser.parse_args()
+if __name__ == "__main__":
+    """Input args here because functions below need these settings
 
-dat= fits_table(args.randoms_table)
+    Args:
+        randoms_table: created by runmanager/derived_tables.py
+        which: eboss, desi are DR3-era runs, cosmos is cosmos subsets runs
+    """
+    plt.rcParams['axes.labelsize'] = 14
+    plt.rcParams['xtick.labelsize'] = 12
+    plt.rcParams['ytick.labelsize'] = 12
 
-#avg_fracin= np.mean(np.array([dat.tractor_fracin_g,
-#                          dat.tractor_fracin_r,
-#                          dat.tractor_fracin_z]),axis=0)
-#keepFracin= avg_fracin >= 0.7
+    parser = ArgumentParser(description='DECaLS simulations.')
+    parser.add_argument('--randoms_table', required=True)
+    parser.add_argument('--which', choices=['cosmos','eboss','desi'],required=True)
+    args = parser.parse_args()
 
-fracin_thresh= 0.2
-types_of_models= ['PSF','EXP','DEV','SIMP','COMP']
-if args.which == 'cosmos':
-    fracin_thresh= 0.1
-    types_of_models= ['PSF','EXP','DEV','REX','COMP']
-keepFracin= ((dat.tractor_fracin_g > fracin_thresh) &
-             (dat.tractor_fracin_r > fracin_thresh) & 
-             (dat.tractor_fracin_z > fracin_thresh))
-isRec= (dat.obiwan_mask == 1) 
-#isRec= (isRec) & (keepFracin)
+    dat= fits_table(args.randoms_table)
 
-rz= dat.psql_r - dat.psql_z
-gr= dat.psql_g - dat.psql_r
-mags={}
-for band in 'grz':
-    mags[band]= plots.flux2mag(dat.get('tractor_flux_'+band)/\
-                                 dat.get('tractor_mw_transmission_'+band))
+    # used to remove edge-sources from tractor catalogues
+    fracin_thresh= 0.2
+    types_of_models= ['PSF','EXP','DEV','SIMP','COMP']
+    if args.which == 'cosmos':
+        fracin_thresh= 0.1
+        types_of_models= ['PSF','EXP','DEV','REX','COMP']
+    keepFracin= ((dat.tractor_fracin_g > fracin_thresh) &
+                 (dat.tractor_fracin_r > fracin_thresh) &
+                 (dat.tractor_fracin_z > fracin_thresh))
+    # simulated source is detected and modeled by legacypipe
+    isRec= (dat.obiwan_mask == 1)
 
-if args.which == 'eboss':
-    is_elg_input= plots.eboss_ts(dat.psql_g,rz,gr,region='ngc')
-    is_elg_trac= plots.eboss_ts(mags['g'],mags['r']-mags['z'],mags['g']-mags['r'],region='ngc')
-#elif args.which == 'desi':
-#    is_elg_input= plots.desi_ts(dat.psql_g,rz,gr)
-#    is_elg_trac= plots.desi_ts(mags['g'],mags['r']-mags['z'],mags['g']-mags['r'])
-print('recovered of total: %f' % (len(dat[isRec])/len(dat)))
-print('recovered keepFracin of total: %f' % (len(dat[(isRec) & (keepFracin)])/len(dat)))
-if args.which != 'cosmos':
-    print('elg input of total: %f' % (len(dat[is_elg_input])/len(dat)))
-print('keepFracin of recovered: %f' % (len(dat[(isRec) & (keepFracin)])/len(dat[isRec])))
-if args.which != 'cosmos':
-    print('fracin elgs >= 0.7 of recovered elgs: %f' % (len(dat[(isRec) & (keepFracin) & (is_elg_trac)])/len(dat[(isRec) & (is_elg_input)])))
+    rz= dat.psql_r - dat.psql_z
+    gr= dat.psql_g - dat.psql_r
+    mags={}
+    for band in 'grz':
+        mags[band]= plots.flux2mag(dat.get('tractor_flux_'+band)/\
+                                     dat.get('tractor_mw_transmission_'+band))
 
+    if args.which == 'eboss':
+        is_elg_input= plots.eboss_ts(dat.psql_g,rz,gr,region='ngc')
+        is_elg_trac= plots.eboss_ts(mags['g'],mags['r']-mags['z'],mags['g']-mags['r'],region='ngc')
+    #elif args.which == 'desi':
+    #    is_elg_input= plots.desi_ts(dat.psql_g,rz,gr)
+    #    is_elg_trac= plots.desi_ts(mags['g'],mags['r']-mags['z'],mags['g']-mags['r'])
+    print('recovered of total: %f' % (len(dat[isRec])/len(dat)))
+    print('recovered keepFracin of total: %f' % (len(dat[(isRec) & (keepFracin)])/len(dat)))
+    if args.which != 'cosmos':
+        print('elg input of total: %f' % (len(dat[is_elg_input])/len(dat)))
+    print('keepFracin of recovered: %f' % (len(dat[(isRec) & (keepFracin)])/len(dat[isRec])))
+    if args.which != 'cosmos':
+        print('fracin elgs >= 0.7 of recovered elgs: %f' % (len(dat[(isRec) & (keepFracin) & (is_elg_trac)])/len(dat[(isRec) & (is_elg_input)])))
 ##########################
 
 
@@ -78,7 +86,7 @@ def myhist(ax,data,bins=20,color='b',normed=False,lw=2,ls='solid',label=None,
 def my_step(ax,bins,height,
             lw=2,color='b',ls='solid',label=None):
     """if plt.hist returns tuple (height,bins) then this reproces that plot.
-    
+
     e.g. bin centers and horizontal lines at the right place...
     """
     kw= dict(color=color,lw=lw,ls=ls)
@@ -98,6 +106,7 @@ def mytext(ax,x,y,text, ha='left',va='center',fontsize=20,rotation=0,
                 transform=ax.transAxes)
 
 class getDepth(object):
+    """limiting AB mag depth"""
     def __init__(self):
         self.desi= dict(g=24.0,
                         r=23.4,
@@ -132,7 +141,7 @@ def grz_hist_input_noise_ext(dat,fn='grz_hist_input_noise_ext.png',
                    color=color,label=key,**kw_hist)
         plots.mytext(ax,0.5,0.05,band,fontsize=14)
         ylab=ax.set_ylabel('Number')
-        
+
     xlab=axes[-1].set_xlabel('True AB mag')
     leg=axes[0].legend(loc=(0,1.01),ncol=3)
     plt.savefig(fn,bbox_extra_artists=[xlab,ylab,leg], bbox_inches='tight')
@@ -160,7 +169,7 @@ def grz_hist_input_ext(dat,fn='grz_hist_input_ext.png',
                    color=color,label=key.replace('_','+'),**kw_hist)
         plots.mytext(ax,0.5,0.05,band,fontsize=14)
         ylab=ax.set_ylabel('Number')
-        
+
     xlab=axes[-1].set_xlabel('True AB mag')
     leg=axes[0].legend(loc=(0,1.01),ncol=2)
     plt.savefig(fn,bbox_extra_artists=[xlab,ylab,leg], bbox_inches='tight')
@@ -219,7 +228,7 @@ def grz_hist_input_rec(dat,fn='grz_hist_input_rec.png',
                color='g',label='recovered',**kw_hist)
         xlab=ax.set_xlabel('True mag %s' % band)
         ylab=ax.set_ylabel('Number')
-        
+
     leg=axes[0].legend(loc=(0,1.01),ncol=2)
     plt.savefig(fn,bbox_extra_artists=[xlab,ylab,leg], bbox_inches='tight')
     plt.close()
@@ -237,7 +246,7 @@ def grz_hist_by_type(dat,fn='grz_hist_by_type.png',x_ivar=0,
     figs,axes= plt.subplots(3,2,figsize=(10,9))
     plt.subplots_adjust(hspace=0.3)
 
-    ratio_area= 1. 
+    ratio_area= 1.
     xlim= dict(g=glim,
                r=rlim,
                z=zlim)
@@ -355,8 +364,8 @@ def delta_dec_vs_delta_ra(dat,fn='delta_dec_vs_delta_ra.png',
 
 def number_per_type_input_rec_meas(dat,fn='number_per_type_input_rec_meas.png'):
     """Horizontal Barplot
-    
-    Only count by typ injected b/c confusion matrix is the right tool if 
+
+    Only count by typ injected b/c confusion matrix is the right tool if
     onsidering tractor type
     """
     use_types= ['EXP','DEV']
@@ -387,13 +396,13 @@ def confusion_matrix_by_type(dat,fn='confusion_matrix_by_type.png'):
     use_type= types_of_models
     trac_types= np.char.strip(dat.get('tractor_type'))
     #trac_types[pd.Series(trac_types).isin(['SIMP','REX']).values]= 'EXP'
-    
+
     input_types= np.array(['EXP']*len(dat))
     keep= (isRec) & (keepFracin)
     input_types[(keep) & (dat.n == 4)]= 'DEV'
     ans_types= ['EXP','DEV']
 
-    cm= plots.create_confusion_matrix(input_types[keep],trac_types[keep], 
+    cm= plots.create_confusion_matrix(input_types[keep],trac_types[keep],
                                       poss_ans_types= ans_types,
                                       poss_pred_types= types_of_models)
     plt.imshow(cm, interpolation='nearest', cmap=plt.cm.Blues, vmin=0,vmax=1)
@@ -416,7 +425,7 @@ def confusion_matrix_by_type(dat,fn='confusion_matrix_by_type.png'):
 
 def hist_true_rhalf_input(dat,fn='hist_true_rhalf_input',ylims=(0,4.2)):
     figs,ax= plt.subplots()
-    
+
     bins= np.linspace(0,2,num=30)
     myhist(ax,dat.rhalf,bins=bins,color='k',
            label='Injected',normed=True)
@@ -437,13 +446,13 @@ def hist_true_rhalf_input(dat,fn='hist_true_rhalf_input',ylims=(0,4.2)):
 def hist_true_rhalf_by_type(dat,fn='hist_true_rhalf_by_type'):
     use_types= ['SIMP','EXP','DEV','PSF']
     types= np.char.strip(dat.get('tractor_type'))
-   
-    ylims= (0,7) 
+
+    ylims= (0,7)
     figs,ax= plt.subplots(2,1,figsize=(4,6))
     plt.subplots_adjust(hspace=0.2)
 
     bins= np.linspace(0,2,num=30)
-    
+
     keep= (isRec) & (keepFracin)
     for typ,color in zip(['SIMP','PSF'],'bc'):
         myhist(ax[0],dat.rhalf[(keep) & (types == typ)],bins=bins,color=color,
@@ -451,9 +460,9 @@ def hist_true_rhalf_by_type(dat,fn='hist_true_rhalf_by_type'):
     for typ,color in zip(['EXP','DEV'],'gm'):
         myhist(ax[1],dat.rhalf[(keep) & (types == typ)],bins=bins,color=color,
                label=typ,normed=True)
-    
+
     #plots.mytext(ax,0.9,0.9,typ.upper(),fontsize=14)
-    
+
     #isPostiveFlux= ((np.isfinite(dmag)) &
     #                (np.isfinite(true_mag)))
     #isPostiveFlux= np.ones(len(dmag),bool)
@@ -534,7 +543,7 @@ def redshifts_recovered(dat,fn='redshifts_recovered.png'):
             color='g',label='legacypipe')
     my_step(ax[1],bins,n_notelg_legacypipe/n_elg.astype(float),
             color='m',label='contam by legacypipe')
-    
+
     xlab=ax[-1].set_xlabel(r'redshift')
     ylab=ax[0].set_ylabel('PDF')
     ylab=ax[1].set_ylabel('Fraction')
@@ -605,7 +614,7 @@ def e1_e2_separate_panels(dat,fn='e1_e2.png',nbins=(120,120),
 
 def fraction_recovered_vs_rhalf(dat,fn='fraction_recovered_vs_rhalf.png'):
     fig,ax=plt.subplots()
-        
+
     xlim=(0,2.5)
     kw=dict(normed=False,range=xlim)
 
@@ -710,7 +719,7 @@ def fracin_vs_numstddev_2dhist(dat,fn='fracin_vs_numstddev_2dhist.png',
         x= dat.get('tractor_flux_'+band) -\
                    dat.get(band+'flux')
         x *= np.sqrt(dat.get('tractor_flux_ivar_'+band))
-        
+
         y= dat.get('tractor_fracin_%s' % band)
 
         keep= isRec
@@ -741,7 +750,7 @@ def fix_for_delta_flux(dat,fn='fix_for_delta_flux.png',
     rad_aper= [0.5,0.75,1.0,1.5,2.0,3.5,5.0,7.0]
     for cnt,i_aper in zip(range(5),
                           [None,5,6,7,'avg']):
-        ratio_area= 1. 
+        ratio_area= 1.
         #ratio_area= (1.5*dat.rhalf[isRec] / rad_aper[i_aper])**2
         if i_aper == 'avg':
             name= 'fix: avg(-aperture_resid %.1f,%.1f)' % (rad_aper[6],rad_aper[7])
@@ -784,7 +793,7 @@ def delta_vs_grzmag(dat,fn='_vs_grzmag.png',
     assert(delta in ['num_std_dev','dmag','num_std_dev_rhalf','drhalf'])
     assert(typ in ['all','PSF','SIMP','EXP','DEV','REX'])
     fn= delta+fn.replace('.png','_bytype_%s.png' % typ)
-    
+
     figs,axes= plt.subplots(3,1,figsize=(6,10))
     plt.subplots_adjust(hspace=0.4)
 
@@ -802,7 +811,7 @@ def delta_vs_grzmag(dat,fn='_vs_grzmag.png',
             # Opposite subtraction order, so < 0 mean Truth is brighter
             # Just as for delta = num_std_dev
             y= plots.flux2mag(dat.get(band+'flux')) -\
-                plots.flux2mag(dat.get('tractor_flux_'+band)) 
+                plots.flux2mag(dat.get('tractor_flux_'+band))
             ylabel=r'$\Delta\, %s$ (Truth - Tractor)' % band
             keep= (keep) & (np.isfinite(y))
         elif delta in ['num_std_dev_rhalf','drhalf']:
@@ -820,17 +829,17 @@ def delta_vs_grzmag(dat,fn='_vs_grzmag.png',
         if typ != 'all':
             types= np.char.strip(dat.get('tractor_type'))
             keep= (keep) & (types == typ)
-         
+
         true_mag= plots.flux2mag(dat.get(band+'flux')/\
                                    dat.get('mw_transmission_'+band))
-        
+
         bins= np.linspace(xlim[band][0],xlim[band][1],num=30)
         plots.myhist2D(ax,true_mag[keep],y[keep],
                        xlim=xlim[band],ylim=delta_lims,nbins=nbins)
-        
+
         ax.axhline(0,c='r',ls='dotted')
         if percentile_lines:
-            binned= plots.bin_up(true_mag[keep],y[keep], 
+            binned= plots.bin_up(true_mag[keep],y[keep],
                                  bin_minmax=xlim[band],nbins=30)
             for perc in ['q25','q50','q75']:
                 kw= dict(c='y',ls='-',lw=1)
@@ -867,7 +876,7 @@ def num_std_dev_gaussfit_flux(dat,fn='num_std_dev_gaussfit_flux.png',
         fn= fn.replace('.png','_%.2f.png' % thresh)
     if not sub_mean:
         fn= fn.replace('.png','_notsubmean.png')
-    
+
     figs,axes= plt.subplots(3,1,figsize=(6,10))
     plt.subplots_adjust(hspace=0.4)
 
@@ -903,57 +912,57 @@ def num_std_dev_gaussfit_flux(dat,fn='num_std_dev_gaussfit_flux.png',
                 #keep= (keep) & (frac > thresh) #higher fractions are good sources
                 keep= (keep) & (frac)
             elif keep_what_put_in == 'fracin_keep_bad':
-                #keep= (keep) & (frac <= thresh) 
-                keep= (keep) & (~frac) 
+                #keep= (keep) & (frac <= thresh)
+                keep= (keep) & (~frac)
         elif keep_what_put_in in ['fracmask','fracmask_keep_bad']:
             frac= np.mean(np.array([dat.tractor_fracmasked_g,
                                     dat.tractor_fracmasked_r,
                                     dat.tractor_fracmasked_z]),axis=0)
             assert(len(frac) == len(dat))
             if keep_what_put_in == 'fracmask':
-                keep= (keep) & (frac < thresh) 
+                keep= (keep) & (frac < thresh)
             elif keep_what_put_in == 'fracmask_keep_bad':
-                keep= (keep) & (frac >= thresh) 
+                keep= (keep) & (frac >= thresh)
         elif keep_what_put_in in ['allmask','allmask_keep_bad']:
             good= ((dat.tractor_allmask_g == 0) &
                    (dat.tractor_allmask_r == 0) &
                    (dat.tractor_allmask_z == 0))
             if keep_what_put_in == 'allmask':
-                keep= (keep) & (good) 
+                keep= (keep) & (good)
             elif keep_what_put_in == 'allmask_keep_bad':
-                keep= (keep) & (~good) 
+                keep= (keep) & (~good)
         elif keep_what_put_in == 'rhalfeqpt5':
             keep= (keep) & (is_rhalf)
         elif keep_what_put_in == 'neq1_notrhalf':
             keep= (keep) & (dat.n == 1) & (~is_rhalf)
         elif keep_what_put_in == 'neq4_notrhalf':
             keep= (keep) & (dat.n == 4) & (~is_rhalf)
- 
+
     for ax,band in zip(axes,'grz'):
         data_lab= 'data'
         num_std_dev= dat.get('tractor_flux_'+band) -\
                         dat.get(band+'flux')
         num_std_dev *= np.sqrt(dat.get('tractor_flux_ivar_'+band))
-        
+
         if sub_mean:
             #keep= ((num_std_dev >= num_std_lims[0]) &
-            #       (num_std_dev <= num_std_lims[0]) 
+            #       (num_std_dev <= num_std_lims[0])
             dflux_mean= np.mean(num_std_dev[((keep) &
-                                             (num_std_dev > delta_lims[0]) & 
+                                             (num_std_dev > delta_lims[0]) &
                                              (num_std_dev < delta_lims[1]))])
             #dflux_mean= np.median(num_std_dev[isRec])
             num_std_dev -= dflux_mean
             print('%s: dflux_mean=%f' % (band,dflux_mean))
             data_lab+=' minus mean (%.2f)' % dflux_mean
-        
+
         bins= np.linspace(delta_lims[0],delta_lims[1],num=30)
         h=myhist(ax,num_std_dev[keep],bins=bins,color='b',
                  label=data_lab,normed=True,
                  return_h=True)
-        
+
         rv = norm()
         ax.plot(bins,rv.pdf(bins),'k--',label='Standard Norm')
-        
+
         errfunc = lambda p, x, y: gauss_model(p, x) - y
         p0 = [1.] # Initial guess
         binc= (bins[:-1]+bins[1:])/2
@@ -989,7 +998,7 @@ def num_std_dev_gaussfit_flux_separate_panels(dat,fn='num_std_dev_gaussfit_flux_
     typ='all'
     if not sub_mean:
         fn= fn.replace('.png','_notsubmean.png')
-    
+
     keep= isRec
     if cut_on_fracin:
         keep= (keep) & (keepFracin)
@@ -1000,23 +1009,23 @@ def num_std_dev_gaussfit_flux_separate_panels(dat,fn='num_std_dev_gaussfit_flux_
         num_std_dev= dat.get('tractor_flux_'+band) -\
                         dat.get(band+'flux')
         num_std_dev *= np.sqrt(dat.get('tractor_flux_ivar_'+band))
-        
+
         if sub_mean:
             #keep= ((num_std_dev >= num_std_lims[0]) &
-            #       (num_std_dev <= num_std_lims[0]) 
+            #       (num_std_dev <= num_std_lims[0])
             dflux_mean= np.mean(num_std_dev[((keep) &
-                                             (num_std_dev > delta_lims[0]) & 
+                                             (num_std_dev > delta_lims[0]) &
                                              (num_std_dev < delta_lims[1]))])
             #dflux_mean= np.median(num_std_dev[isRec])
             num_std_dev -= dflux_mean
             print('%s: dflux_mean=%f' % (band,dflux_mean))
             data_lab+=' minus mean (%.2f)' % dflux_mean
-        
+
         bins= np.linspace(delta_lims[0],delta_lims[1],num=30)
         h=myhist(ax,num_std_dev[keep],bins=bins,color='b',
                  label=data_lab,normed=True,
                  return_h=True)
-        
+
         rv = norm()
         ax.plot(bins,rv.pdf(bins),'k--',label=r'$\mathcal{N}\,(\mu=0, \sigma=1)$')
         
@@ -1060,7 +1069,7 @@ def num_std_dev_gaussfit_rhalf(dat,fn='num_std_dev_gaussfit_rhalf.png',
     fn= fn.replace('.png','_bytype_%s.png' % typ)
     if sub_mean:
         fn= fn.replace('.png','_submean.png')
-    
+
     figs,ax= plt.subplots() #figsize=(6,6))
     #plt.subplots_adjust(hspace=0.4)
 
@@ -1080,12 +1089,12 @@ def num_std_dev_gaussfit_rhalf(dat,fn='num_std_dev_gaussfit_rhalf.png',
         types= np.char.strip(dat.get('tractor_type'))
         #types[pd.Series(types).isin(['SIMP','REX']).values]= 'EXP'
         keep= (keep) & (types == typ)
-    
+
     if sub_mean:
         #keep= ((num_std_dev >= num_std_lims[0]) &
-        #       (num_std_dev <= num_std_lims[0]) 
+        #       (num_std_dev <= num_std_lims[0])
         dflux_mean= np.mean(num_std_dev[((keep) &
-                                         (num_std_dev > delta_lims[0]) & 
+                                         (num_std_dev > delta_lims[0]) &
                                          (num_std_dev < delta_lims[1]))])
         #dflux_mean= np.median(num_std_dev[isRec])
         num_std_dev -= dflux_mean
@@ -1098,12 +1107,12 @@ def num_std_dev_gaussfit_rhalf(dat,fn='num_std_dev_gaussfit_rhalf.png',
         bin_at_max= binc[np.argmax(h)]
         num_std_dev -= bin_at_max
         data_lab+=' minus bin_at_max (%.2f)' % bin_at_max
-     
+
     bins= np.linspace(delta_lims[0],delta_lims[1],num=numbins)
     h=myhist(ax,num_std_dev[keep],bins=bins,color='b',
              label=data_lab,normed=True,
              return_h=True)
-    
+
     rv = norm()
     ax.plot(bins,rv.pdf(bins),'k--',label=r'$\mathcal{N}\,(\mu=0, \sigma=1)$')
     
@@ -1122,10 +1131,9 @@ def num_std_dev_gaussfit_rhalf(dat,fn='num_std_dev_gaussfit_rhalf.png',
     norm_fit= norm(scale= ssd)
     ax.plot(bins,norm_fit.pdf(bins),'k-',label=r'$\mathcal{N}\,(\mu=0, \sigma_s=%.2f)$' % ssd)
 
-
     ax.axvline(0,c='k',ls='dotted')
     #plots.mytext(ax,0.9,0.9,typ.upper(),fontsize=14)
-    
+
     #isPostiveFlux= ((np.isfinite(dmag)) &
     #                (np.isfinite(true_mag)))
     #isPostiveFlux= np.ones(len(dmag),bool)
@@ -1235,7 +1243,7 @@ def residual_gaussfit_rhalf(dat,fn='residual_gaussfit_rhalf.png',
     fn= fn.replace('.png','_bytype_%s.png' % typ)
     if sub_mean:
         fn= fn.replace('.png','_submean.png')
-    
+
     figs,ax= plt.subplots() #figsize=(6,6))
     #plt.subplots_adjust(hspace=0.4)
 
@@ -1257,12 +1265,12 @@ def residual_gaussfit_rhalf(dat,fn='residual_gaussfit_rhalf.png',
         types= np.char.strip(dat.get('tractor_type'))
         #types[pd.Series(types).isin(['SIMP','REX']).values]= 'EXP'
         keep= (keep) & (types == typ)
-    
+
     if sub_mean:
         #keep= ((num_std_dev >= num_std_lims[0]) &
-        #       (num_std_dev <= num_std_lims[0]) 
+        #       (num_std_dev <= num_std_lims[0])
         dflux_mean= np.mean(resid[((keep) &
-                                   (resid > delta_lims[0]) & 
+                                   (resid > delta_lims[0]) &
                                    (resid < delta_lims[1]))])
         #dflux_mean= np.median(num_std_dev[isRec])
         resid -= dflux_mean
@@ -1275,15 +1283,15 @@ def residual_gaussfit_rhalf(dat,fn='residual_gaussfit_rhalf.png',
         bin_at_max= binc[np.argmax(h)]
         resid -= bin_at_max
         data_lab+=' minus bin_at_max (%.2f)' % bin_at_max
-     
+
     bins= np.linspace(delta_lims[0],delta_lims[1],num=30)
     h=myhist(ax,resid[keep],bins=bins,color='b',
              label=data_lab,normed=True,
              return_h=True)
-    
+
     rv = norm()
     ax.plot(bins,rv.pdf(bins),'k--',label='Standard Norm')
-    
+
     errfunc = lambda p, x, y: gauss_model(p, x) - y
     p0 = [1.] # Initial guess
     binc= (bins[:-1]+bins[1:])/2
@@ -1294,7 +1302,7 @@ def residual_gaussfit_rhalf(dat,fn='residual_gaussfit_rhalf.png',
 
     ax.axvline(0,c='k',ls='dotted')
     #plots.mytext(ax,0.9,0.9,typ.upper(),fontsize=14)
-    
+
     #isPostiveFlux= ((np.isfinite(dmag)) &
     #                (np.isfinite(true_mag)))
     #isPostiveFlux= np.ones(len(dmag),bool)
@@ -1312,7 +1320,6 @@ def residual_gaussfit_rhalf(dat,fn='residual_gaussfit_rhalf.png',
 
 
 
-
 def rec_lost_contam_gr_rz(dat,fn='rec_lost_contam_gr_rz.png'):
     fig,axes=plt.subplots(5,2,figsize=(10,15))
     plt.subplots_adjust(wspace=0,hspace=0)
@@ -1321,7 +1328,7 @@ def rec_lost_contam_gr_rz(dat,fn='rec_lost_contam_gr_rz.png'):
     kw_leg= dict(loc='upper left',fontsize=12,markerscale=3,frameon=False)
 
     good= (isRec) & (keepFracin)
-    for lab,color,row,keep in [('Correct (Tractor ELG)','b',0, 
+    for lab,color,row,keep in [('Correct (Tractor ELG)','b',0,
                                   (good) & (is_elg_input) & (is_elg_trac)),
                                ('Contamination (Tractor ELG wrong)','g',1,
                                   (good) & (~is_elg_input) & (is_elg_trac)),
@@ -1339,7 +1346,7 @@ def rec_lost_contam_gr_rz(dat,fn='rec_lost_contam_gr_rz.png'):
                             c=color,label=lab,**kw_scatter)
         #axes[row,0].legend(**kw_leg)
         mytext(axes[row,0],0.5,0.9,lab,ha='center',fontsize=12)
-    
+
     for row in range(5):
         for col in range(2):
             axes[row,col].set_xlim(0.5,2)
@@ -1367,7 +1374,7 @@ def rec_lost_contam_grz(dat,fn='rec_lost_contam_grz.png',
     figs,axes= plt.subplots(3,1,figsize=(6,9))
     plt.subplots_adjust(hspace=0.3)
 
-    ratio_area= 1. 
+    ratio_area= 1.
     for ax,band in zip(axes,'grz'):
         if x_var == 'true_mag':
             _x_var= plots.flux2mag(dat.get(band+'flux')/\
@@ -1394,10 +1401,10 @@ def rec_lost_contam_grz(dat,fn='rec_lost_contam_grz.png',
         #                (np.isfinite(true_mag)))
         #isPostiveFlux= np.ones(len(dmag),bool)
         #print('true_mag=',true_mag[isPostiveFlux],'trac_mag=',dmag[isPostiveFlux])
-        
+
         # Plot
         good= (isRec) & (keepFracin)
-        for lab,color,keep in [('Correct (Tractor ELG)','b', 
+        for lab,color,keep in [('Correct (Tractor ELG)','b',
                                   (good) & (is_elg_input) & (is_elg_trac)),
                                ('Contamination (Tractor ELG wrong)','g',
                                   (good) & (~is_elg_input) & (is_elg_trac)),
@@ -1435,8 +1442,8 @@ def rec_lost_contam_delta_by_type(dat,fn='rec_lost_contam_delta_by_type.png',
     figs,axes= plt.subplots(4,1,figsize=(5,12))
     plt.subplots_adjust(hspace=0.2)
 
-    ### 
-    ratio_area= 1. 
+    ###
+    ratio_area= 1.
     fix= ratio_area * np.average([dat.get('tractor_apflux_resid_'+band)[:,6],
                                       dat.get('tractor_apflux_resid_'+band)[:,7]],
                                     axis=0)
@@ -1474,7 +1481,7 @@ def rec_lost_contam_delta_by_type(dat,fn='rec_lost_contam_delta_by_type.png',
         xlim= dict(g=(0,1.5),
                    r=(0,1.5),
                    z=(0,1.5))
-    ###   
+    ###
 
     good= (isRec) & (keepFracin)
     for ax,typ in zip(axes,use_types):
@@ -1483,7 +1490,7 @@ def rec_lost_contam_delta_by_type(dat,fn='rec_lost_contam_delta_by_type.png',
         #                (np.isfinite(true_mag)))
         #isPostiveFlux= np.ones(len(dmag),bool)
         #print('true_mag=',true_mag[isPostiveFlux],'trac_mag=',dmag[isPostiveFlux])
-        
+
         # Plot
         xlabel=ax.set_xlabel(xlab)
         for lab,color,keep in [('lost (recovered but fail TS)','g', (good) & (is_elg_input) & (~is_elg_trac)),
@@ -1491,7 +1498,7 @@ def rec_lost_contam_delta_by_type(dat,fn='rec_lost_contam_delta_by_type.png',
                                ('Tractor ELG (contamiation)', 'c',(good) & (~is_elg_input) & (is_elg_trac))]:
             subset= (keep) & (types == typ)
             if percentile_lines:
-                binned= plots.bin_up(_x_var[subset],_y_var[subset], 
+                binned= plots.bin_up(_x_var[subset],_y_var[subset],
                                      bin_minmax=xlim[band],nbins=30)
                 for perc in ['q25','q75']:
                     kw= dict(c=color,lw=2)
@@ -1503,7 +1510,7 @@ def rec_lost_contam_delta_by_type(dat,fn='rec_lost_contam_delta_by_type.png',
                            alpha=1,s=5,c=color,label=lab)
                 #ax.scatter(true_mag[(isPostiveFlux) & (keep)],dmag[(isPostiveFlux) & (keep)],
                 #           alpha=1,s=5,c=color,label=lab)
-        
+
     for ax in axes:
         ax.axhline(0,c='k',ls='--')
         ax.set_ylim(ylim)
@@ -1625,9 +1632,39 @@ if False:
                         nbins=(60,30),**kw_lims)
         delta_vs_grzmag(dat,delta='num_std_dev',typ=typ,delta_lims=(-10,10),
                         nbins=(60,30),**kw_lims)
+    # e1,e2 measurements
+    for typ in ['exp','dev',simp_or_rex.lower()]:
+        num_std_dev_gaussfit_e1_e2(dat,delta_lims= (-7,7),ylim=(0,0.4),
+                                   typ=typ,sub_mean= True)
 
-# Attempt to fix mag offset by adding in sky from apflux
-if False:
+    # Combine all types
+    typ='all'
+    num_std_dev_gaussfit_flux(dat,cut_on_fracin=True,typ=typ,
+                              delta_lims= (-5,5),sub_mean= True)
+    delta_vs_grzmag(dat,delta='num_std_dev',typ=typ,
+                    delta_lims=delta_lims,nbins=(60,30),**kw_lims)
+    delta_vs_grzmag(dat,delta='dmag',typ=typ,delta_lims=(-1,1),
+                    nbins=(60,30),**kw_lims)
+    # If want to split each of above 3 bands by type
+    if False:
+        for typ in [simp_or_rex,'EXP','DEV','PSF']:
+            num_std_dev_gaussfit_flux(dat,cut_on_fracin=True,typ=typ,
+                                      delta_lims= (-5,5),sub_mean= True)
+            delta_vs_grzmag(dat,delta='dmag',typ=typ,delta_lims=(-1,1),
+                            nbins=(60,30),**kw_lims)
+            delta_vs_grzmag(dat,delta='num_std_dev',typ=typ,delta_lims=(-10,10),
+                            nbins=(60,30),**kw_lims)
+
+    # Attempt to fix mag offset by adding in sky from apflux
+    if False:
+        for band in 'grz':
+            fix_for_delta_flux(dat, band=band)
+
+    if args.which != 'cosmos':
+        rec_lost_contam_gr_rz(dat)
+        rec_lost_contam_grz(dat,x_ivar=0)
+
+    # FIXME: change this plot to 2D hist
     for band in 'grz':
         fix_for_delta_flux(dat, band=band)
 
@@ -1659,5 +1696,3 @@ if False:
     # Injected 0.45 < rhalf < 0.55 does not affect peak at 1-2 sigma
     for keep_what in ['rhalfeqpt5','neq1_notrhalf','neq4_notrhalf']:
         num_std_dev_gaussfit_flux(dat,keep_what_put_in=keep_what,**kw)
-
-

@@ -1,5 +1,9 @@
 """
-Reports the number of completed jobs (tractor.fits files) for a SLURM stdout file
+Given a qdo slurm log file, this computes the fraction of launched bricks
+that resulted in a tractor table to the total number of launched bricksself.
+
+This is a useful test of scaling. More nodes with more time should create
+more tractor catalogues than less nodes with less time.
 """
 
 import pandas as pd
@@ -10,6 +14,9 @@ def add_fits(text):
     return text+'.fits'
 
 def trac_fns(slurm_fn):
+    """Map the string 'logging to' to the tractor catalogue name that Should
+    be created for that job
+    """
     with open(slurm_fn,'r') as foo:
         text= foo.read()
     return (pd.Series(re.findall(r'Logging to:.*?\n',text))
@@ -27,7 +34,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     tractor_fns= trac_fns(args.slurm_fn)
-    cnts= [1 if os.path.exists(fn) else 0 
+    cnts= [1 if os.path.exists(fn) else 0
            for fn in tractor_fns]
     print('1: tractor.fits exists, 0: doesnt')
     print(pd.Series(cnts).value_counts())

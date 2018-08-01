@@ -9,14 +9,14 @@ import pandas as pd
 import fitsio
 
 # Sphinx build would crash
-try:
-    from astrometry.util.fits import fits_table, merge_tables
-except ImportError:
-    pass
+# try:
+from astrometry.util.fits import fits_table, merge_tables
+# except ImportError:
+# pass
 
 def inJupyter():
     return 'inline' in matplotlib.get_backend()
-    
+
 def save_png(outdir,fig_id, tight=True):
     path= os.path.join(outdir,fig_id + ".png")
     if not os.path.isdir(outdir):
@@ -37,11 +37,13 @@ def dobash(cmd):
 def stack_tables(fn_list,textfile=True,
                  shuffle=None):
     '''concatenates fits tables
-    shuffle: set to an integer to randomly reads up to the first "shuffle" cats only
+
+    Args:
+        shuffle: set to an integer to randomly reads up to the first "shuffle" cats only
     '''
     if shuffle:
         assert( isinstance(shuffle, int))
-    if textfile: 
+    if textfile:
         fns=read_lines(fn_list)
     else:
         fns= fn_list
@@ -50,17 +52,17 @@ def stack_tables(fn_list,textfile=True,
         print('shuffling %d' % shuffle)
         seed=7
         np.random.seed(seed)
-        inds= np.arange(len(fns)) 
-        np.random.shuffle(inds) 
+        inds= np.arange(len(fns))
+        np.random.shuffle(inds)
         fns= fns[inds]
     cats= []
     for i,fn in enumerate(fns):
         print('reading %s %d/%d' % (fn,i+1,len(fns)))
-        if shuffle and i >= shuffle: 
-            print('shuffle_1000 turned ON, stopping read') 
-            break 
+        if shuffle and i >= shuffle:
+            print('shuffle_1000 turned ON, stopping read')
+            break
         try:
-            tab= fits_table(fn) 
+            tab= fits_table(fn)
             cats.append( tab )
         except IOError:
             print('Fits file does not exist: %s' % fn)
@@ -116,7 +118,7 @@ def get_rsdir(rowstart,
     if do_skipids == 'no':
         final_dir= "rs%s" % str(rowstart)
     elif do_skipids == 'yes':
-        final_dir= "skip_rs%s" % str(rowstart) 
+        final_dir= "skip_rs%s" % str(rowstart)
     # if specified minimum id, running more randoms
     if do_more == 'yes':
         final_dir= "more_"+final_dir
@@ -137,7 +139,7 @@ def get_brickinfo_hack(survey,brickname):
     """when in ipython and reading single row survey-bricks table,
         astroometry.net's fits_table() can break, handle this case
 
-    Returns: 
+    Returns:
         brickinfo: the single row fits_table
     """
     try:

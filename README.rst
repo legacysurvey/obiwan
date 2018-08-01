@@ -7,12 +7,7 @@ obiwan
 Build Status
 ^^^^^^^^^^^^^
 
-|docs| |build-status| |coverage|
-
-.. |docs| image:: https://readthedocs.org/projects/obiwan/badge/?version=latest
-    :alt: Documentation Status
-    :scale: 100%
-    :target: http://obiwan.readthedocs.io/en/latest/?badge=latest
+|build-status| |coverage|
 
 .. |build-status| image:: https://travis-ci.org/legacysurvey/obiwan.svg?branch=master
     :alt: Build Status
@@ -28,16 +23,7 @@ Build Status
 Documentation
 ^^^^^^^^^^^^^^
 
-Our documentation is hosted on `ReadTheDocs <http://obiwan.readthedocs.io/en/latest/?badge=latest>`_.
-
-How to run the code
-^^^^^^^^^^^^^^^^^^^^
-
-Detailed instructions for running obiwan on the National Energy Research Scientific Computing Center (NERSC) supercomputers are below.
-
-* `How to Run at Data Release <https://github.com/legacysurvey/obiwan/blob/master/doc/howto/PRODUCTION_RUN.rst>`_
-* `Description of the outputs <https://github.com/legacysurvey/obiwan/blob/master/doc/howto/OUTPUTS.rst>`_
-* `How to Train a CNN <https://github.com/legacysurvey/obiwan/blob/master/doc/deeplearning.rst>`_
+Our documentation is hosted on GitHub Pages, `Obiwan Docs <https://legacysurvey.github.io/obiwan/>`_.
 
 Contact Us
 ^^^^^^^^^^^

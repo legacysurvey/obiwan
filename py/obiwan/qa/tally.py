@@ -18,7 +18,7 @@ def bricksFromLogs(loglist):
 def bricksInDR5(bricklist):
     """return bricks in bricklist that are in DR5"""
     dr5_out='/global/cscratch1/sd/desiproc/DR5_out'
-    dr5_bricks=[] 
+    dr5_bricks=[]
     for brick in bricklist:
         tractor_fn= os.path.join(dr5_out,'tractor',brick[:3],
                                  'tractor-%s.fits' % brick)
@@ -48,8 +48,3 @@ if __name__ == '__main__':
     if len(bricks_both) == 0:
         raise ValueError('none of bricks are in DR5!')
     writelist(bricks_both,"qa_bricksInBoth.txt")
-
-
-  
-
-

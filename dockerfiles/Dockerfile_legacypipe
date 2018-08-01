@@ -1,0 +1,73 @@
+#FROM ubuntu:16.04
+FROM kaylanb/py3_new
+#FROM kaylanb/legacypipe
+
+#libcfitsio5 libcfitsio3
+RUN source /srv/py3_venv/bin/activate && \
+    apt-get update && apt-get install -y \
+    graphviz texlive-latex-extra dvipng \
+    libnetpbm10 libnetpbm10-dev netpbm wcslib-dev \
+    libz-dev swig \
+    gsl-bin libgsl0-dev libboost-all-dev gfortran \
+    liblapack-dev libfftw3-dev scons curl wget python3-tk \
+    libcairo2-dev libpng12-dev libjpeg-dev zlib1g-dev \
+    libbz2-dev \
+    gcc libgsl2 pkg-config libcfitsio3-dev
+# libcfitsio-dev
+#libcfitsio3 libcfitsio3-dev
+
+COPY requirements_legacypipe.txt /tmp/
+RUN source /srv/py3_venv/bin/activate && \
+    pip3 install --upgrade pip setuptools wheel && \
+    pip3 install --requirement /tmp/requirements_legacypipe.txt && \
+    pip3 install --no-deps --upgrade git+https://github.com/esheldon/fitsio.git#egg=fitsio && \
+    pip3 install -v --no-deps --upgrade git+https://github.com/dstndstn/tractor.git
+
+
+
+ENV WCSLIB_INC "-I/usr/include/wcslib"
+ENV WCSLIB_LIB "-lwcs"
+
+ENV MYINSTALL /root/myinstall
+ENV MYREPO /root/myrepo
+RUN mkdir -p $MYINSTALL $MYREPO $MYREPO/dust/maps
+
+# /root/myrepo
+WORKDIR $MYREPO
+RUN source /srv/py3_venv/bin/activate && \
+    curl -SL https://github.com/dstndstn/astrometry.net/releases/download/0.72/astrometry.net-0.72.tar.gz \
+    -o astrometry.net.tar.gz && tar -xzf astrometry.net.tar.gz && \
+    mv astrometry.net-0.72 astrometry.net && \
+    cd astrometry.net && make install INSTALL_DIR=$MYINSTALL/astrometry && \
+    cd ../ && rm -rf astrometry.net
+
+ENV PYTHONPATH $MYINSTALL/astrometry/lib/python:$PYTHONPATH
+ENV PATH $MYINSTALL/astrometry/lib/python/astrometry/util:$PATH
+ENV PATH $MYINSTALL/astrometry/lib/python/astrometry/blind:$PATH
+
+# tractor
+# RUN source /srv/py3_venv/bin/activate && \
+#     curl -SL https://github.com/dstndstn/tractor/archive/dr5.2.tar.gz \
+#     -o tractor.tar.gz && tar -xzf tractor.tar.gz && \
+#     mv tractor-dr5.2 tractor && \
+#     cd tractor && make && \
+#     python3 setup.py install --prefix=$MYINSTALL/tractor && \
+#     cd ../ && rm -rf tractor
+
+# ENV PYTHONPATH $MYINSTALL/tractor/lib/python3.5/site-packages:$PYTHONPATH
+
+# Redundant
+WORKDIR $MYREPO
+RUN wget -c http://portal.nersc.gov/project/cosmo/temp/dstn/travis-ci/maps/SFD_dust_4096_ngp.fits && \
+    wget -c http://portal.nersc.gov/project/cosmo/temp/dstn/travis-ci/maps/SFD_dust_4096_sgp.fits && \
+    mv SFD_dust_4096_[ns]gp.fits $MYREPO/dust/maps/
+
+ENV DUST_DIR $MYREPO/dust
+
+# WORKDIR $MYREPO
+# RUN git clone https://github.com/legacysurvey/legacypipe.git && \
+#     cd legacypipe && git checkout f4fc46ea0b
+# ENV PYTHONPATH $MYREPO/legacypipe/py:$PYTHONPATH
+
+COPY entrypoint_legacypipe.sh /
+ENTRYPOINT ["/entrypoint_legacypipe.sh"]
