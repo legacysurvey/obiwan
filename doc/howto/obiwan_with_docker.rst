@@ -2,6 +2,11 @@
 ﻿Obiwan using Docker
 ********************
 
+The obiwan docker images are stored on my dockerhub_. ``obiwan_rtd_jupter`` will run obiwan, a jupyter notebook for developing obiwan, and the make html command for building obiwan docs. If that one doesn't work for some reason then this one does everything but juypter ``obiwan_rtd``.
+
+.. _dockerhub: https://hub.docker.com/r/kaylanb/desi/tags/
+
+
 Run obiwan with your laptop
 ----------------------------
 
@@ -28,6 +33,8 @@ Versions of Tractor, Astrometry.net, and Legacypipe
 """""""""""""""""""""""""""""""""""""""""""""""""""""
 I used ``tractor-dr5.2`` for my thesis work but the newest version of Tractor is installed on the docker image. Astrometry.net is installed on the docker image as  ``astrometry-0.72`` which is the version I used for my thesis.
 
+.. _jupyter-with-docker:
+
 Jupyter notebook
 ----------------------------
 
@@ -39,6 +46,8 @@ You can run Jupiter notebook server using the docker image and use your laptop's
   jupyter notebook --allow-root
 
 Then copy and paste the link into your browser. Edit code from your browser and commit to GitHub from your laptops terminal, while not needing a single line of obiwan or legacypipe or tractor installed on your laptop!
+
+.. _docs-with-docker:
 
 Docs
 ----------------------------
@@ -66,13 +75,17 @@ The ``_build/html`` directory contains all the files the server needs for the do
   git commit -m "updated docs"
   git push origin gh-pages
 
-At NERSC
----------
+.. _run-a-brick-with-docker:
 
-I built the Docker images uses the Dockerfiles here. At NERSC, the ``shifterimg`` command is the stand-in for ``docker``, which has some of the functionality of docker and allows docker images to be pulled onto the login nodes and mounted across a many node compute job.::
+Run a brick at NERSC
+---------------------
+
+The following shows how to run a single brick injecting 1000 sources into DECam imaging. Obiwan works for MzLS and BASS imaging as well, but to run a MzLS/BASS brick you'll need to set up a new `legacypipe_dir` as I done for DECaLS imaging. I built the Docker images uses these Dockerfiles_. At NERSC, the ``shifterimg`` command is the stand-in for ``docker``, which has some of the functionality of docker and allows docker images to be pulled onto the login nodes and mounted across a many node compute job.::
 
   ssh <user>@cori.nersc.gov
   shifterimg -v pull kaylanb/desi:obiwan_rtd_jupyter
+
+.. _Dockerfiles: https://github.com/legacysurvey/obiwan/tree/master/dockerfiles
 
 ``shifter`` (no "img" suffix) is what runs the image as an executable, e.g. ``shifter`` is NERSC's version of ``docker run``.
 
@@ -179,76 +192,3 @@ Edit ``docker_job_one_brick.slurm`` to change the brick, output directory, rando
   |               `-- legacysurvey-1351p192-simscoadd.jpg
 
   25 directories, 31 files
-
-
-Next Steps
------------
-
-The above shows how to run a single brick injecting N sources for DECam imaging. Obiwan works for MzLS and BASS imaging as well, but those legacypipe_dirs have not been setup yet. Also, Obiwan has not been updated to use the current HEAD of legacypipe; instead, it is using DR5-era legacypipe.
-
-******************
-Post-processing
-******************
-
-All post-processing of an obiwan production run is done by ``obiwan/py/obiwan/runmanager/derived_tables.py``
-A single fits table is created per brick, which I call a "derived table". It contains the randoms table ra, dec, fluxes, and shapes, fluxes and shapes actually added to the images, and the tractor measurements (if detected) for each of these. A few bit masks are created, one says which injected sources were recovered and modeled by legacypipe, which of those are thought to be coincident with real galaxies from DR3 or DR5 etc. Another bit mask says which of the injected sources would pass target selection based on their true fluxes and which pass based on their tractor measured fluxes.
-
-Takes a list of bricks and creates each table in an embarrassingly parallel fashion using mpi4py.
-
-There are two modes: ``randoms`` and ``summary``, randoms is the derived table while summary is a table containing various stats about each brick, e.g., number of sources injected, average depth of sources, fraction of injected sources detected by legacypipe.
-
-Run it as a batch job using this script slurm_derived_tables.sh_
-
-.. _slurm_derived_tables.sh: https://github.com/legacysurvey/obiwan/blob/master/bin/slurm_derived_tables.sh
-
-The per-brick tables can be combined into a single table using  ``obiwan/py/obiwan/runmanager/merged_tables.py``. There are two modes: ``parallel`` and ``serial``. Parallel is run first and it combines the per-brick tables into < 100 tables (a much easier number than > 10,000). Serial runs last and combines the < 100 tables into a single table. The size of this single table can be very large so you can optionally drop all columns but those you are directly interested in.
-
-Again run as a batch job.
-Reduce to the < 100 tables: slurm_merge_tables.sh_
-
-.. _slurm_merge_tables.sh: https://github.com/legacysurvey/obiwan/blob/master/bin/slurm_merge_tables.sh
-
-Merge the < 100 files into a single table: slurm_merge_tables_serial.sh_
-
-.. _slurm_merge_tables_serial.sh: https://github.com/legacysurvey/obiwan/blob/master/bin/slurm_merge_tables_serial.sh>
-
-
-Analysis and Plotting
-----------------------
-
-The majority of plots from Chp 4-5 of my thesis were made from the derived tables using this script: ``obiwan/py/obiwan/qa/plots_randomsprops_fluxdiff.py``
-
-I'd recommend running on your laptop using one of the < 100 merged derived tables, since they are manageable size and are a random sampling of bricks so the plots you get should be representative. Once everything is working, run on the large single merged derived table from a NERSC login node.
-
-**********************
-Running eBOSS ELGs
-**********************
-
-The point of this section is to summarize how I setup and completed the eBOSS ELG runs in Chp5 of my thesis. I'd checkout the thesis out for more info if needed.
-
-The outputs from all of my runs are backed up on the tape archive (HPSS) at NERSC under my user, kaylanb. There must be a way to make these readable by other users.
-
-- set up
-
- - link to existing how to pages
-
-- run obiwan
-
-  - use docker or the latest desiconda-imaging build
-
-  - links to existing how to pages
-
-- post-process
-
-	 - ditto
-
-- analysis
-
-	 - ditto
-
-Recommendations for finishing the eBOSS ELG run
-------------------------------------------------
-
-For finishing the bricks I didn't, I'd recommend first doing the following:
-
-The module ``obiwan/db_tools.py`` has a function for querying the PSQL db for all randoms contained in a given brick, you should add a new function that takes the output of that query function and writes it to a FITS tabled named something like ``randoms/bri/brick.fits``. Then run obiwan using the ``--randoms_from_fits`` option to read the randoms to inject from a fits table instead of the PSQL db. This should be a pre-processing step. e.g. Make a list of all the bricks I didn't finish (that you want to finish), make this randoms table for each brick, then run obiwan on those bricks using those randoms tables. PSQL is an added complexity that we can (and should) avoid in the obiwan run.

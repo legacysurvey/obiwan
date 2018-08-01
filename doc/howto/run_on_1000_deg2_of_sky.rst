@@ -1,4 +1,4 @@
-Instructions for doing a production run
+Run on 1000 deg2 of sky
 ==========================================
 
 On-going production runs
@@ -21,7 +21,7 @@ On-going production runs
     * psql db "desi", table for randoms "obiwan_elg_dr5"
     * psql db "qdo", table for tasks "obiwan_elg_dr5"
 
-#. Same as #1 but Stars 
+#. Same as #1 but Stars
 
 Completed production runs
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -55,8 +55,8 @@ Data Sets that Obiwan Supports
 
 .. * DR5 zeropoints (from legacy_zeropoints, minimum set of columns needed for legacypip)e)
 .. * DR5 CCDs
- 
-#. DR3_eBOSS 
+
+#. DR3_eBOSS
 
     * DR3 zeropoints (from IDL zeropoints)many more columns than legacypipe need, and comput
     * DR3 CCDs
@@ -76,9 +76,24 @@ The corresponding config in Legacypipe:
 #. DR3_eBOSS
 
     * --run dr3_eboss
-    * --no-rex --use-simp: turn off REX model, use SIMP instead 
-    * --nsigma 6: default is 6 but enforce this 
+    * --no-rex --use-simp: turn off REX model, use SIMP instead
+    * --nsigma 6: default is 6 but enforce this
     * only use the survey-ccds files I made that exactly includes the `DR3_eBOSS` image list using idl zeropoints, also ignore "survey-ccds-kd" files
+
+The NERSC PostgreSQL DB
+^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The psql db at NERSC is called "desi". It's hosted at scidb2.nersc.gov and you sign in with user "desi_user". You'll need the ``.pgpass`` password file. Then put the ``.pgpass`` file in ``$HOME/`` on Cori and give it user rw permissions.::
+
+  cp <path/to/kaylans/.pgpass $HOME/
+  chmod u+rw $HOME/.pgpass
+
+
+Make sure the bashrc_obiwan loaded the ``postresql`` module. Then do::
+
+  psql -U desi_user -d desi -h scidb2.nersc.gov
+
+It worked if that brings you to a ``desi=>`` prompt
 
 Randoms
 ^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -113,7 +128,7 @@ Index and cluster the db table for fast ra,dec querying::
 
 Also make sure the bricks file is in the desi db. Do::
 
-    psql_desi 
+    psql_desi
     desi=> \d obiwan_bricks
 
 If its not there do::
@@ -121,7 +136,7 @@ If its not there do::
     cd $HOME/
     rsync -av /global/project/projectdirs/desi/www/users/kburleigh/obiwan/legacysurveydir/survey-bricks.fits.gz .
     gunzip survey-bricks.fits.gz
-    bash $obiwan_code/bin/run_fits2db.sh obiwan_bricks survey-bricks.fits 
+    bash $obiwan_code/bin/run_fits2db.sh obiwan_bricks survey-bricks.fits
 
 Index and cluster it::
 
@@ -246,7 +261,7 @@ Once you finish all the above runs, you will make a second qdo que. We previousl
 which outputs a file `tasks_skipids.txt`. Now create a new qdo queue_name for the skipid runs and load the new tasks::
 
     export qdo_quename=obiwan_ra175_doskip
-    qdo create ${qdo_quename} 
+    qdo create ${qdo_quename}
     qdo load ${qdo_quename} tasks_skipids.txt
 
 
@@ -254,7 +269,3 @@ The qdo tasks automatically set the `do_skipid` flag, so you dont need to edit t
 
     cd $obiwan_out/${name_for_run}
     qdo launch ${qdo_quename} 40 --cores_per_worker 4 --batchqueue regular --walltime 05:00:00 --script $obiwan_code/obiwan/bin/qdo_job_9deg.sh --keep_env
-
-
-
-
