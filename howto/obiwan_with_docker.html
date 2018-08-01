@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>﻿Obiwan using Docker &#8212; obiwan 1.2.0 documentation</title>
+    <link rel="stylesheet" href="../_static/bootstrap-sphinx.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script type="text/javascript" src="../_static/js/jquery-1.11.0.min.js"></script>
+    <script type="text/javascript" src="../_static/js/jquery-fix.js"></script>
+    <script type="text/javascript" src="../_static/bootstrap-3.3.7/js/bootstrap.min.js"></script>
+    <script type="text/javascript" src="../_static/bootstrap-sphinx.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+<meta charset='utf-8'>
+<meta http-equiv='X-UA-Compatible' content='IE=edge,chrome=1'>
+<meta name='viewport' content='width=device-width, initial-scale=1.0, maximum-scale=1'>
+<meta name="apple-mobile-web-app-capable" content="yes">
+
+  </head><body>
+
+  <div id="navbar" class="navbar navbar-default ">
+    <div class="container">
+      <div class="navbar-header">
+        <!-- .btn-navbar is used as the toggle for collapsed navbar content -->
+        <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".nav-collapse">
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+        </button>
+        <a class="navbar-brand" href="../index.html">
+          Obiwan</a>
+        <span class="navbar-text navbar-version pull-left"><b>1.2.0</b></span>
+      </div>
+
+        <div class="collapse navbar-collapse nav-collapse">
+          <ul class="nav navbar-nav">
+            
+                <li><a href="../api.html">API</a></li>
+                <li><a href="../tutorials.html">Tutorials</a></li>
+                <li><a href="../deeplearning.html">Deep Learning</a></li>
+            
+            
+              <li class="dropdown globaltoc-container">
+  <a role="button"
+     id="dLabelGlobalToc"
+     data-toggle="dropdown"
+     data-target="#"
+     href="../index.html">Pages <b class="caret"></b></a>
+  <ul class="dropdown-menu globaltoc"
+      role="menu"
+      aria-labelledby="dLabelGlobalToc"></ul>
+</li>
+              
+                <li class="dropdown">
+  <a role="button"
+     id="dLabelLocalToc"
+     data-toggle="dropdown"
+     data-target="#"
+     href="#">This Page <b class="caret"></b></a>
+  <ul class="dropdown-menu localtoc"
+      role="menu"
+      aria-labelledby="dLabelLocalToc"><ul>
+<li><a class="reference internal" href="#">﻿Obiwan using Docker</a><ul>
+<li><a class="reference internal" href="#run-obiwan-with-your-laptop">Run obiwan with your laptop</a><ul>
+<li><a class="reference internal" href="#versions-of-tractor-astrometry-net-and-legacypipe">Versions of Tractor, Astrometry.net, and Legacypipe</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#jupyter-notebook">Jupyter notebook</a></li>
+<li><a class="reference internal" href="#docs">Docs</a></li>
+<li><a class="reference internal" href="#run-a-brick-at-nersc">Run a brick at NERSC</a></li>
+</ul>
+</li>
+</ul>
+</ul>
+</li>
+              
+            
+            
+              
+                
+              
+            
+            
+            
+            
+          </ul>
+
+          
+            
+<form class="navbar-form navbar-right" action="../search.html" method="get">
+ <div class="form-group">
+  <input type="text" name="q" class="form-control" placeholder="Search" />
+ </div>
+  <input type="hidden" name="check_keywords" value="yes" />
+  <input type="hidden" name="area" value="default" />
+</form>
+          
+        </div>
+    </div>
+  </div>
+
+<div class="container">
+  <div class="row">
+    <div class="col-md-12 content">
+      
+  <div class="section" id="obiwan-using-docker">
+<h1>﻿Obiwan using Docker<a class="headerlink" href="#obiwan-using-docker" title="Permalink to this headline">¶</a></h1>
+<p>The obiwan docker images are stored on my <a class="reference external" href="https://hub.docker.com/r/kaylanb/desi/tags/">dockerhub</a>. <code class="docutils literal notranslate"><span class="pre">obiwan_rtd_jupter</span></code> will run obiwan, a jupyter notebook for developing obiwan, and the make html command for building obiwan docs. If that one doesn’t work for some reason then this one does everything but juypter <code class="docutils literal notranslate"><span class="pre">obiwan_rtd</span></code>.</p>
+<div class="section" id="run-obiwan-with-your-laptop">
+<h2>Run obiwan with your laptop<a class="headerlink" href="#run-obiwan-with-your-laptop" title="Permalink to this headline">¶</a></h2>
+<p>Clone legacypipe and obiwan onto your laptop and edit, commit, push etc. from your laptop as usual.:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">mkdir</span> <span class="o">~/</span><span class="n">repos_for_docker</span><span class="p">;</span> <span class="n">cd</span> <span class="o">~/</span><span class="n">repos_for_docker</span>
+<span class="n">git</span> <span class="n">clone</span> <span class="n">https</span><span class="p">:</span><span class="o">//</span><span class="n">github</span><span class="o">.</span><span class="n">com</span><span class="o">/</span><span class="n">legacysurvey</span><span class="o">/</span><span class="n">legacypipe</span><span class="o">.</span><span class="n">git</span>
+<span class="n">cd</span> <span class="n">legacypipe</span><span class="p">;</span><span class="n">git</span> <span class="n">fetch</span><span class="p">;</span><span class="n">git</span> <span class="n">checkout</span> <span class="n">dr5_wobiwan</span>
+<span class="n">cd</span> <span class="o">~/</span><span class="n">repos_for_docker</span>
+<span class="n">git</span> <span class="n">clone</span> <span class="n">https</span><span class="p">:</span><span class="o">//</span><span class="n">github</span><span class="o">.</span><span class="n">com</span><span class="o">/</span><span class="n">legacysurvey</span><span class="o">/</span><span class="n">obiwan</span><span class="o">.</span><span class="n">git</span>
+</pre></div>
+</div>
+<p>Now use the docker image to run the software while you edit, commit, push the code files from your laptop as usual. Install docker on your Mac, linux box, or windows, then:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># WARNING: 7.5 GB image!</span>
+<span class="n">docker</span> <span class="n">pull</span> <span class="n">kaylanb</span><span class="o">/</span><span class="n">desi</span><span class="p">:</span><span class="n">obiwan_rtd_jupyter</span>
+<span class="n">docker</span> <span class="n">run</span> <span class="o">-</span><span class="n">v</span> <span class="o">/</span><span class="n">Users</span><span class="o">/</span><span class="n">kaylanb</span><span class="o">/</span><span class="n">repos_for_docker</span><span class="p">:</span><span class="o">/</span><span class="n">srv</span><span class="o">/</span><span class="n">repos_for_docker</span> <span class="o">-</span><span class="n">it</span> <span class="n">kaylanb</span><span class="o">/</span><span class="n">desi</span><span class="p">:</span><span class="n">obiwan_rtd_jupyter</span> <span class="o">/</span><span class="nb">bin</span><span class="o">/</span><span class="n">bash</span>
+<span class="c1"># run the test suite</span>
+<span class="n">python</span> <span class="o">/</span><span class="n">srv</span><span class="o">/</span><span class="n">repos_for_docker</span><span class="o">/</span><span class="n">obiwan</span><span class="o">/</span><span class="n">tests</span><span class="o">/</span><span class="n">test_200x200_pixel_regions</span><span class="o">.</span><span class="n">py</span>
+</pre></div>
+</div>
+<p>Note, the directory <code class="docutils literal notranslate"><span class="pre">/srv</span></code> exists on the docker image but not <code class="docutils literal notranslate"><span class="pre">/srv/repos_for_docker</span></code>. The latter is created when you use the -v option.</p>
+<div class="section" id="versions-of-tractor-astrometry-net-and-legacypipe">
+<h3>Versions of Tractor, Astrometry.net, and Legacypipe<a class="headerlink" href="#versions-of-tractor-astrometry-net-and-legacypipe" title="Permalink to this headline">¶</a></h3>
+<p>I used <code class="docutils literal notranslate"><span class="pre">tractor-dr5.2</span></code> for my thesis work but the newest version of Tractor is installed on the docker image. Astrometry.net is installed on the docker image as  <code class="docutils literal notranslate"><span class="pre">astrometry-0.72</span></code> which is the version I used for my thesis.</p>
+</div>
+</div>
+<div class="section" id="jupyter-notebook">
+<span id="jupyter-with-docker"></span><h2>Jupyter notebook<a class="headerlink" href="#jupyter-notebook" title="Permalink to this headline">¶</a></h2>
+<p>You can run Jupiter notebook server using the docker image and use your laptop’s browser to display the port. This way you can run any code you want without having any of it installed on your laptop but still use your laptop’s browser for the notebook and the git repos on your laptop for development.:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">docker</span> <span class="n">run</span> <span class="o">-</span><span class="n">it</span> <span class="o">-</span><span class="n">v</span> <span class="o">/</span><span class="n">Users</span><span class="o">/</span><span class="n">kaylanb</span><span class="o">/</span><span class="n">repos_for_docker</span><span class="p">:</span><span class="o">/</span><span class="n">srv</span><span class="o">/</span><span class="n">repos_for_docker</span> <span class="o">-</span><span class="n">p</span> <span class="mi">8888</span><span class="p">:</span><span class="mi">8888</span>  <span class="n">kaylanb</span><span class="o">/</span><span class="n">desi</span><span class="p">:</span><span class="n">obiwan_rtd_jupyter</span> <span class="o">/</span><span class="nb">bin</span><span class="o">/</span><span class="n">bash</span>
+<span class="n">cd</span> <span class="o">/</span><span class="n">srv</span><span class="o">/</span><span class="n">repos_for_docker</span><span class="o">/</span><span class="n">obiwan</span><span class="o">/</span><span class="n">doc</span><span class="o">/</span><span class="n">nb</span><span class="o">/</span>
+<span class="n">jupyter</span> <span class="n">notebook</span> <span class="o">--</span><span class="n">allow</span><span class="o">-</span><span class="n">root</span>
+</pre></div>
+</div>
+<p>Then copy and paste the link into your browser. Edit code from your browser and commit to GitHub from your laptops terminal, while not needing a single line of obiwan or legacypipe or tractor installed on your laptop!</p>
+</div>
+<div class="section" id="docs">
+<span id="docs-with-docker"></span><h2>Docs<a class="headerlink" href="#docs" title="Permalink to this headline">¶</a></h2>
+<p>The Docker image handles all obiwan code execution including development  from your local machine and data exploration with Jupiter on your local machine’s browser; however, ReadTheDocs does not support user created Docker images. So it is simplest for developers to build the docs themselves, commit the files to branch <code class="docutils literal notranslate"><span class="pre">gh-pages</span></code>, push to GitHub, and then the docs will be displayed here:
+<a href="#id1"><span class="problematic" id="id2">`https://legacysurvey.github.io/obiwan`_</span></a></p>
+<p>The one drawback is that there will not be separate docs for each branch. But oh well!</p>
+<p>To build the docs and push them online, do:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">docker</span> <span class="n">run</span> <span class="o">-</span><span class="n">it</span> <span class="o">-</span><span class="n">v</span> <span class="o">/</span><span class="n">Users</span><span class="o">/</span><span class="n">kaylanb</span><span class="o">/</span><span class="n">repos_for_docker</span><span class="p">:</span><span class="o">/</span><span class="n">srv</span><span class="o">/</span><span class="n">repos_for_docker</span>  <span class="n">kaylanb</span><span class="o">/</span><span class="n">desi</span><span class="p">:</span><span class="n">obiwan_rtd_jupyter</span> <span class="o">/</span><span class="nb">bin</span><span class="o">/</span><span class="n">bash</span>
+<span class="n">cd</span> <span class="o">/</span><span class="n">srv</span><span class="o">/</span><span class="n">repos_for_docker</span><span class="o">/</span><span class="n">obiwan</span><span class="o">/</span><span class="n">doc</span>
+<span class="n">make</span> <span class="n">html</span>
+</pre></div>
+</div>
+<p>The <code class="docutils literal notranslate"><span class="pre">_build/html</span></code> directory contains all the files the server needs for the docs webpage. Copy that entire directory to the <code class="docutils literal notranslate"><span class="pre">gh-pages</span></code> branch. On your laptop (NOT inside the docker image), do:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">mkdir</span> <span class="o">~/</span><span class="n">Downloads</span><span class="o">/</span><span class="n">docs</span>
+<span class="n">cd</span> <span class="o">~/</span><span class="n">repos_for_docker</span><span class="o">/</span><span class="n">obiwan</span>
+<span class="n">cp</span> <span class="o">-</span><span class="n">r</span> <span class="n">docs</span><span class="o">/</span><span class="n">_build</span><span class="o">/</span><span class="n">html</span><span class="o">/*</span> <span class="o">~/</span><span class="n">Downloads</span><span class="o">/</span><span class="n">docs</span><span class="o">/</span>
+<span class="n">git</span> <span class="n">checkout</span> <span class="n">gh</span><span class="o">-</span><span class="n">pages</span>
+<span class="n">cd</span> <span class="o">~/</span><span class="n">repos_for_docker</span><span class="o">/</span><span class="n">obiwan</span> <span class="c1"># must be in base repo directory</span>
+<span class="n">cp</span> <span class="o">-</span><span class="n">r</span> <span class="o">~/</span><span class="n">Downloads</span><span class="o">/</span><span class="n">docs</span><span class="o">/*</span> <span class="o">./</span>
+<span class="n">git</span> <span class="n">add</span> <span class="o">-</span><span class="n">u</span> <span class="p">:</span><span class="o">/</span>
+<span class="n">git</span> <span class="n">commit</span> <span class="o">-</span><span class="n">m</span> <span class="s2">&quot;updated docs&quot;</span>
+<span class="n">git</span> <span class="n">push</span> <span class="n">origin</span> <span class="n">gh</span><span class="o">-</span><span class="n">pages</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="run-a-brick-at-nersc">
+<span id="run-a-brick-with-docker"></span><h2>Run a brick at NERSC<a class="headerlink" href="#run-a-brick-at-nersc" title="Permalink to this headline">¶</a></h2>
+<p>The following shows how to run a single brick injecting 1000 sources into DECam imaging. Obiwan works for MzLS and BASS imaging as well, but to run a MzLS/BASS brick you’ll need to set up a new <cite>legacypipe_dir</cite> as I done for DECaLS imaging. I built the Docker images uses these <a class="reference external" href="https://github.com/legacysurvey/obiwan/tree/master/dockerfiles">Dockerfiles</a>. At NERSC, the <code class="docutils literal notranslate"><span class="pre">shifterimg</span></code> command is the stand-in for <code class="docutils literal notranslate"><span class="pre">docker</span></code>, which has some of the functionality of docker and allows docker images to be pulled onto the login nodes and mounted across a many node compute job.:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ssh</span> <span class="o">&lt;</span><span class="n">user</span><span class="o">&gt;</span><span class="nd">@cori</span><span class="o">.</span><span class="n">nersc</span><span class="o">.</span><span class="n">gov</span>
+<span class="n">shifterimg</span> <span class="o">-</span><span class="n">v</span> <span class="n">pull</span> <span class="n">kaylanb</span><span class="o">/</span><span class="n">desi</span><span class="p">:</span><span class="n">obiwan_rtd_jupyter</span>
+</pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">shifter</span></code> (no “img” suffix) is what runs the image as an executable, e.g. <code class="docutils literal notranslate"><span class="pre">shifter</span></code> is NERSC’s version of <code class="docutils literal notranslate"><span class="pre">docker</span> <span class="pre">run</span></code>.</p>
+<p>Now let’s setup a compute job. Git clone obiwan and legacyipe <em>into this specific directory</em>.:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>mkdir $CSCRATCH/repos_for_docker
+cd $CSCRATCH/repos_for_docker
+git clone https://github.com/legacysurvey/obiwan.git
+cd obiwan; git fetch; git checkout mzls_bass; cd ../
+git clone https://github.com/legacysurvey/legacypipe.git
+cd legacypipe;git fetch;git checkout dr5_wobiwan; cd ../
+</pre></div>
+</div>
+<p>Then run your code from a difference directory using these batch jobs. Note, <cite>job.sh</cite> is necessary because the docker entry point file I used doesn’t seem to be loaded by shifter, so do it manually instead of automatically when the docker image is called. The following will run the obiwan test suite using the docker image. the outputs are automatically written to directories in the obiwan repo named <code class="docutils literal notranslate"><span class="pre">obiwan/tests/out_testcase*</span></code>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>mkdir $CSCRATCH/docker_runs
+cd $CSCRATCH/docker_runs
+cp $CSCRATCH/repos_for_docker/obiwan/bin/docker_job_testcases* ./
+sbatch docker_job_testcases.slurm
+</pre></div>
+</div>
+<p>Now lets do something real. Inject 1000 ELGs into brick 1351p192. The following will draw randoms and independently draw ELG properties from my eBOSS ELG properties distribution. The ELG property samples are in 4 csv files, one of which is 8MB so download them:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>cd $CSCRATCH/repos_for_docker/obiwan/etc
+wget http://portal.nersc.gov/project/desi/users/kburleigh/obiwan/eboss_elg_sample_csvs.tar.gz
+tar -xzf eboss_elg_sample_csvs.tar.gz
+rm eboss_elg_sample_csvs.tar.gz
+</pre></div>
+</div>
+<p>Now draw the samples:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span># output dir
+mkdir $CSCRATCH/docker_runs/test_brick
+cd $CSCRATCH/docker_runs
+shifter --image=kaylanb/desi:obiwan_rtd_jupyter /bin/bash
+source /srv/py3_venv/bin/activate
+export PYTHONPATH=$CSCRATCH/repos_for_docker/obiwan/py:$CSCRATCH/repos_for_docker/legacypipe/py:$PYTHONPATH
+python $CSCRATCH/repos_for_docker/obiwan/py/obiwan/draw_radec_color_z.py --survey eboss --obj elg --ra1 135.0 --ra2 135.3 --dec1 19.1 --dec2 19.3 --ndraws 5000 --outdir test_brick
+</pre></div>
+</div>
+<p>This writes a randoms table named “randoms_seed_1_startid_1.fits”.</p>
+<p>Now run a brick injecting ELGs from this randoms table:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>cd $CSCRATCH/docker_runs
+cp $CSCRATCH/repos_for_docker/obiwan/bin/docker_job_one_brick* ./
+sbatch docker_job_one_brick.slurm
+</pre></div>
+</div>
+<p>Edit <code class="docutils literal notranslate"><span class="pre">docker_job_one_brick.slurm</span></code> to change the brick, output directory, randoms table etc. You should now have the following in the test_brick directory:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>test_brick
+|-- randoms
+|   |-- README.txt
+|   `-- randoms_seed_1_startid_1.fits
+|-- logs
+|   `-- 135
+|       `-- 1351p192
+|           `-- rs0
+|               `-- log.1351p192
+|-- obiwan
+|   `-- 135
+|       `-- 1351p192
+|           `-- rs0
+|               |-- metacat-elg-1351p192.fits
+|               |-- sim_ids_added.fits
+|               `-- simcat-elg-1351p192.fits
+|-- metrics
+|   `-- 135
+|       `-- 1351p192
+|           `-- rs0
+|               |-- all-models-1351p192.fits
+|               `-- blobs-1351p192.fits.gz
+|-- tractor
+|   `-- 135
+|       `-- 1351p192
+|           `-- rs0
+|               |-- brick-1351p192.sha256sum
+|               `-- tractor-1351p192.fits
+`-- tractor-i
+|    `-- 135
+|        `-- 1351p192
+|            `-- rs0
+|                `-- tractor-1351p192.fits
+|-- coadd
+|   `-- 135
+|       `-- 1351p192
+|           `-- rs0
+|               |-- legacysurvey-1351p192-ccds.fits
+|               |-- legacysurvey-1351p192-chi2-g.fits.fz
+|               |-- legacysurvey-1351p192-chi2-r.fits.fz
+|               |-- legacysurvey-1351p192-chi2-z.fits.fz
+|               |-- legacysurvey-1351p192-image-g.fits.fz
+|               |-- legacysurvey-1351p192-image-r.fits.fz
+|               |-- legacysurvey-1351p192-image-z.fits.fz
+|               |-- legacysurvey-1351p192-image.jpg
+|               |-- legacysurvey-1351p192-invvar-g.fits.fz
+|               |-- legacysurvey-1351p192-invvar-r.fits.fz
+|               |-- legacysurvey-1351p192-invvar-z.fits.fz
+|               |-- legacysurvey-1351p192-model-g.fits.fz
+|               |-- legacysurvey-1351p192-model-r.fits.fz
+|               |-- legacysurvey-1351p192-model-z.fits.fz
+|               |-- legacysurvey-1351p192-model.jpg
+|               |-- legacysurvey-1351p192-resid.jpg
+|               |-- legacysurvey-1351p192-sims-g.fits.fz
+|               |-- legacysurvey-1351p192-sims-r.fits.fz
+|               |-- legacysurvey-1351p192-sims-z.fits.fz
+|               `-- legacysurvey-1351p192-simscoadd.jpg
+
+25 directories, 31 files
+</pre></div>
+</div>
+</div>
+</div>
+
+
+    </div>
+      
+  </div>
+</div>
+<footer class="footer">
+  <div class="container">
+    <p class="pull-right">
+      <a href="#">Back to top</a>
+      
+    </p>
+    <p>
+        &copy; Copyright 2014-2018, Kaylan Burleigh, John Moustakas.<br/>
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.7.6.<br/>
+    </p>
+  </div>
+</footer>
+  </body>
+</html>

@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>Data Model &#8212; obiwan 1.2.0 documentation</title>
+    <link rel="stylesheet" href="../_static/bootstrap-sphinx.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script type="text/javascript" src="../_static/js/jquery-1.11.0.min.js"></script>
+    <script type="text/javascript" src="../_static/js/jquery-fix.js"></script>
+    <script type="text/javascript" src="../_static/bootstrap-3.3.7/js/bootstrap.min.js"></script>
+    <script type="text/javascript" src="../_static/bootstrap-sphinx.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+<meta charset='utf-8'>
+<meta http-equiv='X-UA-Compatible' content='IE=edge,chrome=1'>
+<meta name='viewport' content='width=device-width, initial-scale=1.0, maximum-scale=1'>
+<meta name="apple-mobile-web-app-capable" content="yes">
+
+  </head><body>
+
+  <div id="navbar" class="navbar navbar-default ">
+    <div class="container">
+      <div class="navbar-header">
+        <!-- .btn-navbar is used as the toggle for collapsed navbar content -->
+        <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".nav-collapse">
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+        </button>
+        <a class="navbar-brand" href="../index.html">
+          Obiwan</a>
+        <span class="navbar-text navbar-version pull-left"><b>1.2.0</b></span>
+      </div>
+
+        <div class="collapse navbar-collapse nav-collapse">
+          <ul class="nav navbar-nav">
+            
+                <li><a href="../api.html">API</a></li>
+                <li><a href="../tutorials.html">Tutorials</a></li>
+                <li><a href="../deeplearning.html">Deep Learning</a></li>
+            
+            
+              <li class="dropdown globaltoc-container">
+  <a role="button"
+     id="dLabelGlobalToc"
+     data-toggle="dropdown"
+     data-target="#"
+     href="../index.html">Pages <b class="caret"></b></a>
+  <ul class="dropdown-menu globaltoc"
+      role="menu"
+      aria-labelledby="dLabelGlobalToc"></ul>
+</li>
+              
+                <li class="dropdown">
+  <a role="button"
+     id="dLabelLocalToc"
+     data-toggle="dropdown"
+     data-target="#"
+     href="#">This Page <b class="caret"></b></a>
+  <ul class="dropdown-menu localtoc"
+      role="menu"
+      aria-labelledby="dLabelLocalToc"><ul>
+<li><a class="reference internal" href="#">Data Model</a><ul>
+<li><a class="reference internal" href="#monte-carlo-simulation-files">Monte Carlo simulation files</a></li>
+<li><a class="reference internal" href="#randoms">Randoms</a></li>
+<li><a class="reference internal" href="#obiwan-outputs">Obiwan Outputs</a></li>
+<li><a class="reference internal" href="#simulation-metadata">Simulation Metadata</a></li>
+</ul>
+</li>
+</ul>
+</ul>
+</li>
+              
+            
+            
+              
+                
+              
+            
+            
+            
+            
+          </ul>
+
+          
+            
+<form class="navbar-form navbar-right" action="../search.html" method="get">
+ <div class="form-group">
+  <input type="text" name="q" class="form-control" placeholder="Search" />
+ </div>
+  <input type="hidden" name="check_keywords" value="yes" />
+  <input type="hidden" name="area" value="default" />
+</form>
+          
+        </div>
+    </div>
+  </div>
+
+<div class="container">
+  <div class="row">
+    <div class="col-md-12 content">
+      
+  <div class="section" id="data-model">
+<h1>Data Model<a class="headerlink" href="#data-model" title="Permalink to this headline">¶</a></h1>
+<p>The data and directory structure for the <a class="reference internal" href="run_on_1000_deg2_of_sky.html#elg-9deg2-ra175"><span class="std std-ref">9 deg2</span></a> and <a class="reference internal" href="run_on_1000_deg2_of_sky.html#elg-dr5"><span class="std std-ref">half of DR5</span></a> production runs is described below.</p>
+<div class="section" id="monte-carlo-simulation-files">
+<h2>Monte Carlo simulation files<a class="headerlink" href="#monte-carlo-simulation-files" title="Permalink to this headline">¶</a></h2>
+<p>The root directory for all Monte Carlo simulation products is, on NERSC:</p>
+<ul class="simple">
+<li><strong>/global/cscratch1/sd/kaylanb/obiwan_out/</strong></li>
+</ul>
+</div>
+<div class="section" id="randoms">
+<h2>Randoms<a class="headerlink" href="#randoms" title="Permalink to this headline">¶</a></h2>
+<p>The randoms are stored in FITS tables here:</p>
+<ul class="simple">
+<li><strong>…/randoms/elg_9deg2_ra175/elg_randoms/</strong></li>
+</ul>
+<p>and in the PostreSQL DB</p>
+<ul class="simple">
+<li><strong>-h nerscdb03.nersc.gov -d desi -U desi_user</strong></li>
+</ul>
+<p>Each random has a unique id, positon (Ra, DEC), and realistic properties (brightness, shape). Each position is a random draw from the unit sphere and each set of properties is a random draw from a Gaussian Mixture model.</p>
+</div>
+<div class="section" id="obiwan-outputs">
+<h2>Obiwan Outputs<a class="headerlink" href="#obiwan-outputs" title="Permalink to this headline">¶</a></h2>
+<p>Results from running our <span class="xref std std-ref">pipeline</span> on the modified images are here:</p>
+<ul class="simple">
+<li><strong>…/elg_9deg2_ra175/</strong></li>
+</ul>
+<p>The top level directory has these files</p>
+<ul>
+<li><p class="first">The usual six directories: <em>tractor,tractor-i,coadd,metrics,checkpoint,logs</em></p>
+<blockquote>
+<div><ul class="simple">
+<li>The coadd/ directory has a subset of the usual outputs because it is the directory with the largest file sizes</li>
+</ul>
+</div></blockquote>
+</li>
+<li><p class="first">Monte Carlo simulation metadata directory: <em>obiwan</em></p>
+</li>
+<li><p class="first">slurm-[0-9]+.out: stdout, stderr from the SLURM job scripts</p>
+</li>
+</ul>
+<p>Subdirectories follow the usual Data Relase format of <strong>…/bri/brick/</strong>, where <em>bri</em> is the first three letters of each brick. The multiple iteractions per brick are identified by directories named <strong>rs[0-9]+</strong>, where the <em>rs</em> stands for the <em>Row</em> of the unique id-sorted table of randoms in the brick to <em>Start</em> from. The <em>[0-9]+</em> is the index of that row, which would be 0, 500, 1000, etc. when 500 fake galaxies are added to the images in each iteration.</p>
+<p>For example, the tractor catalogues containing the first 1500 fake sources in brick <em>1757p240</em> are in</p>
+<ul class="simple">
+<li>…/tractor/175/1757p240/<strong>rs0</strong>/</li>
+<li>…/tractor/175/1757p240/<strong>rs500</strong>/</li>
+<li>…/tractor/175/1757p240/<strong>rs1000</strong>/</li>
+</ul>
+<p>However, there will be additional directories to <strong>rs[0-9]+</strong>, such as <strong>skip_rs[0-9]+</strong>. These are the sources that were <em>skipped</em> because they were within 5 arcsec of another random. There are actually four sets of directories like this:</p>
+<ul class="simple">
+<li><strong>rs[0-9]+</strong>: initial set of iterations per brick</li>
+<li><strong>skip_rs[0-9]+</strong>: skipped sources from the initial set of iterations</li>
+<li><strong>more_rs[0-9]+</strong>: new set of iterations per brick for randoms that were added to the database after the run completed (e.g. more randoms were needed)</li>
+<li><strong>more_skip_rs[0-9]+</strong>: skipped sources from the new set of iterations</li>
+</ul>
+</div>
+<div class="section" id="simulation-metadata">
+<h2>Simulation Metadata<a class="headerlink" href="#simulation-metadata" title="Permalink to this headline">¶</a></h2>
+<p>The metadata for each Monte Carlo simulation is stored in</p>
+<ul class="simple">
+<li><strong>…/obiwan/bri/brick/rs[0-9]+/</strong></li>
+</ul>
+<p>It consists of four files:</p>
+<ul class="simple">
+<li><strong>metacat-elg-brick.fits</strong>: how obiwan was run (e.g. brickname)</li>
+<li><strong>simcat-elg-brick.fits</strong>: truth table of the final properties of the sources added to the images (e.g. guassian noise and galactic extinction make the fluxes actually added different from those in the DB)</li>
+<li><strong>skippedids-elg-brick.fits</strong>: ids of the randoms that were skipped because the within 5 arcsec of another random</li>
+<li><strong>sim_ids_added.fits</strong>: unique ids of the randoms that overlap with at least one CCD so are actually added to the images</li>
+</ul>
+</div>
+</div>
+
+
+    </div>
+      
+  </div>
+</div>
+<footer class="footer">
+  <div class="container">
+    <p class="pull-right">
+      <a href="#">Back to top</a>
+      
+    </p>
+    <p>
+        &copy; Copyright 2014-2018, Kaylan Burleigh, John Moustakas.<br/>
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.7.6.<br/>
+    </p>
+  </div>
+</footer>
+  </body>
+</html>

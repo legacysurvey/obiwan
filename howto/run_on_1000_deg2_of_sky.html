@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>Run on 1000 deg2 of sky &#8212; obiwan 1.2.0 documentation</title>
+    <link rel="stylesheet" href="../_static/bootstrap-sphinx.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script type="text/javascript" src="../_static/js/jquery-1.11.0.min.js"></script>
+    <script type="text/javascript" src="../_static/js/jquery-fix.js"></script>
+    <script type="text/javascript" src="../_static/bootstrap-3.3.7/js/bootstrap.min.js"></script>
+    <script type="text/javascript" src="../_static/bootstrap-sphinx.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+<meta charset='utf-8'>
+<meta http-equiv='X-UA-Compatible' content='IE=edge,chrome=1'>
+<meta name='viewport' content='width=device-width, initial-scale=1.0, maximum-scale=1'>
+<meta name="apple-mobile-web-app-capable" content="yes">
+
+  </head><body>
+
+  <div id="navbar" class="navbar navbar-default ">
+    <div class="container">
+      <div class="navbar-header">
+        <!-- .btn-navbar is used as the toggle for collapsed navbar content -->
+        <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".nav-collapse">
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+        </button>
+        <a class="navbar-brand" href="../index.html">
+          Obiwan</a>
+        <span class="navbar-text navbar-version pull-left"><b>1.2.0</b></span>
+      </div>
+
+        <div class="collapse navbar-collapse nav-collapse">
+          <ul class="nav navbar-nav">
+            
+                <li><a href="../api.html">API</a></li>
+                <li><a href="../tutorials.html">Tutorials</a></li>
+                <li><a href="../deeplearning.html">Deep Learning</a></li>
+            
+            
+              <li class="dropdown globaltoc-container">
+  <a role="button"
+     id="dLabelGlobalToc"
+     data-toggle="dropdown"
+     data-target="#"
+     href="../index.html">Pages <b class="caret"></b></a>
+  <ul class="dropdown-menu globaltoc"
+      role="menu"
+      aria-labelledby="dLabelGlobalToc"></ul>
+</li>
+              
+                <li class="dropdown">
+  <a role="button"
+     id="dLabelLocalToc"
+     data-toggle="dropdown"
+     data-target="#"
+     href="#">This Page <b class="caret"></b></a>
+  <ul class="dropdown-menu localtoc"
+      role="menu"
+      aria-labelledby="dLabelLocalToc"><ul>
+<li><a class="reference internal" href="#">Run on 1000 deg2 of sky</a><ul>
+<li><a class="reference internal" href="#on-going-production-runs">On-going production runs</a></li>
+<li><a class="reference internal" href="#completed-production-runs">Completed production runs</a></li>
+<li><a class="reference internal" href="#data-sets-that-obiwan-supports">Data Sets that Obiwan Supports</a></li>
+<li><a class="reference internal" href="#the-nersc-postgresql-db">The NERSC PostgreSQL DB</a></li>
+<li><a class="reference internal" href="#randoms">Randoms</a></li>
+<li><a class="reference internal" href="#prepare-qdo-runs">Prepare QDO runs</a></li>
+<li><a class="reference internal" href="#add-more-randoms-mid-run">Add more randoms mid-run</a></li>
+<li><a class="reference internal" href="#managing-your-qdo-production-run">Managing your qdo production run</a></li>
+</ul>
+</li>
+</ul>
+</ul>
+</li>
+              
+            
+            
+              
+                
+              
+            
+            
+            
+            
+          </ul>
+
+          
+            
+<form class="navbar-form navbar-right" action="../search.html" method="get">
+ <div class="form-group">
+  <input type="text" name="q" class="form-control" placeholder="Search" />
+ </div>
+  <input type="hidden" name="check_keywords" value="yes" />
+  <input type="hidden" name="area" value="default" />
+</form>
+          
+        </div>
+    </div>
+  </div>
+
+<div class="container">
+  <div class="row">
+    <div class="col-md-12 content">
+      
+  <div class="section" id="run-on-1000-deg2-of-sky">
+<h1>Run on 1000 deg2 of sky<a class="headerlink" href="#run-on-1000-deg2-of-sky" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="on-going-production-runs">
+<h2>On-going production runs<a class="headerlink" href="#on-going-production-runs" title="Permalink to this headline">¶</a></h2>
+<ol class="arabic" id="elg-dr5">
+<li><p class="first">ELGs for 1/2 of DR5</p>
+<blockquote>
+<div><ul>
+<li><p class="first">/global/cscratch1/sd/kaylanb/obiwan_out/elg_dr5</p>
+</li>
+<li><p class="first">name “elg_dr5”</p>
+</li>
+<li><p class="first">ra [109.0,278.5], dec [-11.1,35.4]</p>
+</li>
+<li><p class="first">all dr5 bricks in Middle region (90 &lt; ra &lt; 280) with grz coverage</p>
+</li>
+<li><p class="first">randoms dir: /global/cscratch1/sd/kaylanb/obiwan_out/randoms/elg_dr5</p>
+<blockquote>
+<div><ul class="simple">
+<li>5x ELG density: 2400 * 10 * area * 4</li>
+<li>170*47*2400*5*4/1e9 = 0.383e9</li>
+<li>times 4 because 0.42 of 10k in ELG box and expect 1/2 not recovered</li>
+</ul>
+</div></blockquote>
+</li>
+</ul>
+<ul class="simple">
+<li>psql db “desi”, table for randoms “obiwan_elg_dr5”</li>
+<li>psql db “qdo”, table for tasks “obiwan_elg_dr5”</li>
+</ul>
+</div></blockquote>
+</li>
+<li><p class="first">Same as #1 but Stars</p>
+</li>
+</ol>
+</div>
+<div class="section" id="completed-production-runs">
+<h2>Completed production runs<a class="headerlink" href="#completed-production-runs" title="Permalink to this headline">¶</a></h2>
+<ol class="arabic" id="elg-9deg2-ra175">
+<li><p class="first">ELGs for 9deg2 region centered at ra,dec= 175.0,24.5</p>
+<blockquote>
+<div><ul class="simple">
+<li>/global/cscratch1/sd/kaylanb/obiwan_out/elg_9deg2_ra175</li>
+<li>name “elg_9deg2_ra175”</li>
+<li>region: ra1,ra2, dec1,dec2= 173.5,176.5, 23.0,26.0</li>
+<li>kdedir for randoms: $CSCRATCH/obiwan_out/randoms</li>
+<li>outdir for randoms: $CSCRATCH/obiwan_out/randoms/elg_9deg2_ra175</li>
+<li>psql db “desi”, table for randoms “obiwan_elg_ra175”</li>
+<li>psql db “qdo”, table for tasks “obiwan_ra175”, “obiwan_ra175_doskip”</li>
+</ul>
+</div></blockquote>
+</li>
+<li><p class="first">ELGs for 9deg2 region centered at ra,dec= 124.8,24.5</p>
+<blockquote>
+<div><ul class="simple">
+<li>/global/cscratch1/sd/kaylanb/obiwan_out/obiwan_elg_9deg</li>
+<li>name_for_run: elg_9deg2_ra125</li>
+<li>region: ra1,ra2, dec1,dec2= 122.3,125.3, 23.0,26.0</li>
+<li>kdedir for randoms: $CSCRATCH/obiwan_out/randoms</li>
+<li>outdir for randoms: $CSCRATCH/obiwan_out/randoms/elg_9deg2_ra125</li>
+<li>psql db, desi, table for randoms: obiwan_elg_9deg</li>
+<li>psql db, qdo, table for tasks: obiwan_9deg, obiwan_9deg_doskip</li>
+</ul>
+</div></blockquote>
+</li>
+</ol>
+</div>
+<div class="section" id="data-sets-that-obiwan-supports">
+<h2>Data Sets that Obiwan Supports<a class="headerlink" href="#data-sets-that-obiwan-supports" title="Permalink to this headline">¶</a></h2>
+<ol class="arabic simple">
+<li>DR5</li>
+</ol>
+<ol class="arabic">
+<li><p class="first">DR3_eBOSS</p>
+<blockquote>
+<div><ul class="simple">
+<li>DR3 zeropoints (from IDL zeropoints)many more columns than legacypipe need, and comput</li>
+<li>DR3 CCDs</li>
+<li>additional eBOSS CCDs (e.g. beyond MJD cutoff of March 2016)</li>
+</ul>
+</div></blockquote>
+</li>
+</ol>
+<p>The “dataset” keyword tells obiwan which dataset to run. For example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">python</span> <span class="n">obiwan</span><span class="o">/</span><span class="n">kenobi</span><span class="o">.</span><span class="n">py</span> <span class="o">--</span><span class="n">dataset</span> <span class="p">{</span><span class="n">dr5</span><span class="p">,</span><span class="n">dr3_eboss</span><span class="p">}</span>
+</pre></div>
+</div>
+<p>The corresponding config in Legacypipe:</p>
+<ol class="arabic">
+<li><p class="first">DR5</p>
+<blockquote>
+<div><ul class="simple">
+<li>–run dr5</li>
+<li>only use survey-ccds files ignore “survey-ccds-kd” files</li>
+</ul>
+</div></blockquote>
+</li>
+<li><p class="first">DR3_eBOSS</p>
+<blockquote>
+<div><ul class="simple">
+<li>–run dr3_eboss</li>
+<li>–no-rex –use-simp: turn off REX model, use SIMP instead</li>
+<li>–nsigma 6: default is 6 but enforce this</li>
+<li>only use the survey-ccds files I made that exactly includes the <cite>DR3_eBOSS</cite> image list using idl zeropoints, also ignore “survey-ccds-kd” files</li>
+</ul>
+</div></blockquote>
+</li>
+</ol>
+</div>
+<div class="section" id="the-nersc-postgresql-db">
+<h2>The NERSC PostgreSQL DB<a class="headerlink" href="#the-nersc-postgresql-db" title="Permalink to this headline">¶</a></h2>
+<p>The psql db at NERSC is called “desi”. It’s hosted at scidb2.nersc.gov and you sign in with user “desi_user”. You’ll need the <code class="docutils literal notranslate"><span class="pre">.pgpass</span></code> password file. Then put the <code class="docutils literal notranslate"><span class="pre">.pgpass</span></code> file in <code class="docutils literal notranslate"><span class="pre">$HOME/</span></code> on Cori and give it user rw permissions.:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>cp &lt;path/to/kaylans/.pgpass $HOME/
+chmod u+rw $HOME/.pgpass
+</pre></div>
+</div>
+<p>Make sure the bashrc_obiwan loaded the <code class="docutils literal notranslate"><span class="pre">postresql</span></code> module. Then do:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">psql</span> <span class="o">-</span><span class="n">U</span> <span class="n">desi_user</span> <span class="o">-</span><span class="n">d</span> <span class="n">desi</span> <span class="o">-</span><span class="n">h</span> <span class="n">scidb2</span><span class="o">.</span><span class="n">nersc</span><span class="o">.</span><span class="n">gov</span>
+</pre></div>
+</div>
+<p>It worked if that brings you to a <code class="docutils literal notranslate"><span class="pre">desi=&gt;</span></code> prompt</p>
+</div>
+<div class="section" id="randoms">
+<h2>Randoms<a class="headerlink" href="#randoms" title="Permalink to this headline">¶</a></h2>
+<p>We fit a Mixture of Gaussians to the desired n(z) and seperately joint-sample the color,shape,redshift (10k row fits table) from Tractor catalogues matched to a Truth region. The 10k row fits table is here:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>ls $obiwan_out/randoms/elg_100deg2
+elg_sample_5dim_10k.fits
+</pre></div>
+</div>
+<p>Generate “ndraws” random ra,dec points on the unit sphere each point also sampling the KDE model. Run with multiple core if &gt; 1 Million randoms. Either way fill in and submit this slurm job:
+<a class="reference external" href="https://github.com/legacysurvey/obiwan/blob/master/bin/slurm_job_randoms.sh">https://github.com/legacysurvey/obiwan/blob/master/bin/slurm_job_randoms.sh</a></p>
+<p>Load the randoms into the desi database at nerscdb03 (the scidb2.nersc.gov server is no more). First create the table:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>bash $obiwan_out/obiwan/bin/fits2db_create.sh obiwan_elg_dr5 /global/cscratch1/sd/kaylanb/obiwan_out/randoms/elg_dr5/randoms_rank_0.fits
+</pre></div>
+</div>
+<p>then load all the randoms fits tables:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>name=elg_dr5
+num=`find $obiwan_out/randoms/$name -name &quot;randoms*.fits&quot;|wc -l`
+let num=$num-1
+for i in `seq 0 $num`;do bash $obiwan_code/obiwan/bin/fits2db_load.sh obiwan_$name $obiwan_out/randoms/$name/randoms_rank_${i}.fits;done
+</pre></div>
+</div>
+<p>Index and cluster the db table for fast ra,dec querying:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>cd $obiwan_code/obiwan/etc
+cat cluster_randoms | sed s#name#obiwan_elg_100deg2#g &gt; cluster_temp
+psql -U desi_admin -d desi -h nerscdb03.nersc.gov
+desi=&gt; \i /global/cscratch1/sd/kaylanb/obiwan_code/obiwan/etc/cluster_temp
+</pre></div>
+</div>
+<p>Also make sure the bricks file is in the desi db. Do:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">psql_desi</span>
+<span class="n">desi</span><span class="o">=&gt;</span> \<span class="n">d</span> <span class="n">obiwan_bricks</span>
+</pre></div>
+</div>
+<p>If its not there do:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>cd $HOME/
+rsync -av /global/project/projectdirs/desi/www/users/kburleigh/obiwan/legacysurveydir/survey-bricks.fits.gz .
+gunzip survey-bricks.fits.gz
+bash $obiwan_code/bin/run_fits2db.sh obiwan_bricks survey-bricks.fits
+</pre></div>
+</div>
+<p>Index and cluster it:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">psql</span> <span class="o">-</span><span class="n">U</span> <span class="n">desi_admin</span> <span class="o">-</span><span class="n">d</span> <span class="n">desi</span> <span class="o">-</span><span class="n">h</span> <span class="n">scidb2</span><span class="o">.</span><span class="n">nersc</span><span class="o">.</span><span class="n">gov</span>
+<span class="n">desi</span><span class="o">=&gt;</span> \<span class="n">i</span> <span class="o">/</span><span class="k">global</span><span class="o">/</span><span class="n">cscratch1</span><span class="o">/</span><span class="n">sd</span><span class="o">/</span><span class="n">kaylanb</span><span class="o">/</span><span class="n">obiwan_code</span><span class="o">/</span><span class="n">obiwan</span><span class="o">/</span><span class="n">etc</span><span class="o">/</span><span class="n">cluster_bricks</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="prepare-qdo-runs">
+<h2>Prepare QDO runs<a class="headerlink" href="#prepare-qdo-runs" title="Permalink to this headline">¶</a></h2>
+<ol class="arabic simple">
+<li>Make the QDO task list</li>
+</ol>
+<p>Generate the qdo tasks to run, which includes the list of bricks that are in your radec region. It is too slow to query the randoms db for each brick’s number of randoms, so instead estimate as expectation number + 2 StdErros per brick. Run the script like this:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>python $obiwan_code/obiwan/py/obiwan/runmanager/qdo_tasks.py --obj elg --radec 109.0 278.5 -11.1 35.4 --nobj_total 383000000 --survey_bricks /home/kaylan/mydata/survey-bricks.fits.gz --bricks_fn elg_dr5/dr5_bricks_inMid_grz.txt
+</pre></div>
+</div>
+<p>which writes out the task file. Now create the qdo queue:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">qdo</span> <span class="n">create</span> <span class="n">obiwan_elg_dr5</span>
+<span class="n">qdo</span> <span class="n">load</span> <span class="n">obiwan_elg_dr5</span> <span class="o">&lt;</span><span class="n">task</span><span class="o">-</span><span class="n">file</span><span class="o">.</span><span class="n">txt</span><span class="o">&gt;</span>
+</pre></div>
+</div>
+<ol class="arabic simple" start="2">
+<li>Run a single brick to test that everything works</li>
+</ol>
+<p>Go to your output directory and copy over the template slurm job script:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>export outdir=$CSCRATCH/obiwan_out/elg_100deg2
+cd $outdir
+cp $obiwan_code/obiwan/bin/slurm_job.sh ./slurm_job_100deg2.sh
+</pre></div>
+</div>
+<p>Modify the relevant fields for the run, namely:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">export</span> <span class="n">name_for_run</span><span class="o">=</span><span class="n">elg_9deg2_ra175</span>
+<span class="n">export</span> <span class="n">randoms_db</span><span class="o">=</span><span class="n">elg_9deg2_ra175</span>
+<span class="n">export</span> <span class="n">do_skipids</span><span class="o">=</span><span class="n">no</span>
+<span class="n">export</span> <span class="n">do_more</span><span class="o">=</span><span class="n">no</span>
+<span class="n">export</span> <span class="n">dataset</span><span class="o">=</span><span class="n">dr5</span>
+<span class="n">export</span> <span class="n">brick</span><span class="o">=</span><span class="mi">1750</span><span class="n">p225</span>
+<span class="n">export</span> <span class="nb">object</span><span class="o">=</span><span class="n">elg</span>
+<span class="n">export</span> <span class="n">nobj</span><span class="o">=</span><span class="mi">300</span>
+</pre></div>
+</div>
+<p>Run it as a 30 min debug job:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">sbatch</span> <span class="n">slurm_job_100deg2</span><span class="o">.</span><span class="n">sh</span>
+</pre></div>
+</div>
+<p>When it finishes, grep the open the resulting <cite>slurm*.out</cite> file, find the file it says it is “logging to”, and grep that file for the success string:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">grep</span> <span class="s2">&quot;decals_sim:All done!&quot;</span> <span class="o">&lt;</span><span class="n">logging</span> <span class="n">to</span> <span class="n">file</span><span class="o">&gt;</span>
+</pre></div>
+</div>
+<p>If the success string is there, cleanup the testrun outputs, add the new slurm job script to the obiwan repo, and being the production run:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>rm -r $obiwan_out/${name_for_run}/elg/${bri}/${brick}/rs0
+cp slurm_job_100deg2.sh $obiwan_code/obiwan/bin/
+# cd to obiwan repo and git add, git commit
+</pre></div>
+</div>
+<p><strong>3) Production runs with QDO</strong>
+Copy over the template qdo job script,:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>cd $outdir
+cp $obiwan_code/obiwan/bin/qdo_job.sh ./qdo_job_100deg2.sh
+</pre></div>
+</div>
+<p>and edit the relevant fileds as before. Now launch the qdo jobs:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>export qdo_quename=obiwan_elg_100deg
+qdo launch ${qdo_quename} 40 --cores_per_worker 4 --batchqueue regular --walltime 05:00:00 --script $outdir/qdo_job_100deg2.sh --keep_env
+</pre></div>
+</div>
+<p>Once you see successful runs,:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>cp qdo_job_100deg2.sh $obiwan_code/obiwan/bin/
+# cd to obiwan repo and git add, git commit
+</pre></div>
+</div>
+</div>
+<div class="section" id="add-more-randoms-mid-run">
+<h2>Add more randoms mid-run<a class="headerlink" href="#add-more-randoms-mid-run" title="Permalink to this headline">¶</a></h2>
+<p>Eventually you’ll need to add more randoms. For instance if after finishing all QDO runs, the randoms you recover in the simulated tractor catalogues have less than 10x target density.</p>
+<p>To add more randoms repeat previous instructions but add the “–startid” option. <cite>240,000</cite> randoms were added initially. Each gets a primary key from 1 to the number of randoms. So the randoms you add mid-run need to have primary keys that start at <cite>240,001</cite>. Lets make <cite>720,000</cite> more:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>export startid=240001
+python $obiwan_code/obiwan/py/obiwan/draw_radec_color_z.py --dowhat sample --obj elg --ra1  --ra2 ${ra2} --dec1 ${dec1} --dec2 ${dec2} --ndraws 240000 --kdedir ${kdedir} --outdir ${outdir} --startid ${startid}
+</pre></div>
+</div>
+<p>It is easiest to load the additional randoms to a new temporary table in the DB then insert that table’s rows into the randoms DB. If your new randoms fits table is <cite>/global/cscratch1/sd/kaylanb/obiwan_out/randoms/elg_9deg2_ra175/more.fits</cite> then:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>bash $obiwan_code/obiwan/bin/run_fits2db.sh obiwan_test /global/cscratch1/sd/kaylanb/obiwan_out/randoms/elg_9deg2_ra175/more.fits
+</pre></div>
+</div>
+<p>Now add <cite>obiwan_test</cite> to the end of the randoms table and delete <cite>obiwan_test</cite>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">desi</span><span class="o">=&gt;</span> <span class="n">insert</span> <span class="n">into</span> <span class="n">obiwan_elg_ra175</span> <span class="n">select</span> <span class="o">*</span> <span class="kn">from</span> <span class="nn">obiwan_test</span><span class="p">;</span>
+<span class="n">desi</span><span class="o">=&gt;</span> <span class="n">drop</span> <span class="n">table</span> <span class="n">obiwan_test</span><span class="p">;</span>
+</pre></div>
+</div>
+<p>Make a QDO task list for your additional randoms. Specify <cite>minid</cite> to skip all primary keys below your 240,001:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">obiwan.runmanager.qdo_tasks</span> <span class="k">import</span> <span class="n">TaskList</span>
+<span class="n">T</span><span class="o">=</span> <span class="n">TaskList</span><span class="p">(</span><span class="n">ra1</span><span class="o">=</span><span class="mf">173.5</span><span class="p">,</span><span class="n">ra2</span><span class="o">=</span><span class="mf">176.5</span><span class="p">,</span> <span class="n">dec1</span><span class="o">=</span><span class="mf">23.0</span><span class="p">,</span><span class="n">dec2</span><span class="o">=</span><span class="mf">26.0</span><span class="p">,</span>
+            <span class="n">nobj_per_run</span><span class="o">=</span><span class="mi">300</span><span class="p">,</span>
+            <span class="n">nobj_total</span><span class="o">=</span><span class="mi">240000</span> <span class="o">+</span> <span class="mi">720000</span><span class="p">)</span>
+<span class="n">T</span><span class="o">.</span><span class="n">bricks</span><span class="p">()</span>
+<span class="n">T</span><span class="o">.</span><span class="n">tasklist</span><span class="p">(</span><span class="n">do_skipid</span><span class="o">=</span><span class="s1">&#39;no&#39;</span><span class="p">,</span><span class="n">do_more</span><span class="o">=</span><span class="s1">&#39;yes&#39;</span><span class="p">,</span><span class="n">minid</span><span class="o">=</span><span class="mi">240001</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>then run these randoms from a new QDO queue:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">qdo</span> <span class="n">create</span> <span class="n">obiwan_ra175_domore</span>
+<span class="n">qdo</span> <span class="n">load</span> <span class="n">obiwan_ra175_dormore</span> <span class="n">tasks_skipid_no_more_yes_minid_240001</span><span class="o">.</span><span class="n">txt</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="managing-your-qdo-production-run">
+<h2>Managing your qdo production run<a class="headerlink" href="#managing-your-qdo-production-run" title="Permalink to this headline">¶</a></h2>
+<p>Manage your qdo production run with <cite>obiwan/py/obiwan/runmanager/status.py</cite>. To get a list of all log.&lt;brickname&gt; and slurm-&lt;slurmid&gt;.out files, sorted by status of “succeeded, failed, running” in the qdo db, and a tally of each error that occurred, do:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>cd $obiwan_code
+python $obiwan_code/obiwan/py/obiwan/runmanager/status.py --qdo_quename ${qdo_quename} --outdir /global/cscratch1/sd/kaylanb/obiwan_out/${name_for_run} --obj elg
+</pre></div>
+</div>
+<p>Once you finish all the above runs, you will make a second qdo que. We previously made <cite>obiwan_ra175</cite> to do the usual obiwan runs, and now we make <cite>obiwan_ra175_doskip</cite> to do the randoms that we skipped. You can get a list of these tasks with:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">cat</span> <span class="n">tasks_inregion</span> <span class="o">|</span> <span class="n">awk</span> <span class="s1">&#39;{print $1}&#39;</span><span class="o">|</span><span class="n">sort</span><span class="o">|</span><span class="n">uniq</span> <span class="o">&gt;</span> <span class="n">brick_list</span><span class="o">.</span><span class="n">txt</span>
+</pre></div>
+</div>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">obiwan.runmanager.qdo_tasks</span> <span class="k">import</span> <span class="n">write_qdo_tasks_skipids</span>
+<span class="n">write_qdo_tasks_skipids</span><span class="p">(</span><span class="s1">&#39;brick_list.txt&#39;</span><span class="p">,</span> <span class="n">nobj_per_run</span><span class="o">=</span><span class="mi">300</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>which outputs a file <cite>tasks_skipids.txt</cite>. Now create a new qdo queue_name for the skipid runs and load the new tasks:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>export qdo_quename=obiwan_ra175_doskip
+qdo create ${qdo_quename}
+qdo load ${qdo_quename} tasks_skipids.txt
+</pre></div>
+</div>
+<p>The qdo tasks automatically set the <cite>do_skipid</cite> flag, so you dont need to edit the <cite>qdo_job_9deg.sh</cite> file. Just run it with your new qdo <cite>que_name</cite>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>cd $obiwan_out/${name_for_run}
+qdo launch ${qdo_quename} 40 --cores_per_worker 4 --batchqueue regular --walltime 05:00:00 --script $obiwan_code/obiwan/bin/qdo_job_9deg.sh --keep_env
+</pre></div>
+</div>
+</div>
+</div>
+
+
+    </div>
+      
+  </div>
+</div>
+<footer class="footer">
+  <div class="container">
+    <p class="pull-right">
+      <a href="#">Back to top</a>
+      
+    </p>
+    <p>
+        &copy; Copyright 2014-2018, Kaylan Burleigh, John Moustakas.<br/>
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.7.6.<br/>
+    </p>
+  </div>
+</footer>
+  </body>
+</html>
