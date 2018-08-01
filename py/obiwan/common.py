@@ -79,6 +79,11 @@ def writelist(lis,fn):
     if len(lis) == 0:
         print('Warning: %s is empty list' % fn)
 
+def to_csv(d,fn='test.csv'):
+    df= pd.dataframe(d)
+    #df= df.round({})
+    df.to_csv(fn,index=False)
+    print('Wrote %s' % fn)
 
 def fits2pandas(tab,attrs=None):
     """converts a fits_table into a pandas DataFrame
